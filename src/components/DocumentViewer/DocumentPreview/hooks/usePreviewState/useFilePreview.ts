@@ -50,98 +50,7 @@ export function useFilePreview({
   // Track whether we've tried public URL fallback
   const [hasTriedPublicUrl, setHasTriedPublicUrl] = useState(false);
 
-  // Handle errors during file checking with enhanced diagnostics
-  const handleFileCheckError = useCallback(async (error: any, publicUrl?: string | null) => {
-    console.group('📄 File Check Error');
-    console.error('Error checking file:', error);
-    console.log('Current retry attempt:', attemptCount + 1);
-    console.log('StoragePath:', storagePath);
-    
-    // Detect error type for better handling
-    const errorMsg = error?.message?.toLowerCase() || '';
-    const isNetworkError = errorMsg.includes('network') || errorMsg.includes('fetch');
-    const isAuthError = errorMsg.includes('token') || errorMsg.includes('auth') || errorMsg.includes('jwt');
-    const isNotFoundError = errorMsg.includes('not found') || errorMsg.includes('404');
-    const isCorsError = errorMsg.includes('cors') || errorMsg.includes('origin');
-    
-    console.log('Error analysis:', {
-      isNetworkError,
-      isAuthError, 
-      isNotFoundError,
-      isCorsError
-    });
-    
-    // Clear URL while we handle the error
-    setFileUrl(null);
-    
-    // Special handling based on error type
-    if (isNetworkError) {
-      handleOffline();
-      setPreviewError('Network error while loading document. Retrying when connection improves...');
-    } else if (isAuthError && !hasTriedTokenRefresh) {
-      // Try to refresh the token on auth errors
-      setPreviewError('Authentication error. Refreshing credentials...');
-      setHasTriedTokenRefresh(true);
-      
-      // Try to refresh token and retry
-      console.log('Attempting token refresh...');
-      try {
-        const tokenResult = await checkAndRefreshToken();
-        console.log('Token refresh result:', tokenResult);
-        
-        // Retry after short delay
-        setTimeout(() => checkFile(), 1000);
-        console.groupEnd();
-        return;
-      } catch (refreshError) {
-        console.error('Token refresh failed:', refreshError);
-      }
-    } else if (isNotFoundError) {
-      // For not found errors, try the public URL as fallback if we haven't yet
-      if (!hasTriedPublicUrl && publicUrl) {
-        setHasTriedPublicUrl(true);
-        console.log('Trying public URL as fallback...');
-        setFileUrl(publicUrl);
-        setPreviewError(null);
-        console.groupEnd();
-        return;
-      } else {
-        setPreviewError('Document not found in storage. It may have been deleted or moved.');
-      }
-    } else if (isCorsError && !hasTriedGoogleViewer) {
-      // For CORS errors, we can try Google Docs viewer as a fallback
-      setHasTriedGoogleViewer(true);
-      setPreviewError('CORS issue detected. Trying alternative viewer...');
-      
-      if (publicUrl) {
-        const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(publicUrl)}&embedded=true`;
-        console.log('Using Google Docs viewer fallback:', googleViewerUrl);
-        setFileUrl(googleViewerUrl);
-        console.groupEnd();
-        return;
-      }
-    } else {
-      setPreviewError(error.message || 'An unknown error occurred while loading the document.');
-    }
-    
-    setFileExists(false);
-    incrementAttempt(error);
-    console.log('Updated diagnostics:', getDiagnostics());
-    console.groupEnd();
-  }, [
-    handleOffline, 
-    incrementAttempt, 
-    setFileExists, 
-    setFileUrl, 
-    setPreviewError, 
-    attemptCount, 
-    storagePath,
-    hasTriedTokenRefresh,
-    hasTriedGoogleViewer,
-    hasTriedPublicUrl,
-    getDiagnostics
-  ]);
-
+  // First, declare checkFile function before it's used
   // Check if the file exists and get its URL with enhanced error handling
   const checkFile = useCallback(async (path?: string) => {
     setHasFileLoadStarted(true);
@@ -288,11 +197,104 @@ export function useFilePreview({
     setPreviewError,
     setFileType,
     handleOnline,
-    handleFileCheckError,
     resetAttempts,
     networkStatus,
     attemptCount,
-    lastErrorType
+    lastErrorType,
+    // Note: handleFileCheckError is declared later but would be included in dependencies
+  ]);
+
+  // Handle errors during file checking with enhanced diagnostics
+  const handleFileCheckError = useCallback(async (error: any, publicUrl?: string | null) => {
+    console.group('📄 File Check Error');
+    console.error('Error checking file:', error);
+    console.log('Current retry attempt:', attemptCount + 1);
+    console.log('StoragePath:', storagePath);
+    
+    // Detect error type for better handling
+    const errorMsg = error?.message?.toLowerCase() || '';
+    const isNetworkError = errorMsg.includes('network') || errorMsg.includes('fetch');
+    const isAuthError = errorMsg.includes('token') || errorMsg.includes('auth') || errorMsg.includes('jwt');
+    const isNotFoundError = errorMsg.includes('not found') || errorMsg.includes('404');
+    const isCorsError = errorMsg.includes('cors') || errorMsg.includes('origin');
+    
+    console.log('Error analysis:', {
+      isNetworkError,
+      isAuthError, 
+      isNotFoundError,
+      isCorsError
+    });
+    
+    // Clear URL while we handle the error
+    setFileUrl(null);
+    
+    // Special handling based on error type
+    if (isNetworkError) {
+      handleOffline();
+      setPreviewError('Network error while loading document. Retrying when connection improves...');
+    } else if (isAuthError && !hasTriedTokenRefresh) {
+      // Try to refresh the token on auth errors
+      setPreviewError('Authentication error. Refreshing credentials...');
+      setHasTriedTokenRefresh(true);
+      
+      // Try to refresh token and retry
+      console.log('Attempting token refresh...');
+      try {
+        const tokenResult = await checkAndRefreshToken();
+        console.log('Token refresh result:', tokenResult);
+        
+        // Retry after short delay
+        setTimeout(() => checkFile(), 1000);
+        console.groupEnd();
+        return;
+      } catch (refreshError) {
+        console.error('Token refresh failed:', refreshError);
+      }
+    } else if (isNotFoundError) {
+      // For not found errors, try the public URL as fallback if we haven't yet
+      if (!hasTriedPublicUrl && publicUrl) {
+        setHasTriedPublicUrl(true);
+        console.log('Trying public URL as fallback...');
+        setFileUrl(publicUrl);
+        setPreviewError(null);
+        console.groupEnd();
+        return;
+      } else {
+        setPreviewError('Document not found in storage. It may have been deleted or moved.');
+      }
+    } else if (isCorsError && !hasTriedGoogleViewer) {
+      // For CORS errors, we can try Google Docs viewer as a fallback
+      setHasTriedGoogleViewer(true);
+      setPreviewError('CORS issue detected. Trying alternative viewer...');
+      
+      if (publicUrl) {
+        const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(publicUrl)}&embedded=true`;
+        console.log('Using Google Docs viewer fallback:', googleViewerUrl);
+        setFileUrl(googleViewerUrl);
+        console.groupEnd();
+        return;
+      }
+    } else {
+      setPreviewError(error.message || 'An unknown error occurred while loading the document.');
+    }
+    
+    setFileExists(false);
+    incrementAttempt(error);
+    console.log('Updated diagnostics:', getDiagnostics());
+    console.groupEnd();
+  }, [
+    handleOffline, 
+    incrementAttempt, 
+    setFileExists, 
+    setFileUrl, 
+    setPreviewError, 
+    attemptCount, 
+    storagePath,
+    hasTriedTokenRefresh,
+    hasTriedGoogleViewer,
+    hasTriedPublicUrl,
+    getDiagnostics,
+    checkFile
   ]);
 
   // Initial file check on component mount or when path changes

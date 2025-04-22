@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { DocumentViewer } from "@/components/DocumentViewer";
@@ -103,7 +104,8 @@ const Index = () => {
 
   // Handle auth errors
   if (authError) {
-    return <AuthErrorDisplay error={authError} />;
+    // Fix the Error to string conversion here
+    return <AuthErrorDisplay error={authError instanceof Error ? authError.message : String(authError)} />;
   }
 
   // Handle email confirmation pending state

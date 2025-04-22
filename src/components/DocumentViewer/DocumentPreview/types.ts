@@ -31,8 +31,12 @@ export interface PreviewState {
   isLoading: boolean;
   handleAnalysisRetry: () => void;
   hasFallbackToDirectUrl: boolean;
-  networkStatus: 'online' | 'offline';
+  networkStatus: 'online' | 'offline' | 'limited';
   attemptCount: number;
+  fileType?: string | null;
+  handleFullRecovery?: () => Promise<void>;
+  forceRefresh?: () => Promise<void>;
+  errorDetails?: any;
 }
 
 export interface DocumentPreviewContentProps {
@@ -90,7 +94,7 @@ export interface NetworkStatusIndicatorProps {
 }
 
 export interface UseNetworkMonitorReturn {
-  networkStatus: 'online' | 'offline';
+  networkStatus: 'online' | 'offline' | 'limited';
   handleOnline: () => void;
   handleOffline: () => void;
 }
