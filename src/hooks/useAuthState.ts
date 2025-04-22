@@ -4,6 +4,27 @@ import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 /**
+ * Stand-alone function to refresh session that can be imported elsewhere
+ */
+export async function refreshSession(): Promise<boolean> {
+  try {
+    console.log('Explicitly refreshing auth session...');
+    const { data, error } = await supabase.auth.refreshSession();
+    
+    if (error || !data.session) {
+      console.error('Session refresh failed:', error || 'No session returned');
+      return false;
+    }
+    
+    console.log('Session refreshed successfully');
+    return true;
+  } catch (error) {
+    console.error('Error during session refresh:', error);
+    return false;
+  }
+}
+
+/**
  * Hook for managing authentication state
  */
 export function useAuthState() {
@@ -34,24 +55,8 @@ export function useAuthState() {
   /**
    * Refresh the session explicitly
    */
-  const refreshSession = useCallback(async (): Promise<boolean> => {
-    try {
-      console.log('Explicitly refreshing auth session...');
-      const { data, error } = await supabase.auth.refreshSession();
-      
-      if (error || !data.session) {
-        console.error('Session refresh failed:', error || 'No session returned');
-        return false;
-      }
-      
-      setSession(data.session);
-      setUser(data.session.user);
-      console.log('Session refreshed successfully');
-      return true;
-    } catch (error) {
-      console.error('Error during session refresh:', error);
-      return false;
-    }
+  const refreshSessionCallback = useCallback(async (): Promise<boolean> => {
+    return refreshSession();
   }, []);
 
   /**
@@ -73,7 +78,7 @@ export function useAuthState() {
     user,
     session,
     loading,
-    refreshSession,
+    refreshSession: refreshSessionCallback,
     signOut
   };
 }

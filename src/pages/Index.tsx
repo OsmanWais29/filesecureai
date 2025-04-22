@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { DocumentViewer } from "@/components/DocumentViewer";
@@ -30,14 +29,10 @@ const Index = () => {
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
   
-  const { 
-    session, 
-    isLoading, 
-    authError, 
-    isEmailConfirmationPending, 
-    confirmationEmail,
-    handleSignOut
-  } = useAuthState();
+  const { user, session, loading: isLoading, signOut: handleSignOut } = useAuthState();
+  const [authError, setAuthError] = useState<Error | null>(null);
+  const [isEmailConfirmationPending, setIsEmailConfirmationPending] = useState(false);
+  const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
 
   useEffect(() => {
     if (location.state?.selectedDocument) {

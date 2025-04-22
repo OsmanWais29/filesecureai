@@ -1,6 +1,5 @@
 
-import { supabase, ensureFreshToken } from "@/lib/supabase";
-import { refreshSession } from "./useAuthState";
+import { supabase } from "@/lib/supabase";
 
 // Utility for making authenticated API requests, auto-refreshing tokens if needed
 export async function authenticatedFetch(url: string, options: any = {}) {
@@ -13,9 +12,9 @@ export async function authenticatedFetch(url: string, options: any = {}) {
   
   if (!token) {
     // Try to refresh if no token is available
-    await refreshSession();
-    data = (await supabase.auth.getSession()).data;
-    token = data.session?.access_token;
+    const { data: refreshData, error } = await supabase.auth.refreshSession();
+    if (error) throw new Error("No authenticated session available");
+    token = refreshData.session?.access_token;
     if (!token) throw new Error("No authenticated session available");
   }
 
@@ -71,9 +70,9 @@ export async function authenticatedStorageOperation<T>(
       console.warn("Storage operation failed with JWT error, attempting recovery...");
       
       // Force a complete session refresh
-      const refreshSuccess = await refreshSession();
+      const { data, error: refreshError } = await supabase.auth.refreshSession();
       
-      if (!refreshSuccess) {
+      if (refreshError || !data.session) {
         throw new Error("Failed to refresh authentication. Please log in again.");
       }
       
@@ -83,5 +82,16 @@ export async function authenticatedStorageOperation<T>(
     
     // Re-throw other errors
     throw error;
+  }
+}
+
+// Simple helper to ensure token is fresh
+export async function ensureFreshToken(): Promise<boolean> {
+  try {
+    const { data, error } = await supabase.auth.refreshSession();
+    return !error && !!data.session;
+  } catch (error) {
+    console.error("Error refreshing token:", error);
+    return false;
   }
 }
