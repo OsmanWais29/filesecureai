@@ -1,51 +1,78 @@
 
-import { useState, useEffect } from "react";
-import { toast } from "sonner";
-import { UseNetworkMonitorReturn } from "../../types";
+import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 
 /**
- * Hook to monitor network status changes
+ * A hook that monitors network connectivity to help with document loading
  */
-export const useNetworkMonitor = (
-  onNetworkStatusChange?: (status: 'online' | 'offline') => void
-): UseNetworkMonitorReturn => {
+export function useNetworkMonitor() {
   const [networkStatus, setNetworkStatus] = useState<'online' | 'offline'>(
     navigator.onLine ? 'online' : 'offline'
   );
 
-  const handleOnline = () => {
+  const handleOnline = useCallback(() => {
     setNetworkStatus('online');
-    // Only show toast if we were previously offline and now coming back online
-    if (networkStatus === 'offline') {
-      toast.success("Connection restored. Retrying document load...");
-      if (onNetworkStatusChange) {
-        onNetworkStatusChange('online');
-      }
-    }
-  };
-  
-  const handleOffline = () => {
+  }, []);
+
+  const handleOffline = useCallback(() => {
     setNetworkStatus('offline');
-    toast.error("You're offline. Document loading paused.");
-    if (onNetworkStatusChange) {
-      onNetworkStatusChange('offline');
-    }
-  };
-  
-  // Set up event listeners for online/offline events
+  }, []);
+
+  // Set up network event listeners
   useEffect(() => {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+    
+    // Notify user if initially offline
+    if (!navigator.onLine) {
+      toast.error("You're offline. Document loading may be limited.");
+    }
     
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [networkStatus]);
+  }, [handleOnline, handleOffline]);
   
+  // Active connection check
+  useEffect(() => {
+    // Test the connection by fetching a tiny resource
+    const checkConnection = async () => {
+      if (navigator.onLine) {
+        try {
+          // Try to fetch a tiny resource to verify connection
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
+          
+          await fetch('/favicon.ico', { 
+            method: 'HEAD',
+            signal: controller.signal,
+            cache: 'no-store'
+          });
+          
+          clearTimeout(timeoutId);
+          handleOnline();
+        } catch (e) {
+          // If fetch fails despite navigator.onLine being true, we might have limited connectivity
+          console.warn("Network reported online but fetch failed:", e);
+          // Don't set offline here as it might be a server issue, not a connection issue
+        }
+      }
+    };
+    
+    checkConnection();
+    
+    // Setup periodic checking
+    const intervalId = setInterval(checkConnection, 30000); // Check every 30s
+    
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [handleOnline]);
+
   return {
     networkStatus,
     handleOnline,
     handleOffline
   };
-};
+}

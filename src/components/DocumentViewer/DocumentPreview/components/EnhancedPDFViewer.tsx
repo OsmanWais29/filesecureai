@@ -1,11 +1,12 @@
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { AlertTriangle, Download, ExternalLink, RefreshCw } from "lucide-react";
+import { AlertTriangle, Download, ExternalLink, RefreshCw, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { checkAndRefreshToken } from "@/utils/jwtMonitoring";
+import { refreshSession } from "@/hooks/useAuthState";
 
 interface EnhancedPDFViewerProps {
   storagePath: string;
@@ -29,27 +30,45 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [useGoogleViewer, setUseGoogleViewer] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [isRefreshingToken, setIsRefreshingToken] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const objectRef = useRef<HTMLObjectElement>(null);
-
-  // Get a fresh signed URL with proper authentication
-  const fetchSignedUrl = async (): Promise<string | null> => {
+  const maxRetries = 3;
+  
+  // Enhanced fetch function with retry logic
+  const fetchSignedUrl = useCallback(async (forceRefresh = false): Promise<string | null> => {
     try {
       console.group("📄 Fetching PDF signed URL");
+      setIsRefreshingToken(forceRefresh);
       
-      // First ensure we have a valid token
+      // If we're forcing a refresh, first explicitly refresh the token
+      if (forceRefresh) {
+        console.log("Forcing token refresh before fetching URL");
+        const refreshed = await refreshSession();
+        if (!refreshed) {
+          throw new Error("Failed to refresh authentication session");
+        }
+      }
+      
+      // Check token validity
       const tokenResult = await checkAndRefreshToken();
       if (!tokenResult.isValid) {
         console.error("Invalid token when fetching PDF:", tokenResult.reason);
-        throw new Error(`Authentication error: ${tokenResult.reason}`);
+        
+        // Attempt to recover by explicitly refreshing the session
+        console.log("Attempting to refresh session to recover");
+        const sessionRefreshed = await refreshSession();
+        if (!sessionRefreshed) {
+          throw new Error(`Authentication error: ${tokenResult.reason}`);
+        }
       }
       
       console.log("Using bucket:", bucketName, "path:", storagePath);
       
-      // Get signed URL with fresh token
+      // Get signed URL with fresh token - use a longer validity period
       const { data, error } = await supabase.storage
         .from(bucketName)
-        .createSignedUrl(storagePath, 60 * 15); // 15 minutes validity
+        .createSignedUrl(storagePath, 60 * 30); // 30 minutes validity
       
       if (error) {
         console.error("Error getting signed URL:", error);
@@ -63,38 +82,59 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
       
       console.log("Signed URL generated successfully");
       console.groupEnd();
+      setIsRefreshingToken(false);
       return data.signedUrl;
     } catch (error) {
       console.error("Failed to get signed URL:", error);
       console.groupEnd();
+      setIsRefreshingToken(false);
       return null;
     }
-  };
+  }, [bucketName, storagePath]);
 
-  // Load the PDF with a fresh URL
-  useEffect(() => {
-    const loadPdf = async () => {
-      if (!storagePath) return;
-      
-      setIsLoading(true);
-      setLoadError(null);
-      
+  // Advanced load PDF function with retries
+  const loadPdfWithRetries = useCallback(async () => {
+    if (!storagePath) return;
+    
+    setIsLoading(true);
+    setLoadError(null);
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        const url = await fetchSignedUrl();
+        // Force token refresh on retry attempts
+        const forceRefresh = attempt > 0;
+        console.log(`PDF fetch attempt ${attempt + 1}${forceRefresh ? " (with token refresh)" : ""}`);
+        
+        const url = await fetchSignedUrl(forceRefresh);
         if (!url) {
           throw new Error("Failed to retrieve document URL");
         }
         
         setFileUrl(url);
-      } catch (error) {
-        console.error("Error loading PDF:", error);
-        setLoadError(error instanceof Error ? error.message : "Failed to load document");
-        if (onError) onError(error);
+        // If we got a URL, break the retry loop
+        break;
+      } catch (error: any) {
+        console.error(`Error loading PDF (attempt ${attempt + 1}/${maxRetries}):`, error);
+        
+        // Last attempt failed
+        if (attempt === maxRetries - 1) {
+          setLoadError(error instanceof Error ? error.message : "Failed to load document after multiple attempts");
+          if (onError) onError(error);
+          setIsLoading(false);
+        } else {
+          // Wait before retry with increasing delay (exponential backoff)
+          const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s...
+          console.log(`Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
       }
-    };
-    
-    loadPdf();
-  }, [storagePath, bucketName, onError]);
+    }
+  }, [storagePath, fetchSignedUrl, maxRetries, onError]);
+
+  // Load the PDF on component mount
+  useEffect(() => {
+    loadPdfWithRetries();
+  }, [loadPdfWithRetries]);
 
   // Handle success and error states during viewing
   const handleLoadSuccess = () => {
@@ -104,19 +144,22 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
     if (onLoad) onLoad();
   };
 
-  const handleLoadError = () => {
+  const handleLoadError = async () => {
     console.error("Error displaying PDF:", fileUrl);
     
     setRetryCount(prev => prev + 1);
     
+    // First retry immediately with a fresh URL
     if (retryCount === 1) {
       console.log("First display attempt failed, retrying with fresh URL...");
       
-      // Get a fresh URL and try again
-      fetchSignedUrl().then(url => {
-        if (url) setFileUrl(url);
-      });
-      return;
+      // Get a fresh URL with forced token refresh
+      const freshUrl = await fetchSignedUrl(true);
+      if (freshUrl) {
+        console.log("Obtained fresh URL, retrying PDF load");
+        setFileUrl(freshUrl);
+        return;
+      }
     }
     
     // After first retry fails, switch to Google Docs viewer
@@ -135,9 +178,9 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
   const handleOpenInNewTab = async () => {
     try {
       // Always get fresh URL before opening
-      const freshUrl = await fetchSignedUrl();
+      const freshUrl = await fetchSignedUrl(true);
       if (freshUrl) {
-        window.open(freshUrl, '_blank');
+        window.open(freshUrl, '_blank', 'noopener,noreferrer');
         toast.success("Document opened in new tab");
       } else {
         throw new Error("Failed to generate document URL");
@@ -149,8 +192,9 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
 
   const handleDownload = async () => {
     try {
+      setIsLoading(true);
       // Get fresh URL for download
-      const freshUrl = await fetchSignedUrl();
+      const freshUrl = await fetchSignedUrl(true);
       if (!freshUrl) {
         throw new Error("Failed to generate document URL for download");
       }
@@ -181,6 +225,8 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
     } catch (error) {
       console.error("Download error:", error);
       toast.error("Failed to download document");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -191,20 +237,9 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
     setIsLoading(true);
     setRetryCount(0);
     
-    // Get fresh URL and try again
-    try {
-      const freshUrl = await fetchSignedUrl();
-      if (freshUrl) {
-        setFileUrl(freshUrl);
-        toast.info("Refreshing document...");
-      } else {
-        throw new Error("Failed to refresh document URL");
-      }
-    } catch (error) {
-      setLoadError("Failed to refresh document. Please try again.");
-      setIsLoading(false);
-      toast.error("Document refresh failed");
-    }
+    // Full retry with token refresh
+    await loadPdfWithRetries();
+    toast.info("Refreshing document...");
   };
 
   if (!storagePath) {
@@ -247,17 +282,25 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
 
   return (
     <div className="relative w-full h-full">
-      {isLoading && (
+      {(isLoading || isRefreshingToken) && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
           <div className="text-center">
             <LoadingSpinner size="large" className="mx-auto mb-4" />
-            <p className="text-muted-foreground">Loading document...</p>
+            <p className="text-muted-foreground">
+              {isRefreshingToken ? "Refreshing authentication..." : "Loading document..."}
+            </p>
             {retryCount > 0 && (
               <p className="text-xs text-muted-foreground mt-2">
                 {retryCount === 1 ? "Retrying..." : 
                  useGoogleViewer ? "Using alternative viewer..." : 
                  "Attempting direct view..."}
               </p>
+            )}
+            {isRefreshingToken && (
+              <div className="flex items-center justify-center mt-2">
+                <Shield className="h-4 w-4 text-primary mr-2" />
+                <p className="text-xs text-muted-foreground">Securing document access</p>
+              </div>
             )}
           </div>
         </div>
