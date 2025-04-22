@@ -3,23 +3,25 @@ import { Button } from "@/components/ui/button";
 import { Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { uploadFile } from "@/utils/storage";
+import { useState } from "react";
 
 export const DocumentUpload = () => {
   const { toast } = useToast();
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    
+    setIsUploading(true);
 
     try {
       const fileExt = file.name.split('.').pop();
       const filePath = `${crypto.randomUUID()}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('secure_documents')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
+      
+      // Use our enhanced upload utility
+      await uploadFile(file, 'secure_documents', filePath);
 
       // Get current user
       const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -71,20 +73,23 @@ export const DocumentUpload = () => {
         title: "Error",
         description: "Failed to upload document"
       });
+    } finally {
+      setIsUploading(false);
     }
   };
 
   return (
     <div className="flex justify-end">
-      <Button className="gap-2">
+      <Button className="gap-2" disabled={isUploading}>
         <Upload className="h-4 w-4" />
         <label className="cursor-pointer">
-          Upload Document
+          {isUploading ? "Uploading..." : "Upload Document"}
           <input
             type="file"
             className="hidden"
             onChange={handleUpload}
             accept=".pdf,.doc,.docx,.xls,.xlsx"
+            disabled={isUploading}
           />
         </label>
       </Button>

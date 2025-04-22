@@ -1,14 +1,18 @@
 
-import { supabase } from "@/lib/supabase";
+import { supabase, ensureFreshToken } from "@/lib/supabase";
 import { refreshSession } from "./useAuthState";
 
 // Utility for making authenticated API requests, auto-refreshing tokens if needed
 export async function authenticatedFetch(url: string, options: any = {}) {
-  // Try current session first
+  // First, ensure we have a fresh token
+  await ensureFreshToken();
+  
+  // Get current session with potentially refreshed token
   let { data } = await supabase.auth.getSession();
   let token = data.session?.access_token;
+  
   if (!token) {
-    // Try to refresh
+    // Try to refresh if no token is available
     await refreshSession();
     data = (await supabase.auth.getSession()).data;
     token = data.session?.access_token;
@@ -39,4 +43,42 @@ export async function authenticatedFetch(url: string, options: any = {}) {
     ...options,
     headers,
   });
+}
+
+// Enhanced utility specifically for storage operations
+export async function authenticatedStorageOperation<T>(
+  operation: () => Promise<T>
+): Promise<T> {
+  try {
+    // Ensure we have a fresh token before storage operation
+    const isTokenValid = await ensureFreshToken();
+    
+    if (!isTokenValid) {
+      throw new Error("Invalid or expired authentication token");
+    }
+    
+    // Perform the storage operation
+    return await operation();
+  } catch (error: any) {
+    // Handle InvalidJWT errors specifically
+    if (error?.error === 'InvalidJWT' || 
+        (error?.message && error.message.includes('JWT')) || 
+        error?.statusCode === 400) {
+      
+      console.warn("Storage operation failed with JWT error, attempting recovery...");
+      
+      // Force a complete session refresh
+      const refreshSuccess = await refreshSession();
+      
+      if (!refreshSuccess) {
+        throw new Error("Failed to refresh authentication. Please log in again.");
+      }
+      
+      // Retry the operation after token refresh
+      return await operation();
+    }
+    
+    // Re-throw other errors
+    throw error;
+  }
 }
