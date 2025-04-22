@@ -1,9 +1,30 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { useNavigate } from "react-router-dom";
 import { authService } from "@/components/auth/authService";
+
+// Utility function to refresh session manually, used for debugging & global error interception
+export async function refreshSession() {
+  try {
+    // Supabase v2 automatically refreshes, but this will trigger a manual refresh if needed
+    const { data, error } = await supabase.auth.getSession();
+    if (error) {
+      console.warn("Session fetch error during refresh:", error.message);
+      return false;
+    }
+    if (!data?.session) {
+      console.warn("No session found during refresh, user may be logged out.");
+      return false;
+    }
+    // Could force a token refresh here if using low-level JWT tricks, but client auto refreshes if configured
+    return true;
+  } catch (err) {
+    console.error("refreshSession error:", err);
+    return false;
+  }
+}
 
 export const useAuthState = () => {
   const [session, setSession] = useState<any>(null);
@@ -14,36 +35,85 @@ export const useAuthState = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const errorCode = params.get('error');
-    const errorDescription = params.get('error_description');
-    
-    if (errorCode === '401') {
-      toast({
-        variant: "destructive",
-        title: "Link expired",
-        description: "Your confirmation link has expired. Please sign up again."
-      });
-      navigate('/', { replace: true });
-    } else if (errorDescription) {
-      toast({
-        variant: "destructive",
-        title: "Authentication Error",
-        description: decodeURIComponent(errorDescription)
-      });
-      navigate('/', { replace: true });
+  // Helper to debug token validity
+  const logTokenValidity = useCallback((sess: any) => {
+    if (!sess || !sess.access_token) {
+      console.warn("No access token to check validity.");
+      return;
     }
-  }, [navigate, toast]);
+    const jwt = sess.access_token.split('.');
+    if (jwt.length !== 3) {
+      console.warn("Malformed token.");
+      return;
+    }
+    try {
+      const payload = JSON.parse(atob(jwt[1]));
+      const exp = payload.exp;
+      const now = Math.floor(Date.now() / 1000);
+      const secondsLeft = exp - now;
+      console.log(
+        `[JWT Check] Token expiry: ${new Date(exp * 1000).toLocaleString()} (${secondsLeft}s left)`
+      );
+      if (secondsLeft < 120) {
+        console.warn("Token will expire soon (within 2min)!");
+      }
+    } catch (e) {
+      console.warn("Failed to decode JWT payload", e);
+    }
+  }, []);
 
+  // Listen for auth state changes *before* fetching current session
   useEffect(() => {
-    console.log("Initializing auth state...");
+    console.debug("[Auth] Registering supabase.auth.onAuthStateChange handler FIRST...");
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        // Logging all events
+        console.info("[AuthEvent]", event, session);
+
+        setSession(session);
+        setIsLoading(false);
+
+        // Demo: Display toast and console logs
+        if (session?.user && session.user.confirmed_at === null) {
+          setIsEmailConfirmationPending(true);
+          setConfirmationEmail(session.user.email);
+          toast({
+            title: "Email Confirmation Required",
+            description: "Please check your email for a confirmation link.",
+          });
+        } else {
+          setIsEmailConfirmationPending(false);
+          setConfirmationEmail(null);
+        }
+
+        // Log token details
+        if (session) {
+          logTokenValidity(session);
+        }
+
+        // If session is gone (user logged out or expired), redirect to login if not already there
+        if (!session) {
+          // Prevent logout loop if already on login page
+          const path = window.location.pathname;
+          if (!path.includes("/login") && !path.includes("/auth")) {
+            toast({
+              variant: "destructive",
+              title: "Session Ended",
+              description: "Please sign in again to continue.",
+            });
+            navigate("/login");
+          }
+        }
+      }
+    );
+
+    // After listener, then check for current session
     setIsLoading(true);
-    
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log("Session state:", session);
       setSession(session);
-      
+      setIsLoading(false);
+
+      // Double-check email confirmation state if logged in
       if (session?.user) {
         const isConfirmed = session.user.confirmed_at !== null;
         setIsEmailConfirmationPending(!isConfirmed);
@@ -55,51 +125,47 @@ export const useAuthState = () => {
           });
         }
       }
-      
-      setIsLoading(false);
+
+      // Log initial token
+      if (session) {
+        logTokenValidity(session);
+      }
     }).catch(error => {
       console.error("Error fetching session:", error);
       setIsLoading(false);
       setAuthError(error.message);
     });
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth state changed:", event, session);
-      
-      if (event === 'SIGNED_IN') {
-        setSession(session);
-        const isConfirmed = session?.user?.confirmed_at !== null;
-        setIsEmailConfirmationPending(!isConfirmed);
-        if (!isConfirmed && session?.user) {
-          setConfirmationEmail(session.user.email);
-          toast({
-            title: "Email Confirmation Required",
-            description: "Please check your email for a confirmation link.",
-          });
-        }
-      } else if (event === 'SIGNED_OUT') {
-        setSession(null);
-        setIsEmailConfirmationPending(false);
-        setConfirmationEmail(null);
-      } else if (event === 'USER_UPDATED') {
-        setSession(session);
-        if (session?.user?.confirmed_at) {
-          setIsEmailConfirmationPending(false);
-          setConfirmationEmail(null);
-          toast({
-            title: "Email Confirmed",
-            description: "Your email has been successfully confirmed.",
-          });
-        }
-      }
-      
-      setIsLoading(false);
-    });
-
     return () => subscription.unsubscribe();
-  }, [toast]);
+  // logTokenValidity ref won't change
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toast, navigate]);
+
+  // 401 global error handler - must use in API client or pageload context
+  const handleAuthError = useCallback(async (error) => {
+    if (error?.status === 401) {
+      console.log("[Auth] Caught 401 error, attempting to refresh session...");
+      try {
+        const refreshed = await refreshSession();
+        if (refreshed) {
+          // Instruct parent code to retry request if desired
+          return true;
+        } else {
+          // Not able to refresh token, direct to login
+          navigate("/login");
+          toast({
+            variant: "destructive",
+            title: "Session expired",
+            description: "Please sign in again to continue.",
+          });
+        }
+      } catch (refreshError) {
+        console.error("[Auth] Error during session refresh:", refreshError);
+        navigate("/login");
+      }
+    }
+    return false;
+  }, [navigate, toast]);
 
   const handleSignOut = async () => {
     try {
@@ -116,6 +182,8 @@ export const useAuthState = () => {
     authError,
     isEmailConfirmationPending,
     confirmationEmail,
-    handleSignOut
+    handleSignOut,
+    handleAuthError,
   };
 };
+
