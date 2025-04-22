@@ -1,9 +1,12 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useDocumentAnalysis } from "../hooks/useDocumentAnalysis";
 import { useFilePreview } from "./usePreviewState/useFilePreview";
 import { useAnalysisInitialization } from "./usePreviewState/useAnalysisInitialization";
+import { toast } from "sonner";
+import { refreshSession } from "@/hooks/useAuthState";
+import { checkAndRefreshToken } from "@/utils/jwtMonitoring";
 
 const usePreviewState = (
   storagePath: string,
@@ -21,6 +24,7 @@ const usePreviewState = (
   const [isLoading, setIsLoading] = useState(true);
   const [hasFallbackToDirectUrl, setHasFallbackToDirectUrl] = useState(false);
   const [fileType, setFileType] = useState<string | null>(null);
+  const [errorDetails, setErrorDetails] = useState<any>(null);
 
   const {
     analyzing,
@@ -31,13 +35,15 @@ const usePreviewState = (
     handleAnalyzeDocument
   } = useDocumentAnalysis(storagePath, onAnalysisComplete);
 
-  // Use the FilePreview hook with the correct props shape
+  // Use the enhanced FilePreview hook with the correct props shape
   const { 
     checkFile, 
     networkStatus, 
     attemptCount,
     hasFileLoadStarted,
-    resetRetries
+    resetRetries,
+    forceRefresh,
+    diagnostics
   } = useFilePreview({
     storagePath,
     setFileExists,
@@ -58,7 +64,10 @@ const usePreviewState = (
   // Log network status changes for debugging
   useEffect(() => {
     console.log(`Network status: ${networkStatus}, attempt count: ${attemptCount}`);
-  }, [networkStatus, attemptCount]);
+    
+    // Store diagnostics for troubleshooting
+    setErrorDetails(diagnostics);
+  }, [networkStatus, attemptCount, diagnostics]);
 
   // Auto-fallback to direct URL mode after multiple failures with preview
   useEffect(() => {
@@ -72,8 +81,17 @@ const usePreviewState = (
       if (loadRetries === 1) {
         setHasFallbackToDirectUrl(true);
         console.log("Falling back to direct URL mode");
-        // Force an additional check
-        setTimeout(() => checkFile(), 1000);
+        
+        // Try refreshing auth token first
+        checkAndRefreshToken().then(() => {
+          console.log("Token refreshed, retrying direct URL");
+          // Force an additional check
+          setTimeout(() => checkFile(), 1000);
+        }).catch(err => {
+          console.error("Failed to refresh token during fallback:", err);
+          // Try anyway without token refresh
+          setTimeout(() => checkFile(), 1000);
+        });
       }
     }
   }, [previewError, loadRetries, hasFallbackToDirectUrl, checkFile]);
@@ -140,6 +158,46 @@ const usePreviewState = (
     return () => clearInterval(intervalId);
   }, [documentId]);
 
+  // Handle full recovery with authentication refresh
+  const handleFullRecovery = useCallback(async () => {
+    // Show loading state during recovery
+    setIsLoading(true);
+    setPreviewError("Performing full recovery...");
+    
+    try {
+      // 1. Force complete session refresh
+      const sessionRefreshed = await refreshSession();
+      
+      if (!sessionRefreshed) {
+        throw new Error("Failed to refresh authentication session");
+      }
+      
+      // 2. Reset all error states
+      setPreviewError(null);
+      setFileExists(false);
+      setLoadRetries(0);
+      resetRetries();
+      
+      // 3. Reset fallback flags
+      setHasFallbackToDirectUrl(false);
+      
+      // 4. Reset analysis stuck state if relevant
+      setIsAnalysisStuck({
+        stuck: false,
+        minutesStuck: 0
+      });
+      
+      // 5. Try to load the document again
+      toast.success("Authentication refreshed, retrying document load...");
+      checkFile();
+      
+    } catch (error) {
+      console.error("Recovery failed:", error);
+      setPreviewError("Recovery failed. Please try again later.");
+      setIsLoading(false);
+    }
+  }, [resetRetries, checkFile]);
+
   // Handle analysis retry
   const handleAnalysisRetry = () => {
     // Reset stuck state
@@ -156,7 +214,15 @@ const usePreviewState = (
     setFileExists(false);
     setLoadRetries(0);
     resetRetries();
-    checkFile();
+    
+    // Try token refresh first
+    refreshSession().then(() => {
+      checkFile();
+    }).catch(err => {
+      console.error("Failed to refresh token during retry:", err);
+      // Try anyway
+      checkFile();
+    });
   };
 
   return {
@@ -181,6 +247,9 @@ const usePreviewState = (
     networkStatus,
     attemptCount,
     fileType,
+    handleFullRecovery,
+    forceRefresh,
+    errorDetails
   };
 };
 
