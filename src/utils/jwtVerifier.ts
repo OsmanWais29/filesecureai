@@ -1,4 +1,3 @@
-
 import { supabase } from "@/lib/supabase";
 import {
   JWTVerificationResult,
@@ -153,4 +152,55 @@ export async function completeReauthentication(
     console.groupEnd();
     return { success: false, error };
   }
+}
+
+/**
+ * Refreshes the current JWT token if it's expiring within the specified minutes threshold.
+ */
+export async function refreshTokenIfNeeded(
+  minValidMinutes: number = 10
+): Promise<{ refreshed: boolean; success: boolean; message: string }> {
+  const verificationResult = await verifyJwtToken();
+  if (!verificationResult.isValid || !verificationResult.expiresAt) {
+    return {
+      refreshed: false,
+      success: false,
+      message: `Cannot refresh invalid token: ${verificationResult.reason || verificationResult.error || "Unknown error"}`,
+    };
+  }
+
+  const now = new Date();
+  const expiresInMinutes = Math.round((verificationResult.expiresAt.getTime() - now.getTime()) / 60000);
+
+  if (expiresInMinutes < minValidMinutes) {
+    try {
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error) {
+        return {
+          refreshed: true,
+          success: false,
+          message: `Failed to refresh token: ${error.message}`,
+        };
+      }
+      return {
+        refreshed: true,
+        success: true,
+        message: `Token refreshed successfully, now valid for ${
+          data.session ? Math.round((new Date(data.session.expires_at * 1000).getTime() - Date.now()) / 60000) : "unknown"
+        } minutes`,
+      };
+    } catch (err) {
+      return {
+        refreshed: true,
+        success: false,
+        message: `Exception during token refresh: ${err instanceof Error ? err.message : String(err)}`,
+      };
+    }
+  }
+
+  return {
+    refreshed: false,
+    success: true,
+    message: `Token is still valid for ${expiresInMinutes} minutes, no refresh needed`,
+  };
 }

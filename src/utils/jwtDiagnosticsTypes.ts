@@ -1,4 +1,3 @@
-
 /**
  * Shared types for JWT Diagnostics utilities.
  */
@@ -57,4 +56,11 @@ export interface FullDiagnosticsResult {
     data?: any;
     error?: any;
   };
+}
+
+export interface FileUploadResult {
+  success: boolean;
+  method: string; // e.g., "standard", "refresh-and-retry", etc.
+  data?: any;
+  error?: any;
 }
