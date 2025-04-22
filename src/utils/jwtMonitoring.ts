@@ -1,164 +1,165 @@
 
-import { JWTVerificationResult } from "./jwtDiagnosticsTypes";
 import { supabase } from "@/lib/supabase";
 
-// How frequently to check token validity (in ms)
-const TOKEN_CHECK_INTERVAL = 4 * 60 * 1000; // 4 minutes
-
-// Minimum remaining validity time to consider a token valid (in seconds)
-const MIN_TOKEN_VALIDITY = 300; // 5 minutes
-
-// In-memory state to track last refresh time
-let lastRefreshTime = 0;
-let monitoringInterval: number | null = null;
-
-/**
- * Start background monitoring of JWT token, refreshing when needed
- */
-export function startJwtMonitoring(): void {
-  if (monitoringInterval) {
-    console.log("JWT monitoring already running");
-    return;
-  }
-
-  // Initial check
-  checkAndRefreshToken();
-
-  // Set up interval
-  monitoringInterval = window.setInterval(() => {
-    checkAndRefreshToken();
-  }, TOKEN_CHECK_INTERVAL);
-
-  console.log("JWT token monitoring started");
+interface TokenStatus {
+  isValid: boolean;
+  reason?: string;
+  expiry?: number;
+  remainingTime?: number;
 }
 
 /**
- * Stop background JWT monitoring
+ * Monitors JWT token status and handles refresh
  */
-export function stopJwtMonitoring(): void {
+let monitoringInterval: ReturnType<typeof setInterval> | null = null;
+let lastRefreshAttempt = 0;
+
+/**
+ * Start monitoring the JWT token and refresh if needed
+ */
+export function startJwtMonitoring(intervalMs = 60000) {
   if (monitoringInterval) {
-    window.clearInterval(monitoringInterval);
+    stopJwtMonitoring();
+  }
+  
+  monitoringInterval = setInterval(() => {
+    checkAndRefreshToken().catch(err => {
+      console.error('JWT monitoring error:', err);
+    });
+  }, intervalMs);
+  
+  console.log('JWT token monitoring started');
+  
+  // Perform initial check
+  checkAndRefreshToken().catch(err => {
+    console.error('Initial JWT check error:', err);
+  });
+  
+  return () => stopJwtMonitoring();
+}
+
+/**
+ * Stop the JWT monitoring
+ */
+export function stopJwtMonitoring() {
+  if (monitoringInterval) {
+    clearInterval(monitoringInterval);
     monitoringInterval = null;
-    console.log("JWT token monitoring stopped");
+    console.log('JWT token monitoring stopped');
   }
 }
 
 /**
- * Check token validity and refresh if needed
+ * Check the JWT token status and refresh if needed
  */
-export async function checkAndRefreshToken(): Promise<JWTVerificationResult> {
+export async function checkAndRefreshToken(forceRefresh = false): Promise<TokenStatus> {
   try {
     // Get current session
-    const { data, error } = await supabase.auth.getSession();
+    const { data: { session } } = await supabase.auth.getSession();
     
-    if (error) {
-      console.error("Error checking session:", error.message);
-      return { isValid: false, reason: "Session check failed", error };
+    if (!session) {
+      return { isValid: false, reason: 'No active session found' };
     }
-
-    if (!data?.session) {
-      console.log("No active session found during JWT check");
-      return { isValid: false, reason: "No active session" };
+    
+    const now = Math.floor(Date.now() / 1000); // Current time in seconds
+    const token = session.access_token;
+    
+    if (!token) {
+      return { isValid: false, reason: 'No access token in session' };
     }
-
-    const token = data.session.access_token;
+    
+    // Parse JWT to get expiry
     const payload = parseJwt(token);
-
-    if (!payload) {
-      console.error("Failed to parse JWT payload");
-      return { isValid: false, reason: "Invalid token format" };
+    if (!payload || !payload.exp) {
+      return { isValid: false, reason: 'Invalid token format or missing expiry' };
     }
-
-    // Check expiration
-    const expiryTime = new Date(payload.exp * 1000);
-    const currentTime = new Date();
-    const timeRemaining = (expiryTime.getTime() - currentTime.getTime()) / 1000;
-
-    // If token is expiring soon, refresh it
-    if (timeRemaining < MIN_TOKEN_VALIDITY) {
-      console.log(`Token expires in ${timeRemaining.toFixed(0)} seconds, refreshing...`);
+    
+    const expiryTime = payload.exp;
+    const remainingTime = expiryTime - now;
+    
+    // Token is expired or about to expire soon (within 5 minutes)
+    const needsRefresh = remainingTime < 300 || forceRefresh;
+    
+    // Throttle refresh attempts to avoid hammering the auth endpoint
+    if (needsRefresh && (forceRefresh || now - lastRefreshAttempt > 60)) {
+      console.log(`JWT token ${forceRefresh ? 'force refresh' : 'expiring soon'}. Refreshing...`);
+      lastRefreshAttempt = now;
       
-      // Prevent multiple refreshes in short time
-      const now = Date.now();
-      if (now - lastRefreshTime < 10000) {
-        console.log("Skipping refresh, too soon since last refresh");
+      // Try to refresh the session
+      const { data, error } = await supabase.auth.refreshSession();
+      
+      if (error) {
+        console.error('Token refresh failed:', error);
         return { 
-          isValid: true, 
-          timeRemaining, 
-          expiresAt: expiryTime,
-          currentTime,
-          payload
+          isValid: false, 
+          reason: `Token refresh failed: ${error.message}`,
+          expiry: expiryTime,
+          remainingTime 
         };
       }
       
-      // Refresh the token
-      const { error: refreshError } = await supabase.auth.refreshSession();
-      lastRefreshTime = Date.now();
-      
-      if (refreshError) {
-        console.error("Failed to refresh token:", refreshError.message);
+      if (!data.session) {
         return { 
-          isValid: timeRemaining > 0, 
-          reason: refreshError.message,
-          timeRemaining, 
-          expiresAt: expiryTime,
-          currentTime,
-          payload,
-          error: refreshError
+          isValid: false, 
+          reason: 'No session returned after refresh',
+          expiry: expiryTime,
+          remainingTime  
         };
       }
       
-      console.log("Token refreshed successfully");
+      console.log('JWT token refreshed successfully');
       
-      // Get updated session after refresh
-      const { data: refreshedData } = await supabase.auth.getSession();
-      if (refreshedData?.session) {
-        const newPayload = parseJwt(refreshedData.session.access_token);
-        const newExpiry = new Date(newPayload.exp * 1000);
-        const newTimeRemaining = (newExpiry.getTime() - currentTime.getTime()) / 1000;
-        
-        console.log(`New token expires in ${newTimeRemaining.toFixed(0)} seconds`);
-        
-        return {
-          isValid: true,
-          timeRemaining: newTimeRemaining,
-          expiresAt: newExpiry,
-          currentTime,
-          payload: newPayload
-        };
-      }
+      // Parse new token to get updated expiry
+      const newPayload = parseJwt(data.session.access_token);
+      const newExpiry = newPayload?.exp;
+      const newRemainingTime = newExpiry ? newExpiry - now : undefined;
+      
+      return { 
+        isValid: true,
+        expiry: newExpiry,
+        remainingTime: newRemainingTime
+      };
     }
-
-    // Token is valid and not expiring soon
-    return {
+    
+    // Token is still valid
+    const status = { 
       isValid: true,
-      timeRemaining,
-      expiresAt: expiryTime,
-      currentTime,
-      payload
+      expiry: expiryTime,
+      remainingTime
     };
+    
+    // Log token status for debugging (only occasionally)
+    if (Math.random() < 0.1) { // Log only ~10% of the time
+      console.log(`JWT token valid for ${Math.floor(remainingTime / 60)} minutes`);
+    }
+    
+    return status;
   } catch (error) {
-    console.error("Error in checkAndRefreshToken:", error);
-    return { isValid: false, reason: "Token check failed", error };
+    console.error('Error checking JWT token status:', error);
+    return { 
+      isValid: false, 
+      reason: `Error checking token: ${error instanceof Error ? error.message : String(error)}`
+    };
   }
 }
 
 /**
- * Parse JWT token to get payload
+ * Parse a JWT token and return the payload
  */
-function parseJwt(token: string): any {
+function parseJwt(token: string) {
   try {
     const base64Url = token.split('.')[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
     const jsonPayload = decodeURIComponent(
       atob(base64)
         .split('')
-        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
         .join('')
     );
+    
     return JSON.parse(jsonPayload);
-  } catch (e) {
-    console.error("Error parsing JWT:", e);
+  } catch (error) {
+    console.error('Error parsing JWT:', error);
     return null;
   }
 }

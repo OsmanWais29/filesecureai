@@ -30,6 +30,9 @@ export const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
       .join(" ");
   };
 
+  // Check if analysis might be stuck
+  const isAnalysisStuck = progress > 10 && progress < 100 && progress === Math.round(progress);
+
   return (
     <div className="mb-4 p-4 border border-border rounded-lg bg-muted/30">
       <div className="flex justify-between mb-2">
@@ -46,8 +49,8 @@ export const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
           <span>{analysisStep}</span>
         </div>
         
-        {/* Add retry button if onRetry is provided */}
-        {onRetry && (
+        {/* Add retry button if onRetry is provided or analysis is stuck */}
+        {(onRetry || isAnalysisStuck) && (
           <Button 
             variant="ghost" 
             size="sm" 
@@ -60,11 +63,11 @@ export const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
       </div>
       
       {/* Add warning for stuck analysis */}
-      {progress > 0 && progress === Math.round(progress) && progress < 100 && progress > 10 && (
+      {isAnalysisStuck && (
         <div className="mt-2 flex items-center text-xs text-amber-600">
           <AlertTriangle className="h-3 w-3 mr-1" />
           <span>
-            Analysis may be taking longer than expected. You can continue viewing the document.
+            Analysis may be taking longer than expected. You can continue viewing the document or restart the analysis.
           </span>
         </div>
       )}

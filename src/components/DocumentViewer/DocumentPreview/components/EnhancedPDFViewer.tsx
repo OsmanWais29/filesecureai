@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { AlertTriangle, Download, ExternalLink, RefreshCw, Shield } from "lucide-react";
+import { AlertTriangle, Download, ExternalLink, RefreshCw, Shield, Wifi } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
@@ -31,9 +31,33 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
   const [useGoogleViewer, setUseGoogleViewer] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [isRefreshingToken, setIsRefreshingToken] = useState(false);
+  const [isNetworkOffline, setIsNetworkOffline] = useState(!navigator.onLine);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const objectRef = useRef<HTMLObjectElement>(null);
   const maxRetries = 3;
+  
+  // Monitor network connectivity
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsNetworkOffline(false);
+      // Attempt reload if there was a network error
+      if (loadError?.toLowerCase().includes('network')) {
+        handleRetry();
+      }
+    };
+    
+    const handleOffline = () => {
+      setIsNetworkOffline(true);
+    };
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [loadError]);
   
   // Enhanced fetch function with retry logic
   const fetchSignedUrl = useCallback(async (forceRefresh = false): Promise<string | null> => {
@@ -92,7 +116,29 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
     }
   }, [bucketName, storagePath]);
 
-  // Advanced load PDF function with retries
+  // Handle fallback to public URL if signed URL fails
+  const fetchPublicUrl = useCallback(async (): Promise<string | null> => {
+    try {
+      console.log("Attempting to get public URL as fallback");
+      
+      const { data } = supabase.storage
+        .from(bucketName)
+        .getPublicUrl(storagePath);
+      
+      if (!data?.publicUrl) {
+        console.error("No public URL available");
+        return null;
+      }
+      
+      console.log("Got public URL:", data.publicUrl);
+      return data.publicUrl;
+    } catch (error) {
+      console.error("Failed to get public URL:", error);
+      return null;
+    }
+  }, [bucketName, storagePath]);
+
+  // Advanced load PDF function with retries and fallbacks
   const loadPdfWithRetries = useCallback(async () => {
     if (!storagePath) return;
     
@@ -105,14 +151,24 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
         const forceRefresh = attempt > 0;
         console.log(`PDF fetch attempt ${attempt + 1}${forceRefresh ? " (with token refresh)" : ""}`);
         
+        // Try signed URL first
         const url = await fetchSignedUrl(forceRefresh);
-        if (!url) {
-          throw new Error("Failed to retrieve document URL");
-        }
         
-        setFileUrl(url);
-        // If we got a URL, break the retry loop
-        break;
+        if (!url) {
+          console.log("Signed URL failed, trying public URL");
+          // If signed URL fails, try public URL
+          const publicUrl = await fetchPublicUrl();
+          
+          if (!publicUrl) {
+            throw new Error("Failed to retrieve document URL through all methods");
+          }
+          
+          setFileUrl(publicUrl);
+          break;
+        } else {
+          setFileUrl(url);
+          break;
+        }
       } catch (error: any) {
         console.error(`Error loading PDF (attempt ${attempt + 1}/${maxRetries}):`, error);
         
@@ -122,14 +178,14 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
           if (onError) onError(error);
           setIsLoading(false);
         } else {
-          // Wait before retry with increasing delay (exponential backoff)
+          // Wait before retry with exponential backoff
           const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s...
           console.log(`Retrying in ${delay}ms...`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
     }
-  }, [storagePath, fetchSignedUrl, maxRetries, onError]);
+  }, [storagePath, fetchSignedUrl, fetchPublicUrl, maxRetries, onError]);
 
   // Load the PDF on component mount
   useEffect(() => {
@@ -165,8 +221,20 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
     // After first retry fails, switch to Google Docs viewer
     if (!useGoogleViewer && retryCount >= 2) {
       console.log("Falling back to Google Docs viewer");
-      setUseGoogleViewer(true);
-      setIsLoading(true);
+      
+      // Try to get public URL for Google Docs viewer
+      const publicUrl = await fetchPublicUrl();
+      if (publicUrl) {
+        const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(publicUrl)}&embedded=true`;
+        console.log("Using Google Docs viewer with URL:", googleViewerUrl);
+        setFileUrl(googleViewerUrl);
+        setUseGoogleViewer(true);
+        setIsLoading(true);
+        return;
+      } else {
+        setUseGoogleViewer(true);
+        setIsLoading(true);
+      }
     } else if (useGoogleViewer && retryCount >= 3) {
       // Both methods failed
       setIsLoading(false);
@@ -183,7 +251,14 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
         window.open(freshUrl, '_blank', 'noopener,noreferrer');
         toast.success("Document opened in new tab");
       } else {
-        throw new Error("Failed to generate document URL");
+        // Try public URL as fallback
+        const publicUrl = await fetchPublicUrl();
+        if (publicUrl) {
+          window.open(publicUrl, '_blank', 'noopener,noreferrer');
+          toast.success("Document opened in new tab");
+        } else {
+          throw new Error("Failed to generate document URL");
+        }
       }
     } catch (error) {
       toast.error("Failed to open document in new tab");
@@ -195,11 +270,17 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
       setIsLoading(true);
       // Get fresh URL for download
       const freshUrl = await fetchSignedUrl(true);
-      if (!freshUrl) {
-        throw new Error("Failed to generate document URL for download");
+      let urlToUse = freshUrl;
+      
+      if (!urlToUse) {
+        // Try public URL as fallback
+        urlToUse = await fetchPublicUrl();
+        if (!urlToUse) {
+          throw new Error("Failed to generate document URL for download");
+        }
       }
       
-      const response = await fetch(freshUrl);
+      const response = await fetch(urlToUse);
       if (!response.ok) {
         throw new Error(`Download failed: ${response.statusText}`);
       }
@@ -271,14 +352,23 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
               Download
             </Button>
           </div>
+          
+          {isNetworkOffline && (
+            <div className="mt-4 p-3 bg-amber-50 border border-amber-100 rounded-md">
+              <div className="flex items-center text-amber-800">
+                <Wifi className="h-4 w-4 mr-2 text-amber-600" />
+                <span className="text-sm">You appear to be offline. Document will load when your connection is restored.</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
   }
 
   const cacheBustedUrl = fileUrl ? `${fileUrl}&t=${Date.now()}` : '';
-  const googleDocsViewerUrl = fileUrl ? 
-    `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true` : '';
+  const googleDocsViewerUrl = useGoogleViewer && fileUrl && !fileUrl.includes('docs.google.com') ? 
+    `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true` : fileUrl;
 
   return (
     <div className="relative w-full h-full">
@@ -300,6 +390,13 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
               <div className="flex items-center justify-center mt-2">
                 <Shield className="h-4 w-4 text-primary mr-2" />
                 <p className="text-xs text-muted-foreground">Securing document access</p>
+              </div>
+            )}
+            
+            {isNetworkOffline && (
+              <div className="flex items-center justify-center mt-4">
+                <Wifi className="h-4 w-4 text-amber-500 mr-2" />
+                <p className="text-xs text-amber-500">Waiting for network connection...</p>
               </div>
             )}
           </div>

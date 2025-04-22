@@ -1,4 +1,3 @@
-
 export interface Risk {
   type: string;
   description: string;
@@ -81,4 +80,34 @@ export interface DocumentDetails {
     created_at: string;
     user_id: string;
   }[];
+}
+
+export interface PreviewState {
+  fileUrl: string | null;
+  fileExists: boolean;
+  isExcelFile: boolean;
+  previewError: string | null;
+  setPreviewError: (error: string | null) => void;
+  analyzing: boolean;
+  error: string | null;
+  analysisStep: string;
+  progress: number;
+  processingStage: string;
+  session: any;
+  setSession: (session: any) => void;
+  handleAnalyzeDocument: () => void;
+  checkFile: (path?: string) => Promise<void>;
+  isLoading: boolean;
+  handleAnalysisRetry: () => void;
+  isAnalysisStuck?: {
+    stuck: boolean;
+    minutesStuck: number;
+  };
+  networkStatus: 'online' | 'offline' | 'limited';
+  attemptCount: number;
+  fileType: string | null;
+  handleFullRecovery?: () => Promise<void>;
+  forceRefresh?: () => Promise<void>;
+  errorDetails?: any;
+  hasFallbackToDirectUrl?: boolean;
 }
