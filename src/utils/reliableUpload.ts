@@ -55,15 +55,15 @@ export async function reliableUpload(
     console.log("Large PDF detected, using signed URL approach");
     try {
       // Create signed URL for large PDF upload
-      const { data: urlData, error: urlError } = await supabase.storage
+      const { data, error: urlError } = await supabase.storage
         .from(bucket)
         .createSignedUploadUrl(path);
         
       if (urlError) {
         console.error("Failed to generate signed URL:", urlError);
-      } else if (urlData) {
+      } else if (data) {
         // Use the signed URL with PUT method
-        const response = await fetch(urlData.signedURL, {
+        const response = await fetch(data.signedUrl, {  // ✅ Fixed property name
           method: 'PUT',
           body: file,
           headers: {
