@@ -1,6 +1,4 @@
 
-// Enhanced Supabase client config to ensure optimal auth session persistence and debugging
-
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = 'https://plxuyxacefgttimodrbp.supabase.co';
