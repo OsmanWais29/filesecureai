@@ -7,6 +7,7 @@ import { uploadViaSignedUrl } from "./signedUrlUploader";
 import { tryStandardUpload } from "./standardUploader";
 import { handleDirectUploadFallback } from "./fallbackUploader";
 import { FileUploadResult } from "./jwtDiagnosticsTypes";
+import { checkAndRefreshToken } from "./jwtMonitoring";
 
 function hasErrorDetails(error: any): error is { message: string, error?: string, statusCode?: number } {
   return typeof error === 'object' && error !== null && 'message' in error;
@@ -24,6 +25,9 @@ export async function reliableUpload(
   const maxRetries = options.maxRetries ?? 3;
   const isPdf = file.type === 'application/pdf';
   const isLargeFile = file.size > 5 * 1024 * 1024; // 5MB
+
+  // Pre-upload JWT refresh for all files
+  await checkAndRefreshToken();
 
   // Pre-upload diagnostics (may refresh token for PDF)
   const diagResult = await maybeRunDiagnostics(file, options.runDiagnostics);
@@ -51,8 +55,13 @@ export async function reliableUpload(
     lastError.error === 'InvalidJWT' ||
     lastError.statusCode === 400
   );
+  
   if (isJwtError) {
-    await refreshJwt();
+    // Try more aggressive token refresh
+    console.log("JWT error detected, performing aggressive token refresh");
+    await refreshJwt(true);
+    await checkAndRefreshToken();
+    
     const { result: stdResultRetry } = await tryStandardUpload(bucket, path, file, isPdf, 1);
     if (stdResultRetry.success) return stdResultRetry;
 
@@ -83,12 +92,21 @@ export async function uploadPdfReliably(bucket: string, path: string, pdfFile: F
   console.group('PDF Upload Process');
   try {
     if (pdfFile.type !== 'application/pdf') throw new Error('Not a PDF file');
+    
+    // Ensure we have a fresh token before uploading
+    await checkAndRefreshToken();
+    
     const result = await reliableUpload(bucket, path, pdfFile, {
       maxRetries: 3,
       runDiagnostics: true,
       forceMethod: pdfFile.size > 5 * 1024 * 1024 ? "PUT" : "POST"
     });
+    
     if (!result.success) throw new Error(typeof result.error === 'object' ? result.error.message || JSON.stringify(result.error) : String(result.error));
+    
+    // Force token refresh before getting URL
+    await checkAndRefreshToken();
+    
     const { data: publicUrl } = supabase.storage.from(bucket).getPublicUrl(path);
     console.log('Upload complete:', publicUrl);
     console.groupEnd();
