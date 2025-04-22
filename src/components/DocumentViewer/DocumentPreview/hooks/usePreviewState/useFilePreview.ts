@@ -1,9 +1,8 @@
 
-import { useEffect, useState, useCallback } from "react";
-import { toast } from "sonner";
-import { useNetworkMonitor } from "./useNetworkMonitor";
-import { useRetryStrategy } from "./useRetryStrategy";
-import { useFileChecker } from "./useFileChecker";
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from "@/lib/supabase";
+import { useNetworkMonitor } from './useNetworkMonitor';
+import { useRetryStrategy } from './useRetryStrategy';
 
 interface UseFilePreviewProps {
   storagePath: string;
@@ -11,125 +10,178 @@ interface UseFilePreviewProps {
   setFileUrl: (url: string | null) => void;
   setIsExcelFile: (isExcel: boolean) => void;
   setPreviewError: (error: string | null) => void;
+  setFileType?: (type: string | null) => void;
 }
 
-export const useFilePreview = ({
+export function useFilePreview({
   storagePath,
   setFileExists,
   setFileUrl,
   setIsExcelFile,
-  setPreviewError
-}: UseFilePreviewProps) => {
+  setPreviewError,
+  setFileType
+}: UseFilePreviewProps) {
   const [hasFileLoadStarted, setHasFileLoadStarted] = useState(false);
-  
-  // Use our network monitor hook
-  const { networkStatus, handleOnline } = useNetworkMonitor((status) => {
-    // Auto-retry when connection is restored
-    if (status === 'online') {
-      setTimeout(() => checkFile(storagePath), 1000);
-    }
-  });
-  
-  // Use our retry strategy hook
+  const { networkStatus, handleOnline, handleOffline } = useNetworkMonitor();
   const { 
     attemptCount, 
     incrementAttempt, 
-    resetAttempts,
-    lastAttempt,
-    setLastAttempt,
-    shouldRetry,
-    getRetryDelay
-  } = useRetryStrategy(5);
-  
-  // Use our file checker hook
-  const setNetworkStatusWrapper = useCallback((status: 'online' | 'offline') => {
-    if (status === 'online') {
-      handleOnline();
-    }
-  }, [handleOnline]);
-  
-  const { checkFile } = useFileChecker(
-    setFileExists,
-    setFileUrl,
-    setIsExcelFile,
-    setPreviewError,
-    setNetworkStatusWrapper
-  );
-
-  // Initial file check
-  useEffect(() => {
-    const doInitialCheck = async () => {
-      setHasFileLoadStarted(true);
-      setLastAttempt(new Date());
-      incrementAttempt();
-      await checkFile(storagePath);
-    };
-    
-    doInitialCheck();
-  }, [checkFile, storagePath, setLastAttempt, incrementAttempt]);
-
-  // Periodically check file accessibility when loading hasn't started yet or has failed
-  useEffect(() => {
-    // Only apply this check to PDF documents to avoid unnecessary retries for Excel files
-    const isPdf = storagePath.toLowerCase().endsWith('.pdf');
-    
-    if (isPdf && (hasFileLoadStarted && attemptCount < 3)) {
-      const checkInterval = setTimeout(() => {
-        console.log("Doing periodic file accessibility check");
-        incrementAttempt();
-        checkFile(storagePath);
-      }, 5000);
-      
-      return () => clearTimeout(checkInterval);
-    }
-  }, [hasFileLoadStarted, attemptCount, checkFile, storagePath, incrementAttempt]);
-
-  // Enhanced auto-retry with progressive backoff
-  useEffect(() => {
-    // Only retry if we're online and have had a previous attempt
-    if (networkStatus === 'online' && attemptCount > 0 && shouldRetry(attemptCount)) {
-      // Get appropriate backoff delay
-      const retryDelay = getRetryDelay(attemptCount);
-      
-      console.log(`Network is online, scheduling retry #${attemptCount} in ${retryDelay/1000}s`);
-      
-      const timeoutId = setTimeout(() => {
-        console.log("Auto-retrying file check");
-        incrementAttempt();
-        checkFile(storagePath);
-      }, retryDelay);
-      
-      return () => clearTimeout(timeoutId);
-    }
-  }, [
-    networkStatus, 
-    attemptCount, 
-    checkFile, 
-    storagePath,
+    resetAttempts, 
     shouldRetry,
     getRetryDelay,
-    incrementAttempt
+    lastAttempt,
+    setLastAttempt
+  } = useRetryStrategy();
+
+  // Handle errors during file checking
+  const handleFileCheckError = useCallback((error: any, publicUrl?: string | null) => {
+    console.error('Error checking file:', error);
+    setFileUrl(null);
+    
+    // Handle network-related errors specially
+    if (error.message?.includes('network') || error.message?.includes('fetch')) {
+      handleOffline();
+      setPreviewError('Network error while loading document. Please check your connection.');
+    } else if (error.message?.includes('permission') || error.message?.includes('auth')) {
+      setPreviewError('Permission denied. You may not have access to this document.');
+    } else if (!publicUrl) {
+      setPreviewError('Document not found or unable to generate URL.');
+    } else {
+      setPreviewError(error.message || 'An unknown error occurred while loading the document.');
+    }
+    
+    setFileExists(false);
+    incrementAttempt();
+  }, [handleOffline, incrementAttempt, setFileExists, setFileUrl, setPreviewError]);
+
+  // Check if the file exists and get its URL
+  const checkFile = useCallback(async (path?: string) => {
+    setHasFileLoadStarted(true);
+    const filePath = path || storagePath;
+    
+    if (!filePath) {
+      setPreviewError('No file path provided');
+      setFileExists(false);
+      return;
+    }
+    
+    try {
+      // Mark as online since we're making a request
+      handleOnline();
+      
+      // Extract file name and path parts
+      const pathParts = filePath.split('/');
+      const fileName = pathParts.pop() || '';
+      const folderPath = pathParts.join('/');
+      
+      // Check if the file exists by listing the folder contents
+      const { data: fileList, error: listError } = await supabase
+        .storage
+        .from('documents')
+        .list(folderPath, {
+          limit: 100,
+          search: fileName
+        });
+        
+      if (listError) {
+        throw listError;
+      }
+      
+      // Check if we found our file
+      const fileExists = fileList && fileList.some(file => 
+        file.name.toLowerCase() === fileName.toLowerCase()
+      );
+      
+      setFileExists(fileExists);
+      
+      if (!fileExists) {
+        setPreviewError('File not found');
+        return;
+      }
+      
+      // Determine file type
+      const isExcel = /\.(xlsx|xls|csv)$/i.test(fileName);
+      setIsExcelFile(isExcel);
+      
+      // Add file type detection
+      if (setFileType) {
+        if (fileName.toLowerCase().endsWith('.pdf')) {
+          setFileType('pdf');
+        } else if (fileName.match(/\.(jpe?g|png|gif|bmp|webp|svg)$/i)) {
+          setFileType('image');
+        } else if (fileName.match(/\.(xlsx?|csv)$/i)) {
+          setFileType('excel');
+        } else if (fileName.match(/\.(docx?|txt|rtf)$/i)) {
+          setFileType('document');
+        } else {
+          setFileType('other');
+        }
+      }
+      
+      // Get a signed URL for the file
+      const { data: urlData, error: urlError } = await supabase
+        .storage
+        .from('documents')
+        .createSignedUrl(filePath, 60 * 60); // 1 hour expiry
+        
+      if (urlError) {
+        throw urlError;
+      }
+      
+      setFileUrl(urlData?.signedUrl || null);
+      
+      // Clear any previous errors if successful
+      setPreviewError(null);
+      resetAttempts();
+      
+    } catch (error) {
+      handleFileCheckError(error);
+    }
+  }, [
+    storagePath, 
+    setFileExists, 
+    setFileUrl, 
+    setIsExcelFile, 
+    setPreviewError,
+    setFileType,
+    handleOnline,
+    handleFileCheckError,
+    resetAttempts
   ]);
 
-  // Handle special retry after longer delay when all previous attempts failed
+  // Initial file check on component mount or when path changes
   useEffect(() => {
-    if (attemptCount === 4) {
-      console.log("All regular retries failed, scheduling one final attempt after longer delay");
-      const finalRetryTimeout = setTimeout(() => {
-        incrementAttempt();
-        checkFile(storagePath);
-      }, 15000); // Wait 15 seconds
-      
-      return () => clearTimeout(finalRetryTimeout);
+    if (storagePath && !hasFileLoadStarted) {
+      checkFile();
     }
-  }, [attemptCount, checkFile, storagePath, incrementAttempt]);
+  }, [storagePath, checkFile, hasFileLoadStarted]);
+  
+  // Handle automatic retries on network failure
+  useEffect(() => {
+    let retryTimeout: ReturnType<typeof setTimeout>;
+    
+    if (networkStatus === 'offline' && shouldRetry(attemptCount)) {
+      const delay = getRetryDelay(attemptCount);
+      console.log(`Network offline, retrying in ${delay}ms (attempt ${attemptCount})`);
+      
+      retryTimeout = setTimeout(() => {
+        console.log('Retrying file check...');
+        checkFile();
+        setLastAttempt(new Date());
+      }, delay);
+    }
+    
+    return () => {
+      if (retryTimeout) clearTimeout(retryTimeout);
+    };
+  }, [networkStatus, attemptCount, shouldRetry, getRetryDelay, checkFile, setLastAttempt]);
 
   return {
-    checkFile: (path: string = storagePath) => checkFile(path),
-    lastAttempt,
-    attemptCount,
+    checkFile,
+    handleFileCheckError,
     networkStatus,
+    attemptCount,
     hasFileLoadStarted,
     resetRetries: resetAttempts
   };
-};
+}

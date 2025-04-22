@@ -1,6 +1,6 @@
 
 import React, { useEffect } from "react";
-import { usePreviewState } from "./hooks/usePreviewState";
+import usePreviewState from "./hooks/usePreviewState";
 import { DocumentPreviewContent } from "./components/DocumentPreviewContent";
 import { AnalysisProgress } from "./components/AnalysisProgress";
 import { EnhancedPDFViewer } from "./components/EnhancedPDFViewer";
@@ -16,18 +16,30 @@ interface DocumentPreviewProps {
 
 export const DocumentPreview: React.FC<DocumentPreviewProps> = ({ 
   storagePath, 
-  documentId, 
+  documentId = "", 
   title = "Document Preview",
   bypassAnalysis = false,
   onAnalysisComplete
 }) => {
-  const previewState = usePreviewState({ storagePath });
+  // Use the correct hook with proper parameters
+  const previewState = usePreviewState(
+    storagePath,
+    documentId,
+    title,
+    onAnalysisComplete,
+    bypassAnalysis
+  );
   
   const {
-    fileType,
+    fileUrl,
     isLoading,
     fileExists,
-    error: previewError
+    fileType,
+    previewError,
+    analyzing,
+    analysisStep,
+    progress,
+    processingStage
   } = previewState;
   
   const isPdf = fileType === 'pdf';
@@ -74,9 +86,12 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
     return (
       <div className="h-full">
         {/* Analytics process shown only if document has an ID and analysis is not bypassed */}
-        {documentId && !bypassAnalysis && (
+        {documentId && !bypassAnalysis && analyzing && (
           <AnalysisProgress 
-            documentId={documentId} 
+            documentId={documentId}
+            progress={progress}
+            analysisStep={analysisStep}
+            processingStage={processingStage}
             onComplete={onAnalysisComplete}
           />
         )}
@@ -93,9 +108,12 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
   // For other document types, use the standard preview content
   return (
     <div className="h-full">
-      {documentId && !bypassAnalysis && (
+      {documentId && !bypassAnalysis && analyzing && (
         <AnalysisProgress 
-          documentId={documentId} 
+          documentId={documentId}
+          progress={progress}
+          analysisStep={analysisStep}
+          processingStage={processingStage}
           onComplete={onAnalysisComplete}
         />
       )}

@@ -4,15 +4,19 @@ import { FileDigit, Clock } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface AnalysisProgressProps {
+  documentId?: string;  // Added documentId as an optional prop
   progress: number;
   analysisStep: string;
   processingStage?: string;
+  onComplete?: () => void; // Made this optional to match usage
 }
 
 export const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
+  documentId,
   analysisStep,
   progress,
-  processingStage
+  processingStage,
+  onComplete
 }) => {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [estimatedTimeRemaining, setEstimatedTimeRemaining] = useState<number | null>(null);
@@ -34,8 +38,13 @@ export const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
       setEstimatedTimeRemaining(remaining);
     } else if (progress >= 95) {
       setEstimatedTimeRemaining(null);
+      
+      // Call onComplete when progress reaches 100%
+      if (progress >= 100 && onComplete) {
+        onComplete();
+      }
     }
-  }, [progress, elapsedSeconds]);
+  }, [progress, elapsedSeconds, onComplete]);
   
   // Format the time remaining
   const formatTimeRemaining = (seconds: number): string => {

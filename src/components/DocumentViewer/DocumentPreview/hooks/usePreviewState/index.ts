@@ -9,8 +9,8 @@ import { useAnalysisInitialization } from "./useAnalysisInitialization";
 
 const usePreviewState = (
   storagePath: string,
-  documentId: string,
-  title: string,
+  documentId: string = "",
+  title: string = "Document Preview",
   onAnalysisComplete?: () => void,
   bypassAnalysis: boolean = false
 ) => {
@@ -22,6 +22,7 @@ const usePreviewState = (
   const [loadRetries, setLoadRetries] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [hasFallbackToDirectUrl, setHasFallbackToDirectUrl] = useState(false);
+  const [fileType, setFileType] = useState<string | null>(null);
 
   const {
     analyzing,
@@ -44,7 +45,8 @@ const usePreviewState = (
     setFileExists,
     setFileUrl,
     setIsExcelFile, 
-    setPreviewError
+    setPreviewError,
+    setFileType
   });
 
   // When file information changes, update loading state
@@ -73,7 +75,7 @@ const usePreviewState = (
         setHasFallbackToDirectUrl(true);
         console.log("Falling back to direct URL mode");
         // Force an additional check
-        setTimeout(checkFile, 1000);
+        setTimeout(() => checkFile(), 1000);
       }
     }
   }, [previewError, loadRetries, hasFallbackToDirectUrl, checkFile]);
@@ -140,6 +142,25 @@ const usePreviewState = (
     return () => clearInterval(intervalId);
   }, [documentId]);
 
+  // Handle analysis retry
+  const handleAnalysisRetry = () => {
+    // Reset stuck state
+    setIsAnalysisStuck({
+      stuck: false,
+      minutesStuck: 0
+    });
+    
+    // Reset fallback status
+    setHasFallbackToDirectUrl(false);
+    
+    // Refresh document data
+    setPreviewError(null);
+    setFileExists(false);
+    setLoadRetries(0);
+    resetRetries();
+    checkFile();
+  };
+
   return {
     fileUrl,
     fileExists,
@@ -157,26 +178,11 @@ const usePreviewState = (
     isAnalysisStuck,
     checkFile,
     isLoading,
+    handleAnalysisRetry,
     hasFallbackToDirectUrl,
     networkStatus,
     attemptCount,
-    handleAnalysisRetry: () => {
-      // Reset stuck state
-      setIsAnalysisStuck({
-        stuck: false,
-        minutesStuck: 0
-      });
-      
-      // Reset fallback status
-      setHasFallbackToDirectUrl(false);
-      
-      // Refresh document data
-      setPreviewError(null);
-      setFileExists(false);
-      setLoadRetries(0);
-      resetRetries();
-      checkFile();
-    }
+    fileType,
   };
 };
 
