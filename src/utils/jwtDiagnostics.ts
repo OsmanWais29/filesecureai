@@ -7,9 +7,83 @@
 import { supabase } from "@/lib/supabase";
 
 /**
+ * Result interface for JWT verification
+ */
+interface JWTVerificationResult {
+  isValid: boolean;
+  reason?: string;
+  timeRemaining?: number;
+  expiresAt?: Date;
+  currentTime?: Date;
+  payload?: Record<string, any>;
+  error?: any;
+}
+
+/**
+ * Result interface for direct upload test
+ */
+interface DirectUploadResult {
+  success: boolean;
+  status?: number;
+  data?: any;
+  response?: Response;
+  error?: any;
+}
+
+/**
+ * Result interface for storage permissions test
+ */
+interface StoragePermissionsResult {
+  canListBuckets: boolean;
+  buckets?: any[];
+  canListFiles?: boolean;
+  files?: any[];
+  error?: any;
+}
+
+/**
+ * Result interface for browser storage check
+ */
+interface BrowserStorageResult {
+  localStorage?: {
+    keys: string[];
+    count: number;
+  };
+  sessionStorage?: {
+    keys: string[];
+    count: number;
+  };
+  error?: any;
+}
+
+/**
+ * Result interface for re-authentication
+ */
+interface ReauthenticationResult {
+  success: boolean;
+  session?: any;
+  error?: any;
+}
+
+/**
+ * Result interface for full diagnostics
+ */
+interface FullDiagnosticsResult {
+  jwtVerification: JWTVerificationResult;
+  storagePermissions: StoragePermissionsResult;
+  browserStorage: BrowserStorageResult;
+  directUpload?: DirectUploadResult;
+  uploadTest?: {
+    success: boolean;
+    data?: any;
+    error?: any;
+  };
+}
+
+/**
  * Verifies the current JWT token and provides detailed diagnostics
  */
-export async function verifyJwtToken() {
+export async function verifyJwtToken(): Promise<JWTVerificationResult> {
   console.group("🔍 JWT Token Verification");
   
   try {
@@ -110,7 +184,7 @@ export async function testDirectUpload(
   file: File,
   bucket: string = 'secure_documents',
   filePath: string = `test-${Date.now()}.txt`
-) {
+): Promise<DirectUploadResult> {
   console.group("🧪 Testing Direct Upload");
   
   try {
@@ -186,7 +260,7 @@ export async function testDirectUpload(
 /**
  * Test storage permissions to see if the user can access buckets and list files
  */
-export async function testStoragePermissions(bucket: string = 'secure_documents') {
+export async function testStoragePermissions(bucket: string = 'secure_documents'): Promise<StoragePermissionsResult> {
   console.group("🔐 Testing Storage Permissions");
   
   try {
@@ -195,28 +269,40 @@ export async function testStoragePermissions(bucket: string = 'secure_documents'
     
     if (bucketsError) {
       console.error("❌ Cannot list buckets:", bucketsError);
-    } else {
-      console.log("✅ Can list buckets:", buckets.map(b => b.name).join(', '));
-      
-      // 2. Try to list files in the target bucket
-      const { data: files, error: filesError } = await supabase.storage
-        .from(bucket)
-        .list();
-        
-      if (filesError) {
-        console.error(`❌ Cannot list files in bucket ${bucket}:`, filesError);
-      } else {
-        console.log(`✅ Can list files in bucket ${bucket}:`, 
-          files.length > 0 ? `${files.length} files found` : "Bucket is empty");
-      }
+      console.groupEnd();
+      return { 
+        canListBuckets: false,
+        error: bucketsError
+      };
+    } 
+    
+    console.log("✅ Can list buckets:", buckets.map(b => b.name).join(', '));
+    
+    // 2. Try to list files in the target bucket
+    const { data: filesList, error: filesError } = await supabase.storage
+      .from(bucket)
+      .list();
+    
+    if (filesError) {
+      console.error(`❌ Cannot list files in bucket ${bucket}:`, filesError);
+      console.groupEnd();
+      return { 
+        canListBuckets: true,
+        buckets: buckets || [],
+        canListFiles: false,
+        error: filesError
+      };
     }
+    
+    console.log(`✅ Can list files in bucket ${bucket}:`, 
+      filesList?.length > 0 ? `${filesList.length} files found` : "Bucket is empty");
     
     console.groupEnd();
     return { 
-      canListBuckets: !bucketsError,
+      canListBuckets: true,
       buckets: buckets || [],
-      canListFiles: !bucketsError && !files?.error,
-      files: files || []
+      canListFiles: true,
+      files: filesList || []
     };
   } catch (error) {
     console.error("❌ Error testing storage permissions:", error);
@@ -232,7 +318,7 @@ export async function testStoragePermissions(bucket: string = 'secure_documents'
 /**
  * Check browser storage for issues with Supabase tokens
  */
-export function checkBrowserStorage() {
+export function checkBrowserStorage(): BrowserStorageResult {
   console.group("🗄️ Checking Browser Storage");
   
   try {
@@ -308,7 +394,7 @@ export function checkBrowserStorage() {
  * Reset authentication and perform a complete re-authentication
  * NOTE: Requires user credentials
  */
-export async function completeReauthentication(email: string, password: string) {
+export async function completeReauthentication(email: string, password: string): Promise<ReauthenticationResult> {
   console.group("🔄 Complete Re-authentication");
   
   try {
@@ -348,14 +434,13 @@ export async function completeReauthentication(email: string, password: string) 
 /**
  * Run a full diagnostic suite on JWT and storage functionality
  */
-export async function runFullDiagnostics(testFile?: File) {
+export async function runFullDiagnostics(testFile?: File): Promise<FullDiagnosticsResult> {
   console.group("🔬 Running Full JWT & Storage Diagnostics");
   
-  const results = {
-    jwtVerification: null as any,
-    storagePermissions: null as any,
-    browserStorage: null as any,
-    directUpload: null as any
+  const results: FullDiagnosticsResult = {
+    jwtVerification: { isValid: false },
+    storagePermissions: { canListBuckets: false },
+    browserStorage: {}
   };
   
   // 1. JWT verification
