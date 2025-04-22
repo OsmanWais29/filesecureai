@@ -1,6 +1,7 @@
 
 import { supabase, ensureFreshToken } from "@/lib/supabase";
 import { authenticatedStorageOperation } from "@/hooks/useAuthenticatedFetch";
+import { verifyJwtToken, testDirectUpload } from "./jwtDiagnostics";
 
 // Define an extended StorageError type to handle potential properties
 interface ExtendedStorageError {
@@ -11,13 +12,20 @@ interface ExtendedStorageError {
 
 /**
  * Uploads a file to Supabase storage with comprehensive JWT error handling
+ * and diagnostic capabilities
  */
 export async function uploadFile(
   file: File,
   bucket: string,
   filePath: string,
-  options: { contentType?: string; upsert?: boolean } = {}
+  options: { contentType?: string; upsert?: boolean; diagnostics?: boolean } = {}
 ) {
+  // Enable diagnostics if requested
+  if (options.diagnostics) {
+    console.log("🔍 Running JWT diagnostics before upload...");
+    await verifyJwtToken();
+  }
+
   return authenticatedStorageOperation(async () => {
     // Try to upload with the standard Supabase client
     const { data, error } = await supabase.storage
@@ -40,7 +48,14 @@ export async function uploadFile(
         storageError?.error === 'InvalidJWT';
         
       if (isJwtError) {
-        console.log("Attempting direct upload as fallback strategy");
+        console.log("🔄 JWT error detected, verifying token status...");
+        const tokenStatus = await verifyJwtToken();
+        
+        if (!tokenStatus.isValid) {
+          console.error(`JWT verification failed: ${tokenStatus.reason}`);
+        }
+        
+        console.log("Attempting direct upload as fallback strategy...");
         return directStorageUpload(file, bucket, filePath, options);
       }
       
@@ -58,10 +73,23 @@ async function directStorageUpload(
   file: File,
   bucket: string,
   filePath: string,
-  options: { contentType?: string; upsert?: boolean } = {}
+  options: { contentType?: string; upsert?: boolean; diagnostics?: boolean } = {}
 ) {
   // Ensure fresh token
-  await ensureFreshToken();
+  const tokenRefreshed = await ensureFreshToken();
+  
+  if (!tokenRefreshed) {
+    console.warn("Failed to refresh token before direct upload");
+    // Try one more approach - running direct upload test with diagnostics
+    console.log("Attempting direct upload test with diagnostics...");
+    const directTest = await testDirectUpload(file, bucket, filePath);
+    
+    if (directTest.success) {
+      return directTest.data;
+    } else {
+      throw new Error(`Direct upload failed: ${JSON.stringify(directTest.error)}`);
+    }
+  }
   
   // Get fresh session
   const { data: { session } } = await supabase.auth.getSession();

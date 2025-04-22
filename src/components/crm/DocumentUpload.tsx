@@ -1,14 +1,17 @@
 
 import { Button } from "@/components/ui/button";
-import { Upload } from "lucide-react";
+import { Upload, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { uploadFile } from "@/utils/storage";
 import { useState } from "react";
+import { verifyJwtToken } from "@/utils/jwtDiagnostics";
+import { UploadDiagnostics } from "@/components/storage/UploadDiagnostics";
 
 export const DocumentUpload = () => {
   const { toast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
 
   const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -17,13 +20,25 @@ export const DocumentUpload = () => {
     setIsUploading(true);
 
     try {
+      // Check JWT token validity before upload
+      const tokenStatus = await verifyJwtToken();
+      if (!tokenStatus.isValid) {
+        console.warn(`JWT issue detected before upload: ${tokenStatus.reason}`);
+        // Continue anyway - our enhanced uploadFile will handle token issues
+      }
+      
       const fileExt = file.name.split('.').pop();
       const filePath = `${crypto.randomUUID()}.${fileExt}`;
       
       console.log(`Starting upload of file: ${file.name} to path: ${filePath}`);
       
-      // Use our enhanced upload utility
-      const result = await uploadFile(file, 'secure_documents', filePath);
+      // Use our enhanced upload utility with diagnostics enabled
+      const result = await uploadFile(
+        file, 
+        'secure_documents', 
+        filePath,
+        { diagnostics: true }
+      );
       
       if (!result || 'error' in result) {
         throw new Error(result?.error || 'Unknown upload error');
@@ -91,26 +106,49 @@ export const DocumentUpload = () => {
         title: "Error",
         description: "Failed to upload document" + (error instanceof Error ? `: ${error.message}` : '')
       });
+      
+      // Show diagnostics when upload fails
+      setShowDiagnostics(true);
     } finally {
       setIsUploading(false);
     }
   };
 
   return (
-    <div className="flex justify-end">
-      <Button className="gap-2" disabled={isUploading}>
-        <Upload className="h-4 w-4" />
-        <label className="cursor-pointer">
-          {isUploading ? "Uploading..." : "Upload Document"}
-          <input
-            type="file"
-            className="hidden"
-            onChange={handleUpload}
-            accept=".pdf,.doc,.docx,.xls,.xlsx"
-            disabled={isUploading}
-          />
-        </label>
-      </Button>
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button className="gap-2" disabled={isUploading}>
+          <Upload className="h-4 w-4" />
+          <label className="cursor-pointer">
+            {isUploading ? "Uploading..." : "Upload Document"}
+            <input
+              type="file"
+              className="hidden"
+              onChange={handleUpload}
+              accept=".pdf,.doc,.docx,.xls,.xlsx"
+              disabled={isUploading}
+            />
+          </label>
+        </Button>
+      </div>
+      
+      {showDiagnostics && (
+        <div className="mt-4">
+          <UploadDiagnostics />
+        </div>
+      )}
+      
+      {!showDiagnostics && (
+        <div className="flex items-center justify-end">
+          <button 
+            onClick={() => setShowDiagnostics(true)}
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
+          >
+            <AlertCircle className="h-3 w-3" />
+            <span>Trouble uploading? Run diagnostics</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 };
