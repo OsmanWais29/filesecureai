@@ -21,7 +21,7 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
   bypassAnalysis = false,
   onAnalysisComplete
 }) => {
-  // Use the correct hook with proper parameters
+  // Use the hook with correct parameters
   const previewState = usePreviewState(
     storagePath,
     documentId,
