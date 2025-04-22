@@ -15,8 +15,22 @@ const debugFetch = async (...args: Parameters<typeof fetch>) => {
     const headers = options.headers || {};
     
     // Check if there's an Authorization header with a JWT token
-    if (headers.Authorization && typeof headers.Authorization === 'string' && headers.Authorization.startsWith('Bearer ')) {
-      const token = headers.Authorization.substring(7);
+    // Use type-safe approach for accessing headers
+    let authHeader: string | null = null;
+    
+    if (headers instanceof Headers) {
+      authHeader = headers.get('Authorization');
+    } else if (Array.isArray(headers)) {
+      // Handle headers as array of [key, value] pairs
+      const authPair = headers.find(pair => pair[0] === 'Authorization');
+      authHeader = authPair ? authPair[1] : null;
+    } else if (typeof headers === 'object') {
+      // Handle headers as Record<string, string>
+      authHeader = (headers as Record<string, string>)['Authorization'] || null;
+    }
+    
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
       try {
         // Decode the JWT payload to check expiration
         const payload = JSON.parse(atob(token.split('.')[1]));

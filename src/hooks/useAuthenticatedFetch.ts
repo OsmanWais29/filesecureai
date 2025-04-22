@@ -33,6 +33,7 @@ export async function authenticatedFetch(url: string, options: any = {}) {
     } catch { }
   }
 
+  // Create new headers object to avoid TypeScript errors
   const headers = {
     ...options.headers,
     "Authorization": `Bearer ${token}`,
@@ -60,11 +61,13 @@ export async function authenticatedStorageOperation<T>(
     // Perform the storage operation
     return await operation();
   } catch (error: any) {
-    // Handle InvalidJWT errors specifically
-    if (error?.error === 'InvalidJWT' || 
-        (error?.message && error.message.includes('JWT')) || 
-        error?.statusCode === 400) {
+    // Handle InvalidJWT errors specifically - checking multiple properties and patterns
+    const isJwtError = 
+      error?.error === 'InvalidJWT' || 
+      (error?.message && (error.message.includes('JWT') || error.message.includes('token'))) || 
+      error?.statusCode === 400;
       
+    if (isJwtError) {
       console.warn("Storage operation failed with JWT error, attempting recovery...");
       
       // Force a complete session refresh

@@ -20,13 +20,26 @@ export const DocumentUpload = () => {
       const fileExt = file.name.split('.').pop();
       const filePath = `${crypto.randomUUID()}.${fileExt}`;
       
+      console.log(`Starting upload of file: ${file.name} to path: ${filePath}`);
+      
       // Use our enhanced upload utility
-      await uploadFile(file, 'secure_documents', filePath);
+      const result = await uploadFile(file, 'secure_documents', filePath);
+      
+      if (!result || 'error' in result) {
+        throw new Error(result?.error || 'Unknown upload error');
+      }
 
+      console.log('File uploaded successfully, getting current user');
+      
       // Get current user
       const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError) throw userError;
+      if (userError) {
+        console.error('Error getting user:', userError);
+        throw userError;
+      }
 
+      console.log('Creating document record in database');
+      
       const { data: documentData, error: dbError } = await supabase
         .from('documents')
         .insert({
@@ -38,8 +51,13 @@ export const DocumentUpload = () => {
         .select()
         .single();
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error('Error inserting document record:', dbError);
+        throw dbError;
+      }
 
+      console.log('Creating notification for document upload');
+      
       // Create notification for document upload
       await supabase.functions.invoke('handle-notifications', {
         body: {
@@ -71,7 +89,7 @@ export const DocumentUpload = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to upload document"
+        description: "Failed to upload document" + (error instanceof Error ? `: ${error.message}` : '')
       });
     } finally {
       setIsUploading(false);

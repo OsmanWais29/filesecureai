@@ -2,6 +2,13 @@
 import { supabase, ensureFreshToken } from "@/lib/supabase";
 import { authenticatedStorageOperation } from "@/hooks/useAuthenticatedFetch";
 
+// Define an extended StorageError type to handle potential properties
+interface ExtendedStorageError {
+  message: string;
+  statusCode?: number;
+  error?: string;
+}
+
 /**
  * Uploads a file to Supabase storage with comprehensive JWT error handling
  */
@@ -24,7 +31,15 @@ export async function uploadFile(
       console.error("Storage upload error:", error);
       
       // If we still get an error that looks like a JWT issue, try direct upload
-      if (error.statusCode === 400 || error.message?.includes('JWT') || error.error === 'InvalidJWT') {
+      // Use type-safe error handling to check for JWT-related errors
+      const storageError = error as ExtendedStorageError;
+      const isJwtError = 
+        storageError.message?.includes('JWT') || 
+        storageError.message?.includes('token') ||
+        storageError?.statusCode === 400 || 
+        storageError?.error === 'InvalidJWT';
+        
+      if (isJwtError) {
         console.log("Attempting direct upload as fallback strategy");
         return directStorageUpload(file, bucket, filePath, options);
       }
