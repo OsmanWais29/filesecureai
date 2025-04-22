@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { AlertTriangle, Download, ExternalLink, RefreshCw, Shield, Wifi } from "lucide-react";
@@ -7,6 +6,8 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { checkAndRefreshToken } from "@/utils/jwtMonitoring";
 import { refreshSession } from "@/hooks/useAuthState";
+import { OfflineIndicator } from "./OfflineIndicator";
+import { useOfflineDocumentCache } from "../hooks/useOfflineDocumentCache";
 
 interface EnhancedPDFViewerProps {
   storagePath: string;
@@ -35,7 +36,7 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const objectRef = useRef<HTMLObjectElement>(null);
   const maxRetries = 3;
-  
+
   // Monitor network connectivity
   useEffect(() => {
     const handleOnline = () => {
@@ -58,7 +59,7 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
       window.removeEventListener('offline', handleOffline);
     };
   }, [loadError]);
-  
+
   // Enhanced fetch function with retry logic
   const fetchSignedUrl = useCallback(async (forceRefresh = false): Promise<string | null> => {
     try {
@@ -187,6 +188,27 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
     }
   }, [storagePath, fetchSignedUrl, fetchPublicUrl, maxRetries, onError]);
 
+  // Use our offline document cache hook
+  const { 
+    cachedUrl, 
+    isCached, 
+    isCaching, 
+    isOffline, 
+    cacheDocument 
+  } = useOfflineDocumentCache({
+    url: fileUrl,
+    storagePath,
+    title
+  });
+
+  // If we have a cached version and are offline, use it
+  useEffect(() => {
+    if (isNetworkOffline && cachedUrl) {
+      console.log("Network offline, using cached document");
+      setLoadError(null);
+    }
+  }, [isNetworkOffline, cachedUrl]);
+
   // Load the PDF on component mount
   useEffect(() => {
     loadPdfWithRetries();
@@ -198,10 +220,22 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
     setLoadError(null);
     setRetryCount(0);
     if (onLoad) onLoad();
+    
+    // Cache the document for offline use if it's not already cached
+    if (!isCached && !isNetworkOffline) {
+      cacheDocument();
+    }
   };
 
   const handleLoadError = async () => {
     console.error("Error displaying PDF:", fileUrl);
+    
+    // If we have a cached version, try using that
+    if (cachedUrl) {
+      console.log("Falling back to cached version");
+      setIsLoading(false);
+      return;
+    }
     
     setRetryCount(prev => prev + 1);
     
@@ -245,7 +279,14 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
 
   const handleOpenInNewTab = async () => {
     try {
-      // Always get fresh URL before opening
+      // First try using the cached version
+      if (cachedUrl) {
+        window.open(cachedUrl, '_blank', 'noopener,noreferrer');
+        toast.success("Document opened in new tab");
+        return;
+      }
+      
+      // Otherwise get fresh URL before opening
       const freshUrl = await fetchSignedUrl(true);
       if (freshUrl) {
         window.open(freshUrl, '_blank', 'noopener,noreferrer');
@@ -268,6 +309,20 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
   const handleDownload = async () => {
     try {
       setIsLoading(true);
+
+      // First try using the cached version
+      if (cachedUrl) {
+        const link = document.createElement('a');
+        link.href = cachedUrl;
+        link.download = title || 'document.pdf';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success("Download started");
+        setIsLoading(false);
+        return;
+      }
+      
       // Get fresh URL for download
       const freshUrl = await fetchSignedUrl(true);
       let urlToUse = freshUrl;
@@ -323,6 +378,16 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
     toast.info("Refreshing document...");
   };
 
+  const handleCacheForOffline = () => {
+    cacheDocument().then(success => {
+      if (success) {
+        toast.success("Document saved for offline viewing");
+      } else {
+        toast.error("Failed to save document for offline viewing");
+      }
+    });
+  };
+
   if (!storagePath) {
     return (
       <div className="flex items-center justify-center h-full bg-muted/30">
@@ -366,12 +431,23 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
     );
   }
 
-  const cacheBustedUrl = fileUrl ? `${fileUrl}&t=${Date.now()}` : '';
+  const urlToUse = isOffline && cachedUrl ? cachedUrl : fileUrl;
+  const cacheBustedUrl = urlToUse ? `${urlToUse}&t=${Date.now()}` : '';
   const googleDocsViewerUrl = useGoogleViewer && fileUrl && !fileUrl.includes('docs.google.com') ? 
     `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true` : fileUrl;
 
   return (
     <div className="relative w-full h-full">
+      {/* Offline indicator or cache button */}
+      <div className="absolute top-2 right-2 z-20">
+        <OfflineIndicator 
+          isOffline={isNetworkOffline}
+          isCached={isCached}
+          isCaching={isCaching}
+          onCacheDocument={handleCacheForOffline}
+        />
+      </div>
+      
       {(isLoading || isRefreshingToken) && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
           <div className="text-center">
@@ -403,7 +479,7 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
         </div>
       )}
 
-      {fileUrl && useGoogleViewer ? (
+      {urlToUse && useGoogleViewer ? (
         <iframe
           src={googleDocsViewerUrl}
           className="w-full h-full border-0"
@@ -413,7 +489,7 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
           referrerPolicy="no-referrer"
           allow="fullscreen"
         />
-      ) : fileUrl && (
+      ) : urlToUse && (
         <object
           ref={objectRef}
           data={cacheBustedUrl}
