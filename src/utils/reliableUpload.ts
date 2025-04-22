@@ -4,10 +4,11 @@ import { verifyJwtToken } from "./jwtVerifier";
 import { testDirectUpload } from "./storageDiagnostics";
 import { FileUploadResult } from "./jwtDiagnosticsTypes";
 
-/**
- * Attempts to upload a file with multiple reliability layers.
- * Returns FileUploadResult (success, method, data, error).
- */
+// Type guard to check for detailed error properties
+function hasErrorDetails(error: any): error is { message: string, error?: string, statusCode?: number } {
+  return typeof error === 'object' && error !== null && 'message' in error;
+}
+
 export async function reliableUpload(
   bucket: string,
   path: string,
@@ -42,18 +43,19 @@ export async function reliableUpload(
 
     lastError = error;
     // Only retry on likely transient issues (network, 5XX)
-    if (!(error.status >= 500 && error.status < 600)) break;
+    if (!(error.message?.includes('5'))) break;
   }
 
-  // If we get here, normal upload failed. Check for JWT-related error.
-  const jwtLikelyError =
-    lastError?.message?.toLowerCase().includes("jwt") ||
-    lastError?.message?.toLowerCase().includes("token") ||
-    lastError?.error === "InvalidJWT" ||
-    lastError?.statusCode === 400 ||
-    lastError?.status === 400;
+  // Check for JWT-related error using a type guard and message-based detection
+  const isJwtError = hasErrorDetails(lastError) && (
+    lastError.message?.toLowerCase().includes('jwt') ||
+    lastError.message?.toLowerCase().includes('token') ||
+    lastError.message?.toLowerCase().includes('auth') ||
+    lastError.error === 'InvalidJWT' ||
+    lastError.statusCode === 400
+  );
 
-  if (jwtLikelyError) {
+  if (isJwtError) {
     // Attempt token refresh and one more upload
     const { data: sessData, error: refreshError } = await supabase.auth.refreshSession();
     if (!refreshError && sessData?.session) {
