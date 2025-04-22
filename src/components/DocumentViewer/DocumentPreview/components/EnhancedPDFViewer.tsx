@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { AlertTriangle, Download, ExternalLink, RefreshCw, Shield, Wifi } from "lucide-react";
+import { AlertTriangle, Download, ExternalLink, RefreshCw, Shield, Wifi, Bug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
@@ -8,6 +9,7 @@ import { checkAndRefreshToken } from "@/utils/jwtMonitoring";
 import { refreshSession } from "@/hooks/useAuthState";
 import { OfflineIndicator } from "./OfflineIndicator";
 import { useOfflineDocumentCache } from "../hooks/useOfflineDocumentCache";
+import { DocumentDebug, DocumentDiagnostics } from "./DocumentDebug";
 
 interface EnhancedPDFViewerProps {
   storagePath: string;
@@ -33,6 +35,8 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
   const [retryCount, setRetryCount] = useState(0);
   const [isRefreshingToken, setIsRefreshingToken] = useState(false);
   const [isNetworkOffline, setIsNetworkOffline] = useState(!navigator.onLine);
+  const [showDiagnosticTools, setShowDiagnosticTools] = useState(false);
+  const [diagnosticResults, setDiagnosticResults] = useState<DocumentDiagnostics | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const objectRef = useRef<HTMLObjectElement>(null);
   const maxRetries = 3;
@@ -40,6 +44,7 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
   // Monitor network connectivity
   useEffect(() => {
     const handleOnline = () => {
+      console.log('Network came online');
       setIsNetworkOffline(false);
       // Attempt reload if there was a network error
       if (loadError?.toLowerCase().includes('network')) {
@@ -48,6 +53,7 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
     };
     
     const handleOffline = () => {
+      console.log('Network went offline');
       setIsNetworkOffline(true);
     };
     
@@ -216,6 +222,7 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
 
   // Handle success and error states during viewing
   const handleLoadSuccess = () => {
+    console.log("PDF loaded successfully");
     setIsLoading(false);
     setLoadError(null);
     setRetryCount(0);
@@ -387,6 +394,10 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
       }
     });
   };
+  
+  const handleDiagnosticsResult = (results: DocumentDiagnostics) => {
+    setDiagnosticResults(results);
+  };
 
   if (!storagePath) {
     return (
@@ -416,6 +427,14 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
               <Download className="h-4 w-4 mr-2" />
               Download
             </Button>
+            <Button 
+              variant="ghost" 
+              onClick={() => setShowDiagnosticTools(prev => !prev)}
+              className="w-full"
+            >
+              <Bug className="h-4 w-4 mr-2" />
+              {showDiagnosticTools ? "Hide Diagnostics" : "Run Diagnostics"}
+            </Button>
           </div>
           
           {isNetworkOffline && (
@@ -426,6 +445,13 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
               </div>
             </div>
           )}
+          
+          {/* Debug button and content */}
+          <DocumentDebug 
+            fileUrl={fileUrl} 
+            visible={showDiagnosticTools}
+            onResult={handleDiagnosticsResult}
+          />
         </div>
       </div>
     );
@@ -438,6 +464,26 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
 
   return (
     <div className="relative w-full h-full">
+      {/* Diagnostic tools */}
+      <DocumentDebug 
+        fileUrl={fileUrl} 
+        visible={showDiagnosticTools}
+        onResult={handleDiagnosticsResult}
+      />
+      
+      {/* Floating debug toggle button */}
+      <div className="absolute top-2 left-2 z-20">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 bg-white/80 hover:bg-white shadow-sm"
+          onClick={() => setShowDiagnosticTools(prev => !prev)}
+          title="Toggle Diagnostic Tools"
+        >
+          <Bug className="h-4 w-4" />
+        </Button>
+      </div>
+      
       {/* Offline indicator or cache button */}
       <div className="absolute top-2 right-2 z-20">
         <OfflineIndicator 
@@ -445,6 +491,11 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
           isCached={isCached}
           isCaching={isCaching}
           onCacheDocument={handleCacheForOffline}
+          debugInfo={{
+            url: fileUrl,
+            retries: retryCount,
+            lastError: loadError
+          }}
         />
       </div>
       
@@ -512,6 +563,35 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
             allow="fullscreen"
           />
         </object>
+      )}
+      
+      {/* Add Google Docs fallback option when document fails to load */}
+      {fileUrl && !urlToUse && !isLoading && !loadError && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center p-6 max-w-md">
+            <AlertTriangle className="h-10 w-10 text-amber-500 mx-auto mb-4" />
+            <h3 className="text-lg font-medium mb-2">Document Rendering Issue</h3>
+            <p className="text-muted-foreground mb-6">
+              The document URL is valid but couldn't be rendered in the built-in viewer.
+            </p>
+            <div className="flex flex-col gap-3">
+              <Button 
+                onClick={() => setUseGoogleViewer(true)} 
+                className="w-full"
+              >
+                Try Google Docs Viewer
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={handleOpenInNewTab} 
+                className="w-full"
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Open in New Tab
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
