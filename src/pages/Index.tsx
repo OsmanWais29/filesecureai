@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { DocumentViewer } from "@/components/DocumentViewer";
@@ -100,14 +101,17 @@ const Index = () => {
     }
   }, [selectedDocument]);
 
+  // Show loading spinner while auth state is being determined
   if (isLoading) {
     return <LoadingSpinner />;
   }
 
+  // Handle auth errors
   if (authError) {
     return <AuthErrorDisplay error={authError} />;
   }
 
+  // Handle email confirmation pending state
   if (session && isEmailConfirmationPending) {
     return (
       <EmailConfirmationPending 
@@ -117,10 +121,12 @@ const Index = () => {
     );
   }
 
+  // If not authenticated, show auth component
   if (!session) {
     return <Auth />;
   }
 
+  // Show main app content for authenticated users
   return (
     <div className={`min-h-screen bg-background flex flex-col ${selectedDocument ? '' : 'h-screen'}`}>
       {selectedDocument ? (

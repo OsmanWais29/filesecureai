@@ -22,6 +22,7 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Index />} />
+      <Route path="/login" element={<Index />} /> {/* Ensure /login also maps to Index which handles auth */}
       <Route path="/crm" element={<CRMPage />} />
       <Route path="/documents" element={<DocumentsPage />} />
       <Route path="/document-viewer/:documentId" element={<DocumentViewerPage />} />
