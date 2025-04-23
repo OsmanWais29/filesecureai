@@ -2,7 +2,6 @@
 export interface AnalysisResult {
   extracted_info: {
     formNumber: string;
-    formType?: string;  // Add formType as an optional property
     clientName: string;
     dateSigned: string;
     trusteeName: string;

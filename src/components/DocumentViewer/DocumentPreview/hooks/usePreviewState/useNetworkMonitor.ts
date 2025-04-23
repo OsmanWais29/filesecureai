@@ -1,62 +1,83 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-export interface UseNetworkMonitorReturn {
-  networkStatus: 'online' | 'offline' | 'limited';
-  handleOnline: () => void;
-  handleOffline: () => void;
-  isLimitedConnectivity: boolean;
-}
+type NetworkStatus = 'online' | 'offline' | 'limited';
 
-export const useNetworkMonitor = (): UseNetworkMonitorReturn => {
-  const [networkStatus, setNetworkStatus] = useState<'online' | 'offline' | 'limited'>(
+export function useNetworkMonitor() {
+  const [networkStatus, setNetworkStatus] = useState<NetworkStatus>(
     navigator.onLine ? 'online' : 'offline'
   );
   const [isLimitedConnectivity, setIsLimitedConnectivity] = useState(false);
-  const [consecutiveFailures, setConsecutiveFailures] = useState(0);
-
-  // Handle browser online event
+  
+  // Track online/offline status
   const handleOnline = useCallback(() => {
-    console.log('Network: 🟢 Online');
+    console.log('Network status: Online');
     setNetworkStatus('online');
-    setConsecutiveFailures(0);
   }, []);
-
-  // Handle browser offline event
+  
   const handleOffline = useCallback(() => {
-    console.log('Network: 🔴 Offline or limited connectivity');
-    
-    // Increment failures counter
-    setConsecutiveFailures(prev => {
-      const newCount = prev + 1;
-      
-      // After 3 consecutive failures, mark as having limited connectivity
-      if (newCount >= 3) {
-        setIsLimitedConnectivity(true);
-        setNetworkStatus('limited');
-      } else if (!navigator.onLine) {
-        setNetworkStatus('offline');
-      }
-      
-      return newCount;
-    });
+    console.log('Network status: Offline');
+    setNetworkStatus('offline');
   }, []);
 
-  // Set up event listeners for online/offline events
+  // Detect limited connectivity by measuring response time
+  const checkConnectivityQuality = useCallback(async () => {
+    if (!navigator.onLine) return;
+    
+    try {
+      const startTime = Date.now();
+      const response = await fetch('/favicon.ico', { 
+        method: 'HEAD',
+        cache: 'no-store',
+        mode: 'no-cors'
+      });
+      const endTime = Date.now();
+      const responseTime = endTime - startTime;
+      
+      // If response time is too high, consider it limited connectivity
+      const isLimited = responseTime > 2000;
+      setIsLimitedConnectivity(isLimited);
+      
+      if (isLimited && networkStatus === 'online') {
+        console.log(`Network has limited connectivity (${responseTime}ms response time)`);
+        setNetworkStatus('limited');
+      } else if (!isLimited && networkStatus === 'limited') {
+        console.log('Network connectivity restored to normal');
+        setNetworkStatus('online');
+      }
+    } catch (error) {
+      console.log('Error checking connectivity:', error);
+      setIsLimitedConnectivity(true);
+      setNetworkStatus('limited');
+    }
+  }, [networkStatus]);
+
   useEffect(() => {
+    // Set up event listeners for online/offline status
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+    
+    // Initial network status
+    setNetworkStatus(navigator.onLine ? 'online' : 'offline');
+    
+    // Check connectivity quality periodically when online
+    const intervalId = setInterval(() => {
+      if (navigator.onLine) {
+        checkConnectivityQuality();
+      }
+    }, 30000); // Check every 30 seconds
     
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      clearInterval(intervalId);
     };
-  }, [handleOnline, handleOffline]);
-
+  }, [handleOnline, handleOffline, checkConnectivityQuality]);
+  
   return {
     networkStatus,
+    isLimitedConnectivity,
     handleOnline,
-    handleOffline,
-    isLimitedConnectivity
+    handleOffline
   };
-};
+}

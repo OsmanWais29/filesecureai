@@ -7,16 +7,16 @@ import { toast } from "sonner";
 
 interface PDFViewerProps {
   fileUrl: string | null;
-  title?: string;
-  zoomLevel?: number;
+  title: string;
+  zoomLevel: number;
   onLoad?: () => void;
   onError?: () => void;
 }
 
 export const PDFViewer: React.FC<PDFViewerProps> = ({
   fileUrl,
-  title = "Document",
-  zoomLevel = 100,
+  title,
+  zoomLevel,
   onLoad,
   onError
 }) => {
@@ -134,7 +134,6 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     );
   }
 
-  // Enhanced PDF Viewer with multiple fallback options
   return (
     <div className="relative w-full h-full">
       {isLoading && (

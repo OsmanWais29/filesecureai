@@ -1,161 +1,194 @@
 
-import React, { useEffect, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { supabase } from "@/lib/supabase";
-import { Loader2, AlertCircle, FileText } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import React, { useEffect } from "react";
 import usePreviewState from "./hooks/usePreviewState";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { PDFViewer } from "./components/PDFViewer";
+import { DocumentPreviewContent } from "./components/DocumentPreviewContent";
+import { AnalysisProgress } from "./components/AnalysisProgress";
+import { EnhancedPDFViewer } from "./components/EnhancedPDFViewer";
+import { startJwtMonitoring, stopJwtMonitoring } from "@/utils/jwtMonitoring";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, Shield, RefreshCw, Wifi } from "lucide-react";
 
 interface DocumentPreviewProps {
   storagePath: string;
   documentId?: string;
   title?: string;
-  showControls?: boolean;
   bypassAnalysis?: boolean;
   onAnalysisComplete?: () => void;
 }
 
-export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
-  storagePath,
-  documentId = "",
+export const DocumentPreview: React.FC<DocumentPreviewProps> = ({ 
+  storagePath, 
+  documentId = "", 
   title = "Document Preview",
-  showControls = true,
   bypassAnalysis = false,
   onAnalysisComplete
 }) => {
+  // Use the enhanced hook with correct parameters
+  const previewState = usePreviewState(
+    storagePath,
+    documentId,
+    title,
+    onAnalysisComplete,
+    bypassAnalysis
+  );
+  
   const {
     fileUrl,
+    isLoading,
     fileExists,
+    fileType,
     previewError,
     analyzing,
-    error,
     analysisStep,
     progress,
-    isLoading,
+    processingStage,
     handleAnalysisRetry,
-    fileType,
-  } = usePreviewState(storagePath, documentId, title, onAnalysisComplete, bypassAnalysis);
-
-  // Manual trigger for document analysis
-  const handleAnalyzeDocument = async () => {
-    try {
-      console.log("Manually triggering document analysis for:", documentId);
-      
-      if (!documentId) {
-        throw new Error("Document ID is required for analysis");
-      }
-      
-      // Call the edge function
-      const { error } = await supabase.functions.invoke("process-document", {
-        body: { documentId, storagePath }
-      });
-      
-      if (error) throw error;
-      
-      // Notify user
-      alert("Document analysis started successfully!");
-      
-      // If callback provided, trigger it
-      if (onAnalysisComplete) {
-        onAnalysisComplete();
-      }
-      
-    } catch (error) {
-      console.error("Error triggering document analysis:", error);
-      alert(`Failed to analyze document: ${error.message}`);
-    }
-  };
-
+    handleFullRecovery,
+    forceRefresh,
+    networkStatus,
+    errorDetails
+  } = previewState;
+  
+  const isPdf = fileType === 'pdf';
+  const isNetworkOffline = networkStatus === 'offline';
+  
+  // Start JWT monitoring when component mounts
+  useEffect(() => {
+    // Start JWT monitoring
+    startJwtMonitoring();
+    
+    // Clean up when component unmounts
+    return () => {
+      stopJwtMonitoring();
+    };
+  }, []);
+  
+  // Show loading state
   if (isLoading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center p-10">
-          <div className="flex flex-col items-center space-y-4">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            <p>Loading document preview...</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (previewError) {
-    return (
-      <Card>
-        <CardContent className="p-6">
-          <Alert variant="destructive" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error Loading Document</AlertTitle>
-            <AlertDescription>{previewError}</AlertDescription>
-          </Alert>
-          <div className="flex flex-col items-center justify-center p-10 space-y-4">
-            <FileText className="h-16 w-16 text-muted-foreground" />
-            <p className="text-center text-muted-foreground">
-              We encountered an issue loading this document.
-            </p>
-            
-            {showControls && (
-              <div className="flex space-x-2">
-                <Button onClick={handleAnalysisRetry}>
-                  Retry Loading Document
-                </Button>
-                <Button variant="outline" onClick={handleAnalyzeDocument}>
-                  Force Document Analysis
-                </Button>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (!fileExists || !fileUrl) {
-    return (
-      <Card>
-        <CardContent className="flex items-center justify-center p-10">
-          <div className="flex flex-col items-center space-y-4">
-            <AlertCircle className="h-10 w-10 text-warning" />
-            <p>Document file not found.</p>
-            {showControls && (
-              <Button onClick={handleAnalysisRetry}>Retry</Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // For PDF files, use the PDF viewer component
-  if (fileType === 'application/pdf' || fileUrl.endsWith('.pdf')) {
-    return <PDFViewer fileUrl={fileUrl} title={title} />;
-  }
-
-  // For other file types, provide a download link
-  return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex flex-col items-center justify-center p-10 space-y-4">
-          <FileText className="h-16 w-16 text-primary" />
-          <p className="text-center">
-            This file type cannot be previewed directly.
-          </p>
-          <div className="flex space-x-2">
-            <Button asChild>
-              <a href={fileUrl} target="_blank" rel="noopener noreferrer">
-                Open in New Tab
-              </a>
-            </Button>
-            <Button variant="outline" asChild>
-              <a href={fileUrl} download>
-                Download File
-              </a>
-            </Button>
-          </div>
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading document preview...</p>
+          {isNetworkOffline && (
+            <div className="mt-2 text-sm text-amber-500 flex items-center justify-center">
+              <Wifi className="h-4 w-4 mr-1" />
+              Waiting for connection...
+            </div>
+          )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    );
+  }
+  
+  // Show enhanced error state with recovery options
+  if (previewError || !fileExists) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full">
+        <div className="text-center max-w-md px-4">
+          <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium mb-2">Document Not Available</h3>
+          <p className="text-muted-foreground mb-6">
+            {previewError || "The requested document could not be loaded."}
+          </p>
+          
+          <div className="flex flex-col gap-3">
+            <Button 
+              variant="default" 
+              className="w-full flex items-center justify-center" 
+              onClick={forceRefresh}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh Document
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              className="w-full flex items-center justify-center" 
+              onClick={handleFullRecovery}
+            >
+              <Shield className="h-4 w-4 mr-2" />
+              Try Full Recovery
+            </Button>
+          </div>
+          
+          {/* Network status indicator */}
+          {isNetworkOffline && (
+            <div className="mt-4 py-2 px-3 bg-amber-50 text-amber-800 rounded-md text-sm">
+              <div className="flex items-center">
+                <Wifi className="h-4 w-4 mr-2" />
+                <span>Network appears to be offline. Document will reload when connection is restored.</span>
+              </div>
+            </div>
+          )}
+          
+          {/* Error details for debugging - only in development */}
+          {process.env.NODE_ENV === 'development' && errorDetails && (
+            <div className="mt-4 p-3 bg-slate-100 rounded text-xs text-left">
+              <details>
+                <summary className="cursor-pointer text-sm font-medium mb-1">Debug Information</summary>
+                <pre className="whitespace-pre-wrap">
+                  {JSON.stringify({
+                    errorType: errorDetails.errorType,
+                    attempts: errorDetails.attempts,
+                    remainingAttempts: errorDetails.remainingAttempts,
+                    networkStatus,
+                    storagePath
+                  }, null, 2)}
+                </pre>
+              </details>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+  
+  // Handle PDF specially with our enhanced viewer
+  if (isPdf) {
+    return (
+      <div className="h-full">
+        {/* Analytics process shown only if document has an ID and analysis is not bypassed */}
+        {documentId && !bypassAnalysis && analyzing && (
+          <AnalysisProgress 
+            documentId={documentId}
+            progress={progress}
+            analysisStep={analysisStep}
+            processingStage={processingStage}
+            onComplete={onAnalysisComplete}
+            onRetry={handleAnalysisRetry}
+          />
+        )}
+        
+        <EnhancedPDFViewer 
+          storagePath={storagePath} 
+          title={title}
+          zoomLevel={100}
+        />
+      </div>
+    );
+  }
+  
+  // For other document types, use the standard preview content
+  return (
+    <div className="h-full">
+      {documentId && !bypassAnalysis && analyzing && (
+        <AnalysisProgress 
+          documentId={documentId}
+          progress={progress}
+          analysisStep={analysisStep}
+          processingStage={processingStage}
+          onComplete={onAnalysisComplete}
+          onRetry={handleAnalysisRetry}
+        />
+      )}
+      
+      <DocumentPreviewContent
+        storagePath={storagePath}
+        documentId={documentId}
+        title={title}
+        previewState={previewState}
+      />
+    </div>
   );
 };

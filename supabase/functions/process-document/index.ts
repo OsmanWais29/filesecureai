@@ -1,169 +1,287 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
-import { Configuration, OpenAIApi } from "https://esm.sh/openai@3.2.1";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === "OPTIONS") {
+  if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Get document ID and storage path from request
-    const { documentId, storagePath } = await req.json();
-    
-    if (!documentId || !storagePath) {
-      throw new Error("Missing required parameters: documentId and/or storagePath");
-    }
-    
-    console.log(`Processing document: ${documentId} at path ${storagePath}`);
-
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    
-    // Update document status to processing
-    await supabase
-      .from("documents")
-      .update({ ai_processing_status: "processing" })
-      .eq("id", documentId);
-    
-    // Download the document from storage
-    const { data: fileData, error: downloadError } = await supabase.storage
-      .from("documents")
-      .download(storagePath);
-      
-    if (downloadError) {
-      throw new Error(`Error downloading file: ${downloadError.message}`);
-    }
-    
-    // Convert to text
-    const text = await fileData.text();
-    const textSample = text.slice(0, 3000); // Use a sample for OpenAI to conserve tokens
-    
-    // Initialize OpenAI API
-    const openAIApiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openAIApiKey) {
-      throw new Error("Missing OpenAI API key");
-    }
-    
-    const configuration = new Configuration({ apiKey: openAIApiKey });
-    const openai = new OpenAIApi(configuration);
-    
-    console.log("Sending document to OpenAI for analysis");
-    
-    // Analyze document using OpenAI
-    const completion = await openai.createChatCompletion({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: `You are a financial document analyzer specializing in bankruptcy forms.
-          Extract key information and identify risks from the document.
-          Structure your analysis in JSON format with the following sections:
-          1. documentType (exact form number if identifiable)
-          2. clientInformation (name, contact details, filing status)
-          3. financialSummary (key financial figures and dates)
-          4. riskAssessment (array of identified risks with severity level, description, BIA section references, and suggested solutions)
-          5. complianceIssues (any problems in document completion or submission)`
-        },
-        {
-          role: "user",
-          content: `Analyze this financial document and extract the key information: ${textSample}`
-        }
-      ],
-      temperature: 0.2,
-    });
-    
-    const analysisResult = completion.data.choices[0]?.message?.content || "{}";
-    console.log("Analysis complete, processing results");
-    
-    let parsedAnalysis;
-    try {
-      parsedAnalysis = JSON.parse(analysisResult);
-    } catch (e) {
-      console.error("Error parsing OpenAI response:", e);
-      parsedAnalysis = {
-        documentType: "Unknown",
-        clientInformation: { name: "Unknown" },
-        riskAssessment: []
-      };
-    }
-    
-    // Store analysis results in document_analysis table
-    const analysisData = {
-      document_id: documentId,
-      content: {
-        analysis: parsedAnalysis,
-        raw_text_sample: textSample.substring(0, 500),
-        analyzed_at: new Date().toISOString()
-      }
-    };
-    
-    const { error: analysisError } = await supabase
-      .from("document_analysis")
-      .upsert(analysisData);
-      
-    if (analysisError) {
-      throw new Error(`Error saving analysis: ${analysisError.message}`);
-    }
-    
-    // Extract client information
-    let clientName = parsedAnalysis.clientInformation?.name || "Unknown Client";
-    if (clientName === "Unknown" && parsedAnalysis.documentType) {
-      // Try to extract from document content
-      const nameMatch = text.match(/(?:name|client|debtor)[\s:]+([A-Za-z\s.]{2,30})/i);
-      if (nameMatch && nameMatch[1]) {
-        clientName = nameMatch[1].trim();
-      }
-    }
-    
-    // Update document metadata with analysis results
-    await supabase
-      .from("documents")
-      .update({
-        metadata: {
-          document_type: parsedAnalysis.documentType,
-          client_name: clientName,
-          risk_count: parsedAnalysis.riskAssessment?.length || 0,
-          analysis_completed: true
-        },
-        ai_processing_status: "complete"
-      })
-      .eq("id", documentId);
-      
-    console.log("Document processing completed successfully");
-    
-    return new Response(
-      JSON.stringify({
-        success: true,
-        documentId,
-        analysis: parsedAnalysis
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      }
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-  } catch (error) {
-    console.error("Error processing document:", error);
+    const { action, documentId, signatureData, metadata, signatureType, partyType } = await req.json();
+
+    if (action === 'sign') {
+      // Determine signature type based on form type
+      const { data: document, error: docError } = await supabase
+        .from('documents')
+        .select('metadata, title')
+        .eq('id', documentId)
+        .single();
+        
+      if (docError) throw docError;
+      
+      const isForm47 = document?.metadata?.formType === 'form-47' || 
+                     document?.title?.toLowerCase().includes('form 47');
+      
+      const isForm76 = document?.metadata?.formType === 'form-76' || 
+                     document?.title?.toLowerCase().includes('form 76');
+      
+      // Record the signature
+      const { data: signature, error: signatureError } = await supabase
+        .from('signatures')
+        .insert({
+          document_id: documentId,
+          signature_data: signatureData,
+          status: 'completed',
+          ip_address: req.headers.get('x-forwarded-for'),
+          signer_id: metadata?.userId,
+        })
+        .select()
+        .single();
+
+      if (signatureError) throw signatureError;
+      
+      // Update document metadata to track signature workflow for forms requiring signatures
+      if (isForm47 || isForm76) {
+        // Get current signatures from metadata
+        const currentSignatures = document.metadata.signatures || [];
+        const signedParties = document.metadata.signedParties || [];
+        
+        // Add the new signature
+        currentSignatures.push({
+          id: signature.id,
+          type: signatureType || 'electronic',
+          partyType: partyType || 'unknown',
+          timestamp: new Date().toISOString()
+        });
+        
+        // Add the signed party
+        if (partyType) {
+          signedParties.push(partyType);
+        }
+        
+        // Check if all required signatures are collected
+        const requiredParties = document.metadata.signaturesRequired || 
+          (isForm76 ? ['debtor', 'trustee', 'witness'] : ['debtor', 'administrator', 'witness']);
+        
+        const allSigned = requiredParties.every(party => signedParties.includes(party));
+        
+        // Update the document metadata
+        const { error: updateError } = await supabase
+          .from('documents')
+          .update({
+            metadata: {
+              ...document.metadata,
+              signatures: currentSignatures,
+              signedParties: signedParties,
+              signatureStatus: allSigned ? 'completed' : 'in_progress',
+              lastSignatureDate: new Date().toISOString()
+            },
+            // If all parties signed, update the document status
+            status: allSigned ? 'signed' : 'pending'
+          })
+          .eq('id', documentId);
+
+        if (updateError) throw updateError;
+        
+        // Create notification for signature progress
+        await supabase
+          .from('notifications')
+          .insert({
+            title: allSigned ? 'Document Fully Signed' : 'Document Partially Signed',
+            message: allSigned 
+              ? `All required signatures collected for "${document.title}"`
+              : `New signature (${partyType}) added to "${document.title}" - ${signedParties.length}/${requiredParties.length} signatures collected`,
+            type: 'signature_update',
+            priority: allSigned ? 'high' : 'normal',
+            user_id: metadata?.userId,
+            action_url: `/documents/${documentId}`,
+            metadata: {
+              documentId,
+              signatureId: signature.id,
+              formType: isForm76 ? 'form-76' : 'form-47',
+              signatureStatus: allSigned ? 'completed' : 'in_progress',
+              partyType: partyType
+            }
+          });
+      } else {
+        // Standard signature process for other document types
+        const { error: documentError } = await supabase
+          .from('documents')
+          .update({ status: 'signed' })
+          .eq('id', documentId);
+
+        if (documentError) throw documentError;
+      }
+
+      // Create audit log
+      await supabase.from('audit_logs').insert({
+        document_id: documentId,
+        action: 'document_signed',
+        metadata: {
+          signature_id: signature.id,
+          ip_address: req.headers.get('x-forwarded-for'),
+          timestamp: new Date().toISOString(),
+          party_type: partyType
+        },
+      });
+
+      return new Response(
+        JSON.stringify({ 
+          message: 'Document signed successfully',
+          signature_id: signature.id,
+          is_complete: (isForm47 || isForm76) ? 
+            (document.metadata.signedParties || []).length === (document.metadata.signaturesRequired || []).length : true
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (action === 'analyze') {
+      // Analyze document engagement
+      const { data: interactions } = await supabase
+        .from('audit_logs')
+        .select('action, created_at')
+        .eq('document_id', documentId);
+
+      const analysis = {
+        totalInteractions: interactions?.length || 0,
+        lastActivity: interactions?.[0]?.created_at || null,
+        engagementScore: calculateEngagementScore(interactions || []),
+      };
+
+      return new Response(
+        JSON.stringify(analysis),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     
+    if (action === 'check_signatures') {
+      // Get document to check signature status
+      const { data: document, error: docError } = await supabase
+        .from('documents')
+        .select('metadata, title')
+        .eq('id', documentId)
+        .single();
+        
+      if (docError) throw docError;
+      
+      const requiredParties = document.metadata.signaturesRequired || [];
+      const signedParties = document.metadata.signedParties || [];
+      const pendingParties = requiredParties.filter(p => !signedParties.includes(p));
+      
+      return new Response(
+        JSON.stringify({
+          required: requiredParties,
+          signed: signedParties,
+          pending: pendingParties,
+          status: document.metadata.signatureStatus || 'pending',
+          complete: signedParties.length === requiredParties.length && requiredParties.length > 0
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    if (action === 'check_deadline') {
+      // Get document to check deadline status
+      const { data: document, error: docError } = await supabase
+        .from('documents')
+        .select('metadata, deadlines, title')
+        .eq('id', documentId)
+        .single();
+        
+      if (docError) throw docError;
+      
+      const deadline = document.metadata.submissionDeadline;
+      const now = new Date();
+      const deadlineDate = deadline ? new Date(deadline) : null;
+      
+      // Calculate days remaining if deadline exists
+      const daysRemaining = deadlineDate 
+        ? Math.ceil((deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+        : null;
+        
+      // If deadline is approaching (7 days or less) and no reminder has been sent,
+      // create a notification
+      if (daysRemaining !== null && daysRemaining <= 7 && daysRemaining > 0 && !document.metadata.deadlineReminderSent) {
+        // Create deadline reminder notification
+        await supabase
+          .from('notifications')
+          .insert({
+            title: 'Form 47 Deadline Approaching',
+            message: `Only ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} left to submit "${document.title}"`,
+            type: 'deadline',
+            priority: daysRemaining <= 3 ? 'high' : 'normal',
+            action_url: `/documents/${documentId}`,
+            metadata: {
+              documentId,
+              formType: 'form-47',
+              daysRemaining,
+              deadline: deadlineDate?.toISOString()
+            }
+          });
+          
+        // Update document to record that reminder was sent
+        await supabase
+          .from('documents')
+          .update({
+            metadata: {
+              ...document.metadata,
+              deadlineReminderSent: true,
+              deadlineReminderDate: now.toISOString()
+            }
+          })
+          .eq('id', documentId);
+      }
+      
+      return new Response(
+        JSON.stringify({
+          deadline: deadlineDate?.toISOString() || null,
+          daysRemaining: daysRemaining,
+          status: daysRemaining !== null 
+            ? daysRemaining <= 0 
+              ? 'overdue' 
+              : daysRemaining <= 3 
+                ? 'critical' 
+                : daysRemaining <= 7 
+                  ? 'warning' 
+                  : 'normal'
+            : 'none'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    throw new Error('Invalid action');
+
+  } catch (error) {
+    console.error('Error processing document:', error);
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      JSON.stringify({ error: error.message }),
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
   }
 });
+
+function calculateEngagementScore(interactions: any[]): number {
+  if (!interactions.length) return 0;
+  const now = new Date();
+  const recentInteractions = interactions.filter(i => {
+    const interactionDate = new Date(i.created_at);
+    const daysSince = (now.getTime() - interactionDate.getTime()) / (1000 * 60 * 60 * 24);
+    return daysSince <= 30; // Consider only last 30 days
+  });
+  return Math.min(100, (recentInteractions.length / interactions.length) * 100);
+}

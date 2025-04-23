@@ -1,175 +1,255 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { useDocumentAnalysis } from "./useDocumentAnalysis";
-
-interface PreviewState {
-  fileUrl: string | null;
-  fileExists: boolean;
-  previewError: string | null;
-  isLoading: boolean;
-  analyzing: boolean;
-  error: string | null;
-  analysisStep: string;
-  progress: number;
-  processingStage: string;
-  session: any;
-  setSession: (session: any) => void;
-  handleAnalyzeDocument: (session: any) => void;
-  handleAnalysisRetry: () => void;
-  fileType: string | null;
-}
+import { useDocumentAnalysis } from "../hooks/useDocumentAnalysis";
+import { useFilePreview } from "./usePreviewState/useFilePreview";
+import { useAnalysisInitialization } from "./usePreviewState/useAnalysisInitialization";
+import { toast } from "sonner";
+import { refreshSession } from "@/hooks/useAuthState";
+import { checkAndRefreshToken } from "@/utils/jwtMonitoring";
 
 const usePreviewState = (
   storagePath: string,
-  documentId: string,
-  title: string,
+  documentId: string = "",
+  title: string = "Document Preview",
   onAnalysisComplete?: () => void,
   bypassAnalysis: boolean = false
-): PreviewState => {
-  const [fileUrl, setFileUrl] = useState<string | null>(null);
-  const [fileExists, setFileExists] = useState(true);
+) => {
+  const [session, setSession] = useState<any>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const [fileExists, setFileExists] = useState(false);
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const [isExcelFile, setIsExcelFile] = useState(false);
+  const [loadRetries, setLoadRetries] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasFallbackToDirectUrl, setHasFallbackToDirectUrl] = useState(false);
   const [fileType, setFileType] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
+  const [errorDetails, setErrorDetails] = useState<any>(null);
 
-  // Get document analysis state
   const {
     analyzing,
     error,
     analysisStep,
     progress,
     processingStage,
-    handleAnalyzeDocument,
-    setSession
+    handleAnalyzeDocument
   } = useDocumentAnalysis(storagePath, onAnalysisComplete);
 
-  // Check file existence and get public URL
-  const checkFile = useCallback(async () => {
-    if (!storagePath) {
-      setPreviewError("No document path provided");
-      setIsLoading(false);
-      return;
-    }
+  // Use the enhanced FilePreview hook with the correct props shape
+  const { 
+    checkFile, 
+    networkStatus, 
+    attemptCount,
+    hasFileLoadStarted,
+    resetRetries,
+    forceRefresh,
+    diagnostics
+  } = useFilePreview({
+    storagePath,
+    setFileExists,
+    setFileUrl,
+    setIsExcelFile, 
+    setPreviewError,
+    setFileType
+  });
 
-    try {
-      console.log(`Checking file: ${storagePath}`);
-      
-      // For the special Form 47 sample case, handle differently
-      if (storagePath === "sample-documents/form-47-consumer-proposal.pdf") {
-        const url = supabase.storage
-          .from('documents')
-          .getPublicUrl(storagePath).data.publicUrl;
-        
-        setFileUrl(url);
-        setFileExists(true);
-        setFileType('application/pdf');
-        setPreviewError(null);
-        setIsLoading(false);
-        return;
-      }
-      
-      // Try to get file metadata to determine if it exists
-      const { data, error } = await supabase.storage
-        .from('documents')
-        .download(storagePath);
-
-      if (error) {
-        console.error("Error downloading file:", error);
-        
-        // Try to get public URL as a fallback
-        try {
-          const publicUrlData = supabase.storage
-            .from('documents')
-            .getPublicUrl(storagePath);
-          
-          const publicUrl = publicUrlData?.data?.publicUrl;
-          
-          if (publicUrl) {
-            console.log("Using public URL as fallback");
-            setFileUrl(publicUrl);
-            setFileExists(true);
-            
-            // Try to determine file type from extension
-            if (storagePath.toLowerCase().endsWith('.pdf')) {
-              setFileType('application/pdf');
-            } else {
-              setFileType('application/octet-stream');
-            }
-            
-            setPreviewError(null);
-            setIsLoading(false);
-            return;
-          }
-        } catch (fallbackError) {
-          console.error("Fallback URL also failed:", fallbackError);
-        }
-        
-        setFileExists(false);
-        setPreviewError(`Document could not be loaded. ${error.message}`);
-        setIsLoading(false);
-        return;
-      }
-
-      // Get file type from the response
-      const fileType = data.type;
-      setFileType(fileType);
-
-      // Get public URL for the file
-      const url = supabase.storage
-        .from('documents')
-        .getPublicUrl(storagePath).data.publicUrl;
-      
-      setFileUrl(url);
-      setFileExists(true);
-      setPreviewError(null);
-      setIsLoading(false);
-      
-      console.log("File loaded successfully:", url);
-    } catch (error) {
-      console.error("Error checking file:", error);
-      setFileExists(false);
-      setPreviewError(`Failed to check document. ${error.message}`);
-      setIsLoading(false);
-    }
-  }, [storagePath]);
-
-  // Effect to check file when path changes
+  // When file information changes, update loading state
   useEffect(() => {
-    if (storagePath) {
-      setIsLoading(true);
-      checkFile();
-    } else {
-      setFileExists(false);
-      setPreviewError("No document path specified");
+    if (fileUrl) {
+      // If we have a file URL, we can consider loading complete
       setIsLoading(false);
     }
-  }, [storagePath, checkFile]);
+  }, [fileUrl]);
 
-  // Handle retry
-  const handleAnalysisRetry = useCallback(() => {
+  // Log network status changes for debugging
+  useEffect(() => {
+    console.log(`Network status: ${networkStatus}, attempt count: ${attemptCount}`);
+    
+    // Store diagnostics for troubleshooting
+    setErrorDetails(diagnostics);
+  }, [networkStatus, attemptCount, diagnostics]);
+
+  // Auto-fallback to direct URL mode after multiple failures with preview
+  useEffect(() => {
+    if (previewError && loadRetries < 2 && !hasFallbackToDirectUrl) {
+      console.log("Preview error detected, retrying with fallback strategies");
+      
+      // Increment retry counter 
+      setLoadRetries(prev => prev + 1);
+      
+      // On second retry, fall back to direct URL
+      if (loadRetries === 1) {
+        setHasFallbackToDirectUrl(true);
+        console.log("Falling back to direct URL mode");
+        
+        // Try refreshing auth token first
+        checkAndRefreshToken().then(() => {
+          console.log("Token refreshed, retrying direct URL");
+          // Force an additional check
+          setTimeout(() => checkFile(), 1000);
+        }).catch(err => {
+          console.error("Failed to refresh token during fallback:", err);
+          // Try anyway without token refresh
+          setTimeout(() => checkFile(), 1000);
+        });
+      }
+    }
+  }, [previewError, loadRetries, hasFallbackToDirectUrl, checkFile]);
+
+  useAnalysisInitialization({
+    storagePath,
+    fileExists,
+    isExcelFile,
+    analyzing,
+    error,
+    setSession,
+    handleAnalyzeDocument,
+    setPreviewError,
+    onAnalysisComplete,
+    bypassAnalysis
+  });
+
+  // Add state for tracking stuck analysis
+  const [isAnalysisStuck, setIsAnalysisStuck] = useState<{
+    stuck: boolean;
+    minutesStuck: number;
+  }>({
+    stuck: false,
+    minutesStuck: 0
+  });
+
+  // Enhanced document status tracking
+  useEffect(() => {
+    if (!documentId) return;
+    
+    // Check if analysis is stuck
+    const checkStuckAnalysis = async () => {
+      try {
+        const { data } = await supabase
+          .from('documents')
+          .select('ai_processing_status, updated_at, metadata')
+          .eq('id', documentId)
+          .maybeSingle();
+          
+        if (data && data.ai_processing_status === 'processing') {
+          const lastUpdateTime = new Date(data.updated_at);
+          const minutesSinceUpdate = Math.floor((Date.now() - lastUpdateTime.getTime()) / (1000 * 60));
+          
+          // If analysis has been stuck for more than 10 minutes
+          if (minutesSinceUpdate > 10) {
+            setPreviewError(`Analysis appears to be stuck (running for ${minutesSinceUpdate} minutes)`);
+            
+            // Update local state to show retry button
+            setIsAnalysisStuck({
+              stuck: true,
+              minutesStuck: minutesSinceUpdate
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error checking document status:", error);
+      }
+    };
+    
+    // Check once on load and then every 5 minutes
+    checkStuckAnalysis();
+    const intervalId = setInterval(checkStuckAnalysis, 5 * 60 * 1000);
+    
+    return () => clearInterval(intervalId);
+  }, [documentId]);
+
+  // Handle full recovery with authentication refresh
+  const handleFullRecovery = useCallback(async () => {
+    // Show loading state during recovery
     setIsLoading(true);
+    setPreviewError("Performing full recovery...");
+    
+    try {
+      // 1. Force complete session refresh
+      const sessionRefreshed = await refreshSession();
+      
+      if (!sessionRefreshed) {
+        throw new Error("Failed to refresh authentication session");
+      }
+      
+      // 2. Reset all error states
+      setPreviewError(null);
+      setFileExists(false);
+      setLoadRetries(0);
+      resetRetries();
+      
+      // 3. Reset fallback flags
+      setHasFallbackToDirectUrl(false);
+      
+      // 4. Reset analysis stuck state if relevant
+      setIsAnalysisStuck({
+        stuck: false,
+        minutesStuck: 0
+      });
+      
+      // 5. Try to load the document again
+      toast.success("Authentication refreshed, retrying document load...");
+      checkFile();
+      
+    } catch (error) {
+      console.error("Recovery failed:", error);
+      setPreviewError("Recovery failed. Please try again later.");
+      setIsLoading(false);
+    }
+  }, [resetRetries, checkFile]);
+
+  // Handle analysis retry
+  const handleAnalysisRetry = () => {
+    // Reset stuck state
+    setIsAnalysisStuck({
+      stuck: false,
+      minutesStuck: 0
+    });
+    
+    // Reset fallback status
+    setHasFallbackToDirectUrl(false);
+    
+    // Refresh document data
     setPreviewError(null);
-    setRetryCount(prev => prev + 1);
-    checkFile();
-  }, [checkFile]);
+    setFileExists(false);
+    setLoadRetries(0);
+    resetRetries();
+    
+    // Try token refresh first
+    refreshSession().then(() => {
+      checkFile();
+    }).catch(err => {
+      console.error("Failed to refresh token during retry:", err);
+      // Try anyway
+      checkFile();
+    });
+  };
 
   return {
     fileUrl,
     fileExists,
+    isExcelFile,
     previewError,
-    isLoading,
+    setPreviewError,
     analyzing,
     error,
     analysisStep,
     progress,
     processingStage,
-    session: null,
+    session,
     setSession,
     handleAnalyzeDocument,
+    isAnalysisStuck,
+    checkFile,
+    isLoading,
     handleAnalysisRetry,
-    fileType
+    hasFallbackToDirectUrl,
+    networkStatus,
+    attemptCount,
+    fileType,
+    handleFullRecovery,
+    forceRefresh,
+    errorDetails
   };
 };
 

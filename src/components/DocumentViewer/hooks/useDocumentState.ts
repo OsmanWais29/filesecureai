@@ -1,13 +1,11 @@
 
-import { useState, useCallback, useEffect } from "react";
-import { useDocumentDetails } from "./useDocumentDetails";
-import { useToast } from "@/hooks/use-toast";
-import { toast as sonnerToast } from "sonner";
+import { useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { triggerDocumentAnalysis } from "@/utils/documents/api/analysisApi";
+import { useToast } from "@/hooks/use-toast";
+import { DocumentDetails } from "../types";
 
 export const useDocumentState = (documentId: string, documentTitle?: string) => {
-  const [document, setDocument] = useState<any>(null);
+  const [document, setDocument] = useState<DocumentDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingError, setLoadingError] = useState<string | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
@@ -15,116 +13,135 @@ export const useDocumentState = (documentId: string, documentTitle?: string) => 
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const { toast } = useToast();
 
-  // Handle document details fetching
-  const { fetchDocumentDetails } = useDocumentDetails(documentId, {
-    onSuccess: (data) => {
-      console.log("Document details loaded successfully:", data?.id);
-      setDocument(data);
-      setLoading(false);
+  const fetchDocumentDetails = async () => {
+    try {
+      setLoading(true);
       setLoadingError(null);
-    },
-    onError: (error) => {
-      console.error("Error loading document:", error);
       
-      // Special handling for Form 47 demo
-      if (documentId === "form47" || documentTitle?.toLowerCase().includes("form 47")) {
-        const form47Document = {
-          id: "form47",
-          title: documentTitle || "Form 47 - Consumer Proposal",
-          type: "form",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          storage_path: "sample-documents/form-47-consumer-proposal.pdf",
-          analysis: [
-            {
-              id: "form47-analysis-1",
-              content: {
-                extracted_info: {
-                  formNumber: "47",
-                  formType: "consumer-proposal",
-                  summary: "This is a form used for consumer proposals under the Bankruptcy and Insolvency Act."
-                },
-                risks: [
-                  {
-                    type: "Missing Information",
-                    description: "Please ensure all required fields are completed.",
-                    severity: "medium"
-                  }
-                ]
-              }
-            }
-          ],
-          comments: []
-        };
-        
-        setDocument(form47Document);
-        setLoading(false);
-        setLoadingError(null);
+      console.log('Fetching document details for ID:', documentId);
+      
+      const { data: document, error: docError } = await supabase
+        .from('documents')
+        .select(`
+          *,
+          analysis:document_analysis(content),
+          comments:document_comments(id, content, created_at, user_id)
+        `)
+        .eq('id', documentId)
+        .maybeSingle();
+
+      if (docError) {
+        console.error("Error fetching document:", docError);
+        setLoadingError(`Failed to load document: ${docError.message}`);
         return;
       }
       
-      setLoading(false);
-      setLoadingError(error.message || "Failed to load document");
-      toast({
-        variant: "destructive",
-        title: "Document Loading Error",
-        description: error.message || "Failed to load document"
-      });
-    }
-  });
+      if (!document) {
+        console.error("Document not found");
+        setLoadingError("Document not found. It may have been deleted or moved.");
+        return;
+      }
+      
+      if (!document.analysis || document.analysis.length === 0) {
+        setAnalysisError("No analysis data found for this document");
+      } else {
+        setDebugInfo(document.analysis[0]?.content?.debug_info || null);
+        
+        const analysisContent = document.analysis[0]?.content;
+        if (!analysisContent || (!analysisContent.extracted_info && !analysisContent.risks)) {
+          setAnalysisError("Analysis data is incomplete or malformed");
+        } else {
+          setAnalysisError(null);
+        }
+      }
 
-  // Trigger analysis API call for document
-  const triggerAnalysis = useCallback(async () => {
-    if (!document && !documentId) return;
-    
-    setAnalysisLoading(true);
-    setAnalysisError(null);
-    
+      setDocument(document);
+    } catch (error: any) {
+      console.error('Error fetching document details:', error);
+      setLoadingError(`Failed to load document: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const triggerAnalysis = async () => {
     try {
-      console.log("Triggering analysis for document:", documentId);
-      
-      // Update status in UI first
-      sonnerToast.info("Starting document analysis...");
-      
-      // Call analysis API
-      const result = await triggerDocumentAnalysis(documentId);
-      
-      // Reload document to get updated analysis
-      await fetchDocumentDetails();
-      
-      sonnerToast.success("Document analysis completed");
-      setAnalysisLoading(false);
+      setAnalysisLoading(true);
       setAnalysisError(null);
       
-      // Store debug info for development
-      setDebugInfo({
-        analysisResult: result,
-        documentId,
-        timestamp: new Date().toISOString()
+      const { data: document } = await supabase
+        .from('documents')
+        .select('storage_path, title')
+        .eq('id', documentId)
+        .single();
+        
+      if (!document?.storage_path) {
+        throw new Error("Document has no storage path");
+      }
+      
+      toast({
+        title: "Starting Document Analysis",
+        description: "Please wait while we analyze your document...",
       });
+      
+      const { data: fileData, error: fileError } = await supabase.storage
+        .from('documents')
+        .download(document.storage_path);
+        
+      if (fileError) {
+        throw new Error(`Failed to download document: ${fileError.message}`);
+      }
+      
+      const textContent = await fileData.text();
+      
+      let formType = null;
+      if (document.title) {
+        const title = document.title.toLowerCase();
+        if (title.includes('form 31') || title.includes('proof of claim')) {
+          formType = 'form-31';
+        } else if (title.includes('form 47') || title.includes('consumer proposal')) {
+          formType = 'form-47';
+        }
+      }
+      
+      const { data: analysisData, error: analysisError } = await supabase.functions.invoke('process-ai-request', {
+        body: {
+          message: textContent,
+          documentId: documentId,
+          module: "document-analysis",
+          formType: formType,
+          title: document.title,
+          debug: true
+        }
+      });
+      
+      if (analysisError) {
+        throw new Error(`Analysis failed: ${analysisError.message}`);
+      }
+      
+      if (!analysisData) {
+        throw new Error("Analysis service returned no data. Please check your OpenAI API key configuration.");
+      }
+      
+      toast({
+        title: "Analysis Complete",
+        description: "Document has been successfully analyzed",
+      });
+      
+      await fetchDocumentDetails();
       
     } catch (error: any) {
-      console.error("Analysis error:", error);
-      setAnalysisLoading(false);
-      setAnalysisError(error.message || "Failed to analyze document");
-      
-      sonnerToast.error("Document analysis failed", {
-        description: error.message || "Please try again later"
+      console.error("Error triggering analysis:", error);
+      setAnalysisError(`Failed to analyze document: ${error.message}`);
+      toast({
+        variant: "destructive",
+        title: "Analysis Failed",
+        description: error.message
       });
+    } finally {
+      setAnalysisLoading(false);
     }
-  }, [document, documentId, fetchDocumentDetails]);
-  
-  // Check for missing analysis when document loads
-  useEffect(() => {
-    if (document && (!document.analysis || document.analysis.length === 0)) {
-      // If no analysis found and not already in error state, trigger automatic analysis
-      if (!analysisError && !analysisLoading && documentId !== "form47") {
-        console.log("No analysis found, triggering automatic analysis");
-        setAnalysisError("Document has not been analyzed yet. Analyzing now...");
-        triggerAnalysis();
-      }
-    }
-  }, [document, analysisError, analysisLoading, documentId, triggerAnalysis]);
+  };
 
   return {
     document,

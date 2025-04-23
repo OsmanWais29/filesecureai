@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { AlertTriangle, Download, ExternalLink, RefreshCw, FileText } from 'lucide-react';
+import { AlertTriangle, Download, ExternalLink, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -20,27 +20,14 @@ export const PDFViewerEmbed: React.FC<PDFViewerEmbedProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [viewerMode, setViewerMode] = useState<'direct' | 'iframe' | 'google' | 'embed'>('direct');
+  const [viewerMode, setViewerMode] = useState<'direct' | 'iframe' | 'google'>('direct');
   const [retryCount, setRetryCount] = useState(0);
   const objectRef = useRef<HTMLObjectElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const embedRef = useRef<HTMLEmbedElement>(null);
   const maxRetries = 3;
   
-  // Add debugging information when component renders or updates
-  useEffect(() => {
-    console.log(`PDFViewerEmbed render: mode=${viewerMode}, loading=${isLoading}, url=${fileUrl ? (fileUrl.substring(0, 50) + '...') : 'none'}`);
-    
-    // Clean up any previous viewers when switching modes
-    return () => {
-      console.log(`Cleaning up ${viewerMode} viewer`);
-    };
-  }, [viewerMode, isLoading, fileUrl]);
-  
   // Add a cache-busting parameter to prevent caching issues
-  const cacheBustParam = `t=${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-  const effectiveUrl = fileUrl ? 
-    `${fileUrl}${fileUrl.includes('?') ? '&' : '?'}${cacheBustParam}` : null;
+  const effectiveUrl = fileUrl ? `${fileUrl}${fileUrl.includes('?') ? '&' : '?'}t=${Date.now()}` : null;
   
   // Create Google Docs viewer URL
   const googleDocsUrl = effectiveUrl ? 
@@ -49,11 +36,11 @@ export const PDFViewerEmbed: React.FC<PDFViewerEmbedProps> = ({
   // Reset loading state when URL changes
   useEffect(() => {
     if (fileUrl) {
-      console.log(`New fileUrl provided: ${fileUrl.substring(0, 50)}...`);
       setIsLoading(true);
       setLoadError(null);
       setRetryCount(0);
       setViewerMode('direct');
+      console.log(`Attempting to load PDF: ${fileUrl}`);
     }
   }, [fileUrl]);
 
@@ -69,29 +56,25 @@ export const PDFViewerEmbed: React.FC<PDFViewerEmbedProps> = ({
   // Handler for loading errors with progressive fallback
   const handleLoadError = () => {
     console.error(`Error displaying PDF in ${viewerMode} mode:`, effectiveUrl);
+    setRetryCount(prev => prev + 1);
     
-    setRetryCount(prev => {
-      const newCount = prev + 1;
-      console.log(`Retry count increased to ${newCount}/${maxRetries}`);
-      return newCount;
-    });
-    
-    // Try next mode based on current mode and retry count
-    if (viewerMode === 'direct' && retryCount >= 1) {
-      console.log('Switching to embed mode');
-      setViewerMode('embed');
-    } else if (viewerMode === 'embed' && retryCount >= 1) {
-      console.log('Switching to iframe mode');
-      setViewerMode('iframe');
-    } else if (viewerMode === 'iframe' && retryCount >= 1) {
-      console.log('Switching to Google Docs viewer mode as last resort');
-      setViewerMode('google');
-    } else if (viewerMode === 'google' && retryCount >= 1) {
-      // All methods failed
-      console.error('All PDF display methods failed');
-      setIsLoading(false);
-      setLoadError('Unable to display PDF. Please try downloading it instead.');
-      if (onError) onError();
+    // If we've reached max retries in the current mode, try next mode
+    if (retryCount >= maxRetries - 1) {
+      if (viewerMode === 'direct') {
+        console.log('Falling back to iframe mode');
+        setViewerMode('iframe');
+        setRetryCount(0);
+      } else if (viewerMode === 'iframe') {
+        console.log('Falling back to Google Docs viewer');
+        setViewerMode('google');
+        setRetryCount(0);
+      } else {
+        // All methods failed
+        console.error('All PDF display methods failed');
+        setIsLoading(false);
+        setLoadError('Unable to display PDF. Please try downloading it instead.');
+        if (onError) onError();
+      }
     }
   };
 
@@ -122,7 +105,6 @@ export const PDFViewerEmbed: React.FC<PDFViewerEmbedProps> = ({
     setLoadError(null);
     setIsLoading(true);
     setRetryCount(0);
-    console.log('Retrying PDF load from beginning');
   };
 
   if (!fileUrl) {
@@ -169,7 +151,6 @@ export const PDFViewerEmbed: React.FC<PDFViewerEmbedProps> = ({
             {retryCount > 0 && (
               <p className="text-xs text-muted-foreground mt-2">
                 {viewerMode === 'direct' ? 'Standard view...' : 
-                 viewerMode === 'embed' ? 'Embedded view...' :
                  viewerMode === 'iframe' ? 'Alternative view...' : 
                  'Google Docs view...'}
               </p>
@@ -187,19 +168,8 @@ export const PDFViewerEmbed: React.FC<PDFViewerEmbedProps> = ({
           onLoad={handleLoadSuccess}
           onError={handleLoadError}
         >
-          <p className="p-4">Your browser doesn't support PDF embedding</p>
+          <p className="p-4">Your browser cannot display this PDF</p>
         </object>
-      )}
-
-      {viewerMode === 'embed' && (
-        <embed
-          ref={embedRef}
-          src={effectiveUrl || ''}
-          type="application/pdf"
-          className="w-full h-full"
-          onLoad={handleLoadSuccess}
-          onError={handleLoadError}
-        />
       )}
 
       {viewerMode === 'iframe' && (
@@ -227,26 +197,6 @@ export const PDFViewerEmbed: React.FC<PDFViewerEmbedProps> = ({
           allow="fullscreen"
         />
       )}
-
-      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <Button 
-          variant="secondary" 
-          size="sm" 
-          className="mr-2"
-          onClick={handleOpenInNewTab}
-        >
-          <ExternalLink className="h-3 w-3 mr-1" />
-          Open
-        </Button>
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={handleDownload}
-        >
-          <Download className="h-3 w-3 mr-1" />
-          Download
-        </Button>
-      </div>
     </div>
   );
 };
