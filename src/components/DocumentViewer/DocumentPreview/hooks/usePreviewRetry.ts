@@ -15,15 +15,32 @@ export function usePreviewRetry(maxRetries = 5) {
   const [lastErrorType, setLastErrorType] = useState<string | null>(null);
   const [errorStack, setErrorStack] = useState<string[]>([]);
 
-  // Modified to accept an optional errorType parameter
-  const incrementAttempt = useCallback((errorType?: string) => {
+  // Modified to make the error parameter optional
+  const incrementAttempt = useCallback((error?: string | Error | null) => {
     setAttemptCount((prev) => prev + 1);
     setLastAttempt(new Date());
     
-    // Only update errorType and errorStack if an errorType is provided
-    if (errorType) {
-      setErrorStack((prev) => [...prev, errorType]);
-      setLastErrorType(errorType);
+    // Only update errorType and errorStack if an error is provided
+    if (error) {
+      const errorMessage = typeof error === 'string' 
+        ? error 
+        : (error as Error)?.message || 'Unknown error';
+      
+      setErrorStack((prev) => [...prev, errorMessage]);
+      
+      // Categorize error type
+      const errorLower = errorMessage.toLowerCase();
+      if (errorLower.includes('network') || errorLower.includes('fetch') || errorLower.includes('connection')) {
+        setLastErrorType('network');
+      } else if (errorLower.includes('token') || errorLower.includes('auth') || errorLower.includes('jwt')) {
+        setLastErrorType('auth');
+      } else if (errorLower.includes('timeout') || errorLower.includes('timed out')) {
+        setLastErrorType('timeout');
+      } else if (errorLower.includes('cors') || errorLower.includes('origin')) {
+        setLastErrorType('cors');
+      } else {
+        setLastErrorType('other');
+      }
     }
   }, []);
 
