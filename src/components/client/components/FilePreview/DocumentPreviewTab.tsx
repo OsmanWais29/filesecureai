@@ -84,12 +84,13 @@ export const DocumentPreviewTab: React.FC<DocumentPreviewTabProps> = ({
   
   const handleDownload = () => {
     if (pdfUrl) {
-      const link = document.createElement('a');
+      // Use the global window.document instead of the document prop
+      const link = window.document.createElement('a');
       link.href = pdfUrl;
       link.download = document.title || 'document.pdf';
-      document.body.appendChild(link);
+      window.document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+      window.document.body.removeChild(link);
       toast.success("Download started");
     } else {
       toast.error("Download URL not available");
