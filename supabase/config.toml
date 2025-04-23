@@ -1,48 +1,6 @@
 
+# This file controls the behavior of Supabase Edge Functions.
 project_id = "plxuyxacefgttimodrbp"
 
-[api]
-enabled = true
-port = 54321
-schemas = ["public", "storage", "graphql_public"]
-
-[db]
-port = 54322
-shadow_port = 54320
-major_version = 15
-
-[db.pooler]
-enabled = false
-port = 54329
-pool_mode = "transaction"
-default_pool_size = 20
-max_client_conn = 100
-
-[realtime]
-enabled = false
-
-[storage]
-enabled = true
-
-[studio]
-enabled = true
-port = 54323
-
-[inbucket]
-enabled = true
-port = 54324
-
-[auth]
-enabled = true
-port = 54325
-
-[auth.jwt]
-algorithm = "HS256"
-
-[functions]
-enabled = true
-port = 54326
-timeout = 30
-
-[functions.process-ai-request]
+[functions.process-document]
 verify_jwt = true
