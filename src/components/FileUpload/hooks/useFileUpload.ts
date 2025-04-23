@@ -64,7 +64,7 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
         setUploadStep
       );
 
-      // Create database record
+      // Create database record first
       const { data: documentData, error: documentError } = await createDocumentRecord(
         file, 
         user.id, 
@@ -78,13 +78,19 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
       
       logger.info(`Document record created with ID: ${documentData.id}`);
 
-      // Upload file to storage
-      const filePath = `${user.id}/${documentData.id}/${file.name}`;
+      // Create a guaranteed storage path
+      const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const timestamp = Date.now();
+      const filePath = `${user.id}/${documentData.id}/${timestamp}_${cleanFileName}`;
+      
+      // Upload file to storage with the guaranteed path
       const { error: uploadError } = await uploadToStorage(file, user.id, filePath);
 
       if (uploadError) {
         throw uploadError;
       }
+      
+      logger.info(`Document uploaded to storage path: ${filePath}`);
 
       // Update document with storage path
       const { error: updateError } = await supabase
@@ -97,7 +103,8 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
             originalName: file.name,
             documentType: isForm31ByName ? 'form-31' : isForm76 ? 'form-76' : 'unknown',
             fileType: file.type,
-            uploadedAt: new Date().toISOString()
+            uploadedAt: new Date().toISOString(),
+            storageFullPath: filePath  // Store the full path for easy access
           }
         })
         .eq('id', documentData.id);
@@ -141,6 +148,25 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
       } else {
         // Trigger document analysis for other document types
         await triggerDocumentAnalysis(documentData.id, file.name, isForm76);
+      }
+
+      // Verify the file was actually uploaded by checking storage
+      try {
+        const { data: fileData, error: fileCheckError } = await supabase
+          .storage
+          .from('documents')
+          .list(filePath.split('/').slice(0, -1).join('/'));
+          
+        if (fileCheckError || !fileData || fileData.length === 0) {
+          logger.warn(`File upload verification failed. Path: ${filePath}`);
+          toast({
+            variant: "warning",
+            title: "Warning",
+            description: "Document was saved but may have issues with preview. Please check the document viewer.",
+          });
+        }
+      } catch (verifyError) {
+        logger.error('Error verifying file upload:', verifyError);
       }
 
       // Wait for processing simulation to complete

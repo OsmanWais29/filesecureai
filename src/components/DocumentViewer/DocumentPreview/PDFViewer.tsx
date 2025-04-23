@@ -4,6 +4,7 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { AlertTriangle, Download, ExternalLink, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 
 interface PDFViewerProps {
   fileUrl: string | null;
@@ -11,6 +12,7 @@ interface PDFViewerProps {
   zoomLevel?: number;
   onLoad?: () => void;
   onError?: () => void;
+  indicateNetworkErrors?: boolean;
 }
 
 export const PDFViewer: React.FC<PDFViewerProps> = ({
@@ -18,7 +20,8 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   title = "Document",
   zoomLevel = 100,
   onLoad,
-  onError
+  onError,
+  indicateNetworkErrors = true
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -27,6 +30,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   const [retryCount, setRetryCount] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const objectRef = useRef<HTMLObjectElement>(null);
+  const { isOnline } = useNetworkStatus();
 
   // Cache-bust the URL to ensure fresh content
   const cacheBustedUrl = fileUrl ? `${fileUrl}?t=${Date.now()}-${forceReload}` : '';
@@ -72,7 +76,11 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     } else if (useGoogleViewer && retryCount >= 2) {
       // Both methods failed
       setIsLoading(false);
-      setLoadError("Could not load the document. It may be in an unsupported format or inaccessible.");
+      let errorMsg = "Could not load the document. It may be in an unsupported format or inaccessible.";
+      if (indicateNetworkErrors && !isOnline) {
+        errorMsg = "Network connection issue. Please check your internet connection and try again.";
+      }
+      setLoadError(errorMsg);
       if (onError) onError();
     }
   };
@@ -80,7 +88,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   const handleOpenInNewTab = () => {
     if (fileUrl) {
       window.open(fileUrl, '_blank');
-      toast("Document opened in new tab");
+      toast.success("Document opened in new tab");
     }
   };
 
@@ -92,7 +100,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      toast("Download started");
+      toast.success("Download started");
     }
   };
 

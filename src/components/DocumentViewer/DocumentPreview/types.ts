@@ -31,7 +31,7 @@ export interface PreviewState {
   isLoading: boolean;
   handleAnalysisRetry: () => void;
   hasFallbackToDirectUrl: boolean;
-  networkStatus: 'online' | 'offline' | 'limited';
+  networkStatus: 'online' | 'offline' | 'limited' | 'unknown';
   attemptCount: number;
   fileType?: string | null;
   handleFullRecovery?: () => Promise<void>;
