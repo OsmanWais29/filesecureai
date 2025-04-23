@@ -46,9 +46,12 @@ const navigationItems: NavItem[] = [
 ];
 
 export const Navbar: React.FC = () => {
-  const { isAuthenticated, user, signOut } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Check if user is authenticated
+  const isAuthenticated = !!user && !loading;
 
   const handleSignOut = async () => {
     try {

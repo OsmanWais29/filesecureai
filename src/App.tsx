@@ -1,14 +1,15 @@
+
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import DocumentViewerPage from './pages/DocumentViewerPage';
 import DocumentsPage from './pages/DocumentsPage';
 import HomePage from './pages/HomePage';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
-import { Toaster } from "@/components/ui/toaster"
+import { Toaster } from "@/components/ui/toaster";
 import { Analytics } from '@vercel/analytics/react';
-import { SpeedInsights } from "@vercel/speed-insights/react"
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import PricingPage from './pages/PricingPage';
 import SubscriptionSuccessPage from './pages/SubscriptionSuccessPage';
 import SubscriptionCancelPage from './pages/SubscriptionCancelPage';
