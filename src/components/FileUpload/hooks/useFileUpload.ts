@@ -12,6 +12,7 @@ import {
   createNotification
 } from '../utils/uploadProcessor';
 import { detectDocumentType } from '../utils/fileTypeDetector';
+import { isForm31Document } from '@/utils/documents/analysisUtils';
 
 export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<void> | void) => {
   const { toast } = useToast();
@@ -46,11 +47,17 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
 
       // Detect file type
       const { isForm76, isExcel } = detectDocumentType(file);
-      logger.info(`Document type detected: ${isForm76 ? 'Form 76' : isExcel ? 'Excel' : 'Standard document'}`);
+      
+      // Check if it's Form 31 (new detection)
+      const isForm31 = file.name.toLowerCase().includes("form 31") || 
+                      file.name.toLowerCase().includes("form31") ||
+                      file.name.toLowerCase().includes("proof of claim");
+      
+      logger.info(`Document type detected: ${isForm31 ? 'Form 31' : isForm76 ? 'Form 76' : isExcel ? 'Excel' : 'Standard document'}`);
 
       // Start processing stage simulation (runs in parallel with actual upload)
       const processingSimulation = simulateProcessingStages(
-        isForm76, 
+        isForm76 || isForm31, 
         isExcel, 
         setUploadProgress, 
         setUploadStep
@@ -60,8 +67,8 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
       const { data: documentData, error: documentError } = await createDocumentRecord(
         file, 
         user.id, 
-        undefined, // client name will be extracted if it's Form 76
-        isForm76
+        undefined, // client name will be extracted if it's Form 76 or Form 31
+        isForm76 || isForm31
       );
 
       if (documentError) {
@@ -98,9 +105,22 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
         file.name,
         'upload_complete'
       );
-
-      // Trigger document analysis
-      await triggerDocumentAnalysis(documentData.id, file.name, isForm76);
+      
+      // If it's Form 31, create mock analysis
+      if (isForm31) {
+        // Import the function to create Form 31 analysis
+        const { createForm31RiskAssessment } = await import('@/utils/documents/analysisUtils');
+        try {
+          await createForm31RiskAssessment(documentData.id);
+          logger.info('Form 31 analysis created successfully');
+        } catch (error) {
+          logger.error('Error creating Form 31 analysis:', error);
+          // Continue anyway to not block the upload
+        }
+      } else {
+        // Trigger document analysis for other document types
+        await triggerDocumentAnalysis(documentData.id, file.name, isForm76);
+      }
 
       // Wait for processing simulation to complete
       await processingSimulation;
@@ -121,9 +141,11 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
 
       toast({
         title: "Success",
-        description: isForm76 
-          ? "Form 76 uploaded and analyzed successfully" 
-          : "Document uploaded and processed successfully",
+        description: isForm31
+          ? "Form 31 uploaded and analyzed successfully" 
+          : isForm76 
+            ? "Form 76 uploaded and analyzed successfully" 
+            : "Document uploaded and processed successfully",
       });
     } catch (error) {
       logger.error('Upload error:', error);

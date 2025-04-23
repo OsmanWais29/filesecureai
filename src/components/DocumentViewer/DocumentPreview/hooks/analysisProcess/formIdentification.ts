@@ -35,7 +35,8 @@ export const detectFormType = (document: any, documentText: string) => {
     "form 31", 
     "creditor claim",
     "type a: unsecured claim",
-    "claimant name:"
+    "claimant name:",
+    "bankrupt or person"
   ];
   
   const form47Keywords = [
