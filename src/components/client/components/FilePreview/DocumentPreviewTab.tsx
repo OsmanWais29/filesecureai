@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { PDFViewerEmbed } from "./PDFViewerEmbed";
 import { supabase } from "@/lib/supabase";
+import { useFilePreview } from "./useFilePreview";
 
 // Define the proper props interface matching the parent component's usage
 export interface DocumentPreviewTabProps {
@@ -27,54 +28,28 @@ export const DocumentPreviewTab: React.FC<DocumentPreviewTabProps> = ({
   isLoading
 }) => {
   const [previewError, setPreviewError] = useState<boolean>(false);
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [fetchingUrl, setFetchingUrl] = useState<boolean>(false);
   
   // Extract storage path and check if it's a PDF
   const storagePath = document.metadata?.storage_path || null;
   const isPdf = storagePath?.toLowerCase().endsWith('.pdf') || false;
   
-  // When component mounts, try to get the PDF URL
+  // Use our enhanced hook to get the file URL
+  const { url: pdfUrl, isLoading: urlLoading, error: urlError } = useFilePreview(storagePath);
+  
+  // When URL loading completes or has error
   useEffect(() => {
-    const fetchPdfUrl = async () => {
-      if (hasStoragePath && storagePath && isPdf) {
-        try {
-          setFetchingUrl(true);
-          const { data, error } = await supabase.storage
-            .from("documents")
-            .createSignedUrl(storagePath, 3600);
-            
-          if (error) throw error;
-          
-          if (data?.signedUrl) {
-            setPdfUrl(data.signedUrl);
-            setPreviewError(false);
-          }
-        } catch (err) {
-          console.error("Error getting PDF URL:", err);
-          setPreviewError(true);
-          // Try fallback to public URL
-          try {
-            const { data: publicUrlData } = supabase.storage
-              .from("documents")
-              .getPublicUrl(storagePath);
-              
-            if (publicUrlData?.publicUrl) {
-              setPdfUrl(publicUrlData.publicUrl);
-              setPreviewError(false);
-            }
-          } catch (fallbackErr) {
-            console.error("Fallback URL error:", fallbackErr);
-            setPreviewError(true);
-          }
-        } finally {
-          setFetchingUrl(false);
-        }
-      }
-    };
+    if (urlError) {
+      console.error("Error getting PDF URL:", urlError);
+      setPreviewError(true);
+      toast.error("Could not load document preview URL");
+    }
     
-    fetchPdfUrl();
-  }, [hasStoragePath, storagePath, isPdf]);
+    if (!urlLoading && pdfUrl) {
+      console.log("PDF URL loaded successfully:", pdfUrl.substring(0, 50) + "...");
+      setPreviewError(false);
+    }
+  }, [urlLoading, pdfUrl, urlError]);
   
   const handlePreviewError = () => {
     console.log("Preview error encountered in DocumentPreviewTab");
@@ -97,16 +72,23 @@ export const DocumentPreviewTab: React.FC<DocumentPreviewTabProps> = ({
     }
   };
 
+  // Handle preview load success
+  const handlePreviewLoad = () => {
+    console.log("Preview loaded successfully in DocumentPreviewTab");
+    setPreviewError(false);
+  };
+
   return (
     <>
       {hasStoragePath && !previewError ? (
         isPdf && pdfUrl ? (
           // Show PDF preview for PDF files
-          <div className="h-64 overflow-hidden rounded-md border relative">
+          <div className="h-64 overflow-hidden rounded-md border relative group">
             <PDFViewerEmbed 
               fileUrl={pdfUrl}
               title={document.title}
               onError={handlePreviewError}
+              onLoad={handlePreviewLoad}
             />
             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
               <Button 
