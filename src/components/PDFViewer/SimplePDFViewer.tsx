@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ViewerLoadingState } from '@/components/DocumentViewer/components/ViewerLoadingState';
 import { AlertTriangle, Download, ExternalLink, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,11 +20,17 @@ export const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({
   // State for handling different view modes
   const [viewMode, setViewMode] = useState<'direct' | 'iframe' | 'google' | 'error'>('direct');
   const [loadAttempt, setLoadAttempt] = useState(0);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const objectRef = useRef<HTMLObjectElement>(null);
   
   // Use our enhanced hook to get the document URL
   const { url, isLoading, error, retry, refreshUrl } = useDocumentURL(storagePath);
+  
+  // Cache-bust URL when we refresh
+  const cacheBustedUrl = url ? `${url}&t=${Date.now()}` : '';
+  
+  // Create Google Docs viewer URL
+  const googleDocsUrl = url 
+    ? `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true` 
+    : '';
 
   // Reset view mode when URL changes
   useEffect(() => {
@@ -39,11 +45,6 @@ export const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({
       toast.error('Failed to retrieve document URL', { description: error });
     }
   }, [error]);
-
-  // Construct Google Docs viewer URL if needed
-  const googleDocsUrl = url 
-    ? `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true` 
-    : '';
 
   // Handle successful document load
   const handleLoadSuccess = () => {
@@ -80,7 +81,7 @@ export const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({
   // Handle opening document in new tab
   const handleOpenInNewTab = () => {
     if (url) {
-      window.open(url, '_blank');
+      window.open(url, '_blank', 'noopener,noreferrer');
       toast.success('Document opened in new tab');
     } else {
       toast.error('Unable to open document');
@@ -102,6 +103,13 @@ export const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({
     }
   };
 
+  // Switch to Google Docs viewer
+  const switchToGoogleViewer = () => {
+    if (url) {
+      setViewMode('google');
+    }
+  };
+
   // Render error state
   if (viewMode === 'error' || error) {
     return (
@@ -117,6 +125,13 @@ export const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({
             </Button>
             {url && (
               <>
+                <Button 
+                  variant="outline" 
+                  onClick={switchToGoogleViewer} 
+                  className="w-full"
+                >
+                  Try Google Docs Viewer
+                </Button>
                 <Button variant="outline" onClick={handleOpenInNewTab} className="w-full">
                   <ExternalLink className="h-4 w-4 mr-2" />
                   Open in New Tab
@@ -156,10 +171,10 @@ export const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({
   // Render document based on current viewing mode
   return (
     <div className={`relative w-full h-full ${className}`}>
+      {/* Direct PDF rendering via object tag */}
       {viewMode === 'direct' && (
         <object
-          ref={objectRef}
-          data={url}
+          data={cacheBustedUrl}
           type="application/pdf"
           className="w-full h-full"
           onLoad={handleLoadSuccess}
@@ -169,10 +184,10 @@ export const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({
         </object>
       )}
 
+      {/* Fallback to iframe */}
       {viewMode === 'iframe' && (
         <iframe
-          ref={iframeRef}
-          src={url}
+          src={cacheBustedUrl}
           className="w-full h-full border-0"
           onLoad={handleLoadSuccess}
           onError={handleLoadError}
@@ -183,6 +198,7 @@ export const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({
         />
       )}
 
+      {/* Google Docs viewer as ultimate fallback */}
       {viewMode === 'google' && (
         <iframe
           src={googleDocsUrl}
@@ -195,7 +211,19 @@ export const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({
         />
       )}
 
+      {/* Floating action buttons */}
       <div className="absolute top-2 right-2 opacity-0 hover:opacity-100 transition-opacity bg-black/10 p-2 rounded">
+        {viewMode !== 'google' && (
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            className="mr-2"
+            onClick={switchToGoogleViewer}
+            title="Switch to Google Docs Viewer"
+          >
+            Switch to Google Viewer
+          </Button>
+        )}
         <Button 
           variant="secondary" 
           size="sm" 

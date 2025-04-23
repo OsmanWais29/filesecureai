@@ -1,46 +1,59 @@
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import DocumentViewerPage from './pages/DocumentViewerPage';
+import DocumentsPage from './pages/DocumentsPage';
+import HomePage from './pages/HomePage';
+import { AuthProvider } from './contexts/AuthContext';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import ProfilePage from './pages/ProfilePage';
+import { Toaster } from "@/components/ui/toaster"
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from "@vercel/speed-insights/react"
+import PricingPage from './pages/PricingPage';
+import SubscriptionSuccessPage from './pages/SubscriptionSuccessPage';
+import SubscriptionCancelPage from './pages/SubscriptionCancelPage';
+import { useEffect } from 'react';
+import { checkAndRefreshToken } from './utils/jwtMonitoring';
+import DiagnosticsPage from './pages/DiagnosticsPage';
 
-import { Routes, Route } from "react-router-dom";
-import CRMPage from "./pages/CRMPage";
-import DocumentsPage from "./pages/documents/DocumentsPage";
-import NotFound from "./pages/NotFound";
-import MeetingsPage from "./pages/MeetingsPage";
-import CalendarFullscreenPage from "./pages/CalendarFullscreenPage";
-import ActivityPage from "./pages/ActivityPage";
-import AnalyticsPage from "./pages/AnalyticsPage";
-import EFilingPage from "./pages/EFilingPage";
-import ProfilePage from "./pages/ProfilePage";
-import Support from "./pages/Support";
-import Index from "./pages/Index";
-import DocumentViewerPage from "./pages/DocumentViewerPage";
-import ClientViewerPage from "./pages/ClientViewerPage";
-import SettingsPage from "./pages/SettingsPage";
-import NotificationsPage from "./pages/NotificationsPage";
-import ConBrandingPage from "./pages/ConBrandingPage";
-import StorageDiagnosticsPage from "./pages/StorageDiagnosticsPage";
-import "./App.css";
-
-function App() {
+function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<Index />} />
-      <Route path="/login" element={<Index />} /> {/* Ensure /login also maps to Index which handles auth */}
-      <Route path="/crm" element={<CRMPage />} />
+      <Route path="/" element={<HomePage />} />
       <Route path="/documents" element={<DocumentsPage />} />
-      <Route path="/document-viewer/:documentId" element={<DocumentViewerPage />} />
-      <Route path="/client-viewer/:clientId" element={<ClientViewerPage />} />
-      <Route path="/meetings/*" element={<MeetingsPage />} />
-      <Route path="/calendar-fullscreen" element={<CalendarFullscreenPage />} />
-      <Route path="/activity" element={<ActivityPage />} />
-      <Route path="/analytics" element={<AnalyticsPage />} />
-      <Route path="/e-filing" element={<EFilingPage />} />
-      <Route path="/notifications" element={<NotificationsPage />} />
+      <Route path="/documents/:documentId" element={<DocumentViewerPage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
       <Route path="/profile" element={<ProfilePage />} />
-      <Route path="/settings" element={<SettingsPage />} />
-      <Route path="/support" element={<Support />} />
-      <Route path="/SAFA" element={<ConBrandingPage />} />
-      <Route path="/storage-diagnostics" element={<StorageDiagnosticsPage />} />
-      <Route path="*" element={<NotFound />} />
+      <Route path="/pricing" element={<PricingPage />} />
+      <Route path="/subscription-success" element={<SubscriptionSuccessPage />} />
+      <Route path="/subscription-cancel" element={<SubscriptionCancelPage />} />
+      <Route path="/diagnostics" element={<DiagnosticsPage />} />
     </Routes>
+  );
+}
+
+function App() {
+  useEffect(() => {
+    // Perform initial token check and refresh
+    checkAndRefreshToken();
+
+    // Set up interval to periodically check and refresh token (e.g., every 30 minutes)
+    const intervalId = setInterval(checkAndRefreshToken, 30 * 60 * 1000);
+
+    // Clean up interval on component unmount
+    return () => clearInterval(intervalId);
+  }, []);
+
+  return (
+    <AuthProvider>
+      <Router>
+        <AppRoutes />
+        <Toaster />
+        <Analytics />
+        <SpeedInsights />
+      </Router>
+    </AuthProvider>
   );
 }
 
