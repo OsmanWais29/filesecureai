@@ -1,4 +1,3 @@
-
 import { FileText, Eye, MessageSquare, History } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Document } from "../types";
@@ -15,25 +14,19 @@ interface FilePreviewPanelProps {
 }
 
 export const FilePreviewPanel = ({ document, onDocumentOpen }: FilePreviewPanelProps) => {
-  const {
-    activeTab,
-    setActiveTab,
-    hasStoragePath,
-    isLoading,
-    effectiveDocumentId,
-    getStoragePath,
-    handleDocumentOpen
-  } = useFilePreview(document, onDocumentOpen);
-  
+  // NEW: Pass the appropriate file URL (from document or props) to the hook
+  const fileUrl = document?.metadata?.storage_path || null;
+  const { url, isLoading, error } = useFilePreview(fileUrl);
+
   if (!document) {
     return <EmptyDocumentState />;
   }
 
   return (
     <div className="h-full flex flex-col p-4">
-      <DocumentHeader document={document} handleDocumentOpen={handleDocumentOpen} />
+      <DocumentHeader document={document} handleDocumentOpen={onDocumentOpen} />
       
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+      <Tabs value={"preview"} className="flex-1 flex flex-col">
         <TabsList className="mb-4">
           <TabsTrigger value="preview">
             <FileText className="h-4 w-4 mr-1.5" />
@@ -50,20 +43,19 @@ export const FilePreviewPanel = ({ document, onDocumentOpen }: FilePreviewPanelP
         </TabsList>
         
         <TabsContent value="preview" className="mt-0 flex-1">
-          <DocumentPreviewTab 
+          {/* Pass file preview state as needed */}
+          <DocumentPreviewTab
             document={document}
-            hasStoragePath={hasStoragePath}
-            effectiveDocumentId={effectiveDocumentId}
-            getStoragePath={getStoragePath}
-            handleDocumentOpen={handleDocumentOpen}
+            fileUrl={url}
             isLoading={isLoading}
+            error={error}
           />
         </TabsContent>
         
         <TabsContent value="comments" className="mt-0 flex-1 flex flex-col">
           <CommentsTab 
             document={document}
-            effectiveDocumentId={effectiveDocumentId}
+            effectiveDocumentId={document?.id || ""}
           />
         </TabsContent>
         
