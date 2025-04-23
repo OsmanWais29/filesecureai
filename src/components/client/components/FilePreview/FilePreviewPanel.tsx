@@ -9,6 +9,7 @@ import { CommentsTab } from "./CommentsTab";
 import { ActivityTab } from "./ActivityTab";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 interface FilePreviewPanelProps {
   document: Document | null;
@@ -45,13 +46,20 @@ export const FilePreviewPanel = ({ document, onDocumentOpen }: FilePreviewPanelP
           .from("documents")
           .list(folderPath, { limit: 100, search: fileName });
           
-        if (listErr) throw listErr;
+        if (listErr) {
+          console.error("Error listing files:", listErr);
+          throw listErr;
+        }
         
-        const exists = !!fileList?.some(f => f.name.toLowerCase() === fileName.toLowerCase());
-        setFileExists(exists);
+        // Check if file exists with case-insensitive comparison
+        const exists = fileList?.some(f => f.name.toLowerCase() === fileName.toLowerCase());
+        console.log(`File ${fileName} exists: ${exists}`, fileList);
+        
+        setFileExists(!!exists);
         
         if (!exists) {
           setError("File not found in storage");
+          toast.error("The document file could not be found in storage");
         }
       } catch (err: any) {
         console.error("Error checking file:", err);

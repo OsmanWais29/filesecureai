@@ -3,9 +3,10 @@ import { FileText, FileQuestion, Download, ExternalLink } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Document } from "../../types";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { PDFViewerEmbed } from "./PDFViewerEmbed";
+import { supabase } from "@/lib/supabase";
 
 // Define the proper props interface matching the parent component's usage
 export interface DocumentPreviewTabProps {
@@ -25,31 +26,54 @@ export const DocumentPreviewTab: React.FC<DocumentPreviewTabProps> = ({
   handleDocumentOpen,
   isLoading
 }) => {
-  const [previewError, setPreviewError] = useState(false);
+  const [previewError, setPreviewError] = useState<boolean>(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [fetchingUrl, setFetchingUrl] = useState<boolean>(false);
   
   // Extract storage path and check if it's a PDF
   const storagePath = document.metadata?.storage_path || null;
   const isPdf = storagePath?.toLowerCase().endsWith('.pdf') || false;
   
   // When component mounts, try to get the PDF URL
-  useState(() => {
-    if (hasStoragePath && storagePath && isPdf) {
-      import('@/lib/supabase').then(({ supabase }) => {
-        supabase.storage
-          .from("documents")
-          .createSignedUrl(storagePath, 3600)
-          .then(({ data }) => {
-            if (data?.signedUrl) {
-              setPdfUrl(data.signedUrl);
+  useEffect(() => {
+    const fetchPdfUrl = async () => {
+      if (hasStoragePath && storagePath && isPdf) {
+        try {
+          setFetchingUrl(true);
+          const { data, error } = await supabase.storage
+            .from("documents")
+            .createSignedUrl(storagePath, 3600);
+            
+          if (error) throw error;
+          
+          if (data?.signedUrl) {
+            setPdfUrl(data.signedUrl);
+            setPreviewError(false);
+          }
+        } catch (err) {
+          console.error("Error getting PDF URL:", err);
+          setPreviewError(true);
+          // Try fallback to public URL
+          try {
+            const { data: publicUrlData } = supabase.storage
+              .from("documents")
+              .getPublicUrl(storagePath);
+              
+            if (publicUrlData?.publicUrl) {
+              setPdfUrl(publicUrlData.publicUrl);
+              setPreviewError(false);
             }
-          })
-          .catch(err => {
-            console.error("Error getting PDF URL:", err);
+          } catch (fallbackErr) {
+            console.error("Fallback URL error:", fallbackErr);
             setPreviewError(true);
-          });
-      });
-    }
+          }
+        } finally {
+          setFetchingUrl(false);
+        }
+      }
+    };
+    
+    fetchPdfUrl();
   }, [hasStoragePath, storagePath, isPdf]);
   
   const handlePreviewError = () => {
@@ -59,7 +83,17 @@ export const DocumentPreviewTab: React.FC<DocumentPreviewTabProps> = ({
   };
   
   const handleDownload = () => {
-    toast.info("Download functionality not implemented in this demo");
+    if (pdfUrl) {
+      const link = document.createElement('a');
+      link.href = pdfUrl;
+      link.download = document.title || 'document.pdf';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success("Download started");
+    } else {
+      toast.error("Download URL not available");
+    }
   };
 
   return (
@@ -79,15 +113,16 @@ export const DocumentPreviewTab: React.FC<DocumentPreviewTabProps> = ({
                 size="sm" 
                 className="mr-2"
                 onClick={handleDocumentOpen}
-                disabled={isLoading}
+                disabled={isLoading || fetchingUrl}
               >
                 <ExternalLink className="h-3 w-3 mr-1" />
-                {isLoading ? 'Opening...' : 'Open'}
+                {isLoading || fetchingUrl ? 'Loading...' : 'Open'}
               </Button>
               <Button 
                 variant="outline" 
                 size="sm"
                 onClick={handleDownload}
+                disabled={fetchingUrl || !pdfUrl}
               >
                 <Download className="h-3 w-3 mr-1" />
                 Download
@@ -148,6 +183,13 @@ export const DocumentPreviewTab: React.FC<DocumentPreviewTabProps> = ({
               <FileQuestion className="h-10 w-10 text-muted-foreground mb-4" />
               <p className="text-muted-foreground text-center mb-4">
                 There was an error loading the document preview.
+              </p>
+            </>
+          ) : fetchingUrl ? (
+            <>
+              <FileText className="h-10 w-10 text-muted-foreground mb-4 animate-pulse" />
+              <p className="text-muted-foreground text-center mb-4">
+                Loading document preview...
               </p>
             </>
           ) : (

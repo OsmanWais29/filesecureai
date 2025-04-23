@@ -4,7 +4,6 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { AlertTriangle, Download, ExternalLink, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import logger from '@/utils/logger';
 
 interface PDFViewerEmbedProps {
   fileUrl: string | null;
@@ -21,14 +20,16 @@ export const PDFViewerEmbed: React.FC<PDFViewerEmbedProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [viewerMode, setViewerMode] = useState<'direct' | 'google' | 'iframe'>('direct');
+  const [viewerMode, setViewerMode] = useState<'direct' | 'iframe' | 'google'>('direct');
   const [retryCount, setRetryCount] = useState(0);
   const objectRef = useRef<HTMLObjectElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const maxRetries = 3;
   
-  // Ensure we have a clean URL for the viewer
-  const effectiveUrl = fileUrl ? fileUrl.split('?')[0] + `?t=${Date.now()}` : null;
+  // Add a cache-busting parameter to prevent caching issues
+  const effectiveUrl = fileUrl ? `${fileUrl}${fileUrl.includes('?') ? '&' : '?'}t=${Date.now()}` : null;
   
-  // Generate Google Docs viewer URL
+  // Create Google Docs viewer URL
   const googleDocsUrl = effectiveUrl ? 
     `https://docs.google.com/viewer?url=${encodeURIComponent(effectiveUrl)}&embedded=true` : '';
   
@@ -37,45 +38,47 @@ export const PDFViewerEmbed: React.FC<PDFViewerEmbedProps> = ({
     if (fileUrl) {
       setIsLoading(true);
       setLoadError(null);
-      logger.info(`Attempting to load PDF: ${fileUrl}`);
+      setRetryCount(0);
+      setViewerMode('direct');
+      console.log(`Attempting to load PDF: ${fileUrl}`);
     }
   }, [fileUrl]);
 
+  // Handler for successful loading
   const handleLoadSuccess = () => {
-    logger.info('PDF loaded successfully');
+    console.log(`PDF loaded successfully in ${viewerMode} mode`);
     setIsLoading(false);
     setLoadError(null);
+    setRetryCount(0);
     if (onLoad) onLoad();
   };
 
+  // Handler for loading errors with progressive fallback
   const handleLoadError = () => {
-    logger.error(`Error displaying PDF in ${viewerMode} mode:`, fileUrl);
+    console.error(`Error displaying PDF in ${viewerMode} mode:`, effectiveUrl);
     setRetryCount(prev => prev + 1);
     
-    if (viewerMode === 'direct' && retryCount >= 1) {
-      // First fallback: Try iframe mode
-      logger.info('Falling back to iframe mode');
-      setViewerMode('iframe');
-      setIsLoading(true);
-      return;
-    } 
-    
-    if (viewerMode === 'iframe' && retryCount >= 2) {
-      // Second fallback: Try Google Docs viewer
-      logger.info('Falling back to Google Docs viewer');
-      setViewerMode('google');
-      setIsLoading(true);
-      return;
-    }
-    
-    if (viewerMode === 'google' && retryCount >= 3) {
-      // All methods failed
-      setIsLoading(false);
-      setLoadError('Unable to display PDF. Please try downloading it instead.');
-      if (onError) onError();
+    // If we've reached max retries in the current mode, try next mode
+    if (retryCount >= maxRetries - 1) {
+      if (viewerMode === 'direct') {
+        console.log('Falling back to iframe mode');
+        setViewerMode('iframe');
+        setRetryCount(0);
+      } else if (viewerMode === 'iframe') {
+        console.log('Falling back to Google Docs viewer');
+        setViewerMode('google');
+        setRetryCount(0);
+      } else {
+        // All methods failed
+        console.error('All PDF display methods failed');
+        setIsLoading(false);
+        setLoadError('Unable to display PDF. Please try downloading it instead.');
+        if (onError) onError();
+      }
     }
   };
 
+  // Open document in new tab
   const handleOpenInNewTab = () => {
     if (fileUrl) {
       window.open(fileUrl, '_blank', 'noopener,noreferrer');
@@ -83,6 +86,7 @@ export const PDFViewerEmbed: React.FC<PDFViewerEmbedProps> = ({
     }
   };
 
+  // Download document
   const handleDownload = () => {
     if (fileUrl) {
       const link = document.createElement('a');
@@ -95,6 +99,7 @@ export const PDFViewerEmbed: React.FC<PDFViewerEmbedProps> = ({
     }
   };
 
+  // Retry loading with direct mode
   const handleRetry = () => {
     setViewerMode('direct');
     setLoadError(null);
@@ -169,6 +174,7 @@ export const PDFViewerEmbed: React.FC<PDFViewerEmbedProps> = ({
 
       {viewerMode === 'iframe' && (
         <iframe
+          ref={iframeRef}
           src={effectiveUrl || ''}
           className="w-full h-full border-0"
           title={`Document Preview: ${title}`}
