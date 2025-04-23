@@ -32,16 +32,20 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   const cacheBustedUrl = fileUrl ? `${fileUrl}?t=${Date.now()}-${forceReload}` : '';
   const googleDocsViewerUrl = fileUrl ? 
     `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true` : '';
-
+    
   useEffect(() => {
+    console.log("PDFViewer received fileUrl:", fileUrl);
+    
     // Reset loading state when URL changes
     if (fileUrl) {
       setIsLoading(true);
       setLoadError(null);
+      setRetryCount(0);
     }
   }, [fileUrl, forceReload]);
 
   const handleLoadSuccess = () => {
+    console.log("PDF loaded successfully");
     setIsLoading(false);
     setLoadError(null);
     setRetryCount(0);
@@ -54,18 +58,18 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     setRetryCount(prev => prev + 1);
     
     // First retry immediately without changing modes
-    if (retryCount === 1) {
+    if (retryCount === 0) {
       console.log("First load failed, retrying immediately");
       setForceReload(prev => prev + 1);
       return;
     }
     
     // After first retry fails, switch to Google Docs viewer
-    if (!useGoogleViewer && retryCount >= 2) {
+    if (!useGoogleViewer && retryCount >= 1) {
       console.log("Falling back to Google Docs viewer");
       setUseGoogleViewer(true);
       setIsLoading(true);
-    } else if (useGoogleViewer && retryCount >= 3) {
+    } else if (useGoogleViewer && retryCount >= 2) {
       // Both methods failed
       setIsLoading(false);
       setLoadError("Could not load the document. It may be in an unsupported format or inaccessible.");

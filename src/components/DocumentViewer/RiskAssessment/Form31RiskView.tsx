@@ -4,6 +4,8 @@ import { Risk } from "../types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RiskItem } from "./RiskItem";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 interface Form31RiskViewProps {
   risks: Risk[];
@@ -11,10 +13,52 @@ interface Form31RiskViewProps {
 }
 
 export const Form31RiskView: React.FC<Form31RiskViewProps> = ({ risks, documentId }) => {
+  const [localRisks, setLocalRisks] = useState<Risk[]>(risks || []);
+  const [loading, setLoading] = useState(false);
+
+  // If no risks were passed in, try to load them from the database
+  useEffect(() => {
+    if (!risks || risks.length === 0) {
+      setLoading(true);
+      
+      const fetchRisks = async () => {
+        try {
+          const { data: document } = await supabase
+            .from('documents')
+            .select(`
+              id,
+              analysis:document_analysis(content)
+            `)
+            .eq('id', documentId)
+            .single();
+            
+          if (document?.analysis?.[0]?.content?.risks) {
+            setLocalRisks(document.analysis[0].content.risks);
+          }
+        } catch (error) {
+          console.error('Error fetching risks:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      fetchRisks();
+    }
+  }, [risks, documentId]);
+
   // Count risks by severity
-  const criticalCount = risks?.filter(r => r.severity === 'high').length || 0;
-  const moderateCount = risks?.filter(r => r.severity === 'medium').length || 0;
-  const minorCount = risks?.filter(r => r.severity === 'low').length || 0;
+  const criticalCount = localRisks?.filter(r => r.severity === 'high').length || 0;
+  const moderateCount = localRisks?.filter(r => r.severity === 'medium').length || 0;
+  const minorCount = localRisks?.filter(r => r.severity === 'low').length || 0;
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-8">
+        <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
+        <span className="ml-2 text-sm text-muted-foreground">Loading risk assessment...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -37,7 +81,7 @@ export const Form31RiskView: React.FC<Form31RiskViewProps> = ({ risks, documentI
             {minorCount} Minor
           </Badge>
         )}
-        {risks?.length === 0 && (
+        {localRisks?.length === 0 && (
           <Badge variant="outline" className="text-green-600 flex items-center gap-1">
             <CheckCircle className="h-3 w-3" />
             Claim Verified
@@ -45,9 +89,9 @@ export const Form31RiskView: React.FC<Form31RiskViewProps> = ({ risks, documentI
         )}
       </div>
 
-      {risks.length > 0 ? (
+      {localRisks.length > 0 ? (
         <div className="space-y-3">
-          {risks.map((risk, index) => (
+          {localRisks.map((risk, index) => (
             <RiskItem key={`risk-${index}`} risk={risk} documentId={documentId} />
           ))}
         </div>

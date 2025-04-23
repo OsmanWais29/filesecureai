@@ -1,376 +1,208 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from "@/lib/supabase";
-import { useNetworkMonitor } from './useNetworkMonitor';
-import { useRetryStrategy } from './useRetryStrategy';
-import { toast } from 'sonner';
-import { checkAndRefreshToken } from "@/utils/jwtMonitoring";
+import { supabase } from '@/lib/supabase';
+import logger from '@/utils/logger';
 
-interface UseFilePreviewProps {
+interface FilePreviewProps {
   storagePath: string;
   setFileExists: (exists: boolean) => void;
   setFileUrl: (url: string | null) => void;
   setIsExcelFile: (isExcel: boolean) => void;
   setPreviewError: (error: string | null) => void;
-  setFileType?: (type: string | null) => void;
+  setFileType: (type: string | null) => void;
 }
 
-export function useFilePreview({
+export const useFilePreview = ({
   storagePath,
   setFileExists,
   setFileUrl,
   setIsExcelFile,
   setPreviewError,
   setFileType
-}: UseFilePreviewProps) {
+}: FilePreviewProps) => {
+  const [networkStatus, setNetworkStatus] = useState<'online' | 'offline' | 'unknown'>('unknown');
+  const [attemptCount, setAttemptCount] = useState(0);
   const [hasFileLoadStarted, setHasFileLoadStarted] = useState(false);
-  const { 
-    networkStatus, 
-    handleOnline, 
-    handleOffline,
-    isLimitedConnectivity 
-  } = useNetworkMonitor();
-  
-  const { 
-    attemptCount, 
-    incrementAttempt, 
-    resetAttempts, 
-    shouldRetry,
-    getRetryDelay,
-    lastAttempt,
-    setLastAttempt,
-    lastErrorType,
-    getDiagnostics
-  } = useRetryStrategy(5); // Increase max attempts to 5
+  const [diagnostics, setDiagnostics] = useState<any>({});
 
-  // Track whether we've tried token refresh
-  const [hasTriedTokenRefresh, setHasTriedTokenRefresh] = useState(false);
-  // Track whether we've tried Google Docs viewer as fallback
-  const [hasTriedGoogleViewer, setHasTriedGoogleViewer] = useState(false);
-  // Track whether we've tried public URL fallback
-  const [hasTriedPublicUrl, setHasTriedPublicUrl] = useState(false);
-
-  // First, declare checkFile function before it's used
-  // Check if the file exists and get its URL with enhanced error handling
-  const checkFile = useCallback(async (path?: string) => {
-    setHasFileLoadStarted(true);
-    const filePath = path || storagePath;
+  // Helper function to determine file type from the path
+  const getFileTypeFromPath = (path: string): { type: string; isExcel: boolean } => {
+    const extension = path.split('.').pop()?.toLowerCase() || '';
+    const isExcel = ['xls', 'xlsx', 'csv'].includes(extension);
     
-    if (!filePath) {
-      setPreviewError('No file path provided');
-      setFileExists(false);
+    let type = 'application/octet-stream'; // Default type
+    
+    if (extension === 'pdf') type = 'application/pdf';
+    else if (extension === 'doc' || extension === 'docx') type = 'application/msword';
+    else if (extension === 'xls' || extension === 'xlsx') type = 'application/vnd.ms-excel';
+    else if (extension === 'csv') type = 'text/csv';
+    else if (extension === 'txt') type = 'text/plain';
+    else if (extension === 'jpg' || extension === 'jpeg') type = 'image/jpeg';
+    else if (extension === 'png') type = 'image/png';
+    
+    return { type, isExcel };
+  };
+
+  // Function to check if the file exists and generate a URL
+  const checkFile = useCallback(async () => {
+    if (!storagePath) {
+      console.log("No storage path provided for file check");
       return;
     }
-    
-    console.group('📄 Checking File');
-    console.log('Checking file path:', filePath);
-    console.log('Current attempt:', attemptCount + 1);
-    console.log('Network status:', networkStatus);
+
+    setHasFileLoadStarted(true);
+    setAttemptCount(prev => prev + 1);
     
     try {
-      // Mark as online since we're making a request
-      handleOnline();
+      console.log(`Checking file: ${storagePath}, attempt #${attemptCount + 1}`);
       
-      // For auth errors, ensure we have a fresh token first
-      if (lastErrorType === 'auth' || attemptCount > 2) {
-        console.log('Pre-emptively refreshing token due to previous errors or multiple attempts');
-        try {
-          await checkAndRefreshToken();
-        } catch (refreshError) {
-          console.warn('Token pre-refresh failed:', refreshError);
-          // Continue anyway, the request might still work
-        }
+      // Check network status
+      setNetworkStatus(navigator.onLine ? 'online' : 'offline');
+      if (!navigator.onLine) {
+        setPreviewError("You appear to be offline. Please check your internet connection.");
+        return;
       }
       
-      // Extract file name and path parts
-      const pathParts = filePath.split('/');
-      const fileName = pathParts.pop() || '';
-      const folderPath = pathParts.join('/');
-      
-      console.log('Folder path:', folderPath);
-      console.log('File name:', fileName);
-      
-      // Check if the file exists by listing the folder contents
-      const { data: fileList, error: listError } = await supabase
+      // Get file metadata before trying to download
+      const { data: fileInfo, error: fileInfoError } = await supabase
         .storage
         .from('documents')
-        .list(folderPath, {
-          limit: 100,
-          search: fileName
+        .list(storagePath.split('/').slice(0, -1).join('/'), {
+          limit: 10,
+          offset: 0,
+          search: storagePath.split('/').pop()
+        });
+
+      // Handle metadata load error
+      if (fileInfoError) {
+        console.error("Error getting file info:", fileInfoError);
+        setDiagnostics({
+          ...diagnostics,
+          fileInfoError,
+          storagePath
+        });
+        throw new Error(`File not found: ${fileInfoError.message}`);
+      }
+      
+      // File not found in storage
+      if (!fileInfo || fileInfo.length === 0) {
+        console.error("File not found in storage");
+        
+        // Try to get document record from database for diagnostics
+        const { data: docRecord } = await supabase
+          .from('documents')
+          .select('*')
+          .or(`storage_path.eq.${storagePath},id.eq.${storagePath.split('/')[1]}`)
+          .maybeSingle();
+          
+        setDiagnostics({
+          ...diagnostics,
+          fileNotFoundError: true,
+          documentRecord: docRecord,
+          storagePath
         });
         
-      if (listError) {
-        throw listError;
+        throw new Error("File not found in storage");
       }
+
+      // We found the file, mark it as existing
+      setFileExists(true);
       
-      // Check if we found our file (case-insensitive to be more robust)
-      const fileExists = fileList && fileList.some(file => 
-        file.name.toLowerCase() === fileName.toLowerCase()
-      );
-      
-      console.log('File exists in storage:', fileExists);
-      setFileExists(fileExists);
-      
-      if (!fileExists) {
-        setPreviewError('File not found in storage');
-        console.groupEnd();
-        return;
-      }
-      
-      // Get the public URL as a backup/fallback
-      const publicUrlData = supabase
-        .storage
-        .from('documents')
-        .getPublicUrl(filePath);
-      
-      const publicUrl = publicUrlData?.data?.publicUrl;
-      console.log('Public URL (fallback):', publicUrl);
-      
-      // Determine file type
-      const isExcel = /\.(xlsx|xls|csv)$/i.test(fileName);
+      // Determine file type information
+      const { type, isExcel } = getFileTypeFromPath(storagePath);
+      setFileType(type);
       setIsExcelFile(isExcel);
       
-      // Add file type detection
-      if (setFileType) {
-        if (fileName.toLowerCase().endsWith('.pdf')) {
-          setFileType('pdf');
-        } else if (fileName.match(/\.(jpe?g|png|gif|bmp|webp|svg)$/i)) {
-          setFileType('image');
-        } else if (fileName.match(/\.(xlsx?|csv)$/i)) {
-          setFileType('excel');
-        } else if (fileName.match(/\.(docx?|txt|rtf)$/i)) {
-          setFileType('document');
-        } else {
-          setFileType('other');
-        }
-      }
-      
-      // Get a signed URL for the file with longer expiry time
-      console.log('Getting signed URL...');
-      const { data: urlData, error: urlError } = await supabase
+      // Generate signed URL with proper content type
+      const { data: signedURL, error: signedURLError } = await supabase
         .storage
         .from('documents')
-        .createSignedUrl(filePath, 60 * 60); // 1 hour expiry
+        .createSignedUrl(storagePath, 60 * 60); // 1 hour expiry
+      
+      if (signedURLError || !signedURL?.signedUrl) {
+        console.error("Error creating signed URL:", signedURLError);
         
-      if (urlError) {
-        console.error('Error getting signed URL:', urlError);
-        // If there's a public URL, use that as a fallback
-        if (publicUrl) {
-          console.log('Falling back to public URL');
-          setFileUrl(publicUrl);
-          setPreviewError(null);
-          resetAttempts();
-          console.groupEnd();
+        // Fallback to direct download URL
+        console.log("Falling back to direct download URL");
+        const { data: publicUrl } = supabase
+          .storage
+          .from('documents')
+          .getPublicUrl(storagePath);
+          
+        if (publicUrl?.publicUrl) {
+          console.log("Using public URL:", publicUrl.publicUrl);
+          setFileUrl(publicUrl.publicUrl);
           return;
         }
-        throw urlError;
-      }
-      
-      console.log('Got signed URL successfully');
-      setFileUrl(urlData?.signedUrl || null);
-      
-      // Clear any previous errors if successful
-      setPreviewError(null);
-      resetAttempts();
-      
-      // Reset fallback flags on success
-      setHasTriedTokenRefresh(false);
-      setHasTriedGoogleViewer(false);
-      setHasTriedPublicUrl(false);
-      
-      console.groupEnd();
-    } catch (error) {
-      // Get the public URL to use as potential fallback
-      const publicUrlData = supabase
-        .storage
-        .from('documents')
-        .getPublicUrl(filePath);
-      
-      const publicUrl = publicUrlData?.data?.publicUrl;
-      handleFileCheckError(error, publicUrl);
-    }
-  }, [
-    storagePath, 
-    setFileExists, 
-    setFileUrl, 
-    setIsExcelFile, 
-    setPreviewError,
-    setFileType,
-    handleOnline,
-    resetAttempts,
-    networkStatus,
-    attemptCount,
-    lastErrorType,
-    // Note: handleFileCheckError is declared later but would be included in dependencies
-  ]);
-
-  // Handle errors during file checking with enhanced diagnostics
-  const handleFileCheckError = useCallback(async (error: any, publicUrl?: string | null) => {
-    console.group('📄 File Check Error');
-    console.error('Error checking file:', error);
-    console.log('Current retry attempt:', attemptCount + 1);
-    console.log('StoragePath:', storagePath);
-    
-    // Detect error type for better handling
-    const errorMsg = error?.message?.toLowerCase() || '';
-    const isNetworkError = errorMsg.includes('network') || errorMsg.includes('fetch');
-    const isAuthError = errorMsg.includes('token') || errorMsg.includes('auth') || errorMsg.includes('jwt');
-    const isNotFoundError = errorMsg.includes('not found') || errorMsg.includes('404');
-    const isCorsError = errorMsg.includes('cors') || errorMsg.includes('origin');
-    
-    console.log('Error analysis:', {
-      isNetworkError,
-      isAuthError, 
-      isNotFoundError,
-      isCorsError
-    });
-    
-    // Clear URL while we handle the error
-    setFileUrl(null);
-    
-    // Special handling based on error type
-    if (isNetworkError) {
-      handleOffline();
-      setPreviewError('Network error while loading document. Retrying when connection improves...');
-    } else if (isAuthError && !hasTriedTokenRefresh) {
-      // Try to refresh the token on auth errors
-      setPreviewError('Authentication error. Refreshing credentials...');
-      setHasTriedTokenRefresh(true);
-      
-      // Try to refresh token and retry
-      console.log('Attempting token refresh...');
-      try {
-        const tokenResult = await checkAndRefreshToken();
-        console.log('Token refresh result:', tokenResult);
         
-        // Retry after short delay
-        setTimeout(() => checkFile(), 1000);
-        console.groupEnd();
-        return;
-      } catch (refreshError) {
-        console.error('Token refresh failed:', refreshError);
+        setDiagnostics({
+          ...diagnostics,
+          signedURLError,
+          storagePath
+        });
+        
+        throw new Error(`Failed to create URL for document: ${signedURLError?.message || "Unknown error"}`);
       }
-    } else if (isNotFoundError) {
-      // For not found errors, try the public URL as fallback if we haven't yet
-      if (!hasTriedPublicUrl && publicUrl) {
-        setHasTriedPublicUrl(true);
-        console.log('Trying public URL as fallback...');
-        setFileUrl(publicUrl);
-        setPreviewError(null);
-        console.groupEnd();
-        return;
-      } else {
-        setPreviewError('Document not found in storage. It may have been deleted or moved.');
-      }
-    } else if (isCorsError && !hasTriedGoogleViewer) {
-      // For CORS errors, we can try Google Docs viewer as a fallback
-      setHasTriedGoogleViewer(true);
-      setPreviewError('CORS issue detected. Trying alternative viewer...');
       
-      if (publicUrl) {
-        const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(publicUrl)}&embedded=true`;
-        console.log('Using Google Docs viewer fallback:', googleViewerUrl);
-        setFileUrl(googleViewerUrl);
-        console.groupEnd();
-        return;
-      }
-    } else {
-      setPreviewError(error.message || 'An unknown error occurred while loading the document.');
+      // Success! We have a valid signed URL
+      console.log("Successfully created signed URL");
+      setFileUrl(signedURL.signedUrl);
+      setPreviewError(null);
+    } catch (error: any) {
+      console.error("File preview error:", error.message);
+      setPreviewError(`Error loading file: ${error.message}`);
+      setFileUrl(null);
+      setFileExists(false);
     }
-    
-    setFileExists(false);
-    incrementAttempt(error);
-    console.log('Updated diagnostics:', getDiagnostics());
-    console.groupEnd();
-  }, [
-    handleOffline, 
-    incrementAttempt, 
-    setFileExists, 
-    setFileUrl, 
-    setPreviewError, 
-    attemptCount, 
-    storagePath,
-    hasTriedTokenRefresh,
-    hasTriedGoogleViewer,
-    hasTriedPublicUrl,
-    getDiagnostics,
-    checkFile
-  ]);
+  }, [storagePath, attemptCount, diagnostics, setFileUrl, setFileExists, setIsExcelFile, setPreviewError, setFileType]);
 
-  // Initial file check on component mount or when path changes
+  // Run file check when storage path changes
   useEffect(() => {
     if (storagePath && !hasFileLoadStarted) {
+      console.log("Storage path changed, checking file:", storagePath);
       checkFile();
     }
-  }, [storagePath, checkFile, hasFileLoadStarted]);
-  
-  // Handle automatic retries on network failure
-  useEffect(() => {
-    let retryTimeout: ReturnType<typeof setTimeout>;
     
-    // Retry conditions:
-    // 1. When offline and should retry
-    // 2. When we got an auth error and haven't tried token refresh
-    // 3. When we have limited connectivity
-    const shouldAttemptRetry = (
-      (networkStatus === 'offline' && shouldRetry(attemptCount)) ||
-      (lastErrorType === 'auth' && !hasTriedTokenRefresh && shouldRetry(attemptCount)) ||
-      (isLimitedConnectivity && shouldRetry(attemptCount))
-    );
-    
-    if (shouldAttemptRetry) {
-      const delay = getRetryDelay(attemptCount);
-      console.log(`Will retry file check in ${delay}ms (attempt ${attemptCount + 1})`);
-      
-      retryTimeout = setTimeout(() => {
-        console.log('Retrying file check...');
+    // Add network online/offline event listeners
+    const handleOnline = () => {
+      console.log("Network is online");
+      setNetworkStatus('online');
+      if (storagePath && !hasFileLoadStarted) {
         checkFile();
-        setLastAttempt(new Date());
-      }, delay);
-    }
+      }
+    };
+    
+    const handleOffline = () => {
+      console.log("Network is offline");
+      setNetworkStatus('offline');
+    };
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
     
     return () => {
-      if (retryTimeout) clearTimeout(retryTimeout);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
-  }, [
-    networkStatus, 
-    attemptCount, 
-    shouldRetry, 
-    getRetryDelay, 
-    checkFile, 
-    setLastAttempt,
-    lastErrorType,
-    hasTriedTokenRefresh,
-    isLimitedConnectivity
-  ]);
+  }, [storagePath, checkFile, hasFileLoadStarted]);
 
-  // Public methods for manual operations
-  const forceRefresh = useCallback(async () => {
-    resetAttempts();
-    setHasTriedTokenRefresh(false);
-    setHasTriedGoogleViewer(false);
-    setHasTriedPublicUrl(false);
-    setPreviewError(null);
-    
-    // Pre-emptively refresh token
-    try {
-      await checkAndRefreshToken();
-      toast.success("Authentication refreshed, retrying document load...");
-    } catch (e) {
-      console.warn("Token refresh failed:", e);
-    }
-    
+  const resetRetries = useCallback(() => {
+    setAttemptCount(0);
+    setHasFileLoadStarted(false);
+  }, []);
+  
+  const forceRefresh = useCallback(() => {
+    resetRetries();
     checkFile();
-  }, [resetAttempts, checkFile]);
+  }, [resetRetries, checkFile]);
 
-  return {
-    checkFile,
-    handleFileCheckError,
-    networkStatus,
+  return { 
+    checkFile, 
+    networkStatus, 
     attemptCount,
     hasFileLoadStarted,
-    resetRetries: resetAttempts,
+    resetRetries,
     forceRefresh,
-    diagnostics: getDiagnostics()
+    diagnostics
   };
-}
+};
