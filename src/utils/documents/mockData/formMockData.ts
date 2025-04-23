@@ -4,11 +4,10 @@ export const getMockForm31Data = (): AnalysisResult => {
   return {
     extracted_info: {
       formNumber: "31",
-      formType: "form-31",
+      type: "form-31",
       clientName: "Acme Corporation",
       dateSigned: "March 15, 2025",
       trusteeName: "Jane Smith, LIT",
-      type: "Proof of Claim",
       summary: "Proof of Claim (Form 31) filed by Acme Corporation as creditor",
       creditorAddress: "123 Business Ave, Toronto, ON M5H 2N2",
       creditorPhone: "(416) 555-0123",
