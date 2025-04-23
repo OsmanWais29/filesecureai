@@ -1,3 +1,4 @@
+
 import { supabase } from "@/lib/supabase";
 import logger from "@/utils/logger";
 import { AnalysisResult } from "../types/analysisTypes";
@@ -174,9 +175,10 @@ export const saveAnalysisResults = async (
         metadata: {
           analyzed_at: new Date().toISOString(),
           analysis_version: '1.0',
-          form_type: analysisData.extracted_info?.formType || 
-                    analysisData.extracted_info?.formNumber || 
-                    analysisData.extracted_info?.type || 'unknown'
+          // Fix the type error by using a type guard to check for formType property
+          form_type: (analysisData.extracted_info as any).formType || // Use type assertion as a workaround
+                    analysisData.extracted_info.formNumber || 
+                    analysisData.extracted_info.type || 'unknown'
         }
       })
       .eq('id', documentId);
