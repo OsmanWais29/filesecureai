@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ViewerLoadingState } from '@/components/DocumentViewer/components/ViewerLoadingState';
 import { AlertTriangle, Download, ExternalLink, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -17,33 +17,40 @@ export const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({
   title = 'Document',
   className = ''
 }) => {
-  const [viewMode, setViewMode] = useState<'direct' | 'google' | 'iframe'>('direct');
-  const [displayError, setDisplayError] = useState<string | null>(null);
-  const { url, isLoading, error, retry } = useDocumentURL(storagePath);
+  // State for handling different view modes
+  const [viewMode, setViewMode] = useState<'direct' | 'iframe' | 'google' | 'error'>('direct');
   const [loadAttempt, setLoadAttempt] = useState(0);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const objectRef = useRef<HTMLObjectElement>(null);
+  
+  // Use our enhanced hook to get the document URL
+  const { url, isLoading, error, retry, refreshUrl } = useDocumentURL(storagePath);
 
-  // Reset error state when URL changes
+  // Reset view mode when URL changes
   useEffect(() => {
-    setDisplayError(null);
+    if (url) {
+      setViewMode('direct');
+    }
   }, [url]);
 
-  // Show toast when there's an URL retrieval error
+  // Notify on errors
   useEffect(() => {
     if (error) {
-      toast.error('Failed to retrieve document URL');
-      setDisplayError(error);
+      toast.error('Failed to retrieve document URL', { description: error });
     }
   }, [error]);
 
-  // Construct Google Docs viewer URL
+  // Construct Google Docs viewer URL if needed
   const googleDocsUrl = url 
     ? `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true` 
     : '';
 
+  // Handle successful document load
   const handleLoadSuccess = () => {
-    console.log('Document loaded successfully in mode:', viewMode);
+    console.log(`Document loaded successfully in ${viewMode} mode`);
   };
 
+  // Handle document load errors with fallback strategy
   const handleLoadError = () => {
     console.error(`Failed to load document in ${viewMode} mode`);
     
@@ -58,17 +65,19 @@ export const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({
       setLoadAttempt(prev => prev + 1);
     } else {
       // All viewing modes failed
-      setDisplayError('Unable to display document. Please try downloading it instead.');
+      setViewMode('error');
+      toast.error('Unable to display document');
     }
   };
 
+  // Handle manual retry
   const handleRetry = () => {
-    setDisplayError(null);
     setViewMode('direct');
     setLoadAttempt(0);
     retry();
   };
 
+  // Handle opening document in new tab
   const handleOpenInNewTab = () => {
     if (url) {
       window.open(url, '_blank');
@@ -78,6 +87,7 @@ export const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({
     }
   };
 
+  // Handle document download
   const handleDownload = () => {
     if (url) {
       const link = document.createElement('a');
@@ -93,13 +103,13 @@ export const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({
   };
 
   // Render error state
-  if (displayError) {
+  if (viewMode === 'error' || error) {
     return (
       <div className={`flex items-center justify-center h-full bg-muted/30 ${className}`}>
         <div className="text-center max-w-md p-6">
           <AlertTriangle className="h-10 w-10 text-destructive mx-auto mb-4" />
           <h3 className="text-lg font-medium mb-2">Document Viewer Error</h3>
-          <p className="text-muted-foreground mb-6">{displayError}</p>
+          <p className="text-muted-foreground mb-6">{error || 'Unable to display document'}</p>
           <div className="flex flex-col gap-3">
             <Button onClick={handleRetry} className="w-full">
               <RefreshCw className="h-4 w-4 mr-2" />
@@ -134,7 +144,7 @@ export const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({
     );
   }
 
-  // If we have URL but no viewing mode has been successful yet
+  // If we have no URL
   if (!url) {
     return (
       <div className={`flex items-center justify-center h-full bg-muted/30 ${className}`}>
@@ -148,18 +158,20 @@ export const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({
     <div className={`relative w-full h-full ${className}`}>
       {viewMode === 'direct' && (
         <object
+          ref={objectRef}
           data={url}
           type="application/pdf"
           className="w-full h-full"
           onLoad={handleLoadSuccess}
           onError={handleLoadError}
         >
-          <p>Your browser doesn't support PDF embedding</p>
+          <p>Your browser doesn't support PDF embedding. Trying alternative viewer...</p>
         </object>
       )}
 
       {viewMode === 'iframe' && (
         <iframe
+          ref={iframeRef}
           src={url}
           className="w-full h-full border-0"
           onLoad={handleLoadSuccess}
@@ -176,14 +188,14 @@ export const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({
           src={googleDocsUrl}
           className="w-full h-full border-0"
           onLoad={handleLoadSuccess}
-          onError={handleLoadError}
+          onError={() => setViewMode('error')}
           title={`Google Docs Viewer: ${title}`}
           referrerPolicy="no-referrer"
           allow="fullscreen"
         />
       )}
 
-      <div className="absolute top-2 right-2 opacity-0 hover:opacity-100 transition-opacity">
+      <div className="absolute top-2 right-2 opacity-0 hover:opacity-100 transition-opacity bg-black/10 p-2 rounded">
         <Button 
           variant="secondary" 
           size="sm" 

@@ -20,6 +20,7 @@ export const SimpleFilePreview: React.FC<SimpleFilePreviewProps> = ({
   className = ''
 }) => {
   const { url, isLoading, error, retry } = useDocumentURL(storagePath);
+  const isPdf = storagePath?.toLowerCase().endsWith('.pdf');
 
   const handleDownload = () => {
     if (url) {
@@ -72,7 +73,7 @@ export const SimpleFilePreview: React.FC<SimpleFilePreviewProps> = ({
   }
 
   // For PDF files, we can show a small preview
-  if (storagePath?.toLowerCase().endsWith('.pdf')) {
+  if (isPdf) {
     return (
       <div className={`relative ${className}`}>
         <object
@@ -83,7 +84,7 @@ export const SimpleFilePreview: React.FC<SimpleFilePreviewProps> = ({
           <p>Your browser doesn't support PDF embedding</p>
         </object>
         
-        <div className="absolute top-2 right-2">
+        <div className="absolute top-2 right-2 bg-black/10 p-1 rounded">
           <Button 
             variant="secondary" 
             size="sm" 

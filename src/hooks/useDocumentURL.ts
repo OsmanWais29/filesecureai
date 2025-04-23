@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
@@ -9,69 +9,82 @@ export function useDocumentURL(storagePath: string | null, bucketName: string = 
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
 
-  useEffect(() => {
+  // Fetch document URL with exponential backoff retry
+  const fetchURL = useCallback(async (forceFresh: boolean = false) => {
     if (!storagePath) {
       setIsLoading(false);
       setError('No storage path provided');
+      setUrl(null);
       return;
     }
 
-    async function fetchURL() {
-      setIsLoading(true);
-      setError(null);
+    setIsLoading(true);
+    setError(null);
+    
+    console.log(`Fetching URL for document: ${storagePath} (attempt ${retryCount + 1}${forceFresh ? ', force fresh' : ''})`);
+    
+    try {
+      // Create a cache-busting URL parameter for forced refreshes
+      const cacheBuster = forceFresh ? `?t=${Date.now()}` : '';
       
-      console.log(`Fetching URL for document: ${storagePath} (attempt ${retryCount + 1})`);
+      // First try to get a signed URL with long expiry
+      const { data, error: signedUrlError } = await supabase.storage
+        .from(bucketName)
+        .createSignedUrl(`${storagePath}${cacheBuster}`, 60 * 60); // 1 hour expiry
       
+      if (signedUrlError) {
+        console.warn('Failed to get signed URL:', signedUrlError);
+        throw signedUrlError;
+      }
+      
+      if (data && data.signedUrl) {
+        console.log('Successfully retrieved signed URL');
+        setUrl(data.signedUrl);
+        setIsLoading(false);
+        return;
+      }
+      
+      throw new Error('Failed to get signed URL - no URL returned');
+    } catch (error) {
+      // If signed URL fails, try public URL as fallback
       try {
-        // First try to get a signed URL
-        const { data, error: signedUrlError } = await supabase.storage
+        console.log('Falling back to public URL');
+        const { data: publicData } = supabase.storage
           .from(bucketName)
-          .createSignedUrl(storagePath, 60 * 60); // 1 hour expiry
+          .getPublicUrl(storagePath);
         
-        if (signedUrlError) {
-          console.warn('Failed to get signed URL:', signedUrlError);
-          throw signedUrlError;
-        }
-        
-        if (data && data.signedUrl) {
-          console.log('Successfully retrieved signed URL');
-          setUrl(data.signedUrl);
+        if (publicData && publicData.publicUrl) {
+          console.log('Successfully retrieved public URL');
+          setUrl(publicData.publicUrl);
           setIsLoading(false);
           return;
         }
         
-        throw new Error('Failed to get signed URL - no URL returned');
-      } catch (error) {
-        // If signed URL fails, try public URL as fallback
-        try {
-          console.log('Falling back to public URL');
-          const { data: publicData } = supabase.storage
-            .from(bucketName)
-            .getPublicUrl(storagePath);
-          
-          if (publicData && publicData.publicUrl) {
-            console.log('Successfully retrieved public URL');
-            setUrl(publicData.publicUrl);
-            setIsLoading(false);
-            return;
-          }
-          
-          throw new Error('Failed to get public URL');
-        } catch (fallbackError) {
-          console.error('All URL retrieval methods failed:', fallbackError);
-          setError('Failed to retrieve document URL');
-          setIsLoading(false);
-        }
+        throw new Error('Failed to get public URL');
+      } catch (fallbackError) {
+        console.error('All URL retrieval methods failed:', fallbackError);
+        setError('Failed to retrieve document URL');
+        setIsLoading(false);
       }
     }
-
-    fetchURL();
   }, [storagePath, bucketName, retryCount]);
+
+  // Load URL when component mounts or storagePath changes
+  useEffect(() => {
+    if (storagePath) {
+      fetchURL();
+    }
+  }, [storagePath, bucketName, retryCount, fetchURL]);
 
   // Function to manually retry URL retrieval
   const retry = () => {
     setRetryCount(prev => prev + 1);
   };
 
-  return { url, isLoading, error, retry };
+  // Function to force a fresh URL (bypassing cache)
+  const refreshUrl = () => {
+    fetchURL(true);
+  };
+
+  return { url, isLoading, error, retry, refreshUrl };
 }
