@@ -5,8 +5,7 @@ import { Document } from "../../types";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { PDFViewerEmbed } from "./PDFViewerEmbed";
-import { useFilePreview } from "./useFilePreview";
+import { SimpleFilePreview } from "./SimpleFilePreview";
 
 export interface DocumentPreviewTabProps {
   document: Document;
@@ -30,192 +29,26 @@ export const DocumentPreviewTab: React.FC<DocumentPreviewTabProps> = ({
   // Get the storage path directly
   const storagePath = document.metadata?.storage_path || document.storage_path || null;
   const isPdf = storagePath?.toLowerCase().endsWith('.pdf') || false;
-  
-  // Use our enhanced hook to get the file URL with better error handling
-  const { 
-    url: pdfUrl, 
-    isLoading: urlLoading, 
-    error: urlError,
-    refreshUrl,
-    retryCount
-  } = useFilePreview(storagePath);
-  
-  // When URL loading completes or has error
-  useEffect(() => {
-    if (urlError) {
-      console.error("Error getting PDF URL:", urlError);
-      setPreviewError(true);
-      toast.error("Could not load document preview URL");
-    }
-    
-    if (!urlLoading && pdfUrl) {
-      console.log("PDF URL loaded successfully");
-      setPreviewError(false);
-    }
-  }, [urlLoading, pdfUrl, urlError]);
-  
-  // Handle preview error from the PDF viewer component
-  const handlePreviewError = () => {
-    console.log("Preview error encountered in DocumentPreviewTab");
-    setPreviewError(true);
-    
-    // Only show toast if this is a new error, not if we already knew about it
-    if (!previewError) {
-      toast.error("Could not load document preview");
-    }
-  };
-  
-  // Handle document download
-  const handleDownload = () => {
-    if (pdfUrl) {
-      // Use window.document for DOM operations
-      const link = window.document.createElement('a');
-      link.href = pdfUrl;
-      link.download = document.title || 'document.pdf';
-      window.document.body.appendChild(link);
-      link.click();
-      window.document.body.removeChild(link);
-      toast.success("Download started");
-    } else {
-      toast.error("Download URL not available");
-      
-      // Try refreshing URL first
-      refreshUrl();
-    }
-  };
-
-  // Handle preview load success
-  const handlePreviewLoad = () => {
-    console.log("Preview loaded successfully in DocumentPreviewTab");
-    setPreviewError(false);
-  };
 
   // Render PDF preview or document card based on file type and availability
   return (
     <>
-      {hasStoragePath && !previewError ? (
-        isPdf && pdfUrl ? (
-          // Show PDF preview for PDF files
-          <div className="h-64 overflow-hidden rounded-md border relative group">
-            <PDFViewerEmbed 
-              fileUrl={pdfUrl}
-              title={document.title}
-              onError={handlePreviewError}
-              onLoad={handlePreviewLoad}
-            />
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-              <Button 
-                variant="secondary" 
-                size="sm" 
-                className="mr-2"
-                onClick={handleDocumentOpen}
-                disabled={isLoading || urlLoading}
-              >
-                <ExternalLink className="h-3 w-3 mr-1" />
-                {isLoading || urlLoading ? 'Loading...' : 'Open'}
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleDownload}
-                disabled={urlLoading || !pdfUrl}
-              >
-                <Download className="h-3 w-3 mr-1" />
-                Download
-              </Button>
-            </div>
-          </div>
-        ) : (
-          // Show document card for non-PDF files or when PDF URL is not yet available
-          <div className="h-64 overflow-hidden rounded-md border relative group">
-            <div 
-              className="absolute inset-0 cursor-pointer z-10"
-              onClick={handleDocumentOpen}
-              title="Click to open document viewer"
-            />
-            
-            <div className="flex items-center justify-center h-full bg-muted/30">
-              <div className="text-center p-4">
-                <FileText className="h-12 w-12 mx-auto text-primary/60 mb-3" />
-                <h3 className="font-medium text-sm mb-1">{document.title}</h3>
-                <p className="text-xs text-muted-foreground">
-                  Click to open document
-                </p>
-                {isPdf && urlLoading && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Loading PDF preview...
-                  </p>
-                )}
-              </div>
-            </div>
-            
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-              <Button 
-                variant="secondary" 
-                size="sm" 
-                className="mr-2"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDocumentOpen();
-                }}
-                disabled={isLoading}
-              >
-                <ExternalLink className="h-3 w-3 mr-1" />
-                {isLoading ? 'Opening...' : 'Open'}
-              </Button>
-              {pdfUrl && (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDownload();
-                  }}
-                >
-                  <Download className="h-3 w-3 mr-1" />
-                  Download
-                </Button>
-              )}
-            </div>
-          </div>
-        )
+      {hasStoragePath ? (
+        <div className="h-64 overflow-hidden rounded-md border relative group">
+          <SimpleFilePreview
+            storagePath={storagePath}
+            title={document.title}
+            onOpenFull={handleDocumentOpen}
+            className="h-full"
+          />
+        </div>
       ) : (
-        // Fallback view when no storage path or preview has errors
+        // Fallback view when no storage path
         <div className="bg-muted rounded-md p-8 h-64 flex flex-col items-center justify-center">
-          {previewError ? (
-            <>
-              <FileQuestion className="h-10 w-10 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground text-center mb-4">
-                There was an error loading the document preview.
-              </p>
-              {urlError && <p className="text-xs text-muted-foreground mb-4">{urlError}</p>}
-              {retryCount > 0 && (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={refreshUrl}
-                  className="mb-3"
-                >
-                  <RefreshCw className="h-3 w-3 mr-1" />
-                  Try Again
-                </Button>
-              )}
-            </>
-          ) : urlLoading ? (
-            <>
-              <FileText className="h-10 w-10 text-muted-foreground mb-4 animate-pulse" />
-              <p className="text-muted-foreground text-center mb-4">
-                Loading document preview...
-              </p>
-            </>
-          ) : (
-            <>
-              <FileText className="h-10 w-10 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground text-center mb-4">
-                Document preview not available.
-              </p>
-            </>
-          )}
+          <FileQuestion className="h-10 w-10 text-muted-foreground mb-4" />
+          <p className="text-muted-foreground text-center mb-4">
+            Document preview not available.
+          </p>
           <Button 
             variant="default" 
             className="mt-2"
