@@ -32,6 +32,7 @@ const usePreviewState = (
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [fileType, setFileType] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   // Get document analysis state
   const {
@@ -76,6 +77,35 @@ const usePreviewState = (
 
       if (error) {
         console.error("Error downloading file:", error);
+        
+        // Try to get public URL as a fallback
+        try {
+          const publicUrlData = supabase.storage
+            .from('documents')
+            .getPublicUrl(storagePath);
+          
+          const publicUrl = publicUrlData?.data?.publicUrl;
+          
+          if (publicUrl) {
+            console.log("Using public URL as fallback");
+            setFileUrl(publicUrl);
+            setFileExists(true);
+            
+            // Try to determine file type from extension
+            if (storagePath.toLowerCase().endsWith('.pdf')) {
+              setFileType('application/pdf');
+            } else {
+              setFileType('application/octet-stream');
+            }
+            
+            setPreviewError(null);
+            setIsLoading(false);
+            return;
+          }
+        } catch (fallbackError) {
+          console.error("Fallback URL also failed:", fallbackError);
+        }
+        
         setFileExists(false);
         setPreviewError(`Document could not be loaded. ${error.message}`);
         setIsLoading(false);
@@ -121,6 +151,7 @@ const usePreviewState = (
   const handleAnalysisRetry = useCallback(() => {
     setIsLoading(true);
     setPreviewError(null);
+    setRetryCount(prev => prev + 1);
     checkFile();
   }, [checkFile]);
 

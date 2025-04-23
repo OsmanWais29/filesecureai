@@ -134,6 +134,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     );
   }
 
+  // Enhanced PDF Viewer with multiple fallback options
   return (
     <div className="relative w-full h-full">
       {isLoading && (

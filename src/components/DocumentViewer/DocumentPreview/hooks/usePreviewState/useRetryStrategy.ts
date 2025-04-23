@@ -1,93 +1,113 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 
-/**
- * A hook that provides an enhanced retry strategy with exponential backoff
- * and additional diagnostics for document loading
- */
-export function useRetryStrategy(maxAttempts = 3, initialDelay = 1000) {
+export interface UseRetryStrategyReturn {
+  attemptCount: number;
+  incrementAttempt: (error?: any) => void;
+  resetAttempts: () => void;
+  lastAttempt: Date | null;
+  setLastAttempt: (date: Date) => void;
+  shouldRetry: (currentAttempt?: number) => boolean;
+  getRetryDelay: (attempt: number) => number;
+  lastErrorType: 'network' | 'auth' | 'notFound' | 'unknown' | null;
+  getDiagnostics: () => any;
+}
+
+export const useRetryStrategy = (maxAttempts = 3): UseRetryStrategyReturn => {
   const [attemptCount, setAttemptCount] = useState(0);
   const [lastAttempt, setLastAttempt] = useState<Date | null>(null);
-  const [errorStack, setErrorStack] = useState<Error[]>([]);
-  const [lastErrorType, setLastErrorType] = useState<string | null>(null);
+  const [lastErrorType, setLastErrorType] = useState<'network' | 'auth' | 'notFound' | 'unknown' | null>(null);
+  const [errors, setErrors] = useState<Array<{message: string, timestamp: Date}>>([]);
 
-  // Reset the retry counter
-  const resetAttempts = useCallback(() => {
-    setAttemptCount(0);
-    setLastAttempt(null);
-    setErrorStack([]);
-    setLastErrorType(null);
-  }, []);
+  // Determine the error type for better handling
+  const categorizeError = (error: any): 'network' | 'auth' | 'notFound' | 'unknown' => {
+    const errorMsg = error?.message?.toLowerCase() || '';
+    
+    if (errorMsg.includes('network') || errorMsg.includes('fetch') || errorMsg.includes('connect')) {
+      return 'network';
+    } else if (errorMsg.includes('token') || errorMsg.includes('auth') || errorMsg.includes('jwt')) {
+      return 'auth';
+    } else if (errorMsg.includes('not found') || errorMsg.includes('404')) {
+      return 'notFound';
+    } else {
+      return 'unknown';
+    }
+  };
 
-  // Increment the retry counter and store error info
-  const incrementAttempt = useCallback((error?: Error | string) => {
+  // Calculate exponential backoff delay based on attempt number
+  const getRetryDelay = (attempt: number): number => {
+    const baseDelay = 1000; // 1 second
+    const maxDelay = 30000; // 30 seconds
+    const calculatedDelay = Math.min(
+      maxDelay,
+      baseDelay * Math.pow(2, attempt)
+    );
+    
+    // Add a small random jitter to prevent multiple retries at the same time
+    return calculatedDelay + Math.random() * 1000;
+  };
+
+  // Increment attempt counter and store error
+  const incrementAttempt = useCallback((error?: any) => {
     setAttemptCount(prev => prev + 1);
     setLastAttempt(new Date());
     
     if (error) {
-      // Store error for diagnosis
-      const errorObj = typeof error === 'string' ? new Error(error) : error;
-      setErrorStack(prev => [...prev, errorObj]);
+      const errorType = categorizeError(error);
+      setLastErrorType(errorType);
       
-      // Categorize error type
-      const errorMessage = errorObj.message.toLowerCase();
-      if (errorMessage.includes('network') || errorMessage.includes('fetch') || errorMessage.includes('connection')) {
-        setLastErrorType('network');
-      } else if (errorMessage.includes('token') || errorMessage.includes('auth') || errorMessage.includes('jwt')) {
-        setLastErrorType('auth');
-      } else if (errorMessage.includes('timeout') || errorMessage.includes('timed out')) {
-        setLastErrorType('timeout');
-      } else if (errorMessage.includes('cors') || errorMessage.includes('origin')) {
-        setLastErrorType('cors');
-      } else {
-        setLastErrorType('other');
-      }
+      setErrors(prev => [
+        ...prev, 
+        { 
+          message: error.message || 'Unknown error', 
+          timestamp: new Date() 
+        }
+      ]);
     }
   }, []);
 
-  // Determine if a retry should be attempted
-  const shouldRetry = useCallback((currentAttempts: number) => {
-    return currentAttempts < maxAttempts;
-  }, [maxAttempts]);
+  // Reset attempts counter
+  const resetAttempts = useCallback(() => {
+    setAttemptCount(0);
+    setLastAttempt(null);
+    setLastErrorType(null);
+  }, []);
 
-  // Calculate retry delay with exponential backoff and small jitter
-  const getRetryDelay = useCallback((attempts: number) => {
-    const baseDelay = initialDelay * Math.pow(2, attempts);
-    // Add a small random jitter to prevent thundering herd
-    const jitter = Math.random() * 300;
-    return baseDelay + jitter;
-  }, [initialDelay]);
-
-  // Provide diagnostics info
-  const getDiagnostics = useCallback(() => {
-    return {
-      attempts: attemptCount,
-      maxAttempts,
-      lastAttempt,
-      errorStack,
-      errorType: lastErrorType,
-      remainingAttempts: Math.max(0, maxAttempts - attemptCount)
-    };
-  }, [attemptCount, maxAttempts, lastAttempt, errorStack, lastErrorType]);
-
-  // Cleanup if component unmounts
-  useEffect(() => {
-    return () => {
-      resetAttempts();
-    };
-  }, [resetAttempts]);
+  // Determine if we should attempt a retry
+  const shouldRetry = useCallback((currentAttempt?: number) => {
+    const attempts = currentAttempt !== undefined ? currentAttempt : attemptCount;
+    
+    // Don't retry if we've reached the maximum number of attempts
+    if (attempts >= maxAttempts) {
+      return false;
+    }
+    
+    // We should retry for network errors or auth errors
+    if (lastErrorType === 'network' || lastErrorType === 'auth') {
+      return true;
+    }
+    
+    // For other errors, only retry once
+    return attempts < 1;
+  }, [attemptCount, lastErrorType, maxAttempts]);
+  
+  // Function to get diagnostic information
+  const getDiagnostics = useCallback(() => ({
+    attempts: attemptCount,
+    lastAttempt: lastAttempt?.toISOString(),
+    errorType: lastErrorType,
+    errorHistory: errors
+  }), [attemptCount, lastAttempt, lastErrorType, errors]);
 
   return {
     attemptCount,
     incrementAttempt,
     resetAttempts,
-    shouldRetry,
-    getRetryDelay,
     lastAttempt,
     setLastAttempt,
-    maxAttempts,
+    shouldRetry,
+    getRetryDelay,
     lastErrorType,
-    errorStack,
     getDiagnostics
   };
-}
+};
