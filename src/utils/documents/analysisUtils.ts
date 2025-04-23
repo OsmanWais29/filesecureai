@@ -1,4 +1,3 @@
-
 import { AnalysisResult } from './types/analysisTypes';
 import { 
   getMockForm65Data, 
@@ -33,7 +32,6 @@ export const performMockAnalysis = (formNumber = '76', formType = 'bankruptcy'):
   }
 };
 
-// Add functions to create mock data for Form 31
 export const createForm31RiskAssessment = async (documentId: string): Promise<void> => {
   try {
     const { supabase } = await import('@/lib/supabase');
@@ -104,7 +102,10 @@ export const createForm31RiskAssessment = async (documentId: string): Promise<vo
       dateSigned: "March 15, 2025",
       type: "Proof of Claim",
       summary: "Proof of Claim (Form 31) filed by Acme Corporation as creditor",
-      claimAmount: "$45,000.00"
+      claimAmount: "$45,000.00",
+      creditorAddress: "123 Business Ave, Toronto, ON M5H 2N2",
+      creditorPhone: "(416) 555-0123",
+      creditorEmail: "claims@acmecorp.com"
     };
 
     // Create or update the document analysis
@@ -186,7 +187,6 @@ export const createForm31RiskAssessment = async (documentId: string): Promise<vo
   }
 };
 
-// Create a new function to detect Form 31 specifically
 export const isForm31Document = (text: string, fileName: string): boolean => {
   const lowerText = text.toLowerCase();
   const lowerFileName = fileName.toLowerCase();

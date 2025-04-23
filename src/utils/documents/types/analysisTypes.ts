@@ -17,11 +17,12 @@ export interface AnalysisResult {
     totalAssets?: string;
     monthlyIncome?: string;
     
-    // New optional fields for specific form types
+    // Fields for specific form types
     creditorAddress?: string;
     creditorPhone?: string;
     creditorEmail?: string;
     claimAmount?: string;
+    creditorName?: string;
   };
   risks: Array<{
     type: string;

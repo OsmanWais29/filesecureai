@@ -15,7 +15,8 @@ export const getMockForm31Data = (): AnalysisResult => {
       trusteeAddress: "456 Financial Street, Toronto, ON M5J 2T3",
       trusteePhone: "(416) 555-0456",
       trusteeEmail: "jane.smith@trustee.ca",
-      claimAmount: "$45,000.00"
+      claimAmount: "$45,000.00",
+      creditorName: "Acme Corporation"
     },
     risks: [
       {
