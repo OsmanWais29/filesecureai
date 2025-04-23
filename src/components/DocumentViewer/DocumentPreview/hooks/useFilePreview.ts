@@ -1,256 +1,204 @@
-
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from "@/lib/supabase";
-import { useNetworkMonitor } from './useNetworkMonitor';
-import { usePreviewRetry } from './usePreviewRetry';
-import { toast } from 'sonner';
-import { checkAndRefreshToken } from "@/utils/jwtMonitoring";
-import { detectFileType, isExcelFile } from './fileTypeUtils';
+import { supabase } from '@/lib/supabase';
+import logger from '@/utils/logger';
 
-interface UseFilePreviewProps {
+interface FilePreviewProps {
   storagePath: string;
   setFileExists: (exists: boolean) => void;
   setFileUrl: (url: string | null) => void;
   setIsExcelFile: (isExcel: boolean) => void;
   setPreviewError: (error: string | null) => void;
-  setFileType?: (type: string | null) => void;
+  setFileType: (type: string | null) => void;
 }
 
-export function useFilePreview({
+export const useFilePreview = ({
   storagePath,
   setFileExists,
   setFileUrl,
   setIsExcelFile,
   setPreviewError,
   setFileType
-}: UseFilePreviewProps) {
+}: FilePreviewProps) => {
+  const [networkStatus, setNetworkStatus] = useState<'online' | 'offline' | 'unknown'>('unknown');
+  const [attemptCount, setAttemptCount] = useState(0);
   const [hasFileLoadStarted, setHasFileLoadStarted] = useState(false);
-  const { 
-    networkStatus, 
-    handleOnline, 
-    handleOffline,
-    isLimitedConnectivity
-  } = useNetworkMonitor();
+  const [diagnostics, setDiagnostics] = useState<any>({});
 
-  const { 
-    attemptCount, 
-    lastAttempt, 
-    lastErrorType, 
-    incrementAttempt, 
-    resetAttempts, 
-    shouldRetry, 
-    getRetryDelay, 
-    getDiagnostics,
-    setLastAttempt
-  } = usePreviewRetry(5);
+  const getFileTypeFromPath = (path: string): { type: string; isExcel: boolean } => {
+    const extension = path.split('.').pop()?.toLowerCase() || '';
+    const isExcel = ['xls', 'xlsx', 'csv'].includes(extension);
+    
+    let type = 'application/octet-stream'; // Default type
+    
+    if (extension === 'pdf') type = 'application/pdf';
+    else if (extension === 'doc' || extension === 'docx') type = 'application/msword';
+    else if (extension === 'xls' || extension === 'xlsx') type = 'application/vnd.ms-excel';
+    else if (extension === 'csv') type = 'text/csv';
+    else if (extension === 'txt') type = 'text/plain';
+    else if (extension === 'jpg' || extension === 'jpeg') type = 'image/jpeg';
+    else if (extension === 'png') type = 'image/png';
+    
+    return { type, isExcel };
+  };
 
-  const [hasTriedTokenRefresh, setHasTriedTokenRefresh] = useState(false);
-  const [hasTriedGoogleViewer, setHasTriedGoogleViewer] = useState(false);
-  const [hasTriedPublicUrl, setHasTriedPublicUrl] = useState(false);
-
-  // ---- Main business logic: Check file existence, get URL, set state
-  const checkFile = useCallback(async (path?: string) => {
-    setHasFileLoadStarted(true);
-    const filePath = path || storagePath;
-    if (!filePath) {
-      setPreviewError('No file path provided');
-      setFileExists(false);
+  const checkFile = useCallback(async () => {
+    if (!storagePath) {
+      console.log("No storage path provided for file check");
       return;
     }
-    console.group('📄 Checking File');
-    console.log('Checking file path:', filePath);
-    console.log('Current attempt:', attemptCount + 1);
-    console.log('Network status:', networkStatus);
 
+    setHasFileLoadStarted(true);
+    setAttemptCount(prev => prev + 1);
+    
     try {
-      handleOnline();
-      if (lastErrorType === 'auth' || attemptCount > 2) {
-        try {
-          await checkAndRefreshToken();
-        } catch (refreshError) {
-          console.warn('Token pre-refresh failed:', refreshError);
-        }
-      }
-      const pathParts = filePath.split('/');
-      const fileName = pathParts.pop() || '';
-      const folderPath = pathParts.join('/');
-      const { data: fileList, error: listError } = await supabase
-        .storage
-        .from('documents')
-        .list(folderPath, { limit: 100, search: fileName });
-      if (listError) throw listError;
-      const fileExists = fileList && fileList.some(file => 
-        file.name.toLowerCase() === fileName.toLowerCase()
-      );
-      setFileExists(fileExists);
-      if (!fileExists) {
-        setPreviewError('File not found in storage');
-        console.groupEnd();
+      console.log(`Checking file: ${storagePath}, attempt #${attemptCount + 1}`);
+      
+      // Check network status
+      setNetworkStatus(navigator.onLine ? 'online' : 'offline');
+      if (!navigator.onLine) {
+        setPreviewError("You appear to be offline. Please check your internet connection.");
         return;
       }
-      const publicUrlData = supabase.storage.from('documents').getPublicUrl(filePath);
-      const publicUrl = publicUrlData?.data?.publicUrl;
-      if (setFileType) setFileType(detectFileType(fileName));
-      setIsExcelFile(isExcelFile(fileName));
-
-      const { data: urlData, error: urlError } = await supabase
+      
+      // Get file metadata before trying to download
+      const { data: fileInfo, error: fileInfoError } = await supabase
         .storage
         .from('documents')
-        .createSignedUrl(filePath, 3600);
-      if (urlError) {
-        if (publicUrl) {
-          setFileUrl(publicUrl);
-          setPreviewError(null);
-          resetAttempts();
-          console.groupEnd();
+        .list(storagePath.split('/').slice(0, -1).join('/'), {
+          limit: 10,
+          offset: 0,
+          search: storagePath.split('/').pop()
+        });
+
+      // Handle metadata load error
+      if (fileInfoError) {
+        console.error("Error getting file info:", fileInfoError);
+        setDiagnostics({
+          ...diagnostics,
+          fileInfoError,
+          storagePath
+        });
+        throw new Error(`File not found: ${fileInfoError.message}`);
+      }
+      
+      // File not found in storage
+      if (!fileInfo || fileInfo.length === 0) {
+        console.error("File not found in storage");
+        
+        // Try to get document record from database for diagnostics
+        const { data: docRecord } = await supabase
+          .from('documents')
+          .select('*')
+          .or(`storage_path.eq.${storagePath},id.eq.${storagePath.split('/')[1]}`)
+          .maybeSingle();
+          
+        setDiagnostics({
+          ...diagnostics,
+          fileNotFoundError: true,
+          documentRecord: docRecord,
+          storagePath
+        });
+        
+        throw new Error("File not found in storage");
+      }
+
+      // We found the file, mark it as existing
+      setFileExists(true);
+      
+      // Determine file type information
+      const { type, isExcel } = getFileTypeFromPath(storagePath);
+      setFileType(type);
+      setIsExcelFile(isExcel);
+      
+      // Generate signed URL with proper content type
+      const { data: signedURL, error: signedURLError } = await supabase
+        .storage
+        .from('documents')
+        .createSignedUrl(storagePath, 60 * 60); // 1 hour expiry
+      
+      if (signedURLError || !signedURL?.signedUrl) {
+        console.error("Error creating signed URL:", signedURLError);
+        
+        // Fallback to direct download URL
+        console.log("Falling back to direct download URL");
+        const { data: publicUrl } = supabase
+          .storage
+          .from('documents')
+          .getPublicUrl(storagePath);
+          
+        if (publicUrl?.publicUrl) {
+          console.log("Using public URL:", publicUrl.publicUrl);
+          setFileUrl(publicUrl.publicUrl);
           return;
         }
-        throw urlError;
+        
+        setDiagnostics({
+          ...diagnostics,
+          signedURLError,
+          storagePath
+        });
+        
+        throw new Error(`Failed to create URL for document: ${signedURLError?.message || "Unknown error"}`);
       }
-      setFileUrl(urlData?.signedUrl || null);
+      
+      // Success! We have a valid signed URL
+      console.log("Successfully created signed URL");
+      setFileUrl(signedURL.signedUrl);
       setPreviewError(null);
-      resetAttempts();
-      setHasTriedTokenRefresh(false);
-      setHasTriedGoogleViewer(false);
-      setHasTriedPublicUrl(false);
-      console.groupEnd();
     } catch (error: any) {
-      const publicUrlData = supabase.storage.from('documents').getPublicUrl(filePath);
-      const publicUrl = publicUrlData?.data?.publicUrl;
-      handleFileCheckError(error, publicUrl);
+      console.error("File preview error:", error.message);
+      setPreviewError(`Error loading file: ${error.message}`);
+      setFileUrl(null);
+      setFileExists(false);
     }
-  }, [
-    storagePath,
-    setFileExists,
-    setFileUrl,
-    setIsExcelFile,
-    setPreviewError,
-    setFileType,
-    handleOnline,
-    resetAttempts,
-    attemptCount,
-    lastErrorType,
-    networkStatus
-  ]);
+  }, [storagePath, attemptCount, diagnostics, setFileUrl, setFileExists, setIsExcelFile, setPreviewError, setFileType]);
 
-  // ---- Error handling logic
-  const handleFileCheckError = useCallback(async (error: any, publicUrl?: string | null) => {
-    console.group('📄 File Check Error');
-    console.error('Error checking file:', error);
-    const errorMsg = error?.message?.toLowerCase() || '';
-    const isNetworkError = errorMsg.includes('network') || errorMsg.includes('fetch');
-    const isAuthError = errorMsg.includes('token') || errorMsg.includes('auth') || errorMsg.includes('jwt');
-    const isNotFoundError = errorMsg.includes('not found') || errorMsg.includes('404');
-    const isCorsError = errorMsg.includes('cors') || errorMsg.includes('origin');
-    setFileUrl(null);
-
-    if (isNetworkError) {
-      handleOffline();
-      setPreviewError('Network error while loading document. Retrying when connection improves...');
-    } else if (isAuthError && !hasTriedTokenRefresh) {
-      setPreviewError('Authentication error. Refreshing credentials...');
-      setHasTriedTokenRefresh(true);
-      try {
-        await checkAndRefreshToken();
-        setTimeout(() => checkFile(), 1000);
-        console.groupEnd();
-        return;
-      } catch (refreshError) {
-        console.error('Token refresh failed:', refreshError);
-      }
-    } else if (isNotFoundError) {
-      if (!hasTriedPublicUrl && publicUrl) {
-        setHasTriedPublicUrl(true);
-        setFileUrl(publicUrl);
-        setPreviewError(null);
-        console.groupEnd();
-        return;
-      } else {
-        setPreviewError('Document not found in storage. It may have been deleted or moved.');
-      }
-    } else if (isCorsError && !hasTriedGoogleViewer) {
-      setHasTriedGoogleViewer(true);
-      setPreviewError('CORS issue detected. Trying alternative viewer...');
-      if (publicUrl) {
-        const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(publicUrl)}&embedded=true`;
-        setFileUrl(googleViewerUrl);
-        console.groupEnd();
-        return;
-      }
-    } else {
-      setPreviewError(error.message || 'An unknown error occurred while loading the document.');
-    }
-    setFileExists(false);
-    incrementAttempt(errorMsg);
-    console.groupEnd();
-  }, [
-    handleOffline,
-    incrementAttempt,
-    setFileExists,
-    setFileUrl,
-    setPreviewError,
-    hasTriedTokenRefresh,
-    hasTriedGoogleViewer,
-    hasTriedPublicUrl,
-    checkFile
-  ]);
-
-  // ---- Initial load or path change
   useEffect(() => {
-    if (storagePath && !hasFileLoadStarted) checkFile();
+    if (storagePath && !hasFileLoadStarted) {
+      console.log("Storage path changed, checking file:", storagePath);
+      checkFile();
+    }
+    
+    // Add network online/offline event listeners
+    const handleOnline = () => {
+      console.log("Network is online");
+      setNetworkStatus('online');
+      if (storagePath && !hasFileLoadStarted) {
+        checkFile();
+      }
+    };
+    
+    const handleOffline = () => {
+      console.log("Network is offline");
+      setNetworkStatus('offline');
+    };
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, [storagePath, checkFile, hasFileLoadStarted]);
 
-  // ---- Retry logic
-  useEffect(() => {
-    let retryTimeout: ReturnType<typeof setTimeout>;
-    const shouldAttemptRetry = (
-      (networkStatus === 'offline' && shouldRetry()) ||
-      (lastErrorType === 'auth' && !hasTriedTokenRefresh && shouldRetry()) ||
-      (isLimitedConnectivity && shouldRetry())
-    );
-    if (shouldAttemptRetry) {
-      const delay = getRetryDelay();
-      retryTimeout = setTimeout(() => {
-        checkFile();
-        setLastAttempt(new Date());
-      }, delay);
-    }
-    return () => retryTimeout && clearTimeout(retryTimeout);
-  }, [
-    networkStatus,
-    attemptCount,
-    shouldRetry,
-    getRetryDelay,
-    checkFile,
-    setLastAttempt,
-    lastErrorType,
-    hasTriedTokenRefresh,
-    isLimitedConnectivity
-  ]);
+  const resetRetries = useCallback(() => {
+    setAttemptCount(0);
+    setHasFileLoadStarted(false);
+  }, []);
+  
+  const forceRefresh = useCallback(async (): Promise<void> => {
+    resetRetries();
+    return Promise.resolve();
+  }, [resetRetries]);
 
-  const forceRefresh = useCallback(async () => {
-    resetAttempts();
-    setHasTriedTokenRefresh(false);
-    setHasTriedGoogleViewer(false);
-    setHasTriedPublicUrl(false);
-    setPreviewError(null);
-    try {
-      await checkAndRefreshToken();
-      toast.success("Authentication refreshed, retrying document load...");
-    } catch (e) {
-      console.warn("Token refresh failed:", e);
-    }
-    checkFile();
-  }, [resetAttempts, checkFile]);
-
-  return {
-    checkFile,
-    handleFileCheckError,
-    networkStatus,
+  return { 
+    checkFile, 
+    networkStatus, 
     attemptCount,
     hasFileLoadStarted,
-    resetRetries: resetAttempts,
+    resetRetries,
     forceRefresh,
-    diagnostics: getDiagnostics()
+    diagnostics
   };
-}
+};

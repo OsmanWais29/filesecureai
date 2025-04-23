@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
@@ -33,7 +32,6 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
       
       logger.info(`Starting upload process for: ${file.name}, size: ${file.size} bytes`);
 
-      // Get user ID for document ownership
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast({
@@ -45,18 +43,14 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
         return;
       }
 
-      // Enhanced Form 31 detection - check file name
       const isForm31ByName = file.name.toLowerCase().includes("form 31") || 
                             file.name.toLowerCase().includes("form31") ||
                             file.name.toLowerCase().includes("proof of claim");
       
-      // Detect other file types
       const { isForm76, isExcel } = detectDocumentType(file);
       
-      // Log what type of document we think this is
       logger.info(`Document type detected: ${isForm31ByName ? 'Form 31' : isForm76 ? 'Form 76' : isExcel ? 'Excel' : 'Standard document'}`);
 
-      // Start processing stage simulation (runs in parallel with actual upload)
       const processingSimulation = simulateProcessingStages(
         isForm31ByName || isForm76, 
         isExcel, 
@@ -64,7 +58,6 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
         setUploadStep
       );
 
-      // Create database record first
       const { data: documentData, error: documentError } = await createDocumentRecord(
         file, 
         user.id, 
@@ -78,12 +71,10 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
       
       logger.info(`Document record created with ID: ${documentData.id}`);
 
-      // Create a guaranteed storage path
       const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
       const timestamp = Date.now();
       const filePath = `${user.id}/${documentData.id}/${timestamp}_${cleanFileName}`;
       
-      // Upload file to storage with the guaranteed path
       const { error: uploadError } = await uploadToStorage(file, user.id, filePath);
 
       if (uploadError) {
@@ -92,19 +83,17 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
       
       logger.info(`Document uploaded to storage path: ${filePath}`);
 
-      // Update document with storage path
       const { error: updateError } = await supabase
         .from('documents')
         .update({ 
           storage_path: filePath,
-          // Add metadata to help with detection
           metadata: {
             ...documentData.metadata,
             originalName: file.name,
             documentType: isForm31ByName ? 'form-31' : isForm76 ? 'form-76' : 'unknown',
             fileType: file.type,
             uploadedAt: new Date().toISOString(),
-            storageFullPath: filePath  // Store the full path for easy access
+            storageFullPath: filePath
           }
         })
         .eq('id', documentData.id);
@@ -113,7 +102,6 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
         throw updateError;
       }
 
-      // Create notification for document upload
       await createNotification(
         user.id,
         'Document Upload Started',
@@ -124,14 +112,12 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
         'upload_complete'
       );
       
-      // If it's Form 31, create complete analysis with all fields
       if (isForm31ByName) {
         logger.info('Creating Form 31 analysis...');
         try {
           await createForm31RiskAssessment(documentData.id);
           logger.info('Form 31 analysis created successfully');
           
-          // Create success notification for Form 31
           await createNotification(
             user.id,
             'Form 31 Analysis Complete',
@@ -143,14 +129,11 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
           );
         } catch (error) {
           logger.error('Error creating Form 31 analysis:', error);
-          // Continue anyway to not block the upload
         }
       } else {
-        // Trigger document analysis for other document types
         await triggerDocumentAnalysis(documentData.id, file.name, isForm76);
       }
 
-      // Verify the file was actually uploaded by checking storage
       try {
         const { data: fileData, error: fileCheckError } = await supabase
           .storage
@@ -160,7 +143,7 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
         if (fileCheckError || !fileData || fileData.length === 0) {
           logger.warn(`File upload verification failed. Path: ${filePath}`);
           toast({
-            variant: "warning",
+            variant: "default",
             title: "Warning",
             description: "Document was saved but may have issues with preview. Please check the document viewer.",
           });
@@ -169,16 +152,13 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
         logger.error('Error verifying file upload:', verifyError);
       }
 
-      // Wait for processing simulation to complete
       await processingSimulation;
 
-      // Call the completion callback with the document ID
       if (onUploadComplete) {
         logger.info(`Calling onUploadComplete with document ID: ${documentData.id}`);
         await onUploadComplete(documentData.id);
       }
 
-      // Create notification for successful processing
       await createNotification(
         user.id,
         'Document Processing Complete',
@@ -205,12 +185,11 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
         description: "Failed to upload document. Please try again.",
       });
     } finally {
-      // Delay resetting the state to let users see the completion message
       setTimeout(() => {
         setIsUploading(false);
         setUploadProgress(0);
         setUploadStep("");
-      }, 3000); // Show completion for 3 seconds
+      }, 3000);
     }
   }, [onUploadComplete, toast, validateFile]);
 
