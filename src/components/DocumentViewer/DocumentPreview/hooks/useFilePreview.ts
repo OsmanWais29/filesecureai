@@ -190,13 +190,17 @@ export function useFilePreview({
     }
 
     // Determine if we should attempt again
-    if (shouldRetry(errorMsg)) {
+    if (shouldRetry()) {
       const delay = getRetryDelay();
       console.log(`Scheduling retry in ${delay}ms`);
       setTimeout(() => checkFile(), delay);
     } else {
       setPreviewError('Failed to load document after multiple attempts');
     }
+    
+    // Increment attempt counter without passing the error parameter
+    incrementAttempt();
+    
     console.groupEnd();
   }, [
     checkFile, 
@@ -205,7 +209,8 @@ export function useFilePreview({
     hasTriedPublicUrl, 
     handleOffline, 
     shouldRetry, 
-    getRetryDelay
+    getRetryDelay,
+    incrementAttempt
   ]);
 
   // Initial file check

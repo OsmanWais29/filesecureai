@@ -15,11 +15,16 @@ export function usePreviewRetry(maxRetries = 5) {
   const [lastErrorType, setLastErrorType] = useState<string | null>(null);
   const [errorStack, setErrorStack] = useState<string[]>([]);
 
-  const incrementAttempt = useCallback((errorType: string) => {
+  // Modified to accept an optional errorType parameter
+  const incrementAttempt = useCallback((errorType?: string) => {
     setAttemptCount((prev) => prev + 1);
     setLastAttempt(new Date());
-    setErrorStack((prev) => [...prev, errorType]);
-    setLastErrorType(errorType);
+    
+    // Only update errorType and errorStack if an errorType is provided
+    if (errorType) {
+      setErrorStack((prev) => [...prev, errorType]);
+      setLastErrorType(errorType);
+    }
   }, []);
 
   const resetAttempts = useCallback(() => {
