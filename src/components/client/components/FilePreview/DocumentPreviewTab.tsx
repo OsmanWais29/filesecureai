@@ -1,9 +1,20 @@
+
 import { FileText, FileQuestion, Download, ExternalLink } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Document } from "../../types";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { toast } from "sonner";
+
+// Define the proper props interface matching the parent component's usage
+export interface DocumentPreviewTabProps {
+  document: Document;
+  hasStoragePath: boolean;
+  effectiveDocumentId: string;
+  getStoragePath: () => string;
+  handleDocumentOpen: () => void;
+  isLoading: boolean;
+}
 
 export const DocumentPreviewTab: React.FC<DocumentPreviewTabProps> = ({
   document,
