@@ -8,6 +8,7 @@ export function useDocumentURL(storagePath: string | null, bucketName: string = 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 3;
 
   // Fetch document URL with exponential backoff retry
   const fetchURL = useCallback(async (forceFresh: boolean = false) => {
@@ -41,11 +42,14 @@ export function useDocumentURL(storagePath: string | null, bucketName: string = 
         console.log('Successfully retrieved signed URL');
         setUrl(data.signedUrl);
         setIsLoading(false);
+        setRetryCount(0); // Reset retry count on success
         return;
       }
       
       throw new Error('Failed to get signed URL - no URL returned');
-    } catch (error) {
+    } catch (error: any) {
+      console.error('URL fetch error:', error);
+      
       // If signed URL fails, try public URL as fallback
       try {
         console.log('Falling back to public URL');
@@ -57,34 +61,57 @@ export function useDocumentURL(storagePath: string | null, bucketName: string = 
           console.log('Successfully retrieved public URL');
           setUrl(publicData.publicUrl);
           setIsLoading(false);
+          setRetryCount(0); // Reset retry count on success
           return;
         }
-        
-        throw new Error('Failed to get public URL');
       } catch (fallbackError) {
-        console.error('All URL retrieval methods failed:', fallbackError);
-        setError('Failed to retrieve document URL');
+        console.error('Public URL fallback failed:', fallbackError);
+      }
+      
+      // If retry count not exceeded, schedule another attempt with exponential backoff
+      if (retryCount < maxRetries) {
+        const nextRetryDelay = Math.min(1000 * Math.pow(2, retryCount), 10000); // Exponential backoff, max 10s
+        console.log(`Scheduling retry in ${nextRetryDelay}ms`);
+        
+        // Increment retry count and schedule retry
+        setRetryCount(prevRetry => prevRetry + 1);
+        setTimeout(() => fetchURL(true), nextRetryDelay);
+      } else {
+        console.error('All URL retrieval methods failed after maximum retries');
+        setError('Failed to retrieve document URL after multiple attempts');
         setIsLoading(false);
       }
     }
-  }, [storagePath, bucketName, retryCount]);
+  }, [storagePath, bucketName, retryCount, maxRetries]);
 
   // Load URL when component mounts or storagePath changes
   useEffect(() => {
     if (storagePath) {
+      setRetryCount(0); // Reset retry count when path changes
       fetchURL();
+    } else {
+      setUrl(null);
+      setError(null);
+      setIsLoading(false);
     }
-  }, [storagePath, bucketName, retryCount, fetchURL]);
+    
+    return () => {
+      // Cleanup if component unmounts during loading
+      setUrl(null);
+      setError(null);
+    };
+  }, [storagePath, bucketName, fetchURL]);
 
   // Function to manually retry URL retrieval
-  const retry = () => {
-    setRetryCount(prev => prev + 1);
-  };
+  const retry = useCallback(() => {
+    setRetryCount(0); // Reset retry count for manual retry
+    fetchURL(true); // Force fresh URL
+  }, [fetchURL]);
 
   // Function to force a fresh URL (bypassing cache)
-  const refreshUrl = () => {
+  const refreshUrl = useCallback(() => {
     fetchURL(true);
-  };
+  }, [fetchURL]);
 
   return { url, isLoading, error, retry, refreshUrl };
 }

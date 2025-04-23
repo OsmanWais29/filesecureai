@@ -156,101 +156,80 @@ export function useFilePreview({
         console.groupEnd();
         return;
       } catch (refreshError) {
-        console.error('Token refresh failed:', refreshError);
+        console.error('Auth refresh failed:', refreshError);
       }
     } else if (isNotFoundError) {
-      if (!hasTriedPublicUrl && publicUrl) {
-        setHasTriedPublicUrl(true);
-        setFileUrl(publicUrl);
-        setPreviewError(null);
-        console.groupEnd();
-        return;
-      } else {
-        setPreviewError('Document not found in storage. It may have been deleted or moved.');
-      }
-    } else if (isCorsError && !hasTriedGoogleViewer) {
-      setHasTriedGoogleViewer(true);
-      setPreviewError('CORS issue detected. Trying alternative viewer...');
-      if (publicUrl) {
-        const googleViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(publicUrl)}&embedded=true`;
-        setFileUrl(googleViewerUrl);
-        console.groupEnd();
-        return;
-      }
+      setPreviewError('Document not found in storage');
+    } else if (isCorsError) {
+      setPreviewError('Cross-origin error. Trying alternative method...');
     } else {
-      setPreviewError(error.message || 'An unknown error occurred while loading the document.');
+      setPreviewError(`Error loading document: ${error.message || 'Unknown error'}`);
     }
-    setFileExists(false);
-    incrementAttempt(errorMsg);
+
+    // Try public URL fallback if we haven't already
+    if (publicUrl && !hasTriedPublicUrl) {
+      setPreviewError('Trying public URL fallback...');
+      setHasTriedPublicUrl(true);
+      setFileUrl(publicUrl);
+      console.log('Using public URL as fallback');
+      console.groupEnd();
+      return;
+    }
+
+    // If all else fails, and we haven't tried Google Docs viewer yet, try that
+    if (!hasTriedGoogleViewer) {
+      setPreviewError('Trying Google Docs viewer fallback...');
+      setHasTriedGoogleViewer(true);
+      if (publicUrl) {
+        const googleDocsUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(publicUrl)}&embedded=true`;
+        setFileUrl(googleDocsUrl);
+        console.log('Using Google Docs viewer as fallback');
+        console.groupEnd();
+        return;
+      }
+    }
+
+    // Determine if we should attempt again
+    if (shouldRetry(errorMsg)) {
+      const delay = getRetryDelay();
+      console.log(`Scheduling retry in ${delay}ms`);
+      setTimeout(() => checkFile(), delay);
+    } else {
+      setPreviewError('Failed to load document after multiple attempts');
+    }
     console.groupEnd();
   }, [
-    handleOffline,
-    incrementAttempt,
-    setFileExists,
-    setFileUrl,
-    setPreviewError,
-    hasTriedTokenRefresh,
-    hasTriedGoogleViewer,
-    hasTriedPublicUrl,
-    checkFile
+    checkFile, 
+    hasTriedTokenRefresh, 
+    hasTriedGoogleViewer, 
+    hasTriedPublicUrl, 
+    handleOffline, 
+    shouldRetry, 
+    getRetryDelay
   ]);
 
-  // ---- Initial load or path change
+  // Initial file check
   useEffect(() => {
-    if (storagePath && !hasFileLoadStarted) checkFile();
-  }, [storagePath, checkFile, hasFileLoadStarted]);
+    if (storagePath && !hasFileLoadStarted) {
+      checkFile();
+    }
+  }, [storagePath, hasFileLoadStarted, checkFile]);
 
-  // ---- Retry logic
+  // Auto-retry when network comes back online
   useEffect(() => {
-    let retryTimeout: ReturnType<typeof setTimeout>;
-    const shouldAttemptRetry = (
-      (networkStatus === 'offline' && shouldRetry()) ||
-      (lastErrorType === 'auth' && !hasTriedTokenRefresh && shouldRetry()) ||
-      (isLimitedConnectivity && shouldRetry())
-    );
-    if (shouldAttemptRetry) {
-      const delay = getRetryDelay();
-      retryTimeout = setTimeout(() => {
-        checkFile();
-        setLastAttempt(new Date());
-      }, delay);
+    if (networkStatus === 'online' && lastErrorType === 'network') {
+      console.log('Network reconnected, retrying file check');
+      checkFile();
     }
-    return () => retryTimeout && clearTimeout(retryTimeout);
-  }, [
-    networkStatus,
-    attemptCount,
-    shouldRetry,
-    getRetryDelay,
-    checkFile,
-    setLastAttempt,
-    lastErrorType,
-    hasTriedTokenRefresh,
-    isLimitedConnectivity
-  ]);
-
-  const forceRefresh = useCallback(async () => {
-    resetAttempts();
-    setHasTriedTokenRefresh(false);
-    setHasTriedGoogleViewer(false);
-    setHasTriedPublicUrl(false);
-    setPreviewError(null);
-    try {
-      await checkAndRefreshToken();
-      toast.success("Authentication refreshed, retrying document load...");
-    } catch (e) {
-      console.warn("Token refresh failed:", e);
-    }
-    checkFile();
-  }, [resetAttempts, checkFile]);
+  }, [networkStatus, lastErrorType, checkFile]);
 
   return {
     checkFile,
-    handleFileCheckError,
     networkStatus,
     attemptCount,
     hasFileLoadStarted,
     resetRetries: resetAttempts,
-    forceRefresh,
+    forceRefresh: () => checkFile(),
     diagnostics: getDiagnostics()
   };
 }

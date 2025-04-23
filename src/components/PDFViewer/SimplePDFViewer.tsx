@@ -189,7 +189,7 @@ export const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({
           className="w-full h-full border-0"
           onLoad={handleLoadSuccess}
           onError={() => setViewMode('error')}
-          title={`Google Docs Viewer: ${title}`}
+          title={`Google Docs viewer: ${title}`}
           referrerPolicy="no-referrer"
           allow="fullscreen"
         />
