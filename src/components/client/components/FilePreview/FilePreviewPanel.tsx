@@ -1,3 +1,4 @@
+
 import { FileText, Eye, MessageSquare, History } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Document } from "../../types";
@@ -14,9 +15,20 @@ interface FilePreviewPanelProps {
 }
 
 export const FilePreviewPanel = ({ document, onDocumentOpen }: FilePreviewPanelProps) => {
-  // NEW: Pass the appropriate file URL (from document or props) to the hook
-  const fileUrl = document?.metadata?.storage_path || null;
-  const { url, isLoading, error } = useFilePreview(fileUrl);
+  // Use the storage path from metadata if present
+  const storagePath = document?.metadata?.storage_path || null;
+  const { url: fileUrl, isLoading, error } = useFilePreview(storagePath);
+
+  // Provide required props for DocumentPreviewTab
+  const hasStoragePath = !!storagePath;
+  const getStoragePath = () => storagePath || "";
+  // Ensure legacy prop signature: must be () => void, not (id: string) => void
+  const handleDocumentOpen = () => {
+    if (document?.id) {
+      onDocumentOpen(document.id);
+    }
+  };
+  const effectiveDocumentId = document?.id || "";
 
   if (!document) {
     return <EmptyDocumentState />;
@@ -24,9 +36,8 @@ export const FilePreviewPanel = ({ document, onDocumentOpen }: FilePreviewPanelP
 
   return (
     <div className="h-full flex flex-col p-4">
-      <DocumentHeader document={document} handleDocumentOpen={onDocumentOpen} />
-      
-      <Tabs value={"preview"} className="flex-1 flex flex-col">
+      <DocumentHeader document={document} handleDocumentOpen={handleDocumentOpen} />
+      <Tabs value="preview" className="flex-1 flex flex-col">
         <TabsList className="mb-4">
           <TabsTrigger value="preview">
             <FileText className="h-4 w-4 mr-1.5" />
@@ -41,24 +52,22 @@ export const FilePreviewPanel = ({ document, onDocumentOpen }: FilePreviewPanelP
             Activity
           </TabsTrigger>
         </TabsList>
-        
         <TabsContent value="preview" className="mt-0 flex-1">
-          {/* Pass file preview state as needed */}
           <DocumentPreviewTab
             document={document}
-            fileUrl={url}
+            hasStoragePath={hasStoragePath}
+            effectiveDocumentId={effectiveDocumentId}
+            getStoragePath={getStoragePath}
+            handleDocumentOpen={handleDocumentOpen}
             isLoading={isLoading}
-            error={error}
           />
         </TabsContent>
-        
         <TabsContent value="comments" className="mt-0 flex-1 flex flex-col">
           <CommentsTab 
             document={document}
-            effectiveDocumentId={document?.id || ""}
+            effectiveDocumentId={effectiveDocumentId}
           />
         </TabsContent>
-        
         <TabsContent value="history" className="mt-0 flex-1">
           <ActivityTab document={document} />
         </TabsContent>
