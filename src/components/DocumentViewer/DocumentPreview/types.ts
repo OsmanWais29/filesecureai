@@ -3,8 +3,9 @@ import { RefObject } from "react";
 
 export interface DocumentPreviewProps {
   storagePath: string;
-  documentId: string;
-  title: string;
+  documentId?: string;
+  title?: string;
+  showControls?: boolean;
   bypassAnalysis?: boolean;
   onAnalysisComplete?: () => void;
 }

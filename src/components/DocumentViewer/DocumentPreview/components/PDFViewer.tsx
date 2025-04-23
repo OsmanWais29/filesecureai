@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { AlertTriangle, Download, ExternalLink, RefreshCw } from "lucide-react";
@@ -7,16 +6,16 @@ import { toast } from "sonner";
 
 interface PDFViewerProps {
   fileUrl: string | null;
-  title: string;
-  zoomLevel: number;
+  title?: string;
+  zoomLevel?: number;
   onLoad?: () => void;
   onError?: () => void;
 }
 
 export const PDFViewer: React.FC<PDFViewerProps> = ({
   fileUrl,
-  title,
-  zoomLevel,
+  title = "Document",
+  zoomLevel = 100,
   onLoad,
   onError
 }) => {

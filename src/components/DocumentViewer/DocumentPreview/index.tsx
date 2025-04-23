@@ -13,6 +13,7 @@ interface DocumentPreviewProps {
   documentId?: string;
   title?: string;
   showControls?: boolean;
+  bypassAnalysis?: boolean;
   onAnalysisComplete?: () => void;
 }
 
@@ -21,6 +22,7 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
   documentId = "",
   title = "Document Preview",
   showControls = true,
+  bypassAnalysis = false,
   onAnalysisComplete
 }) => {
   const {
@@ -34,7 +36,7 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
     isLoading,
     handleAnalysisRetry,
     fileType,
-  } = usePreviewState(storagePath, documentId, title, onAnalysisComplete, false);
+  } = usePreviewState(storagePath, documentId, title, onAnalysisComplete, bypassAnalysis);
 
   // Manual trigger for document analysis
   const handleAnalyzeDocument = async () => {
@@ -128,7 +130,7 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
 
   // For PDF files, use the PDF viewer component
   if (fileType === 'application/pdf' || fileUrl.endsWith('.pdf')) {
-    return <PDFViewer url={fileUrl} title={title} />;
+    return <PDFViewer fileUrl={fileUrl} title={title} />;
   }
 
   // For other file types, provide a download link
