@@ -29,7 +29,7 @@ export const PDFViewerEmbed: React.FC<PDFViewerEmbedProps> = ({
   
   // Add debugging information when component renders or updates
   useEffect(() => {
-    console.log(`PDFViewerEmbed render: mode=${viewerMode}, loading=${isLoading}, url=${fileUrl?.substring(0, 50)}...`);
+    console.log(`PDFViewerEmbed render: mode=${viewerMode}, loading=${isLoading}, url=${fileUrl ? (fileUrl.substring(0, 50) + '...') : 'none'}`);
     
     // Clean up any previous viewers when switching modes
     return () => {
@@ -80,15 +80,12 @@ export const PDFViewerEmbed: React.FC<PDFViewerEmbedProps> = ({
     if (viewerMode === 'direct' && retryCount >= 1) {
       console.log('Switching to embed mode');
       setViewerMode('embed');
-      setRetryCount(0);
     } else if (viewerMode === 'embed' && retryCount >= 1) {
       console.log('Switching to iframe mode');
       setViewerMode('iframe');
-      setRetryCount(0);
     } else if (viewerMode === 'iframe' && retryCount >= 1) {
       console.log('Switching to Google Docs viewer mode as last resort');
       setViewerMode('google');
-      setRetryCount(0);
     } else if (viewerMode === 'google' && retryCount >= 1) {
       // All methods failed
       console.error('All PDF display methods failed');
@@ -109,12 +106,12 @@ export const PDFViewerEmbed: React.FC<PDFViewerEmbedProps> = ({
   // Download document
   const handleDownload = () => {
     if (fileUrl) {
-      const link = window.document.createElement('a');
+      const link = document.createElement('a');
       link.href = fileUrl;
       link.download = title || 'document.pdf';
-      window.document.body.appendChild(link);
+      document.body.appendChild(link);
       link.click();
-      window.document.body.removeChild(link);
+      document.body.removeChild(link);
       toast.success('Download started');
     }
   };
@@ -231,7 +228,6 @@ export const PDFViewerEmbed: React.FC<PDFViewerEmbedProps> = ({
         />
       )}
 
-      {/* Overlay buttons for quick actions */}
       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
         <Button 
           variant="secondary" 

@@ -10,13 +10,13 @@ export const triggerDocumentAnalysis = async (documentId: string) => {
     // First, check if we already have document content in metadata
     const { data: document, error: docError } = await supabase
       .from('documents')
-      .select('title, metadata, type')
+      .select('title, metadata, type, storage_path')
       .eq('id', documentId)
       .single();
       
     if (docError) {
       console.error('Error fetching document:', docError);
-      throw docError;
+      throw new Error(`Error fetching document: ${docError.message}`);
     }
     
     // Determine if this appears to be a specific form type
@@ -46,6 +46,16 @@ export const triggerDocumentAnalysis = async (documentId: string) => {
     
     if (!sessionData.session) {
       throw new Error("No active session found. User must be authenticated.");
+    }
+
+    // Update document status to processing first
+    const { error: updateError } = await supabase
+      .from('documents')
+      .update({ ai_processing_status: 'processing' })
+      .eq('id', documentId);
+    
+    if (updateError) {
+      console.warn("Could not update document processing status:", updateError);
     }
 
     // Call the analyze-document edge function with enhanced context and valid session
@@ -78,16 +88,16 @@ export const triggerDocumentAnalysis = async (documentId: string) => {
 
     if (error) {
       console.error('Error from process-ai-request edge function:', error);
-      throw error;
+      throw new Error(`Analysis error: ${error.message}`);
     }
 
     if (data) {
       console.log('Analysis request successful:', data);
+      return data;
     }
     
-    logger.debug(`Successfully triggered document analysis for ID: ${documentId}`);
-    return data;
-  } catch (error) {
+    return { success: true, message: "Document analysis triggered successfully" };
+  } catch (error: any) {
     console.error('Failed to trigger document analysis:', error);
     throw error;
   }
@@ -133,6 +143,17 @@ export const saveAnalysisResults = async (
       analysisData.extracted_info.summary = 'Document analyzed. See extracted information.';
     }
     
+    // First, delete any existing analysis for this document
+    const { error: deleteError } = await supabase
+      .from('document_analysis')
+      .delete()
+      .eq('document_id', documentId);
+    
+    if (deleteError) {
+      logger.warn('Could not delete existing analysis:', deleteError);
+    }
+    
+    // Now insert the new analysis
     const { error } = await supabase
       .from('document_analysis')
       .insert([{
@@ -144,6 +165,23 @@ export const saveAnalysisResults = async (
     if (error) {
       logger.error('Error saving analysis results:', error);
       throw error;
+    }
+    
+    // Also update the document status
+    const { error: updateError } = await supabase
+      .from('documents')
+      .update({ 
+        ai_processing_status: 'complete',
+        metadata: {
+          analyzed_at: new Date().toISOString(),
+          analysis_version: '1.0',
+          form_type: analysisData.extracted_info?.formType || analysisData.extracted_info?.formNumber || 'unknown'
+        }
+      })
+      .eq('id', documentId);
+      
+    if (updateError) {
+      logger.warn('Could not update document status:', updateError);
     }
     
     logger.info('Analysis results saved successfully for document ID:', documentId);

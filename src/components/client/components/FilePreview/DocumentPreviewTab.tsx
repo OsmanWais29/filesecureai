@@ -6,10 +6,8 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { PDFViewerEmbed } from "./PDFViewerEmbed";
-import { supabase } from "@/lib/supabase";
 import { useFilePreview } from "./useFilePreview";
 
-// Define the proper props interface matching the parent component's usage
 export interface DocumentPreviewTabProps {
   document: Document;
   hasStoragePath: boolean;
@@ -28,14 +26,19 @@ export const DocumentPreviewTab: React.FC<DocumentPreviewTabProps> = ({
   isLoading
 }) => {
   const [previewError, setPreviewError] = useState<boolean>(false);
-  const [fetchingUrl, setFetchingUrl] = useState<boolean>(false);
   
-  // Extract storage path and check if it's a PDF
-  const storagePath = document.metadata?.storage_path || null;
+  // Get the storage path directly
+  const storagePath = document.metadata?.storage_path || document.storage_path || null;
   const isPdf = storagePath?.toLowerCase().endsWith('.pdf') || false;
   
-  // Use our enhanced hook to get the file URL
-  const { url: pdfUrl, isLoading: urlLoading, error: urlError } = useFilePreview(storagePath);
+  // Use our enhanced hook to get the file URL with better error handling
+  const { 
+    url: pdfUrl, 
+    isLoading: urlLoading, 
+    error: urlError,
+    refreshUrl,
+    retryCount
+  } = useFilePreview(storagePath);
   
   // When URL loading completes or has error
   useEffect(() => {
@@ -46,29 +49,37 @@ export const DocumentPreviewTab: React.FC<DocumentPreviewTabProps> = ({
     }
     
     if (!urlLoading && pdfUrl) {
-      console.log("PDF URL loaded successfully:", pdfUrl.substring(0, 50) + "...");
+      console.log("PDF URL loaded successfully");
       setPreviewError(false);
     }
   }, [urlLoading, pdfUrl, urlError]);
   
+  // Handle preview error from the PDF viewer component
   const handlePreviewError = () => {
     console.log("Preview error encountered in DocumentPreviewTab");
     setPreviewError(true);
-    toast.error("Could not load document preview");
+    
+    // Only show toast if this is a new error, not if we already knew about it
+    if (!previewError) {
+      toast.error("Could not load document preview");
+    }
   };
   
+  // Handle document download
   const handleDownload = () => {
     if (pdfUrl) {
-      // Use the global window.document instead of the document prop
-      const link = window.document.createElement('a');
+      const link = document.createElement('a');
       link.href = pdfUrl;
       link.download = document.title || 'document.pdf';
-      window.document.body.appendChild(link);
+      document.body.appendChild(link);
       link.click();
-      window.document.body.removeChild(link);
+      document.body.removeChild(link);
       toast.success("Download started");
     } else {
       toast.error("Download URL not available");
+      
+      // Try refreshing URL first
+      refreshUrl();
     }
   };
 
@@ -78,6 +89,7 @@ export const DocumentPreviewTab: React.FC<DocumentPreviewTabProps> = ({
     setPreviewError(false);
   };
 
+  // Render PDF preview or document card based on file type and availability
   return (
     <>
       {hasStoragePath && !previewError ? (
@@ -96,16 +108,16 @@ export const DocumentPreviewTab: React.FC<DocumentPreviewTabProps> = ({
                 size="sm" 
                 className="mr-2"
                 onClick={handleDocumentOpen}
-                disabled={isLoading || fetchingUrl}
+                disabled={isLoading || urlLoading}
               >
                 <ExternalLink className="h-3 w-3 mr-1" />
-                {isLoading || fetchingUrl ? 'Loading...' : 'Open'}
+                {isLoading || urlLoading ? 'Loading...' : 'Open'}
               </Button>
               <Button 
                 variant="outline" 
                 size="sm"
                 onClick={handleDownload}
-                disabled={fetchingUrl || !pdfUrl}
+                disabled={urlLoading || !pdfUrl}
               >
                 <Download className="h-3 w-3 mr-1" />
                 Download
@@ -113,7 +125,7 @@ export const DocumentPreviewTab: React.FC<DocumentPreviewTabProps> = ({
             </div>
           </div>
         ) : (
-          // Show document card for non-PDF files
+          // Show document card for non-PDF files or when PDF URL is not yet available
           <div className="h-64 overflow-hidden rounded-md border relative group">
             <div 
               className="absolute inset-0 cursor-pointer z-10"
@@ -128,6 +140,11 @@ export const DocumentPreviewTab: React.FC<DocumentPreviewTabProps> = ({
                 <p className="text-xs text-muted-foreground">
                   Click to open document
                 </p>
+                {isPdf && urlLoading && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Loading PDF preview...
+                  </p>
+                )}
               </div>
             </div>
             
@@ -145,21 +162,24 @@ export const DocumentPreviewTab: React.FC<DocumentPreviewTabProps> = ({
                 <ExternalLink className="h-3 w-3 mr-1" />
                 {isLoading ? 'Opening...' : 'Open'}
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDownload();
-                }}
-              >
-                <Download className="h-3 w-3 mr-1" />
-                Download
-              </Button>
+              {pdfUrl && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDownload();
+                  }}
+                >
+                  <Download className="h-3 w-3 mr-1" />
+                  Download
+                </Button>
+              )}
             </div>
           </div>
         )
       ) : (
+        // Fallback view when no storage path or preview has errors
         <div className="bg-muted rounded-md p-8 h-64 flex flex-col items-center justify-center">
           {previewError ? (
             <>
@@ -167,8 +187,20 @@ export const DocumentPreviewTab: React.FC<DocumentPreviewTabProps> = ({
               <p className="text-muted-foreground text-center mb-4">
                 There was an error loading the document preview.
               </p>
+              {urlError && <p className="text-xs text-muted-foreground mb-4">{urlError}</p>}
+              {retryCount > 0 && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={refreshUrl}
+                  className="mb-3"
+                >
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Try Again
+                </Button>
+              )}
             </>
-          ) : fetchingUrl ? (
+          ) : urlLoading ? (
             <>
               <FileText className="h-10 w-10 text-muted-foreground mb-4 animate-pulse" />
               <p className="text-muted-foreground text-center mb-4">
@@ -220,9 +252,9 @@ export const DocumentPreviewTab: React.FC<DocumentPreviewTabProps> = ({
             </div>
             
             <p className="mt-3">
-              This document appears to be a {document.type || 'standard document'} related to client {document.title.includes('Form') ? 'financial information' : 'case details'}.
+              This document appears to be a {document.type || 'standard document'} 
+              {document.title && document.title.toLowerCase().includes('form') ? ' related to client financial information' : ' related to case details'}.
             </p>
-            <p className="mt-2 text-muted-foreground text-xs">AI summary is a preview feature and may not be accurate.</p>
           </CardContent>
         </Card>
       </div>
