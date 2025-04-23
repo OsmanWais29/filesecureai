@@ -1,5 +1,5 @@
 
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import DocumentViewerPage from './pages/DocumentViewerPage';
 import DocumentsPage from './pages/DocumentsPage';
 import HomePage from './pages/HomePage';
@@ -16,6 +16,7 @@ import SubscriptionCancelPage from './pages/SubscriptionCancelPage';
 import { useEffect } from 'react';
 import { checkAndRefreshToken } from './utils/jwtMonitoring';
 import DiagnosticsPage from './pages/DiagnosticsPage';
+import MeetingsPage from './pages/MeetingsPage';
 
 function AppRoutes() {
   return (
@@ -30,6 +31,7 @@ function AppRoutes() {
       <Route path="/subscription-success" element={<SubscriptionSuccessPage />} />
       <Route path="/subscription-cancel" element={<SubscriptionCancelPage />} />
       <Route path="/diagnostics" element={<DiagnosticsPage />} />
+      <Route path="/meetings/*" element={<MeetingsPage />} />
     </Routes>
   );
 }
@@ -48,12 +50,10 @@ function App() {
 
   return (
     <AuthProvider>
-      <Router>
-        <AppRoutes />
-        <Toaster />
-        <Analytics />
-        <SpeedInsights />
-      </Router>
+      <AppRoutes />
+      <Toaster />
+      <Analytics />
+      <SpeedInsights />
     </AuthProvider>
   );
 }
