@@ -6,10 +6,7 @@ import {
   getMockForm76Data 
 } from './mockData/formMockData';
 export { 
-  triggerDocumentAnalysis,
-  saveAnalysisResults,
-  updateDocumentStatus,
-  createClientIfNotExists
+  triggerDocumentAnalysis 
 } from './api/analysisApi';
 
 export type { AnalysisResult };
