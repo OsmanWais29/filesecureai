@@ -1,4 +1,3 @@
-
 import { supabase } from "@/lib/supabase";
 import logger from "@/utils/logger";
 import { AnalysisResult } from "../types/analysisTypes";
@@ -175,7 +174,9 @@ export const saveAnalysisResults = async (
         metadata: {
           analyzed_at: new Date().toISOString(),
           analysis_version: '1.0',
-          form_type: analysisData.extracted_info?.formType || analysisData.extracted_info?.formNumber || 'unknown'
+          form_type: analysisData.extracted_info?.formType || 
+                    analysisData.extracted_info?.formNumber || 
+                    analysisData.extracted_info?.type || 'unknown'
         }
       })
       .eq('id', documentId);
