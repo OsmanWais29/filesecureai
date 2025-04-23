@@ -1,4 +1,3 @@
-
 import { FileText, Eye, MessageSquare, History } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Document } from "../../types";
@@ -19,10 +18,9 @@ export const FilePreviewPanel = ({ document, onDocumentOpen }: FilePreviewPanelP
   const storagePath = document?.metadata?.storage_path || null;
   const { url: fileUrl, isLoading, error } = useFilePreview(storagePath);
 
-  // Provide required props for DocumentPreviewTab
+  // Standardized prop handling for preview tab
   const hasStoragePath = !!storagePath;
   const getStoragePath = () => storagePath || "";
-  // Ensure legacy prop signature: must be () => void, not (id: string) => void
   const handleDocumentOpen = () => {
     if (document?.id) {
       onDocumentOpen(document.id);

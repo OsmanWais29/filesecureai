@@ -1,19 +1,9 @@
-
 import { FileText, FileQuestion, Download, ExternalLink } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Document } from "../../types";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { toast } from "sonner";
-
-interface DocumentPreviewTabProps {
-  document: Document;
-  hasStoragePath: boolean;
-  effectiveDocumentId: string;
-  getStoragePath: () => string;
-  handleDocumentOpen: () => void;
-  isLoading: boolean;
-}
 
 export const DocumentPreviewTab: React.FC<DocumentPreviewTabProps> = ({
   document,
@@ -25,7 +15,6 @@ export const DocumentPreviewTab: React.FC<DocumentPreviewTabProps> = ({
 }) => {
   const [previewError, setPreviewError] = useState(false);
   
-  // Handle preview errors locally
   const handlePreviewError = () => {
     console.log("Preview error encountered in DocumentPreviewTab");
     setPreviewError(true);
@@ -33,10 +22,7 @@ export const DocumentPreviewTab: React.FC<DocumentPreviewTabProps> = ({
   };
   
   const handleDownload = () => {
-    // In a real app, this would download the file
     toast.info("Download functionality not implemented in this demo");
-    // If we had the actual download URL:
-    // window.open(getStoragePath(), '_blank');
   };
 
   return (
@@ -49,7 +35,6 @@ export const DocumentPreviewTab: React.FC<DocumentPreviewTabProps> = ({
             title="Click to open document viewer"
           />
           
-          {/* Simplified preview - just show document title instead of loading preview */}
           <div className="flex items-center justify-center h-full bg-muted/30">
             <div className="text-center p-4">
               <FileText className="h-12 w-12 mx-auto text-primary/60 mb-3" />
