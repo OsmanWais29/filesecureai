@@ -1,3 +1,4 @@
+
 import { FileText, Eye, MessageSquare, History } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Document } from "../../types";
@@ -6,7 +7,8 @@ import { DocumentHeader } from "./DocumentHeader";
 import { DocumentPreviewTab } from "./DocumentPreviewTab";
 import { CommentsTab } from "./CommentsTab";
 import { ActivityTab } from "./ActivityTab";
-import { useFilePreview } from "./useFilePreview";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
 interface FilePreviewPanelProps {
   document: Document | null;
@@ -14,12 +16,59 @@ interface FilePreviewPanelProps {
 }
 
 export const FilePreviewPanel = ({ document, onDocumentOpen }: FilePreviewPanelProps) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [fileExists, setFileExists] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
   // Use the storage path from metadata if present
   const storagePath = document?.metadata?.storage_path || null;
-  const { url: fileUrl, isLoading, error } = useFilePreview(storagePath);
+
+  // Check if file exists when document changes
+  useEffect(() => {
+    const checkFileExists = async () => {
+      if (!storagePath) {
+        setFileExists(false);
+        return;
+      }
+      
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        const pathParts = storagePath.split('/');
+        const fileName = pathParts.pop() || '';
+        const folderPath = pathParts.join('/');
+        
+        // List files to check if our file exists
+        const { data: fileList, error: listErr } = await supabase
+          .storage
+          .from("documents")
+          .list(folderPath, { limit: 100, search: fileName });
+          
+        if (listErr) throw listErr;
+        
+        const exists = !!fileList?.some(f => f.name.toLowerCase() === fileName.toLowerCase());
+        setFileExists(exists);
+        
+        if (!exists) {
+          setError("File not found in storage");
+        }
+      } catch (err: any) {
+        console.error("Error checking file:", err);
+        setError(err.message || "Could not check if file exists");
+        setFileExists(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    if (document) {
+      checkFileExists();
+    }
+  }, [document, storagePath]);
 
   // Standardized prop handling for preview tab
-  const hasStoragePath = !!storagePath;
+  const hasStoragePath = !!storagePath && fileExists;
   const getStoragePath = () => storagePath || "";
   const handleDocumentOpen = () => {
     if (document?.id) {
@@ -35,7 +84,7 @@ export const FilePreviewPanel = ({ document, onDocumentOpen }: FilePreviewPanelP
   return (
     <div className="h-full flex flex-col p-4">
       <DocumentHeader document={document} handleDocumentOpen={handleDocumentOpen} />
-      <Tabs value="preview" className="flex-1 flex flex-col">
+      <Tabs defaultValue="preview" className="flex-1 flex flex-col">
         <TabsList className="mb-4">
           <TabsTrigger value="preview">
             <FileText className="h-4 w-4 mr-1.5" />

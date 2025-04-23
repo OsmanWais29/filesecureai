@@ -5,6 +5,7 @@ import { Document } from "../../types";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { toast } from "sonner";
+import { PDFViewerEmbed } from "./PDFViewerEmbed";
 
 // Define the proper props interface matching the parent component's usage
 export interface DocumentPreviewTabProps {
@@ -25,6 +26,31 @@ export const DocumentPreviewTab: React.FC<DocumentPreviewTabProps> = ({
   isLoading
 }) => {
   const [previewError, setPreviewError] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  
+  // Extract storage path and check if it's a PDF
+  const storagePath = document.metadata?.storage_path || null;
+  const isPdf = storagePath?.toLowerCase().endsWith('.pdf') || false;
+  
+  // When component mounts, try to get the PDF URL
+  useState(() => {
+    if (hasStoragePath && storagePath && isPdf) {
+      import('@/lib/supabase').then(({ supabase }) => {
+        supabase.storage
+          .from("documents")
+          .createSignedUrl(storagePath, 3600)
+          .then(({ data }) => {
+            if (data?.signedUrl) {
+              setPdfUrl(data.signedUrl);
+            }
+          })
+          .catch(err => {
+            console.error("Error getting PDF URL:", err);
+            setPreviewError(true);
+          });
+      });
+    }
+  }, [hasStoragePath, storagePath, isPdf]);
   
   const handlePreviewError = () => {
     console.log("Preview error encountered in DocumentPreviewTab");
@@ -39,50 +65,82 @@ export const DocumentPreviewTab: React.FC<DocumentPreviewTabProps> = ({
   return (
     <>
       {hasStoragePath && !previewError ? (
-        <div className="h-64 overflow-hidden rounded-md border relative group">
-          <div 
-            className="absolute inset-0 cursor-pointer z-10"
-            onClick={handleDocumentOpen}
-            title="Click to open document viewer"
-          />
-          
-          <div className="flex items-center justify-center h-full bg-muted/30">
-            <div className="text-center p-4">
-              <FileText className="h-12 w-12 mx-auto text-primary/60 mb-3" />
-              <h3 className="font-medium text-sm mb-1">{document.title}</h3>
-              <p className="text-xs text-muted-foreground">
-                Click to open document
-              </p>
+        isPdf && pdfUrl ? (
+          // Show PDF preview for PDF files
+          <div className="h-64 overflow-hidden rounded-md border relative">
+            <PDFViewerEmbed 
+              fileUrl={pdfUrl}
+              title={document.title}
+              onError={handlePreviewError}
+            />
+            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                className="mr-2"
+                onClick={handleDocumentOpen}
+                disabled={isLoading}
+              >
+                <ExternalLink className="h-3 w-3 mr-1" />
+                {isLoading ? 'Opening...' : 'Open'}
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleDownload}
+              >
+                <Download className="h-3 w-3 mr-1" />
+                Download
+              </Button>
             </div>
           </div>
-          
-          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-            <Button 
-              variant="secondary" 
-              size="sm" 
-              className="mr-2"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDocumentOpen();
-              }}
-              disabled={isLoading}
-            >
-              <ExternalLink className="h-3 w-3 mr-1" />
-              {isLoading ? 'Opening...' : 'Open'}
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDownload();
-              }}
-            >
-              <Download className="h-3 w-3 mr-1" />
-              Download
-            </Button>
+        ) : (
+          // Show document card for non-PDF files
+          <div className="h-64 overflow-hidden rounded-md border relative group">
+            <div 
+              className="absolute inset-0 cursor-pointer z-10"
+              onClick={handleDocumentOpen}
+              title="Click to open document viewer"
+            />
+            
+            <div className="flex items-center justify-center h-full bg-muted/30">
+              <div className="text-center p-4">
+                <FileText className="h-12 w-12 mx-auto text-primary/60 mb-3" />
+                <h3 className="font-medium text-sm mb-1">{document.title}</h3>
+                <p className="text-xs text-muted-foreground">
+                  Click to open document
+                </p>
+              </div>
+            </div>
+            
+            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                className="mr-2"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDocumentOpen();
+                }}
+                disabled={isLoading}
+              >
+                <ExternalLink className="h-3 w-3 mr-1" />
+                {isLoading ? 'Opening...' : 'Open'}
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDownload();
+                }}
+              >
+                <Download className="h-3 w-3 mr-1" />
+                Download
+              </Button>
+            </div>
           </div>
-        </div>
+        )
       ) : (
         <div className="bg-muted rounded-md p-8 h-64 flex flex-col items-center justify-center">
           {previewError ? (
