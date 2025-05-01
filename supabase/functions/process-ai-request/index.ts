@@ -23,10 +23,10 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-    const openAIKey = Deno.env.get('OPENAI_API_KEY') || '';
+    const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY') || '';
     const exaApiKey = Deno.env.get('EXA_API_KEY') || '';
 
-    if (!supabaseUrl || !supabaseKey || !openAIKey) {
+    if (!supabaseUrl || !supabaseKey || !deepseekApiKey) {
       console.error("Missing required environment variables");
       throw new Error('Missing required environment variables');
     }
@@ -152,7 +152,7 @@ serve(async (req) => {
         const exaData = await exaResponse.json();
         biaRegulations = exaData.results || [];
         
-        // Format regulations for OpenAI context
+        // Format regulations for DeepSeek context
         regulatoryReferences = biaRegulations.map(item => ({
           title: item.title,
           url: item.url,
@@ -179,17 +179,17 @@ serve(async (req) => {
       systemPrompt += "You are analyzing a bankruptcy or insolvency document. Extract all key information, check for compliance issues, and create a risk assessment.";
     }
     
-    console.log("Calling OpenAI API for document analysis");
+    console.log("Calling DeepSeek API for document analysis");
     
-    // Process document with OpenAI
-    const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Process document with DeepSeek API
+    const deepseekResponse = await fetch('https://api.deepseek.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openAIKey}`
+        'Authorization': `Bearer ${deepseekApiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'deepseek-chat',
         messages: [
           {
             role: 'system',
@@ -246,21 +246,21 @@ serve(async (req) => {
       })
     });
     
-    if (!openAIResponse.ok) {
-      const errorText = await openAIResponse.text();
-      console.error(`OpenAI API error: ${openAIResponse.status} - ${errorText}`);
-      throw new Error(`OpenAI API error: ${openAIResponse.status} - ${errorText}`);
+    if (!deepseekResponse.ok) {
+      const errorText = await deepseekResponse.text();
+      console.error(`DeepSeek API error: ${deepseekResponse.status} - ${errorText}`);
+      throw new Error(`DeepSeek API error: ${deepseekResponse.status} - ${errorText}`);
     }
     
-    const aiOutput = await openAIResponse.json();
+    const aiOutput = await deepseekResponse.json();
     const aiResponse = aiOutput.choices?.[0]?.message?.content || '{}';
     
     let analysisResult;
     try {
       analysisResult = JSON.parse(aiResponse);
-      console.log("Successfully parsed OpenAI response");
+      console.log("Successfully parsed DeepSeek response");
     } catch (parseError) {
-      console.error("Error parsing OpenAI response:", parseError);
+      console.error("Error parsing DeepSeek response:", parseError);
       throw new Error(`Failed to parse AI response: ${parseError.message}`);
     }
     

@@ -3,7 +3,12 @@ import { supabase } from "@/lib/supabase";
 import logger from "@/utils/logger";
 import { AnalysisResult } from "../types/analysisTypes";
 
-export const triggerDocumentAnalysis = async (documentId: string, fileName: string = "", isSpecialForm: boolean = false) => {
+export const triggerDocumentAnalysis = async (
+  documentId: string, 
+  fileName: string = "", 
+  isSpecialForm: boolean = false,
+  isExcelFile: boolean = false
+) => {
   try {
     logger.debug(`Triggering document analysis for ID: ${documentId}`);
     
@@ -32,6 +37,8 @@ export const triggerDocumentAnalysis = async (documentId: string, fileName: stri
     
     if (document?.metadata?.documentType) {
       formType = document.metadata.documentType;
+    } else if (document?.metadata?.formType) {
+      formType = document.metadata.formType;
     } else if (title.includes('form 31') || title.includes('form31') || title.includes('proof of claim')) {
       formType = 'form-31';
     } else if (title.includes('form 47') || title.includes('form47') || title.includes('consumer proposal')) {
@@ -40,11 +47,6 @@ export const triggerDocumentAnalysis = async (documentId: string, fileName: stri
       formType = 'form-76';
     }
     
-    // Check if this is an Excel file
-    const isExcelFile = document?.type?.includes('excel') || 
-                       document?.type?.includes('spreadsheet') ||
-                       title.includes('.xls');
-
     // Get current auth session to ensure valid JWT token
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     

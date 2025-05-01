@@ -11,7 +11,7 @@ import {
   triggerDocumentAnalysis,
   createNotification
 } from '../utils/uploadProcessor';
-import { detectDocumentType } from '../utils/fileTypeDetector';
+import { detectDocumentType, getDocumentFormType } from '../utils/fileTypeDetector';
 
 export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<void> | void) => {
   const { toast } = useToast();
@@ -44,24 +44,19 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
       }
 
       // Detect document type
-      const { isForm76, isExcel, isPDF } = detectDocumentType(file);
-      const isForm31ByName = file.name.toLowerCase().includes("form 31") || 
-                             file.name.toLowerCase().includes("form31") ||
-                             file.name.toLowerCase().includes("proof of claim");
-      
-      const isForm47ByName = file.name.toLowerCase().includes("form 47") || 
-                             file.name.toLowerCase().includes("form47") ||
-                             file.name.toLowerCase().includes("consumer proposal");
-      
-      const isSpecialForm = isForm31ByName || isForm47ByName || isForm76;
+      const { isForm76, isForm47, isForm31, isExcel, isPDF } = detectDocumentType(file);
+      const isSpecialForm = isForm31 || isForm47 || isForm76;
       
       logger.info(`Document type detected: ${
-        isForm31ByName ? 'Form 31' : 
-        isForm47ByName ? 'Form 47' : 
+        isForm31 ? 'Form 31' : 
+        isForm47 ? 'Form 47' : 
         isForm76 ? 'Form 76' : 
         isExcel ? 'Excel' : 
         isPDF ? 'PDF' : 'Standard document'
       }`);
+
+      // Get form type from filename
+      const formType = getDocumentFormType(file.name);
 
       // Create loading/progress simulation
       const processingSimulation = simulateProcessingStages(
@@ -78,8 +73,9 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
         uploadedAt: new Date().toISOString()
       };
       
-      if (isForm31ByName) documentMetadata.formType = 'form-31';
-      else if (isForm47ByName) documentMetadata.formType = 'form-47';
+      if (formType) documentMetadata.formType = formType;
+      else if (isForm31) documentMetadata.formType = 'form-31';
+      else if (isForm47) documentMetadata.formType = 'form-47';
       else if (isForm76) documentMetadata.formType = 'form-76';
 
       const { data: documentData, error: documentError } = await createDocumentRecord(
@@ -97,7 +93,6 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
       logger.info(`Document record created with ID: ${documentData.id}`);
 
       // Prepare and upload file using a standardized format
-      const timestamp = Date.now();
       const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
       const filePath = `${user.id}/${documentData.id}/${cleanFileName}`;
       
@@ -138,10 +133,10 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
         'upload_complete'
       );
       
-      // Trigger document analysis for special forms
-      if (isSpecialForm) {
+      // Trigger document analysis for special forms or Excel files
+      if (isSpecialForm || isExcel) {
         logger.info(`Initiating document analysis for ${documentData.id}`);
-        await triggerDocumentAnalysis(documentData.id, file.name, true);
+        await triggerDocumentAnalysis(documentData.id, file.name, isSpecialForm, isExcel);
       }
       
       // Wait for processing simulation to complete

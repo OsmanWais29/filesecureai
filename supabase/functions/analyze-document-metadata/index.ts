@@ -21,15 +21,15 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Call OpenAI to extract metadata
-    const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Call DeepSeek to extract metadata
+    const deepseekResponse = await fetch('https://api.deepseek.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Authorization': `Bearer ${Deno.env.get('DEEPSEEK_API_KEY')}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'deepseek-chat',
         messages: [
           {
             role: 'system',
@@ -44,7 +44,7 @@ serve(async (req) => {
       }),
     });
 
-    const aiResult = await openAIResponse.json();
+    const aiResult = await deepseekResponse.json();
     const extractedMetadata = JSON.parse(aiResult.choices[0].message.content);
     
     // Calculate overall confidence score

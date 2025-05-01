@@ -196,13 +196,13 @@ serve(async (req) => {
       console.warn("Warning: No valid form data could be extracted from document text");
     }
 
-    // Configure the OpenAI prompt based on form type
-    let openAIPrompt = "";
+    // Configure the DeepSeek prompt based on form type
+    let deepseekPrompt = "";
     if (detectedFormType === "form-31" || 
         formType === "form-31" || 
         /form[\s-]*31\b/i.test(title) || 
         /proof of claim/i.test(title)) {
-      openAIPrompt =
+      deepseekPrompt =
 `You are a Canadian bankruptcy document analyst specializing in Form 31 (Proof of Claim).
 
 IMPORTANT: You are analyzing a REAL Form 31 document, NOT documentation ABOUT Form 31.
@@ -261,7 +261,7 @@ Return in this exact JSON format:
              formType === "form-47" || 
              /form[\s-]*47\b/i.test(title) || 
              /consumer proposal/i.test(title)) {
-      openAIPrompt =
+      deepseekPrompt =
 `You are a Canadian bankruptcy document analyst specializing in Form 47 (Consumer Proposal).
 
 IMPORTANT: You are analyzing a REAL Form 47 document, NOT documentation ABOUT Form 47.
@@ -321,7 +321,7 @@ Return in this exact JSON format:
 }`;
     }
     else {
-      openAIPrompt =
+      deepseekPrompt =
 `You are an expert in Canadian bankruptcy and insolvency document analysis.
 
 IMPORTANT: You are analyzing a REAL bankruptcy document, NOT documentation ABOUT bankruptcy forms.
@@ -351,29 +351,29 @@ Return in this exact JSON format:
 }`;
     }
 
-    // Only call OpenAI if we have document text to process
-    let openAIResponseContent = "";
+    // Only call DeepSeek if we have document text to process
+    let deepseekResponseContent = "";
     let aiData: any = {};
     
-    console.log("Calling OpenAI with document text length:", (validatedText || "").length);
+    console.log("Calling DeepSeek with document text length:", (validatedText || "").length);
     
     if (validatedText) {
       // Add debug info to help diagnose problematic content
       const textSample = validatedText.substring(0, 200) + '...';
-      console.log("Sample of text being sent to OpenAI:", textSample);
+      console.log("Sample of text being sent to DeepSeek:", textSample);
       
       try {
-        // Call OpenAI API with better error handling
-        const fetchAI = await fetch('https://api.openai.com/v1/chat/completions', {
+        // Call DeepSeek API with better error handling
+        const fetchAI = await fetch('https://api.deepseek.com/v1/chat/completions', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+            'Authorization': `Bearer ${Deno.env.get('DEEPSEEK_API_KEY')}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'gpt-4o',
+            model: 'deepseek-chat',
             messages: [
-              { role: 'system', content: openAIPrompt },
+              { role: 'system', content: deepseekPrompt },
               { role: 'user', content: validatedText }
             ],
             temperature: 0.1  // Lower temperature for more deterministic extraction
@@ -382,40 +382,40 @@ Return in this exact JSON format:
         
         if (!fetchAI.ok) {
           const errorText = await fetchAI.text();
-          console.error(`OpenAI API error (${fetchAI.status}):`, errorText);
-          throw new Error(`OpenAI API error: ${fetchAI.status} - ${errorText}`);
+          console.error(`DeepSeek API error (${fetchAI.status}):`, errorText);
+          throw new Error(`DeepSeek API error: ${fetchAI.status} - ${errorText}`);
         }
         
         const aiJSON = await fetchAI.json();
-        openAIResponseContent = aiJSON.choices?.[0]?.message?.content || "";
+        deepseekResponseContent = aiJSON.choices?.[0]?.message?.content || "";
         
         // Log the AI response for debugging
-        console.log("OpenAI response received, length:", openAIResponseContent.length);
-        console.log("Response sample:", openAIResponseContent.substring(0, 200) + '...');
+        console.log("DeepSeek response received, length:", deepseekResponseContent.length);
+        console.log("Response sample:", deepseekResponseContent.substring(0, 200) + '...');
       } catch (aiError) {
-        console.error("Error calling OpenAI API:", aiError);
-        throw new Error(`OpenAI API error: ${aiError.message}`);
+        console.error("Error calling DeepSeek API:", aiError);
+        throw new Error(`DeepSeek API error: ${aiError.message}`);
       }
     }
 
     // Parse and validate the AI response
     try {
-      if (openAIResponseContent) {
+      if (deepseekResponseContent) {
         try {
-          aiData = JSON.parse(openAIResponseContent);
-          console.log("Successfully parsed OpenAI response as JSON");
+          aiData = JSON.parse(deepseekResponseContent);
+          console.log("Successfully parsed DeepSeek response as JSON");
         } catch (parseErr) {
-          console.error("Error parsing OpenAI response as JSON:", parseErr);
+          console.error("Error parsing DeepSeek response as JSON:", parseErr);
           // Handle non-JSON responses by extracting JSON from the text
-          const jsonMatch = openAIResponseContent.match(/\{[\s\S]*\}/);
+          const jsonMatch = deepseekResponseContent.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
             try {
               aiData = JSON.parse(jsonMatch[0]);
-              console.log("Extracted and parsed JSON from OpenAI response");
+              console.log("Extracted and parsed JSON from DeepSeek response");
             } catch (extractErr) {
-              console.error("Failed to extract JSON from OpenAI response:", extractErr);
+              console.error("Failed to extract JSON from DeepSeek response:", extractErr);
               aiData = { 
-                summary: "Error: Could not parse OpenAI response", 
+                summary: "Error: Could not parse DeepSeek response", 
                 extracted_info: formFields,
                 error: "Could not parse JSON; using basic field extraction"
               };
@@ -423,191 +423,82 @@ Return in this exact JSON format:
           } else {
             console.warn("Response doesn't contain valid JSON structure");
             aiData = { 
-              summary: openAIResponseContent.substring(0, 100), 
+              summary: deepseekResponseContent.substring(0, 100), 
               extracted_info: formFields,
               error: "Could not parse JSON; using basic field extraction"
             };
           }
         }
       } else {
-        // If we didn't get an OpenAI response, use our basic extraction
-        console.log("No OpenAI response, using basic field extraction");
+        // If we didn't get a response from DeepSeek, use the extracted form fields
         aiData = {
           extracted_info: formFields,
-          summary: "Document analysis performed using basic extraction",
+          summary: "Extracted using pattern matching",
+          risks: []
         };
       }
-    } catch (validationErr) {
-      console.error("Error during response validation:", validationErr);
-      aiData = { 
-        summary: "Error during validation", 
-        extracted_info: formFields,
-        error: validationErr.message
-      };
-    }
 
-    // Add validation to ensure we have actual form data in the response
-    if (aiData && typeof aiData === 'object') {
-      // Check if extracted_info exists and has data
-      if (!aiData.extracted_info || Object.keys(aiData.extracted_info).length === 0) {
-        console.warn("No extracted_info in OpenAI response, using basic extraction");
-        aiData.extracted_info = formFields;
-      }
-      
-      // Ensure we have formType and formNumber
-      if (!aiData.extracted_info.formType) {
-        aiData.extracted_info.formType = detectedFormType || formType || 'unknown';
-      }
-      
-      if (!aiData.extracted_info.formNumber) {
-        aiData.extracted_info.formNumber = detectedFormNumber || formFields.formNumber || '';
-      }
-      
-      // Validate risks structure
-      if (!Array.isArray(aiData.risks)) {
-        aiData.risks = [];
-      }
-      
-      // Ensure risks have proper structure
-      aiData.risks = aiData.risks.map(risk => ({
-        type: risk.type || 'Unknown Risk',
-        description: risk.description || 'No description provided',
-        severity: risk.severity || 'medium',
-        regulation: risk.regulation || 'Not specified',
-        solution: risk.solution || 'Review document for completeness'
-      }));
-      
-      // Add a special risk if we detected documentation instead of form data
-      if (hasDocumentationIndicators) {
-        aiData.risks.push({
-          type: "Document Content Issue",
-          description: "The document appears to contain documentation about forms rather than actual form data",
-          severity: "high",
-          regulation: "BIA Processing Requirements",
-          solution: "Upload the actual form document rather than documentation"
-        });
-      }
-    }
-    
-    // Create complete result object
-    const result = {
-      ...(typeof aiData === "object" && aiData !== null ? aiData : { summary: openAIResponseContent }),
-      extracted_fields: formFields,
-      processing_info: {
-        detectedFormType,
-        documentLength: validatedText?.length || 0,
-        processingTime: new Date().toISOString(),
-        documentIdUsed: documentId || null,
-        hasDocumentationIndicators,
-        hasValidFormData
-      }
-    };
-    
-    // Log the final result for debugging
-    console.log("Final analysis result created");
-
-    // Store results in Supabase if we have a document ID
-    if (documentId) {
-      try {
-        console.log(`Storing analysis results for document ID: ${documentId}`);
-        
-        // Get document owner
-        const { data: documentOwner, error: ownerError } = await supabase
+      // Update document with extracted data
+      if (documentId) {
+        const { error } = await supabase
           .from('documents')
-          .select('user_id')
-          .eq('id', documentId)
-          .single();
+          .update({
+            metadata: {
+              ...aiData.extracted_info,
+              formType: detectedFormType || formFields.formType || '',
+              formNumber: detectedFormNumber || formFields.formNumber || '',
+              analyzed_at: new Date().toISOString()
+            },
+            ai_processing_status: 'complete'
+          })
+          .eq('id', documentId);
 
-        if (ownerError) {
-          console.error('Error fetching document owner:', ownerError);
+        if (error) {
+          console.error("Error updating document with analysis results:", error);
         }
-
-        if (documentOwner) {
-          // Store analysis in document_analysis table
-          const { error: analysisError } = await supabase
-            .from('document_analysis')
-            .upsert({
-              document_id: documentId,
-              user_id: documentOwner.user_id,
-              content: result,
-              created_at: new Date().toISOString()
-            });
-
-          if (analysisError) {
-            console.error('Error saving analysis:', analysisError);
-          }
-
-          // Update document metadata
-          let documentMetadata: Record<string, any> = {
-            formType: result.extracted_info?.formType,
-            formNumber: result.extracted_info?.formNumber,
-            processing_complete: true,
-            last_analyzed: new Date().toISOString(),
-            processing_steps_completed: ["analysis_complete"],
-            processing_time_ms: Date.now() - new Date().getTime(),
-            client_name: result.extracted_info?.clientName || result.extracted_info?.debtorName,
-            submission_deadline: result.extracted_info?.submissionDeadline,
-            filing_date: result.extracted_info?.filingDate,
-            administratorName: result.extracted_info?.administratorName
-          };
-          
-          // Add form-specific metadata
-          if (detectedFormType === "form-31" || 
-              /form[\s-]*31\b/i.test(title) || 
-              /proof of claim/i.test(title)) {
-            documentMetadata = {
-              ...documentMetadata,
-              formNumber: "31",
-              formType: "proof-of-claim",
-              claimant_name: result.extracted_info?.creditorName || result.extracted_info?.claimantName,
-              claim_amount: result.extracted_info?.claimAmount || formFields.claimAmount,
-              claim_type: result.extracted_info?.claimType || formFields.claimType,
-              security_description: result.extracted_info?.securityDescription || formFields.securityDescription,
-              has_compliance_issues: (result.risks?.length > 0) || false
-            };
-          } else if (detectedFormType === "form-47" ||
-                    /form[\s-]*47\b/i.test(title) ||
-                    /consumer proposal/i.test(title)) {
-            documentMetadata = {
-              ...documentMetadata,
-              formNumber: "47",
-              formType: "consumer-proposal",
-              proposal_payment: result.extracted_info?.proposalPayment,
-              proposal_duration: result.extracted_info?.proposalDuration,
-              total_assets: result.extracted_info?.totalAssets,
-              total_liabilities: result.extracted_info?.totalLiabilities,
-              has_compliance_issues: (result.risks?.length > 0) || false
-            };
-          }
-
-          // Update document metadata
-          const { error: updateError } = await supabase
-            .from('documents')
-            .update({ 
-              ai_processing_status: 'complete',
-              metadata: documentMetadata
-            })
-            .eq('id', documentId);
-
-          if (updateError) {
-            console.error('Error updating document status:', updateError);
-          }
-        }
-      } catch (dbError) {
-        console.error('Database operation error:', dbError);
       }
-    }
 
-    // Return the analysis result
-    return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
+      return new Response(
+        JSON.stringify({
+          success: true,
+          structureValid: true,
+          requiredFieldsPresent: hasValidFormData,
+          signaturesValid: formFields.dateSigned ? true : false,
+          formFields,
+          analysis: aiData,
+          risks: aiData.risks || []
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+
+    } catch (error) {
+      console.error('Error in analyze-document function:', error);
+      return new Response(
+        JSON.stringify({ 
+          error: error.message || 'Unknown error',
+          structureValid: false,
+          requiredFieldsPresent: false,
+          signaturesValid: false
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500
+        }
+      );
+    }
   } catch (error) {
-    console.error('Error in analyze-document function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    console.error('Uncaught error in analyze-document function:', error);
+    return new Response(
+      JSON.stringify({ 
+        error: error.message || 'Unknown error',
+        structureValid: false,
+        requiredFieldsPresent: false,
+        signaturesValid: false
+      }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500
+      }
+    );
   }
 });
