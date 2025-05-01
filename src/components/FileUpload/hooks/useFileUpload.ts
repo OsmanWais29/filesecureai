@@ -136,7 +136,8 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
       // Trigger document analysis for special forms or Excel files
       if (isSpecialForm || isExcel) {
         logger.info(`Initiating document analysis for ${documentData.id}`);
-        await triggerDocumentAnalysis(documentData.id, file.name, isSpecialForm, isExcel);
+        // Fix: Remove the boolean flag that was causing the error (too many arguments)
+        await triggerDocumentAnalysis(documentData.id, file.name, isSpecialForm);
       }
       
       // Wait for processing simulation to complete
