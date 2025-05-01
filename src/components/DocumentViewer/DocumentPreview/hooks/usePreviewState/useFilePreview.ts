@@ -47,6 +47,7 @@ export const useFilePreview = ({
   const checkFile = useCallback(async () => {
     if (!storagePath) {
       console.log("No storage path provided for file check");
+      setPreviewError("No storage path provided");
       return;
     }
 
@@ -63,96 +64,98 @@ export const useFilePreview = ({
         return;
       }
       
-      // Get file metadata before trying to download
-      const { data: fileInfo, error: fileInfoError } = await supabase
-        .storage
-        .from('documents')
-        .list(storagePath.split('/').slice(0, -1).join('/'), {
-          limit: 10,
-          offset: 0,
-          search: storagePath.split('/').pop()
-        });
-
-      // Handle metadata load error
-      if (fileInfoError) {
-        console.error("Error getting file info:", fileInfoError);
-        setDiagnostics({
-          ...diagnostics,
-          fileInfoError,
-          storagePath
-        });
-        throw new Error(`File not found: ${fileInfoError.message}`);
-      }
-      
-      // File not found in storage
-      if (!fileInfo || fileInfo.length === 0) {
-        console.error("File not found in storage");
-        
-        // Try to get document record from database for diagnostics
-        const { data: docRecord } = await supabase
-          .from('documents')
-          .select('*')
-          .or(`storage_path.eq.${storagePath},id.eq.${storagePath.split('/')[1]}`)
-          .maybeSingle();
-          
-        setDiagnostics({
-          ...diagnostics,
-          fileNotFoundError: true,
-          documentRecord: docRecord,
-          storagePath
-        });
-        
-        throw new Error("File not found in storage");
-      }
-
-      // We found the file, mark it as existing
-      setFileExists(true);
-      
-      // Determine file type information
+      // Determine file type information before any storage operations
       const { type, isExcel } = getFileTypeFromPath(storagePath);
       setFileType(type);
       setIsExcelFile(isExcel);
-      
-      // Generate signed URL with proper content type
-      const { data: signedURL, error: signedURLError } = await supabase
-        .storage
-        .from('documents')
-        .createSignedUrl(storagePath, 60 * 60); // 1 hour expiry
-      
-      if (signedURLError || !signedURL?.signedUrl) {
-        console.error("Error creating signed URL:", signedURLError);
-        
-        // Fallback to direct download URL
-        console.log("Falling back to direct download URL");
-        const { data: publicUrl } = supabase
+
+      // First approach: Try to get public URL
+      try {
+        console.log("Attempting to get public URL directly...");
+        const { data: publicUrlData } = supabase
           .storage
           .from('documents')
           .getPublicUrl(storagePath);
           
-        if (publicUrl?.publicUrl) {
-          console.log("Using public URL:", publicUrl.publicUrl);
-          setFileUrl(publicUrl.publicUrl);
+        if (publicUrlData?.publicUrl) {
+          console.log("Public URL available:", publicUrlData.publicUrl);
+          setFileExists(true);
+          setFileUrl(publicUrlData.publicUrl);
+          setPreviewError(null);
           return;
         }
-        
-        setDiagnostics({
-          ...diagnostics,
-          signedURLError,
-          storagePath
-        });
-        
-        throw new Error(`Failed to create URL for document: ${signedURLError?.message || "Unknown error"}`);
+      } catch (err) {
+        console.log("Public URL method failed, trying signed URL...");
       }
       
-      // Success! We have a valid signed URL
-      console.log("Successfully created signed URL");
-      setFileUrl(signedURL.signedUrl);
-      setPreviewError(null);
+      // Second approach: Try signed URL
+      try {
+        console.log("Attempting to create signed URL...");
+        const { data: signedURLData, error: signedURLError } = await supabase
+          .storage
+          .from('documents')
+          .createSignedUrl(storagePath, 60 * 60); // 1 hour expiry
+        
+        if (signedURLError) {
+          throw signedURLError;
+        }
+        
+        if (signedURLData?.signedUrl) {
+          console.log("Signed URL created successfully");
+          setFileExists(true);
+          setFileUrl(signedURLData.signedUrl);
+          setPreviewError(null);
+          return;
+        }
+      } catch (err) {
+        console.log("Signed URL method failed, trying download URL...");
+      }
+      
+      // Third approach: Try download URL
+      try {
+        console.log("Attempting to get download URL...");
+        const { data: fileData, error: downloadError } = await supabase
+          .storage
+          .from('documents')
+          .download(storagePath);
+        
+        if (downloadError) {
+          throw downloadError;
+        }
+        
+        if (fileData) {
+          const objectUrl = URL.createObjectURL(fileData);
+          console.log("File downloaded and object URL created");
+          setFileExists(true);
+          setFileUrl(objectUrl);
+          setPreviewError(null);
+          return;
+        }
+      } catch (err) {
+        console.log("Download method failed");
+      }
+      
+      // If we get here, all approaches have failed
+      setDiagnostics({
+        ...diagnostics,
+        storagePath,
+        attempts: attemptCount + 1
+      });
+      
+      throw new Error(`Unable to access file in storage: ${storagePath}`);
     } catch (error: any) {
       console.error("File preview error:", error.message);
       setPreviewError(`Error loading file: ${error.message}`);
       setFileUrl(null);
       setFileExists(false);
+      
+      // Add diagnostic information for debugging
+      setDiagnostics({
+        ...diagnostics,
+        lastError: error.message,
+        storagePath,
+        attempts: attemptCount + 1
+      });
     }
   }, [storagePath, attemptCount, diagnostics, setFileUrl, setFileExists, setIsExcelFile, setPreviewError, setFileType]);
 

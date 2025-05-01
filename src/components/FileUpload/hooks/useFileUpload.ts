@@ -12,7 +12,6 @@ import {
   createNotification
 } from '../utils/uploadProcessor';
 import { detectDocumentType } from '../utils/fileTypeDetector';
-import { isForm31Document, createForm31RiskAssessment } from '@/utils/documents/analysisUtils';
 
 export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<void> | void) => {
   const { toast } = useToast();
@@ -45,26 +44,28 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
       }
 
       // Detect document type
+      const { isForm76, isExcel, isPDF } = detectDocumentType(file);
       const isForm31ByName = file.name.toLowerCase().includes("form 31") || 
-                            file.name.toLowerCase().includes("form31") ||
-                            file.name.toLowerCase().includes("proof of claim");
+                             file.name.toLowerCase().includes("form31") ||
+                             file.name.toLowerCase().includes("proof of claim");
       
       const isForm47ByName = file.name.toLowerCase().includes("form 47") || 
-                            file.name.toLowerCase().includes("form47") ||
-                            file.name.toLowerCase().includes("consumer proposal");
+                             file.name.toLowerCase().includes("form47") ||
+                             file.name.toLowerCase().includes("consumer proposal");
       
-      const { isForm76, isExcel } = detectDocumentType(file);
+      const isSpecialForm = isForm31ByName || isForm47ByName || isForm76;
       
       logger.info(`Document type detected: ${
         isForm31ByName ? 'Form 31' : 
         isForm47ByName ? 'Form 47' : 
         isForm76 ? 'Form 76' : 
-        isExcel ? 'Excel' : 'Standard document'
+        isExcel ? 'Excel' : 
+        isPDF ? 'PDF' : 'Standard document'
       }`);
 
       // Create loading/progress simulation
       const processingSimulation = simulateProcessingStages(
-        isForm31ByName || isForm47ByName || isForm76, 
+        isSpecialForm, 
         isExcel, 
         setUploadProgress, 
         setUploadStep
@@ -85,7 +86,7 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
         file, 
         user.id, 
         undefined, 
-        isForm31ByName || isForm47ByName || isForm76,
+        isSpecialForm,
         documentMetadata
       );
 
@@ -95,10 +96,10 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
       
       logger.info(`Document record created with ID: ${documentData.id}`);
 
-      // Prepare and upload file
-      const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      // Prepare and upload file using a standardized format
       const timestamp = Date.now();
-      const filePath = `${user.id}/${documentData.id}/${timestamp}_${cleanFileName}`;
+      const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const filePath = `${user.id}/${documentData.id}/${cleanFileName}`;
       
       // Upload to storage
       const { error: uploadError } = await uploadToStorage(file, user.id, filePath);
@@ -118,7 +119,7 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
             ...documentData.metadata,
             storageFullPath: filePath
           },
-          ai_processing_status: 'pending'
+          ai_processing_status: isSpecialForm ? 'pending' : 'complete'
         })
         .eq('id', documentData.id);
 
@@ -137,9 +138,11 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
         'upload_complete'
       );
       
-      // Always trigger document analysis
-      logger.info(`Initiating document analysis for ${documentData.id}`);
-      await triggerDocumentAnalysis(documentData.id, file.name, true);
+      // Trigger document analysis for special forms
+      if (isSpecialForm) {
+        logger.info(`Initiating document analysis for ${documentData.id}`);
+        await triggerDocumentAnalysis(documentData.id, file.name, true);
+      }
       
       // Wait for processing simulation to complete
       await processingSimulation;
@@ -164,15 +167,12 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
       // Success message
       toast({
         title: "Success",
-        description: isForm31ByName
-          ? "Form 31 uploaded and analyzed successfully" 
-          : isForm47ByName
-            ? "Form 47 uploaded and analyzed successfully"
-            : isForm76 
-              ? "Form 76 uploaded and analyzed successfully" 
-              : "Document uploaded and processed successfully",
+        description: isSpecialForm
+          ? `${file.name} uploaded and processed successfully`
+          : "Document uploaded successfully",
       });
     } catch (error) {
+      console.error('Upload error:', error);
       logger.error('Upload error:', error);
       toast({
         variant: "destructive",
@@ -184,7 +184,7 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
         setIsUploading(false);
         setUploadProgress(0);
         setUploadStep("");
-      }, 3000);
+      }, 1000);
     }
   }, [onUploadComplete, toast, validateFile]);
 

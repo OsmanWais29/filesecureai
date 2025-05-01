@@ -24,6 +24,7 @@ export const detectDocumentType = (file: File): { isForm76: boolean, isExcel: bo
                fileName.endsWith('.pdf');
 
   endTiming('detect-document-type');
+  console.log(`File detection results: isForm76=${isForm76}, isExcel=${isExcel}, isPDF=${isPDF}`);
   
   return { isForm76, isExcel, isPDF };
 };
