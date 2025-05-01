@@ -195,7 +195,7 @@ serve(async (req) => {
             role: 'system',
             content: systemPrompt + `\n\nYou must extract information, create a comprehensive risk assessment, and check compliance with the Bankruptcy and Insolvency Act. The risk assessment should clearly describe any problems and cite specific BIA sections that may be violated. 
             
-            I WANT you to follow this format for your response:
+            I WANT you to return your response in JSON format as follows:
             {
               "extracted_info": {
                 "formNumber": "Form number (e.g., 31, 47, 76)",
