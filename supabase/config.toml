@@ -1,18 +1,18 @@
 
 # A string used to distinguish different Supabase projects on the same host. Defaults to the working
 # directory name when running `supabase init`.
-project_id = "SecureFilesAI"
+project_id = "FileAssureAI"
 
 [api]
 # Port to use for the API URL.
 port = 54321
 # Schemas to expose in your API. Tables, views and stored procedures in this schema will get API
 # endpoints. public and storage are always included.
-schemas = ["public", "storage", "extensions"]
+schemas = ["public", "storage", "graphql_public"]
 # Extra schemas to add to the search_path of every request. public is always included.
-extra_search_path = ["extensions"]
-# Maximum rows returns from a view, table, or stored procedure. Limits payload size for accidental
-# big requests.
+extra_search_path = ["public", "extensions"]
+# The maximum number of rows returns from a view, table, or stored procedure. Limits payload size
+# for accidental or malicious requests.
 max_rows = 1000
 
 [db]
@@ -44,18 +44,17 @@ file_size_limit = "50MiB"
 site_url = "http://localhost:3000"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
 additional_redirect_urls = ["https://localhost:3000"]
-# How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 seconds (1
+# How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 seconds (one
 # week).
 jwt_expiry = 3600
 # Allow/disallow new user signups to your project.
 enable_signup = true
+# If enabled, a user will be automatically signed up on their first OAuth sign-in.
+enable_auto_signup = true
 
 [auth.email]
 # Allow/disallow new user signups via email to your project.
 enable_signup = true
-# If enabled, a user will be required to confirm any email change on both the old, and new email
-# addresses. If disabled, only the new email is required to confirm.
-double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
 enable_confirmations = false
 
@@ -68,11 +67,9 @@ client_id = ""
 secret = ""
 # Overrides the default auth redirectUrl.
 redirect_uri = ""
-# Overrides the default auth provider URL. Used to support self-hosted gitlab, single-tenant Azure,
-# or any other third-party OIDC providers.
+# Overrides the default auth provider URL. Used to support self-hosted services.
 url = ""
 
-[analytics]
-enabled = false
-port = 54327
-vector_port = 54328
+[functions]
+[functions.process-ai-request]
+verify_jwt = true

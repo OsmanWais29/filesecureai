@@ -3,14 +3,14 @@ import { supabase } from "@/lib/supabase";
 import logger from "@/utils/logger";
 import { AnalysisResult } from "../types/analysisTypes";
 
-export const triggerDocumentAnalysis = async (documentId: string) => {
+export const triggerDocumentAnalysis = async (documentId: string, fileName: string = "", isSpecialForm: boolean = false) => {
   try {
     logger.debug(`Triggering document analysis for ID: ${documentId}`);
     
-    // First, check if we already have document content in metadata
+    // First, check if we need to fetch document details
     const { data: document, error: docError } = await supabase
       .from('documents')
-      .select('title, metadata, type')
+      .select('title, metadata, type, storage_path')
       .eq('id', documentId)
       .single();
       
@@ -19,15 +19,24 @@ export const triggerDocumentAnalysis = async (documentId: string) => {
       throw docError;
     }
     
-    // Determine if this appears to be a specific form type
-    let formType = 'unknown';
-    const title = document?.title?.toLowerCase() || '';
+    if (!document || !document.storage_path) {
+      throw new Error('Document not found or missing storage path');
+    }
     
-    if (title.includes('form 31') || title.includes('form31') || title.includes('proof of claim')) {
+    // Update document status to processing
+    await updateDocumentStatus(documentId, 'processing');
+    
+    // Determine form type from metadata or title
+    let formType = 'unknown';
+    const title = (document?.title || fileName || '').toLowerCase();
+    
+    if (document?.metadata?.documentType) {
+      formType = document.metadata.documentType;
+    } else if (title.includes('form 31') || title.includes('form31') || title.includes('proof of claim')) {
       formType = 'form-31';
     } else if (title.includes('form 47') || title.includes('form47') || title.includes('consumer proposal')) {
       formType = 'form-47';
-    } else if (title.includes('form 76') || title.includes('form76') || title.includes('statement of affairs')) {
+    } else if (title.includes('form 76') || title.includes('form76') || title.includes('statement of affairs') || isSpecialForm) {
       formType = 'form-76';
     }
     
@@ -48,7 +57,7 @@ export const triggerDocumentAnalysis = async (documentId: string) => {
       throw new Error("No active session found. User must be authenticated.");
     }
 
-    // Call the analyze-document edge function with enhanced context and valid session
+    // Call the process-ai-request edge function for AI analysis
     console.log("Invoking process-ai-request edge function with authenticated session");
     const { data, error } = await supabase.functions.invoke('process-ai-request', {
       body: { 
@@ -56,9 +65,10 @@ export const triggerDocumentAnalysis = async (documentId: string) => {
         includeRegulatory: true,
         includeClientExtraction: true,
         extractionMode: 'comprehensive',
-        title: document?.title || '',
+        title: document?.title || fileName || '',
         formType,
         isExcelFile,
+        storagePath: document.storage_path,
         extractionPatterns: {
           // Enhanced patterns for better form field extraction
           form31: {
@@ -71,6 +81,11 @@ export const triggerDocumentAnalysis = async (documentId: string) => {
             clientName: "(?:consumer\\s+debtor|debtor)(?:'s)?\\s+name\\s*:\\s*([\\w\\s\\.\\-']+)",
             filingDate: "(?:filing|submission)\\s+date\\s*:\\s*(\\d{1,2}[\\/-]\\d{1,2}[\\/-]\\d{2,4}|\\w+\\s+\\d{1,2},?\\s+\\d{4})",
             proposalPayment: "(?:monthly\\s+payment|payment\\s+amount)\\s*[:$]\\s*([\\d,.]+)"
+          },
+          form76: {
+            clientName: "(?:debtor|bankrupt)(?:'s)?\\s+name\\s*:\\s*([\\w\\s\\.\\-']+)",
+            totalAssets: "(?:total\\s+assets|assets\\s+total)\\s*[:$]\\s*([\\d,.]+)",
+            totalLiabilities: "(?:total\\s+liabilities|liabilities\\s+total)\\s*[:$]\\s*([\\d,.]+)"
           }
         }
       }
@@ -78,11 +93,13 @@ export const triggerDocumentAnalysis = async (documentId: string) => {
 
     if (error) {
       console.error('Error from process-ai-request edge function:', error);
+      await updateDocumentStatus(documentId, 'failed');
       throw error;
     }
 
     if (data) {
       console.log('Analysis request successful:', data);
+      await updateDocumentStatus(documentId, 'complete');
     }
     
     logger.debug(`Successfully triggered document analysis for ID: ${documentId}`);
@@ -133,17 +150,58 @@ export const saveAnalysisResults = async (
       analysisData.extracted_info.summary = 'Document analyzed. See extracted information.';
     }
     
-    const { error } = await supabase
+    // Check if document analysis already exists
+    const { data: existingAnalysis } = await supabase
       .from('document_analysis')
-      .insert([{
-        document_id: documentId,
-        user_id: userId,
-        content: analysisData
-      }]);
+      .select('*')
+      .eq('document_id', documentId)
+      .single();
+      
+    if (existingAnalysis) {
+      // Update existing analysis
+      const { error } = await supabase
+        .from('document_analysis')
+        .update({
+          content: analysisData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingAnalysis.id);
+        
+      if (error) {
+        logger.error('Error updating analysis results:', error);
+        throw error;
+      }
+    } else {
+      // Create new analysis record
+      const { error } = await supabase
+        .from('document_analysis')
+        .insert([{
+          document_id: documentId,
+          user_id: userId,
+          content: analysisData
+        }]);
 
-    if (error) {
-      logger.error('Error saving analysis results:', error);
-      throw error;
+      if (error) {
+        logger.error('Error saving analysis results:', error);
+        throw error;
+      }
+    }
+    
+    // Also update document metadata with extracted information
+    const { error: updateError } = await supabase
+      .from('documents')
+      .update({
+        metadata: {
+          ...analysisData.extracted_info,
+          analyzed_at: new Date().toISOString(),
+          has_analysis: true
+        },
+        ai_processing_status: 'complete'
+      })
+      .eq('id', documentId);
+      
+    if (updateError) {
+      logger.warn('Error updating document with analysis metadata:', updateError);
     }
     
     logger.info('Analysis results saved successfully for document ID:', documentId);

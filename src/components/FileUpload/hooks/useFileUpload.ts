@@ -44,26 +44,38 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
         return;
       }
 
+      // Detect document type
       const isForm31ByName = file.name.toLowerCase().includes("form 31") || 
                             file.name.toLowerCase().includes("form31") ||
                             file.name.toLowerCase().includes("proof of claim");
       
+      const isForm47ByName = file.name.toLowerCase().includes("form 47") || 
+                            file.name.toLowerCase().includes("form47") ||
+                            file.name.toLowerCase().includes("consumer proposal");
+      
       const { isForm76, isExcel } = detectDocumentType(file);
       
-      logger.info(`Document type detected: ${isForm31ByName ? 'Form 31' : isForm76 ? 'Form 76' : isExcel ? 'Excel' : 'Standard document'}`);
+      logger.info(`Document type detected: ${
+        isForm31ByName ? 'Form 31' : 
+        isForm47ByName ? 'Form 47' : 
+        isForm76 ? 'Form 76' : 
+        isExcel ? 'Excel' : 'Standard document'
+      }`);
 
+      // Create loading/progress simulation
       const processingSimulation = simulateProcessingStages(
-        isForm31ByName || isForm76, 
+        isForm31ByName || isForm47ByName || isForm76, 
         isExcel, 
         setUploadProgress, 
         setUploadStep
       );
 
+      // Create database record
       const { data: documentData, error: documentError } = await createDocumentRecord(
         file, 
         user.id, 
         undefined, 
-        isForm31ByName || isForm76
+        isForm31ByName || isForm47ByName || isForm76
       );
 
       if (documentError) {
@@ -72,10 +84,12 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
       
       logger.info(`Document record created with ID: ${documentData.id}`);
 
+      // Prepare and upload file
       const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
       const timestamp = Date.now();
       const filePath = `${user.id}/${documentData.id}/${timestamp}_${cleanFileName}`;
       
+      // Upload to storage
       const { error: uploadError } = await uploadToStorage(file, user.id, filePath);
 
       if (uploadError) {
@@ -84,6 +98,13 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
       
       logger.info(`Document uploaded to storage path: ${filePath}`);
 
+      // Set form type in metadata
+      let formType = 'unknown';
+      if (isForm31ByName) formType = 'form-31';
+      else if (isForm47ByName) formType = 'form-47';
+      else if (isForm76) formType = 'form-76';
+      
+      // Update document record with storage path and metadata
       const { error: updateError } = await supabase
         .from('documents')
         .update({ 
@@ -91,7 +112,7 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
           metadata: {
             ...documentData.metadata,
             originalName: file.name,
-            documentType: isForm31ByName ? 'form-31' : isForm76 ? 'form-76' : 'unknown',
+            documentType: formType,
             fileType: file.type,
             uploadedAt: new Date().toISOString(),
             storageFullPath: filePath
@@ -103,6 +124,7 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
         throw updateError;
       }
 
+      // Create notification for upload started
       await createNotification(
         user.id,
         'Document Upload Started',
@@ -113,6 +135,7 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
         'upload_complete'
       );
       
+      // Handle form-specific processing
       if (isForm31ByName) {
         logger.info('Creating Form 31 analysis...');
         try {
@@ -132,9 +155,11 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
           logger.error('Error creating Form 31 analysis:', error);
         }
       } else {
-        await triggerDocumentAnalysis(documentData.id, file.name, isForm76);
+        // Important: Always trigger document analysis for proper OpenAI processing
+        await triggerDocumentAnalysis(documentData.id, file.name, isForm76 || isForm47ByName);
       }
 
+      // Verify file exists in storage
       try {
         const { data: fileData, error: fileCheckError } = await supabase
           .storage
@@ -144,7 +169,7 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
         if (fileCheckError || !fileData || fileData.length === 0) {
           logger.warn(`File upload verification failed. Path: ${filePath}`);
           toast({
-            variant: "default", // Changed from "warning" to "default"
+            variant: "default",
             title: "Warning",
             description: "Document was saved but may have issues with preview. Please check the document viewer.",
           });
@@ -153,13 +178,16 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
         logger.error('Error verifying file upload:', verifyError);
       }
 
+      // Wait for processing simulation to complete
       await processingSimulation;
 
+      // Call upload complete callback
       if (onUploadComplete) {
         logger.info(`Calling onUploadComplete with document ID: ${documentData.id}`);
         await onUploadComplete(documentData.id);
       }
 
+      // Create final notification
       await createNotification(
         user.id,
         'Document Processing Complete',
@@ -170,13 +198,16 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
         'complete'
       );
 
+      // Success message
       toast({
         title: "Success",
         description: isForm31ByName
           ? "Form 31 uploaded and analyzed successfully" 
-          : isForm76 
-            ? "Form 76 uploaded and analyzed successfully" 
-            : "Document uploaded and processed successfully",
+          : isForm47ByName
+            ? "Form 47 uploaded and analyzed successfully"
+            : isForm76 
+              ? "Form 76 uploaded and analyzed successfully" 
+              : "Document uploaded and processed successfully",
       });
     } catch (error) {
       logger.error('Upload error:', error);
