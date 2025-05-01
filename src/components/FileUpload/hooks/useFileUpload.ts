@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
@@ -143,7 +144,7 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
         if (fileCheckError || !fileData || fileData.length === 0) {
           logger.warn(`File upload verification failed. Path: ${filePath}`);
           toast({
-            variant: "default",
+            variant: "default", // Changed from "warning" to "default"
             title: "Warning",
             description: "Document was saved but may have issues with preview. Please check the document viewer.",
           });

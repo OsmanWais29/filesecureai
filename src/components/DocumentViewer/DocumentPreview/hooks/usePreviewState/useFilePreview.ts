@@ -191,9 +191,11 @@ export const useFilePreview = ({
     setHasFileLoadStarted(false);
   }, []);
   
-  const forceRefresh = useCallback(() => {
+  // Modified to return a Promise<void> for consistency
+  const forceRefresh = useCallback(async (): Promise<void> => {
     resetRetries();
-    checkFile();
+    await checkFile();
+    return Promise.resolve();
   }, [resetRetries, checkFile]);
 
   return { 

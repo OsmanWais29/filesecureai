@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useDocumentAnalysis } from "../hooks/useDocumentAnalysis";
@@ -40,7 +41,7 @@ const usePreviewState = (
     attemptCount,
     hasFileLoadStarted,
     resetRetries,
-    forceRefresh,
+    forceRefresh: filePreviewRefresh,  // Renamed to avoid collision
     diagnostics
   } = useFilePreview({
     storagePath,
@@ -173,6 +174,7 @@ const usePreviewState = (
     }
   }, [resetRetries, checkFile]);
 
+  // Implement our own forceRefresh function that returns a Promise
   const forceRefresh = useCallback(async (): Promise<void> => {
     await checkFile();
     return Promise.resolve();
@@ -222,7 +224,7 @@ const usePreviewState = (
     attemptCount,
     fileType,
     handleFullRecovery,
-    forceRefresh,
+    forceRefresh,  // Return our own implementation, not the imported one
     errorDetails
   };
 };
