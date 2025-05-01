@@ -1,11 +1,12 @@
 
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useEffect, useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Brain, AlertTriangle, CheckCircle, RefreshCw, Loader2 } from "lucide-react";
+import { Brain, AlertTriangle, CheckCircle, RefreshCw, Loader2, Clock, Timer } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useDocumentAI } from '../hooks/useDocumentAI';
 import { AIInfoPanel } from '../../AIInfoPanel';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface DocumentAIPanelProps {
   documentId: string;
@@ -20,13 +21,71 @@ export const DocumentAIPanel: React.FC<DocumentAIPanelProps> = ({
   debugInfo,
   onAnalysisComplete
 }) => {
-  const { processDocument, isProcessing, error, progress, analysisStatus } = useDocumentAI(documentId);
+  const { 
+    processDocument, 
+    isProcessing, 
+    error, 
+    progress, 
+    analysisStatus,
+    retryCount,
+    checkDocumentStatus 
+  } = useDocumentAI(documentId);
+
+  const [processingTime, setProcessingTime] = useState(0);
+  const [isStuck, setIsStuck] = useState(false);
+
+  // Timer to track processing time
+  useEffect(() => {
+    let interval: number | null = null;
+    
+    if (isProcessing) {
+      const startTime = Date.now();
+      interval = window.setInterval(() => {
+        const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+        setProcessingTime(elapsedSeconds);
+        
+        // If processing takes more than 60 seconds, consider it potentially stuck
+        if (elapsedSeconds > 60 && progress < 80) {
+          setIsStuck(true);
+        }
+      }, 1000);
+    } else {
+      setProcessingTime(0);
+      setIsStuck(false);
+    }
+    
+    return () => {
+      if (interval !== null) {
+        clearInterval(interval);
+      }
+    };
+  }, [isProcessing, progress]);
+
+  // Check document status on mount
+  useEffect(() => {
+    const checkInitialStatus = async () => {
+      const status = await checkDocumentStatus();
+      if (status && status.ai_processing_status === 'processing') {
+        // If document is already being processed, show the processing UI
+        processDocument();
+      }
+    };
+    
+    checkInitialStatus();
+  }, [documentId, checkDocumentStatus, processDocument]);
 
   const handleProcessDocument = async () => {
     const result = await processDocument();
     if (result && onAnalysisComplete) {
       onAnalysisComplete();
     }
+  };
+
+  // Format time string (MM:SS)
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
   return (
@@ -47,9 +106,31 @@ export const DocumentAIPanel: React.FC<DocumentAIPanelProps> = ({
               </div>
               <Progress value={progress} />
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Clock className="h-4 w-4" />
+                <span>Processing time: {formatTime(processingTime)}</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span>This may take up to a minute depending on document size</span>
               </div>
+              
+              {isStuck && (
+                <Alert className="mt-2 bg-amber-50 border-amber-200">
+                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                  <AlertDescription className="text-sm text-amber-700">
+                    Analysis may be taking longer than expected. You can continue viewing the document or restart the analysis.
+                  </AlertDescription>
+                  <Button 
+                    onClick={handleProcessDocument} 
+                    variant="ghost" 
+                    size="sm"
+                    className="mt-2 text-amber-600 hover:text-amber-700 hover:bg-amber-100"
+                  >
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                    Restart Analysis
+                  </Button>
+                </Alert>
+              )}
             </div>
           ) : error ? (
             <div className="space-y-3">

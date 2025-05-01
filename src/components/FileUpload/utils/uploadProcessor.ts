@@ -2,6 +2,7 @@
 import { simulateUploadProgress } from "./progressSimulator";
 import logger from "@/utils/logger";
 import { supabase } from "@/lib/supabase";
+import { logAIRequest } from "@/utils/aiRequestMonitor";
 
 /**
  * Simulates the processing stages of a document upload
@@ -152,7 +153,12 @@ export const triggerDocumentAnalysis = async (documentId: string, fileName: stri
     const { error: updateError } = await supabase
       .from('documents')
       .update({
-        ai_processing_status: 'processing'
+        ai_processing_status: 'processing',
+        metadata: {
+          analysis_initiated: true,
+          analysis_initiated_at: new Date().toISOString(),
+          analysis_status: 'processing'
+        }
       })
       .eq('id', documentId);
       
@@ -175,12 +181,26 @@ export const triggerDocumentAnalysis = async (documentId: string, fileName: stri
 
     logger.info(`Invoking process-ai-request function for ${documentId}`);
     
+    // Log the AI request
+    await logAIRequest({
+      documentId,
+      requestType: 'document_analysis',
+      status: 'initiated',
+      details: {
+        fileName,
+        storagePath: docData.storage_path
+      }
+    });
+    
     // Call the edge function to analyze the document
     const { data, error } = await supabase.functions.invoke('process-ai-request', {
       body: { 
         documentId,
         storagePath: docData.storage_path,
-        title: docData.title || fileName
+        title: docData.title || fileName,
+        includeRegulatory: true,
+        includeClientExtraction: true,
+        debug: true
       }
     });
     
@@ -193,16 +213,38 @@ export const triggerDocumentAnalysis = async (documentId: string, fileName: stri
         .update({
           ai_processing_status: 'error',
           metadata: {
-            ...docData,
-            analysisError: error.message
+            analysis_status: 'error',
+            analysis_error: error.message,
+            analysis_error_at: new Date().toISOString()
           }
         })
         .eq('id', documentId);
+        
+      // Log the failed request
+      await logAIRequest({
+        documentId,
+        requestType: 'document_analysis',
+        status: 'failed',
+        details: {
+          error: error.message
+        }
+      });
         
       throw error;
     }
     
     logger.info(`Analysis complete for ${documentId}`);
+    
+    // Log the completed request
+    await logAIRequest({
+      documentId,
+      requestType: 'document_analysis',
+      status: 'completed',
+      details: {
+        success: true,
+        hasResults: !!data
+      }
+    });
     
   } catch (error) {
     logger.error(`Document analysis error: ${error}`);
@@ -211,7 +253,12 @@ export const triggerDocumentAnalysis = async (documentId: string, fileName: stri
     await supabase
       .from('documents')
       .update({
-        ai_processing_status: 'error'
+        ai_processing_status: 'error',
+        metadata: {
+          analysis_status: 'error',
+          analysis_error: error.message,
+          analysis_error_at: new Date().toISOString()
+        }
       })
       .eq('id', documentId);
   }
@@ -271,6 +318,7 @@ export const createNotification = async (
 const requiresAnalysis = (fileName: string): boolean => {
   const lowerFileName = fileName.toLowerCase();
   
+  // Add other formsm that require special analysis
   return lowerFileName.includes('form 31') || 
          lowerFileName.includes('form31') || 
          lowerFileName.includes('proof of claim') || 
@@ -279,5 +327,9 @@ const requiresAnalysis = (fileName: string): boolean => {
          lowerFileName.includes('consumer proposal') || 
          lowerFileName.includes('form 76') || 
          lowerFileName.includes('form76') || 
-         lowerFileName.includes('statement of affairs');
+         lowerFileName.includes('statement of affairs') ||
+         lowerFileName.includes('form 65') ||
+         lowerFileName.includes('form65') ||
+         lowerFileName.includes('form 72') ||
+         lowerFileName.includes('form72');
 };

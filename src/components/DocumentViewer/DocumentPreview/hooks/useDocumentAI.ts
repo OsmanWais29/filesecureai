@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { authenticatedFetch, ensureFreshToken } from "@/hooks/useAuthenticatedFetch";
@@ -9,7 +9,71 @@ export const useDocumentAI = (documentId: string) => {
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<number>(0);
   const [analysisStatus, setAnalysisStatus] = useState<string>('');
+  const [retryCount, setRetryCount] = useState(0);
   const { toast } = useToast();
+
+  // New function to check document status
+  const checkDocumentStatus = useCallback(async () => {
+    if (!documentId) return null;
+    
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('documents')
+        .select('ai_processing_status, metadata')
+        .eq('id', documentId)
+        .single();
+        
+      if (fetchError) {
+        console.error("Error fetching document status:", fetchError);
+        return null;
+      }
+      
+      return data;
+    } catch (err) {
+      console.error("Error in checkDocumentStatus:", err);
+      return null;
+    }
+  }, [documentId]);
+
+  // Automatic polling for document status
+  useEffect(() => {
+    if (!isProcessing || !documentId) return;
+    
+    const pollingInterval = setInterval(async () => {
+      const status = await checkDocumentStatus();
+      
+      if (status) {
+        if (status.ai_processing_status === 'complete') {
+          setIsProcessing(false);
+          setProgress(100);
+          setAnalysisStatus('Analysis complete');
+          toast({
+            title: "Analysis Complete",
+            description: "Document has been successfully analyzed",
+          });
+          clearInterval(pollingInterval);
+        } else if (status.ai_processing_status === 'failed') {
+          setIsProcessing(false);
+          setError(status.metadata?.processing_error || "Analysis failed");
+          toast({
+            variant: "destructive",
+            title: "Analysis Failed",
+            description: status.metadata?.processing_error || "Analysis failed",
+          });
+          clearInterval(pollingInterval);
+        } else if (status.ai_processing_status === 'processing') {
+          // Update progress based on processing_steps_completed if available
+          const steps = status.metadata?.processing_steps_completed || [];
+          const totalSteps = 6; // Total expected steps
+          const currentProgress = Math.min(Math.round((steps.length / totalSteps) * 100), 95);
+          setProgress(currentProgress);
+          setAnalysisStatus(steps.length > 0 ? steps[steps.length - 1] : 'Processing...');
+        }
+      }
+    }, 3000); // Check every 3 seconds
+    
+    return () => clearInterval(pollingInterval);
+  }, [isProcessing, documentId, checkDocumentStatus, toast]);
 
   const processDocument = useCallback(async () => {
     if (!documentId) {
@@ -20,6 +84,7 @@ export const useDocumentAI = (documentId: string) => {
     setIsProcessing(true);
     setError(null);
     setProgress(10);
+    setRetryCount(prev => prev + 1);
 
     try {
       // Ensure we have a fresh token for the request
@@ -81,6 +146,9 @@ export const useDocumentAI = (documentId: string) => {
       const text = await fileData.text();
       const isExcelFile = document.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
       
+      // Log the request to aid in debugging
+      console.log(`Sending AI request for document ${documentId} of type ${document.type}`);
+      
       // Call the AI analysis edge function
       const { data: analysisData, error: analysisError } = await supabase.functions.invoke('process-ai-request', {
         body: {
@@ -95,9 +163,14 @@ export const useDocumentAI = (documentId: string) => {
           debug: true
         }
       });
-
+      
       if (analysisError) {
+        console.error("AI processing error:", analysisError);
         throw new Error(`AI analysis error: ${analysisError.message}`);
+      }
+      
+      if (!analysisData) {
+        throw new Error('No analysis data returned');
       }
 
       setProgress(80);
@@ -168,13 +241,15 @@ export const useDocumentAI = (documentId: string) => {
     } finally {
       setIsProcessing(false);
     }
-  }, [documentId, toast]);
+  }, [documentId, toast, retryCount]);
 
   return {
     processDocument,
     isProcessing,
     error,
     progress,
-    analysisStatus
+    analysisStatus,
+    retryCount,
+    checkDocumentStatus
   };
 };
