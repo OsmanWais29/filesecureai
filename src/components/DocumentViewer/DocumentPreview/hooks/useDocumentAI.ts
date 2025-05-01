@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
-import { useAuthenticatedFetch, ensureFreshToken } from "@/hooks/useAuthenticatedFetch";
+import { authenticatedFetch, ensureFreshToken } from "@/hooks/useAuthenticatedFetch";
 
 export const useDocumentAI = (documentId: string) => {
   const [isProcessing, setIsProcessing] = useState(false);
