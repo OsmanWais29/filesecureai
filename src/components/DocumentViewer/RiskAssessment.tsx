@@ -1,13 +1,17 @@
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent } from "@/components/ui/card";
+import React, { useState } from 'react';
+import { AlertTriangle, ChevronDown, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { supabase } from "@/lib/supabase";
-import { AlertCircle, Check, ExternalLink, AlertTriangle } from "lucide-react";
-import { toast } from "sonner";
 
-interface Risk {
+interface RiskItem {
   type: string;
   description: string;
   severity: 'high' | 'medium' | 'low';
@@ -16,334 +20,177 @@ interface Risk {
   requiredAction?: string;
   solution?: string;
   deadline?: string;
+  id?: string;
+  status?: 'open' | 'acknowledged' | 'resolved';
 }
 
 interface RiskAssessmentProps {
-  risks: Risk[];
+  risks: RiskItem[];
   documentId: string;
   isLoading: boolean;
 }
 
-export const RiskAssessment = ({ risks: initialRisks = [], documentId, isLoading }: RiskAssessmentProps) => {
-  const [risks, setRisks] = useState<Risk[]>(initialRisks);
-  const [loading, setLoading] = useState(isLoading || !risks.length);
-  const [exaReferences, setExaReferences] = useState<any[]>([]);
-  const [analysisStatus, setAnalysisStatus] = useState<string | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (documentId) {
-      fetchRiskData();
+export const RiskAssessment: React.FC<RiskAssessmentProps> = ({
+  risks,
+  documentId,
+  isLoading
+}) => {
+  const [localRisks, setLocalRisks] = useState<RiskItem[]>(
+    risks.map(risk => ({ ...risk, status: risk.status || 'open', id: risk.id || `risk-${Math.random().toString(36).substring(2, 9)}` }))
+  );
+  
+  // Update risks when props change
+  React.useEffect(() => {
+    if (risks && !isLoading) {
+      setLocalRisks(
+        risks.map(risk => ({ 
+          ...risk, 
+          status: risk.status || 'open',
+          id: risk.id || `risk-${Math.random().toString(36).substring(2, 9)}`
+        }))
+      );
     }
-  }, [documentId]);
+  }, [risks, isLoading]);
 
-  useEffect(() => {
-    if (initialRisks?.length > 0) {
-      setRisks(initialRisks);
-      setLoading(false);
-    }
-  }, [initialRisks]);
-
-  const fetchRiskData = async () => {
-    try {
-      setLoading(true);
-      setLoadError(null);
-      
-      console.log("Fetching risk data for document:", documentId);
-      
-      // First check document status
-      const { data: docData, error: docError } = await supabase
-        .from('documents')
-        .select('ai_processing_status')
-        .eq('id', documentId)
-        .maybeSingle();
-        
-      if (docError) {
-        console.error('Error fetching document status:', docError);
-        setLoadError(`Failed to check document status: ${docError.message}`);
-      } else if (docData?.ai_processing_status === 'processing') {
-        setAnalysisStatus('processing');
-        setLoading(false);
-        return;
-      }
-      
-      // Fetch document analysis from document_analysis table
-      const { data: analysisData, error: analysisError } = await supabase
-        .from('document_analysis')
-        .select('content')
-        .eq('document_id', documentId)
-        .maybeSingle();
-
-      if (analysisError) {
-        console.error('Error fetching document analysis:', analysisError);
-        setLoadError(`Failed to fetch analysis: ${analysisError.message}`);
-      }
-
-      if (analysisData?.content?.risks) {
-        console.log("Found risks in document analysis:", analysisData.content.risks.length);
-        setRisks(analysisData.content.risks);
-        
-        // Also save any exa references
-        if (analysisData.content.exa_references && analysisData.content.exa_references.length > 0) {
-          console.log("Found Exa references:", analysisData.content.exa_references.length);
-          setExaReferences(analysisData.content.exa_references);
-        }
-        
-        setAnalysisStatus('complete');
-      } else {
-        // If no risk data in document_analysis, check the document metadata
-        const { data: docMetaData, error: docMetaError } = await supabase
-          .from('documents')
-          .select('metadata')
-          .eq('id', documentId)
-          .single();
-
-        if (docMetaError) {
-          console.error('Error fetching document metadata:', docMetaError);
-          setLoadError(`Failed to fetch document: ${docMetaError.message}`);
-        }
-
-        if (docMetaData?.metadata?.risks) {
-          console.log("Found risks in document metadata");
-          setRisks(docMetaData.metadata.risks);
-          setAnalysisStatus('complete');
-        } else {
-          console.log("No risks found in document analysis or metadata");
-          setAnalysisStatus('no_data');
-        }
-      }
-    } catch (error) {
-      console.error('Error loading risk data:', error);
-      setLoadError(`Error loading risk data: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setLoading(false);
-    }
+  const handleStatusChange = (riskId: string | undefined, newStatus: 'open' | 'acknowledged' | 'resolved') => {
+    if (!riskId) return;
+    
+    setLocalRisks(prev => prev.map(risk => 
+      risk.id === riskId ? { ...risk, status: newStatus } : risk
+    ));
+    
+    // In a real app, you would save this change to the database
+    console.log(`Risk ${riskId} status changed to ${newStatus} for document ${documentId}`);
   };
 
-  const handleForceAnalysis = async () => {
-    try {
-      toast.info("Initiating document analysis...");
-      
-      // Update document status to processing
-      await supabase
-        .from('documents')
-        .update({ ai_processing_status: 'processing' })
-        .eq('id', documentId);
-      
-      // Fetch document path
-      const { data: docData, error: docError } = await supabase
-        .from('documents')
-        .select('storage_path, title')
-        .eq('id', documentId)
-        .single();
-        
-      if (docError || !docData) {
-        throw new Error(`Failed to get document details: ${docError?.message}`);
-      }
-      
-      // Call the edge function to analyze the document
-      const { data, error } = await supabase.functions.invoke('process-ai-request', {
-        body: { 
-          documentId,
-          storagePath: docData.storage_path,
-          title: docData.title
-        }
-      });
-      
-      if (error) {
-        throw new Error(`Analysis failed: ${error.message}`);
-      }
-      
-      // Refresh the risk data
-      toast.success("Document analysis complete");
-      fetchRiskData();
-      
-    } catch (error) {
-      console.error("Force analysis error:", error);
-      toast.error(`Analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  };
-
-  // Determine appropriate badge color based on severity
-  const getSeverityColor = (severity: string): string => {
+  const getSeverityColor = (severity: string) => {
     switch (severity.toLowerCase()) {
       case 'high':
-        return 'bg-red-500 hover:bg-red-600';
+        return 'text-red-500 bg-red-50 border-red-200';
       case 'medium':
-        return 'bg-amber-500 hover:bg-amber-600';
+        return 'text-amber-500 bg-amber-50 border-amber-200';
       case 'low':
-        return 'bg-emerald-500 hover:bg-emerald-600';
+        return 'text-green-500 bg-green-50 border-green-200';
       default:
-        return 'bg-slate-500 hover:bg-slate-600';
+        return 'text-slate-500 bg-slate-50 border-slate-200';
+    }
+  };
+  
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'resolved':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'acknowledged':
+        return <AlertCircle className="h-4 w-4 text-amber-500" />;
+      default:
+        return <XCircle className="h-4 w-4 text-slate-500" />;
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="space-y-4">
-        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-8 w-3/4" />
         <Skeleton className="h-24 w-full" />
         <Skeleton className="h-24 w-full" />
       </div>
     );
   }
 
-  if (loadError) {
+  if (!localRisks || localRisks.length === 0) {
     return (
-      <Card>
-        <CardContent className="pt-4 space-y-4">
-          <div className="flex items-center space-x-2 text-destructive">
-            <AlertTriangle className="h-5 w-5" />
-            <p className="text-sm font-medium">Error Loading Analysis</p>
-          </div>
-          <p className="text-sm text-muted-foreground">{loadError}</p>
-          <button 
-            onClick={fetchRiskData}
-            className="text-xs px-3 py-1.5 bg-muted hover:bg-muted/80 rounded-md"
-          >
-            Retry
-          </button>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (analysisStatus === 'processing') {
-    return (
-      <Card>
-        <CardContent className="pt-4 flex items-center justify-center text-center h-32">
-          <div className="flex flex-col items-center space-y-2">
-            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
-            <p className="text-sm text-muted-foreground">Analysis in progress...</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (analysisStatus === 'no_data') {
-    return (
-      <Card>
-        <CardContent className="pt-4 space-y-4">
-          <div className="flex items-center space-x-2">
-            <AlertTriangle className="h-5 w-5 text-amber-500" />
-            <p className="text-sm font-medium">No Analysis Available</p>
-          </div>
-          <p className="text-sm text-muted-foreground">This document has not been analyzed yet.</p>
-          <button 
-            onClick={handleForceAnalysis}
-            className="text-xs px-3 py-1.5 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md"
-          >
-            Analyze Document
-          </button>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (!risks || risks.length === 0) {
-    return (
-      <Card>
-        <CardContent className="pt-4 flex items-center justify-center text-center h-32">
-          <div className="flex flex-col items-center space-y-2">
-            <Check className="h-8 w-8 text-emerald-500" />
-            <p className="text-sm text-muted-foreground">No compliance risks detected</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="text-center py-6 border rounded-md bg-slate-50">
+        <AlertTriangle className="h-6 w-6 text-slate-400 mx-auto mb-2" />
+        <p className="text-sm text-muted-foreground">No risks detected in this document.</p>
+        <p className="text-xs text-muted-foreground mt-1">Document may still need manual review.</p>
+      </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      {risks.map((risk, index) => (
-        <Card key={index} className="overflow-hidden">
-          <div className={`h-1 ${getSeverityColor(risk.severity)}`} />
-          <CardContent className="pt-4 space-y-3">
-            <div className="flex justify-between items-start">
-              <div className="space-y-1">
-                <h4 className="font-medium text-sm">{risk.type}</h4>
-                <p className="text-sm text-muted-foreground">{risk.description}</p>
+      <div className="flex items-center gap-2 mb-4">
+        <AlertTriangle className="h-4 w-4 text-amber-500" />
+        <span className="font-medium text-sm">
+          {localRisks.length} {localRisks.length === 1 ? 'risk' : 'risks'} identified
+        </span>
+      </div>
+      
+      <Accordion type="single" collapsible className="w-full">
+        {localRisks.map((risk, index) => (
+          <AccordionItem key={risk.id || index} value={risk.id || `risk-${index}`} className="border mb-2 rounded-md">
+            <AccordionTrigger className="px-3 py-2 hover:no-underline">
+              <div className="flex items-center justify-between w-full text-left">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className={`${getSeverityColor(risk.severity)}`}>
+                    {risk.severity.toUpperCase()}
+                  </Badge>
+                  <span className="text-sm font-medium">{risk.type}</span>
+                </div>
+                <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200" />
               </div>
-              <Badge 
-                className={`${getSeverityColor(risk.severity)} text-white`}
-              >
-                {risk.severity}
-              </Badge>
-            </div>
-
-            {risk.regulation && (
-              <div className="text-xs space-y-1">
-                <span className="font-medium">Regulation:</span>{" "}
-                <span className="text-muted-foreground">{risk.regulation}</span>
-              </div>
-            )}
-
-            {(risk.impact || risk.requiredAction) && (
-              <div className="text-xs space-y-1 border-t pt-2">
-                {risk.impact && (
-                  <div>
-                    <span className="font-medium">Impact:</span>{" "}
-                    <span className="text-muted-foreground">{risk.impact}</span>
+            </AccordionTrigger>
+            <AccordionContent className="px-3 pb-3 pt-0">
+              <div className="space-y-3">
+                <p className="text-sm">{risk.description}</p>
+                
+                {risk.regulation && (
+                  <div className="text-sm">
+                    <span className="font-medium">Regulation:</span> {risk.regulation}
                   </div>
                 )}
                 
-                {risk.requiredAction && (
-                  <div>
-                    <span className="font-medium">Required Action:</span>{" "}
-                    <span className="text-muted-foreground">{risk.requiredAction}</span>
+                {risk.impact && (
+                  <div className="text-sm">
+                    <span className="font-medium">Impact:</span> {risk.impact}
                   </div>
                 )}
-              </div>
-            )}
-
-            {(risk.solution || risk.deadline) && (
-              <div className="text-xs space-y-1 border-t pt-2">
+                
                 {risk.solution && (
-                  <div>
-                    <span className="font-medium">Solution:</span>{" "}
-                    <span className="text-muted-foreground">{risk.solution}</span>
+                  <div className="text-sm">
+                    <span className="font-medium">Solution:</span> {risk.solution}
                   </div>
                 )}
                 
                 {risk.deadline && (
-                  <div>
-                    <span className="font-medium">Deadline:</span>{" "}
-                    <span className="text-muted-foreground">{risk.deadline}</span>
+                  <div className="text-sm">
+                    <span className="font-medium">Deadline:</span> {risk.deadline}
                   </div>
                 )}
+                
+                <div className="flex items-center justify-between mt-4 pt-2 border-t">
+                  <div className="flex items-center gap-1">
+                    {getStatusIcon(risk.status || 'open')}
+                    <span className="text-xs text-muted-foreground capitalize">
+                      {risk.status || 'open'}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handleStatusChange(risk.id, 'acknowledged')}
+                      disabled={risk.status === 'acknowledged'}
+                    >
+                      Acknowledge
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handleStatusChange(risk.id, 'resolved')}
+                      disabled={risk.status === 'resolved'}
+                      className={risk.status === 'resolved' ? 'bg-green-50 text-green-600 border-green-200' : ''}
+                    >
+                      Resolve
+                    </Button>
+                  </div>
+                </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
-      ))}
-
-      {exaReferences.length > 0 && (
-        <div className="pt-2">
-          <h4 className="text-sm font-medium flex items-center gap-1 pb-2">
-            <AlertCircle className="h-4 w-4" />
-            Regulatory References
-          </h4>
-          <div className="space-y-2 text-xs">
-            {exaReferences.map((ref, index) => (
-              <Card key={index} className="p-2">
-                <a 
-                  href={ref.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex items-start gap-1 hover:text-primary"
-                >
-                  <ExternalLink className="h-3 w-3 shrink-0 mt-0.5" />
-                  <span className="line-clamp-2">{ref.title}</span>
-                </a>
-                <p className="text-muted-foreground mt-1 line-clamp-2">
-                  {ref.snippet}
-                </p>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
     </div>
   );
 };

@@ -1,4 +1,3 @@
-
 import { supabase } from "@/lib/supabase";
 import logger from "@/utils/logger";
 import { AnalysisResult } from "../types/analysisTypes";
@@ -10,7 +9,7 @@ export const triggerDocumentAnalysis = async (
   isExcelFile: boolean = false
 ) => {
   try {
-    logger.debug(`Triggering document analysis for ID: ${documentId}`);
+    logger.debug(`[AI Integration] Starting document analysis for ID: ${documentId}`);
     
     // First, check if we need to fetch document details
     const { data: document, error: docError } = await supabase
@@ -20,12 +19,12 @@ export const triggerDocumentAnalysis = async (
       .single();
       
     if (docError) {
-      console.error('Error fetching document:', docError);
+      logger.error('[AI Integration] Error fetching document:', docError);
       throw docError;
     }
     
     if (!document || !document.storage_path) {
-      throw new Error('Document not found or missing storage path');
+      throw new Error('[AI Integration] Document not found or missing storage path');
     }
     
     // Update document status to processing
@@ -47,67 +46,94 @@ export const triggerDocumentAnalysis = async (
       formType = 'form-76';
     }
     
+    logger.info(`[AI Integration] Detected form type: ${formType} for document: ${documentId}`);
+    
     // Get current auth session to ensure valid JWT token
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     
     if (sessionError) {
-      console.error("Authentication error when retrieving session:", sessionError);
+      logger.error("[AI Integration] Authentication error when retrieving session:", sessionError);
       throw new Error(`Authentication error: ${sessionError.message}`);
     }
     
     if (!sessionData.session) {
-      throw new Error("No active session found. User must be authenticated.");
+      throw new Error("[AI Integration] No active session found. User must be authenticated.");
     }
+    
+    logger.info("[AI Integration] Authentication valid, proceeding with AI analysis request");
 
-    // Call the process-ai-request edge function for AI analysis
-    console.log("Invoking process-ai-request edge function with authenticated session");
-    const { data, error } = await supabase.functions.invoke('process-ai-request', {
-      body: { 
-        documentId, 
-        includeRegulatory: true,
-        includeClientExtraction: true,
-        extractionMode: 'comprehensive',
-        title: document?.title || fileName || '',
-        formType,
-        isExcelFile,
-        storagePath: document.storage_path,
-        extractionPatterns: {
-          // Enhanced patterns for better form field extraction
-          form31: {
-            creditorName: "(?:creditor|claimant)(?:'s)?\\s+name\\s*:\\s*([\\w\\s\\.\\-']+)",
-            debtorName: "(?:debtor|bankrupt)(?:'s)?\\s+name\\s*:\\s*([\\w\\s\\.\\-']+)",
-            claimAmount: "(?:claim\\s+amount|amount\\s+of\\s+claim)\\s*[:$]\\s*([\\d,.]+)",
-            securityValue: "(?:security|collateral)\\s+value\\s*[:$]\\s*([\\d,.]+)"
-          },
-          form47: {
-            clientName: "(?:consumer\\s+debtor|debtor)(?:'s)?\\s+name\\s*:\\s*([\\w\\s\\.\\-']+)",
-            filingDate: "(?:filing|submission)\\s+date\\s*:\\s*(\\d{1,2}[\\/-]\\d{1,2}[\\/-]\\d{2,4}|\\w+\\s+\\d{1,2},?\\s+\\d{4})",
-            proposalPayment: "(?:monthly\\s+payment|payment\\s+amount)\\s*[:$]\\s*([\\d,.]+)"
-          },
-          form76: {
-            clientName: "(?:debtor|bankrupt)(?:'s)?\\s+name\\s*:\\s*([\\w\\s\\.\\-']+)",
-            totalAssets: "(?:total\\s+assets|assets\\s+total)\\s*[:$]\\s*([\\d,.]+)",
-            totalLiabilities: "(?:total\\s+liabilities|liabilities\\s+total)\\s*[:$]\\s*([\\d,.]+)"
-          }
+    // Prepare request parameters with detailed extraction patterns
+    const requestParams = { 
+      documentId, 
+      includeRegulatory: true,
+      includeClientExtraction: true,
+      extractionMode: 'comprehensive',
+      title: document?.title || fileName || '',
+      formType,
+      isExcelFile,
+      storagePath: document.storage_path,
+      extractionPatterns: {
+        // Enhanced patterns for better form field extraction
+        form31: {
+          creditorName: "(?:creditor|claimant)(?:'s)?\\s+name\\s*:\\s*([\\w\\s\\.\\-']+)",
+          debtorName: "(?:debtor|bankrupt)(?:'s)?\\s+name\\s*:\\s*([\\w\\s\\.\\-']+)",
+          claimAmount: "(?:claim\\s+amount|amount\\s+of\\s+claim)\\s*[:$]\\s*([\\d,.]+)",
+          securityValue: "(?:security|collateral)\\s+value\\s*[:$]\\s*([\\d,.]+)"
+        },
+        form47: {
+          clientName: "(?:consumer\\s+debtor|debtor)(?:'s)?\\s+name\\s*:\\s*([\\w\\s\\.\\-']+)",
+          filingDate: "(?:filing|submission)\\s+date\\s*:\\s*(\\d{1,2}[\\/-]\\d{1,2}[\\/-]\\d{2,4}|\\w+\\s+\\d{1,2},?\\s+\\d{4})",
+          proposalPayment: "(?:monthly\\s+payment|payment\\s+amount)\\s*[:$]\\s*([\\d,.]+)"
+        },
+        form76: {
+          clientName: "(?:debtor|bankrupt)(?:'s)?\\s+name\\s*:\\s*([\\w\\s\\.\\-']+)",
+          totalAssets: "(?:total\\s+assets|assets\\s+total)\\s*[:$]\\s*([\\d,.]+)",
+          totalLiabilities: "(?:total\\s+liabilities|liabilities\\s+total)\\s*[:$]\\s*([\\d,.]+)"
         }
-      }
+      },
+      debug: true // Enable debug info from the AI service
+    };
+
+    logger.debug("[AI Integration] Calling process-ai-request with parameters:", 
+      JSON.stringify({
+        documentId: requestParams.documentId,
+        formType: requestParams.formType,
+        storagePath: requestParams.storagePath
+      })
+    );
+
+    // Call the Supabase Edge Function for AI analysis
+    const { data, error } = await supabase.functions.invoke('process-ai-request', {
+      body: requestParams
     });
 
     if (error) {
-      console.error('Error from process-ai-request edge function:', error);
+      logger.error('[AI Integration] Error from process-ai-request edge function:', error);
       await updateDocumentStatus(documentId, 'failed');
       throw error;
     }
 
     if (data) {
-      console.log('Analysis request successful:', data);
+      logger.info('[AI Integration] Analysis request successful, processing results');
       await updateDocumentStatus(documentId, 'complete');
+      
+      // Log some of the data we received to help with debugging
+      if (data.extracted_info) {
+        logger.debug('[AI Integration] Extracted fields:', 
+          Object.keys(data.extracted_info).join(', ')
+        );
+      }
+      
+      if (data.risks && Array.isArray(data.risks)) {
+        logger.debug(`[AI Integration] Identified ${data.risks.length} risks`);
+      }
+    } else {
+      logger.warn('[AI Integration] No data returned from AI service');
     }
     
-    logger.debug(`Successfully triggered document analysis for ID: ${documentId}`);
     return data;
   } catch (error) {
-    console.error('Failed to trigger document analysis:', error);
+    logger.error('[AI Integration] Failed to trigger document analysis:', error);
     throw error;
   }
 };
@@ -294,5 +320,71 @@ export const createClientIfNotExists = async (clientInfo: any) => {
   } catch (error) {
     logger.error('Error in createClientIfNotExists:', error);
     return null;
+  }
+};
+
+export const monitorAnalysisProgress = async (documentId: string): Promise<{
+  status: string;
+  progress: number;
+  lastUpdate: string | null;
+  error: string | null;
+}> => {
+  try {
+    const { data: document, error } = await supabase
+      .from('documents')
+      .select('ai_processing_status, metadata, updated_at')
+      .eq('id', documentId)
+      .single();
+      
+    if (error) {
+      logger.error('[AI Integration] Error checking analysis status:', error);
+      return {
+        status: 'error',
+        progress: 0,
+        lastUpdate: null,
+        error: error.message
+      };
+    }
+    
+    // Calculate progress based on status
+    let progress = 0;
+    switch (document?.ai_processing_status) {
+      case 'processing':
+        progress = 50;
+        break;
+      case 'processing_financial':
+        progress = 75;
+        break;
+      case 'complete':
+        progress = 100;
+        break;
+      case 'failed':
+        progress = 0;
+        break;
+      default:
+        progress = 25; // Default for 'pending' or unknown
+    }
+    
+    // Use more precise progress if available in metadata
+    if (document?.metadata?.processing_steps_completed?.length) {
+      const completedSteps = document.metadata.processing_steps_completed.length;
+      const totalSteps = 8; // Total number of processing steps
+      progress = Math.min(Math.round((completedSteps / totalSteps) * 100), 100);
+    }
+    
+    return {
+      status: document?.ai_processing_status || 'unknown',
+      progress,
+      lastUpdate: document?.updated_at || null,
+      error: document?.metadata?.processing_error || null
+    };
+  } catch (error: any) {
+    logger.error('[AI Integration] Error monitoring analysis progress:', error);
+    return {
+      status: 'error',
+      progress: 0,
+      lastUpdate: null,
+      error: error.message
+    };
   }
 };
