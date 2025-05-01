@@ -4,7 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/lib/supabase";
-import { AlertCircle, Check, ExternalLink } from "lucide-react";
+import { AlertCircle, Check, ExternalLink, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
 
 interface Risk {
   type: string;
@@ -27,6 +28,8 @@ export const RiskAssessment = ({ risks: initialRisks = [], documentId, isLoading
   const [risks, setRisks] = useState<Risk[]>(initialRisks);
   const [loading, setLoading] = useState(isLoading || !risks.length);
   const [exaReferences, setExaReferences] = useState<any[]>([]);
+  const [analysisStatus, setAnalysisStatus] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (documentId) {
@@ -44,6 +47,26 @@ export const RiskAssessment = ({ risks: initialRisks = [], documentId, isLoading
   const fetchRiskData = async () => {
     try {
       setLoading(true);
+      setLoadError(null);
+      
+      console.log("Fetching risk data for document:", documentId);
+      
+      // First check document status
+      const { data: docData, error: docError } = await supabase
+        .from('documents')
+        .select('ai_processing_status')
+        .eq('id', documentId)
+        .maybeSingle();
+        
+      if (docError) {
+        console.error('Error fetching document status:', docError);
+        setLoadError(`Failed to check document status: ${docError.message}`);
+      } else if (docData?.ai_processing_status === 'processing') {
+        setAnalysisStatus('processing');
+        setLoading(false);
+        return;
+      }
+      
       // Fetch document analysis from document_analysis table
       const { data: analysisData, error: analysisError } = await supabase
         .from('document_analysis')
@@ -53,35 +76,91 @@ export const RiskAssessment = ({ risks: initialRisks = [], documentId, isLoading
 
       if (analysisError) {
         console.error('Error fetching document analysis:', analysisError);
+        setLoadError(`Failed to fetch analysis: ${analysisError.message}`);
       }
 
       if (analysisData?.content?.risks) {
+        console.log("Found risks in document analysis:", analysisData.content.risks.length);
         setRisks(analysisData.content.risks);
         
         // Also save any exa references
-        if (analysisData.content.exa_references) {
+        if (analysisData.content.exa_references && analysisData.content.exa_references.length > 0) {
+          console.log("Found Exa references:", analysisData.content.exa_references.length);
           setExaReferences(analysisData.content.exa_references);
         }
+        
+        setAnalysisStatus('complete');
       } else {
         // If no risk data in document_analysis, check the document metadata
-        const { data: docData, error: docError } = await supabase
+        const { data: docMetaData, error: docMetaError } = await supabase
           .from('documents')
           .select('metadata')
           .eq('id', documentId)
           .single();
 
-        if (docError) {
-          console.error('Error fetching document metadata:', docError);
+        if (docMetaError) {
+          console.error('Error fetching document metadata:', docMetaError);
+          setLoadError(`Failed to fetch document: ${docMetaError.message}`);
         }
 
-        if (docData?.metadata?.risks) {
-          setRisks(docData.metadata.risks);
+        if (docMetaData?.metadata?.risks) {
+          console.log("Found risks in document metadata");
+          setRisks(docMetaData.metadata.risks);
+          setAnalysisStatus('complete');
+        } else {
+          console.log("No risks found in document analysis or metadata");
+          setAnalysisStatus('no_data');
         }
       }
     } catch (error) {
       console.error('Error loading risk data:', error);
+      setLoadError(`Error loading risk data: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForceAnalysis = async () => {
+    try {
+      toast.info("Initiating document analysis...");
+      
+      // Update document status to processing
+      await supabase
+        .from('documents')
+        .update({ ai_processing_status: 'processing' })
+        .eq('id', documentId);
+      
+      // Fetch document path
+      const { data: docData, error: docError } = await supabase
+        .from('documents')
+        .select('storage_path, title')
+        .eq('id', documentId)
+        .single();
+        
+      if (docError || !docData) {
+        throw new Error(`Failed to get document details: ${docError?.message}`);
+      }
+      
+      // Call the edge function to analyze the document
+      const { data, error } = await supabase.functions.invoke('process-ai-request', {
+        body: { 
+          documentId,
+          storagePath: docData.storage_path,
+          title: docData.title
+        }
+      });
+      
+      if (error) {
+        throw new Error(`Analysis failed: ${error.message}`);
+      }
+      
+      // Refresh the risk data
+      toast.success("Document analysis complete");
+      fetchRiskData();
+      
+    } catch (error) {
+      console.error("Force analysis error:", error);
+      toast.error(`Analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -106,6 +185,59 @@ export const RiskAssessment = ({ risks: initialRisks = [], documentId, isLoading
         <Skeleton className="h-24 w-full" />
         <Skeleton className="h-24 w-full" />
       </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <Card>
+        <CardContent className="pt-4 space-y-4">
+          <div className="flex items-center space-x-2 text-destructive">
+            <AlertTriangle className="h-5 w-5" />
+            <p className="text-sm font-medium">Error Loading Analysis</p>
+          </div>
+          <p className="text-sm text-muted-foreground">{loadError}</p>
+          <button 
+            onClick={fetchRiskData}
+            className="text-xs px-3 py-1.5 bg-muted hover:bg-muted/80 rounded-md"
+          >
+            Retry
+          </button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (analysisStatus === 'processing') {
+    return (
+      <Card>
+        <CardContent className="pt-4 flex items-center justify-center text-center h-32">
+          <div className="flex flex-col items-center space-y-2">
+            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+            <p className="text-sm text-muted-foreground">Analysis in progress...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (analysisStatus === 'no_data') {
+    return (
+      <Card>
+        <CardContent className="pt-4 space-y-4">
+          <div className="flex items-center space-x-2">
+            <AlertTriangle className="h-5 w-5 text-amber-500" />
+            <p className="text-sm font-medium">No Analysis Available</p>
+          </div>
+          <p className="text-sm text-muted-foreground">This document has not been analyzed yet.</p>
+          <button 
+            onClick={handleForceAnalysis}
+            className="text-xs px-3 py-1.5 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md"
+          >
+            Analyze Document
+          </button>
+        </CardContent>
+      </Card>
     );
   }
 

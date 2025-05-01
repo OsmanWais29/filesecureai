@@ -1,196 +1,283 @@
 
-import { supabase } from '@/lib/supabase';
+import { simulateUploadProgress } from "./progressSimulator";
 import logger from "@/utils/logger";
+import { supabase } from "@/lib/supabase";
 
 /**
- * Extracts client name from Form 76 filename
+ * Simulates the processing stages of a document upload
+ * @param isSpecialForm Whether the document is a special form that requires analysis
+ * @param isExcel Whether the document is an Excel file
+ * @param setUploadProgress Function to set the upload progress
+ * @param setUploadStep Function to set the upload step message
+ * @returns A promise that resolves when the simulation is complete
  */
-export function extractClientName(filename: string): string {
-  const nameMatch = filename.match(/form[- ]?76[- ]?(.+?)(?:\.|$)/i);
-  if (nameMatch && nameMatch[1]) {
-    return nameMatch[1].trim();
-  }
-  return 'Untitled Client';
-}
-
-/**
- * Creates a more realistic and controlled upload process simulation
- */
-export const simulateProcessingStages = async (
-  isForm76: boolean, 
+export const simulateProcessingStages = (
+  isSpecialForm: boolean,
   isExcel: boolean,
   setUploadProgress: (progress: number) => void,
   setUploadStep: (step: string) => void
 ): Promise<void> => {
-  // Initial validation stage (fast)
-  setUploadProgress(10);
-  setUploadStep("Validating document format and size...");
-  await new Promise(r => setTimeout(r, 1000));
-  
-  // Upload stage (slow)
-  setUploadProgress(25);
-  setUploadStep("Uploading document to secure storage...");
-  await new Promise(r => setTimeout(r, 2000));
-  
-  // Processing stages (variable time based on document type)
-  setUploadProgress(40);
-  if (isForm76) {
-    setUploadStep("Analyzing Form 76 and extracting client details...");
-    await new Promise(r => setTimeout(r, 3000));
-  } else if (isExcel) {
-    setUploadStep("Processing financial spreadsheet data...");
-    await new Promise(r => setTimeout(r, 2500));
-  } else {
-    setUploadStep("Performing document analysis...");
-    await new Promise(r => setTimeout(r, 2000));
-  }
-  
-  setUploadProgress(60);
-  if (isForm76) {
-    setUploadStep("Performing compliance risk assessment...");
-  } else if (isExcel) {
-    setUploadStep("Analyzing financial data patterns...");
-  } else {
-    setUploadStep("Extracting key document information...");
-  }
-  await new Promise(r => setTimeout(r, 2500));
-  
-  // Risk assessment and organization (slow)
-  setUploadProgress(80);
-  setUploadStep("Organizing document in folder structure...");
-  await new Promise(r => setTimeout(r, 2000));
-  
-  // Completion (fast)
-  setUploadProgress(95);
-  setUploadStep("Finalizing document processing...");
-  await new Promise(r => setTimeout(r, 1500));
-  
-  setUploadProgress(100);
-  setUploadStep("Upload complete!");
+  const stages = [
+    { 
+      text: "Uploading document...", 
+      duration: 1500,
+      startProgress: 5,
+      endProgress: 40 
+    },
+    { 
+      text: "Processing document...", 
+      duration: 800,
+      startProgress: 40,
+      endProgress: 60
+    },
+    {
+      text: isSpecialForm ? "Running compliance checks..." : "Preparing document preview...",
+      duration: isSpecialForm ? 1800 : 800,
+      startProgress: 60,
+      endProgress: 85
+    },
+    {
+      text: isExcel ? "Extracting data from spreadsheet..." : "Finalizing document...",
+      duration: isExcel ? 1500 : 700,
+      startProgress: 85,
+      endProgress: 100
+    }
+  ];
+
+  return simulateUploadProgress(stages, setUploadProgress, setUploadStep);
 };
 
 /**
- * Uploads file to Supabase storage
+ * Creates a document record in the database
+ * @param file The file to create a record for
+ * @param userId The user ID
+ * @param parentFolderId Optional parent folder ID
+ * @param isSpecialForm Whether the document is a special form
+ * @returns The created document record
  */
-export const uploadToStorage = async (
-  file: File,
+export const createDocumentRecord = async (
+  file: File, 
   userId: string,
-  filePath: string
-): Promise<{ error?: Error }> => {
-  logger.info(`Uploading file to storage path: ${filePath}`);
-  
+  parentFolderId?: string,
+  isSpecialForm?: boolean,
+  additionalMetadata?: any
+) => {
   try {
-    const { error } = await supabase.storage
+    logger.info(`Creating document record for ${file.name}`);
+    
+    const documentMetadata = {
+      originalFileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      uploadedAt: new Date().toISOString(),
+      analyzed: isSpecialForm ? false : undefined,
+      requiresAnalysis: isSpecialForm,
+      ...additionalMetadata
+    };
+
+    const { data, error } = await supabase
+      .from('documents')
+      .insert({
+        title: file.name,
+        type: file.type.split('/')[1] || 'document',
+        size: file.size,
+        metadata: documentMetadata,
+        user_id: userId,
+        parent_folder_id: parentFolderId,
+        ai_processing_status: isSpecialForm ? 'pending' : 'not_applicable'
+      })
+      .select()
+      .single();
+
+    if (error) {
+      logger.error(`Error creating document record: ${error.message}`);
+      throw error;
+    }
+
+    return { data, error: null };
+  } catch (err) {
+    logger.error(`Failed to create document record: ${err}`);
+    return { data: null, error: err };
+  }
+};
+
+/**
+ * Uploads a file to storage
+ * @param file The file to upload
+ * @param userId The user ID
+ * @param filePath The path to store the file at
+ * @returns The result of the upload operation
+ */
+export const uploadToStorage = async (file: File, userId: string, filePath: string) => {
+  try {
+    logger.info(`Uploading ${file.name} to ${filePath}`);
+    
+    const { error } = await supabase
+      .storage
       .from('documents')
       .upload(filePath, file, {
         cacheControl: '3600',
         upsert: false
       });
-      
-    if (error) throw error;
-    return {};
-  } catch (error) {
-    logger.error(`Storage upload error: ${error}`);
-    return { error: error as Error };
+
+    if (error) {
+      logger.error(`Storage upload error: ${error.message}`);
+      throw error;
+    }
+
+    logger.info(`Upload successful: ${filePath}`);
+    return { error: null };
+  } catch (err) {
+    logger.error(`Failed to upload to storage: ${err}`);
+    return { error: err };
   }
 };
 
 /**
- * Creates document record in database
+ * Triggers document analysis through the edge function
+ * @param documentId The document ID to analyze
+ * @param fileName The file name (for type detection)
+ * @param shouldAnalyze Whether the document should be analyzed
  */
-export const createDocumentRecord = async (
-  file: File,
-  userId: string,
-  clientName: string | undefined,
-  isForm76: boolean
-): Promise<{ data?: any, error?: Error }> => {
+export const triggerDocumentAnalysis = async (documentId: string, fileName: string, shouldAnalyze: boolean = false): Promise<void> => {
   try {
-    const { data, error } = await supabase
+    if (!shouldAnalyze && !requiresAnalysis(fileName)) {
+      logger.info(`Skipping analysis for ${fileName} (not required)`);
+      return;
+    }
+    
+    logger.info(`Triggering analysis for document ${documentId}`);
+    
+    // Update document status to processing
+    const { error: updateError } = await supabase
       .from('documents')
-      .insert({
-        title: file.name,
-        type: file.type,
-        size: file.size,
-        user_id: userId,
-        ai_processing_status: 'pending',
-        metadata: {
-          formType: isForm76 ? 'form-76' : null,
-          uploadDate: new Date().toISOString(),
-          client_name: isForm76 ? extractClientName(file.name) : clientName || 'Untitled Client',
-          ocr_status: 'pending',
-          upload_method: 'client_intake'
-        }
+      .update({
+        ai_processing_status: 'processing'
       })
-      .select()
+      .eq('id', documentId);
+      
+    if (updateError) {
+      logger.error(`Error updating document status: ${updateError.message}`);
+      throw updateError;
+    }
+    
+    // Get document storage path
+    const { data: docData, error: docError } = await supabase
+      .from('documents')
+      .select('storage_path, title')
+      .eq('id', documentId)
       .single();
       
-    if (error) throw error;
-    return { data };
-  } catch (error) {
-    logger.error(`Database error: ${error}`);
-    return { error: error as Error };
-  }
-};
+    if (docError || !docData?.storage_path) {
+      logger.error(`Error getting document path: ${docError?.message || 'No storage path'}`);
+      throw docError || new Error('No storage path found');
+    }
 
-/**
- * Triggers document analysis using edge function
- */
-export const triggerDocumentAnalysis = async (documentId: string, fileName: string, isForm76: boolean): Promise<{ error?: Error }> => {
-  try {
-    const { error } = await supabase.functions.invoke('analyze-document', {
+    logger.info(`Invoking process-ai-request function for ${documentId}`);
+    
+    // Call the edge function to analyze the document
+    const { data, error } = await supabase.functions.invoke('process-ai-request', {
       body: { 
         documentId,
-        includeRegulatory: true,
-        includeClientExtraction: true,
-        title: fileName,
-        extractionMode: 'comprehensive',
-        formType: isForm76 ? 'form-76' : 'unknown'
+        storagePath: docData.storage_path,
+        title: docData.title || fileName
       }
     });
     
-    if (error) throw error;
-    return {};
+    if (error) {
+      logger.error(`Analysis function error: ${error.message}`);
+      
+      // Update document status to error
+      await supabase
+        .from('documents')
+        .update({
+          ai_processing_status: 'error',
+          metadata: {
+            ...docData,
+            analysisError: error.message
+          }
+        })
+        .eq('id', documentId);
+        
+      throw error;
+    }
+    
+    logger.info(`Analysis complete for ${documentId}`);
+    
   } catch (error) {
-    logger.warn("Error triggering analysis:", error);
-    return { error: error as Error };
+    logger.error(`Document analysis error: ${error}`);
+    
+    // Update document status to error
+    await supabase
+      .from('documents')
+      .update({
+        ai_processing_status: 'error'
+      })
+      .eq('id', documentId);
   }
 };
 
 /**
- * Creates notification for document upload events
+ * Creates a notification
+ * @param userId The user ID
+ * @param title The notification title
+ * @param message The notification message
+ * @param type The notification type
+ * @param documentId Optional document ID
+ * @param fileName Optional file name
+ * @param category Optional notification category
  */
 export const createNotification = async (
   userId: string,
   title: string,
   message: string,
-  type: 'info' | 'success',
-  documentId: string,
-  fileName: string,
-  processingStage: string
+  type: 'info' | 'success' | 'warning' | 'error',
+  documentId?: string,
+  fileName?: string,
+  category?: string
 ): Promise<void> => {
   try {
-    await supabase.functions.invoke('handle-notifications', {
-      body: {
-        action: 'create',
-        userId,
-        notification: {
-          title,
-          message,
-          type,
-          category: 'file_activity',
-          priority: 'normal',
-          action_url: `/documents/${documentId}`,
-          metadata: {
-            documentId,
-            fileName,
-            processingStage,
-            timestamp: new Date().toISOString()
-          }
+    logger.info(`Creating notification: ${title}`);
+    
+    const { error } = await supabase
+      .from('notifications')
+      .insert({
+        user_id: userId,
+        title,
+        message,
+        type,
+        priority: type === 'error' ? 'high' : 'normal',
+        action_url: documentId ? `/documents/${documentId}` : undefined,
+        metadata: {
+          documentId,
+          fileName,
+          category
         }
-      }
-    });
+      });
+      
+    if (error) {
+      logger.error(`Error creating notification: ${error.message}`);
+    }
   } catch (error) {
-    logger.warn(`Error creating ${title} notification:`, error);
-    // Continue processing even if notification fails
+    logger.error(`Failed to create notification: ${error}`);
   }
+};
+
+/**
+ * Determines if a document requires analysis based on its file name
+ * @param fileName The file name to check
+ * @returns Whether the document requires analysis
+ */
+const requiresAnalysis = (fileName: string): boolean => {
+  const lowerFileName = fileName.toLowerCase();
+  
+  return lowerFileName.includes('form 31') || 
+         lowerFileName.includes('form31') || 
+         lowerFileName.includes('proof of claim') || 
+         lowerFileName.includes('form 47') || 
+         lowerFileName.includes('form47') || 
+         lowerFileName.includes('consumer proposal') || 
+         lowerFileName.includes('form 76') || 
+         lowerFileName.includes('form76') || 
+         lowerFileName.includes('statement of affairs');
 };

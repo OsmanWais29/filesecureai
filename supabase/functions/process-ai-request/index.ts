@@ -27,6 +27,7 @@ serve(async (req) => {
     const exaApiKey = Deno.env.get('EXA_API_KEY') || '';
 
     if (!supabaseUrl || !supabaseKey || !openAIKey) {
+      console.error("Missing required environment variables");
       throw new Error('Missing required environment variables');
     }
 
@@ -36,8 +37,11 @@ serve(async (req) => {
     const { documentId, message, includeRegulatory = true, includeClientExtraction = true, storagePath, title = '' } = await req.json();
     
     if (!documentId && !message && !storagePath) {
+      console.error("No document ID, message, or storagePath provided");
       throw new Error('Either documentId, message, or storagePath must be provided');
     }
+    
+    console.log(`Processing request for document ID: ${documentId || 'N/A'}`);
     
     // If we have a documentId, get the document content
     let documentText = message || '';
@@ -67,34 +71,45 @@ serve(async (req) => {
       if (document?.storage_path) {
         documentPath = document.storage_path;
         
-        // Download the file content
-        const { data: fileData, error: downloadError } = await supabase.storage
-          .from('documents')
-          .download(document.storage_path);
-          
-        if (downloadError) {
-          console.error("Error downloading document:", downloadError);
-          throw downloadError;
-        }
-        
+        console.log(`Downloading document from path: ${documentPath}`);
+
         try {
-          documentText = await fileData.text();
-          console.log(`Successfully extracted text from document, length: ${documentText.length}`);
-          
-          // Limit text size to avoid token limits
-          if (documentText.length > 100000) {
-            documentText = documentText.substring(0, 100000);
-            console.log("Document text truncated to 100,000 characters");
+          // Download the file
+          const { data: fileData, error: downloadError } = await supabase.storage
+            .from('documents')
+            .download(document.storage_path);
+            
+          if (downloadError) {
+            console.error("Error downloading document:", downloadError);
+            throw downloadError;
           }
-        } catch (textError) {
-          console.error("Error extracting text from document:", textError);
-          throw textError;
+          
+          try {
+            documentText = await fileData.text();
+            console.log(`Successfully extracted text from document, length: ${documentText.length} characters`);
+            
+            // Limit text size to avoid token limits
+            if (documentText.length > 100000) {
+              documentText = documentText.substring(0, 100000);
+              console.log("Document text truncated to 100,000 characters");
+            }
+          } catch (textError) {
+            console.error("Error extracting text from document:", textError);
+            throw textError;
+          }
+        } catch (storageError) {
+          console.error("Storage error:", storageError);
+          throw storageError;
         }
+      } else {
+        console.error("No storage path found for document");
+        throw new Error("Document has no storage path");
       }
     }
     
     // If document text is still empty, return error
     if (!documentText || documentText.trim().length === 0) {
+      console.error("No document content available");
       throw new Error('No document content available for analysis');
     }
     
@@ -104,6 +119,7 @@ serve(async (req) => {
     
     if (includeRegulatory && exaApiKey) {
       try {
+        console.log("Querying EXA API for regulatory references");
         let searchTerm = "Bankruptcy and Insolvency Act compliance requirements";
         
         // Add form type if available
@@ -129,6 +145,7 @@ serve(async (req) => {
         });
         
         if (!exaResponse.ok) {
+          console.error(`EXA API error: ${exaResponse.status}`);
           throw new Error(`EXA API returned ${exaResponse.status}`);
         }
         
@@ -162,6 +179,8 @@ serve(async (req) => {
       systemPrompt += "You are analyzing a bankruptcy or insolvency document. Extract all key information, check for compliance issues, and create a risk assessment.";
     }
     
+    console.log("Calling OpenAI API for document analysis");
+    
     // Process document with OpenAI
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -170,7 +189,7 @@ serve(async (req) => {
         'Authorization': `Bearer ${openAIKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
@@ -229,6 +248,7 @@ serve(async (req) => {
     
     if (!openAIResponse.ok) {
       const errorText = await openAIResponse.text();
+      console.error(`OpenAI API error: ${openAIResponse.status} - ${errorText}`);
       throw new Error(`OpenAI API error: ${openAIResponse.status} - ${errorText}`);
     }
     
@@ -238,6 +258,7 @@ serve(async (req) => {
     let analysisResult;
     try {
       analysisResult = JSON.parse(aiResponse);
+      console.log("Successfully parsed OpenAI response");
     } catch (parseError) {
       console.error("Error parsing OpenAI response:", parseError);
       throw new Error(`Failed to parse AI response: ${parseError.message}`);
@@ -246,12 +267,13 @@ serve(async (req) => {
     // Add regulatory references to the response
     if (regulatoryReferences.length > 0) {
       analysisResult.exa_references = regulatoryReferences;
+      console.log("Added Exa regulatory references to analysis result");
     }
     
     // If we have a document ID, save the analysis results
     if (documentId) {
       try {
-        // Get current user ID
+        // Get current user ID from auth header or default to 'system'
         const authHeader = req.headers.get('Authorization');
         let userId = 'system';
         
@@ -268,20 +290,76 @@ serve(async (req) => {
           }
         }
         
-        // Save analysis results
-        await saveAnalysisResults(documentId, userId, analysisResult, supabase);
+        console.log(`Saving analysis results for document ${documentId}`);
         
-        // Create client record if client name is available
+        // Check if document analysis already exists
+        const { data: existingAnalysis } = await supabase
+          .from('document_analysis')
+          .select('id')
+          .eq('document_id', documentId)
+          .maybeSingle();
+          
+        if (existingAnalysis) {
+          // Update existing analysis
+          const { error: updateError } = await supabase
+            .from('document_analysis')
+            .update({
+              content: analysisResult,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingAnalysis.id);
+            
+          if (updateError) {
+            console.error("Error updating document analysis:", updateError);
+          } else {
+            console.log(`Updated existing analysis for document ${documentId}`);
+          }
+        } else {
+          // Create new analysis record
+          const { error: insertError } = await supabase
+            .from('document_analysis')
+            .insert([{
+              document_id: documentId,
+              user_id: userId,
+              content: analysisResult
+            }]);
+            
+          if (insertError) {
+            console.error("Error creating document analysis:", insertError);
+          } else {
+            console.log(`Created new analysis for document ${documentId}`);
+          }
+        }
+        
+        // Update document metadata with extracted information and status
+        const { error: docUpdateError } = await supabase
+          .from('documents')
+          .update({
+            metadata: {
+              ...analysisResult.extracted_info,
+              analyzed_at: new Date().toISOString(),
+              has_analysis: true
+            },
+            ai_processing_status: 'complete'
+          })
+          .eq('id', documentId);
+          
+        if (docUpdateError) {
+          console.error("Error updating document metadata:", docUpdateError);
+        } else {
+          console.log(`Updated document metadata for ${documentId}`);
+        }
+        
+        // If client name is available, create client record if it doesn't exist
         if (includeClientExtraction && analysisResult.extracted_info?.clientName) {
           await createClientIfNotExists(analysisResult.extracted_info, supabase);
         }
-        
-        console.log(`Analysis results saved for document ${documentId}`);
       } catch (saveError) {
         console.error("Error saving analysis results:", saveError);
-        // Continue anyway - we still want to return the results even if saving failed
       }
     }
+    
+    console.log("Analysis complete, returning results");
     
     return new Response(
       JSON.stringify({
@@ -307,53 +385,13 @@ serve(async (req) => {
   }
 });
 
-// Helper functions
-async function saveAnalysisResults(documentId: string, userId: string, analysisData: any, supabase: any) {
-  // Check if document analysis already exists
-  const { data: existingAnalysis } = await supabase
-    .from('document_analysis')
-    .select('*')
-    .eq('document_id', documentId)
-    .single();
-    
-  if (existingAnalysis) {
-    // Update existing analysis
-    await supabase
-      .from('document_analysis')
-      .update({
-        content: analysisData,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', existingAnalysis.id);
-  } else {
-    // Create new analysis record
-    await supabase
-      .from('document_analysis')
-      .insert([{
-        document_id: documentId,
-        user_id: userId,
-        content: analysisData
-      }]);
-  }
-  
-  // Update document metadata with extracted information
-  await supabase
-    .from('documents')
-    .update({
-      metadata: {
-        ...analysisData.extracted_info,
-        analyzed_at: new Date().toISOString(),
-        has_analysis: true
-      },
-      ai_processing_status: 'complete'
-    })
-    .eq('id', documentId);
-}
-
+// Helper function to create client if not exists
 async function createClientIfNotExists(clientInfo: any, supabase: any) {
   if (!clientInfo?.clientName) {
     return null;
   }
+  
+  console.log("Checking if client exists:", clientInfo.clientName);
   
   const clientName = clientInfo.clientName.trim();
   
@@ -366,11 +404,14 @@ async function createClientIfNotExists(clientInfo: any, supabase: any) {
     
   // If client exists, return their ID
   if (existingClients && existingClients.length > 0) {
+    console.log("Client already exists:", clientName);
     return existingClients[0].id;
   }
   
+  console.log("Creating new client:", clientName);
+  
   // Create new client
-  const { data: newClient } = await supabase
+  const { data: newClient, error } = await supabase
     .from('clients')
     .insert({
       name: clientName,
@@ -385,6 +426,12 @@ async function createClientIfNotExists(clientInfo: any, supabase: any) {
     })
     .select('id')
     .single();
+    
+  if (error) {
+    console.error("Error creating client:", error);
+  } else {
+    console.log("Created new client with ID:", newClient?.id);
+  }
     
   return newClient?.id || null;
 }

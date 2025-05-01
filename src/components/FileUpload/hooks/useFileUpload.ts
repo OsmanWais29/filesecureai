@@ -71,11 +71,22 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
       );
 
       // Create database record
+      const documentMetadata: any = {
+        originalName: file.name,
+        fileType: file.type,
+        uploadedAt: new Date().toISOString()
+      };
+      
+      if (isForm31ByName) documentMetadata.formType = 'form-31';
+      else if (isForm47ByName) documentMetadata.formType = 'form-47';
+      else if (isForm76) documentMetadata.formType = 'form-76';
+
       const { data: documentData, error: documentError } = await createDocumentRecord(
         file, 
         user.id, 
         undefined, 
-        isForm31ByName || isForm47ByName || isForm76
+        isForm31ByName || isForm47ByName || isForm76,
+        documentMetadata
       );
 
       if (documentError) {
@@ -97,12 +108,6 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
       }
       
       logger.info(`Document uploaded to storage path: ${filePath}`);
-
-      // Set form type in metadata
-      let formType = 'unknown';
-      if (isForm31ByName) formType = 'form-31';
-      else if (isForm47ByName) formType = 'form-47';
-      else if (isForm76) formType = 'form-76';
       
       // Update document record with storage path and metadata
       const { error: updateError } = await supabase
@@ -111,12 +116,9 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
           storage_path: filePath,
           metadata: {
             ...documentData.metadata,
-            originalName: file.name,
-            documentType: formType,
-            fileType: file.type,
-            uploadedAt: new Date().toISOString(),
             storageFullPath: filePath
-          }
+          },
+          ai_processing_status: 'pending'
         })
         .eq('id', documentData.id);
 
@@ -135,49 +137,10 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
         'upload_complete'
       );
       
-      // Handle form-specific processing
-      if (isForm31ByName) {
-        logger.info('Creating Form 31 analysis...');
-        try {
-          await createForm31RiskAssessment(documentData.id);
-          logger.info('Form 31 analysis created successfully');
-          
-          await createNotification(
-            user.id,
-            'Form 31 Analysis Complete',
-            `Proof of Claim form has been analyzed successfully`,
-            'success',
-            documentData.id,
-            file.name,
-            'analysis_complete'
-          );
-        } catch (error) {
-          logger.error('Error creating Form 31 analysis:', error);
-        }
-      } else {
-        // Important: Always trigger document analysis for proper OpenAI processing
-        await triggerDocumentAnalysis(documentData.id, file.name, isForm76 || isForm47ByName);
-      }
-
-      // Verify file exists in storage
-      try {
-        const { data: fileData, error: fileCheckError } = await supabase
-          .storage
-          .from('documents')
-          .list(filePath.split('/').slice(0, -1).join('/'));
-          
-        if (fileCheckError || !fileData || fileData.length === 0) {
-          logger.warn(`File upload verification failed. Path: ${filePath}`);
-          toast({
-            variant: "default",
-            title: "Warning",
-            description: "Document was saved but may have issues with preview. Please check the document viewer.",
-          });
-        }
-      } catch (verifyError) {
-        logger.error('Error verifying file upload:', verifyError);
-      }
-
+      // Always trigger document analysis
+      logger.info(`Initiating document analysis for ${documentData.id}`);
+      await triggerDocumentAnalysis(documentData.id, file.name, true);
+      
       // Wait for processing simulation to complete
       await processingSimulation;
 

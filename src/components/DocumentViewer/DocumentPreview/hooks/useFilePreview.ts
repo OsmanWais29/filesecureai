@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import logger from '@/utils/logger';
@@ -59,58 +60,28 @@ export const useFilePreview = ({
         setPreviewError("You appear to be offline. Please check your internet connection.");
         return;
       }
-      
-      // Get file metadata before trying to download
-      const { data: fileInfo, error: fileInfoError } = await supabase
+
+      // For simplicity and reliability, let's try direct download URL first
+      const { data: publicUrl } = supabase
         .storage
         .from('documents')
-        .list(storagePath.split('/').slice(0, -1).join('/'), {
-          limit: 10,
-          offset: 0,
-          search: storagePath.split('/').pop()
-        });
-
-      // Handle metadata load error
-      if (fileInfoError) {
-        console.error("Error getting file info:", fileInfoError);
-        setDiagnostics({
-          ...diagnostics,
-          fileInfoError,
-          storagePath
-        });
-        throw new Error(`File not found: ${fileInfoError.message}`);
+        .getPublicUrl(storagePath);
+      
+      if (publicUrl?.publicUrl) {
+        console.log("Using public URL:", publicUrl.publicUrl);
+        
+        // Determine file type information
+        const { type, isExcel } = getFileTypeFromPath(storagePath);
+        setFileType(type);
+        setIsExcelFile(isExcel);
+        
+        setFileExists(true);
+        setFileUrl(publicUrl.publicUrl);
+        setPreviewError(null);
+        return;
       }
       
-      // File not found in storage
-      if (!fileInfo || fileInfo.length === 0) {
-        console.error("File not found in storage");
-        
-        // Try to get document record from database for diagnostics
-        const { data: docRecord } = await supabase
-          .from('documents')
-          .select('*')
-          .or(`storage_path.eq.${storagePath},id.eq.${storagePath.split('/')[1]}`)
-          .maybeSingle();
-          
-        setDiagnostics({
-          ...diagnostics,
-          fileNotFoundError: true,
-          documentRecord: docRecord,
-          storagePath
-        });
-        
-        throw new Error("File not found in storage");
-      }
-
-      // We found the file, mark it as existing
-      setFileExists(true);
-      
-      // Determine file type information
-      const { type, isExcel } = getFileTypeFromPath(storagePath);
-      setFileType(type);
-      setIsExcelFile(isExcel);
-      
-      // Generate signed URL with proper content type
+      // Fallback to signed URL if public URL doesn't work
       const { data: signedURL, error: signedURLError } = await supabase
         .storage
         .from('documents')
@@ -118,19 +89,6 @@ export const useFilePreview = ({
       
       if (signedURLError || !signedURL?.signedUrl) {
         console.error("Error creating signed URL:", signedURLError);
-        
-        // Fallback to direct download URL
-        console.log("Falling back to direct download URL");
-        const { data: publicUrl } = supabase
-          .storage
-          .from('documents')
-          .getPublicUrl(storagePath);
-          
-        if (publicUrl?.publicUrl) {
-          console.log("Using public URL:", publicUrl.publicUrl);
-          setFileUrl(publicUrl.publicUrl);
-          return;
-        }
         
         setDiagnostics({
           ...diagnostics,
@@ -143,6 +101,13 @@ export const useFilePreview = ({
       
       // Success! We have a valid signed URL
       console.log("Successfully created signed URL");
+      
+      // Determine file type information
+      const { type, isExcel } = getFileTypeFromPath(storagePath);
+      setFileType(type);
+      setIsExcelFile(isExcel);
+      
+      setFileExists(true);
       setFileUrl(signedURL.signedUrl);
       setPreviewError(null);
     } catch (error: any) {
@@ -189,8 +154,9 @@ export const useFilePreview = ({
   
   const forceRefresh = useCallback(async (): Promise<void> => {
     resetRetries();
+    await checkFile();
     return Promise.resolve();
-  }, [resetRetries]);
+  }, [resetRetries, checkFile]);
 
   return { 
     checkFile, 
