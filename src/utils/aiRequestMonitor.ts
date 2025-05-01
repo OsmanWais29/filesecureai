@@ -65,6 +65,8 @@ export const checkPendingAnalysis = async (documentId: string): Promise<boolean>
 // Function to manually trigger analysis for a document
 export const triggerManualAnalysis = async (documentId: string): Promise<void> => {
   try {
+    console.log(`Manually triggering analysis for document: ${documentId}`);
+    
     // Get document details
     const { data: document, error: docError } = await supabase
       .from('documents')
@@ -73,8 +75,11 @@ export const triggerManualAnalysis = async (documentId: string): Promise<void> =
       .single();
       
     if (docError || !document) {
+      console.error('Document not found:', docError);
       throw new Error('Document not found');
     }
+    
+    console.log(`Found document with storage path: ${document.storage_path}`);
     
     // Mark document as pending analysis
     await supabase
@@ -83,7 +88,8 @@ export const triggerManualAnalysis = async (documentId: string): Promise<void> =
         ai_processing_status: 'pending',
         metadata: {
           ...(document.metadata || {}),
-          analysis_requested_at: new Date().toISOString()
+          analysis_requested_at: new Date().toISOString(),
+          analysis_status: 'pending'
         }
       })
       .eq('id', documentId);
@@ -101,8 +107,73 @@ export const triggerManualAnalysis = async (documentId: string): Promise<void> =
         storage_path: document.storage_path
       }
     });
+    
+    // Directly invoke the edge function for immediate processing
+    console.log('Directly calling process-ai-request function');
+    
+    // Get a fresh session token
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      console.error('No active session for API request');
+      throw new Error('Authentication required for API request');
+    }
+    
+    // Call the edge function with the document information
+    const { data: analysisData, error: analysisError } = await supabase.functions.invoke('process-ai-request', {
+      body: { 
+        documentId,
+        storagePath: document.storage_path,
+        title: document.title,
+        includeRegulatory: true,
+        includeClientExtraction: true,
+        debug: true
+      }
+    });
+    
+    if (analysisError) {
+      console.error('Error invoking analysis function:', analysisError);
+      throw new Error(`Analysis API error: ${analysisError.message}`);
+    }
+    
+    console.log('Analysis API request completed successfully');
+    
+    // Update document status based on API response
+    await supabase
+      .from('documents')
+      .update({
+        ai_processing_status: analysisData ? 'complete' : 'failed',
+        metadata: {
+          ...(document.metadata || {}),
+          analysis_completed_at: new Date().toISOString(),
+          analysis_status: analysisData ? 'complete' : 'failed',
+          has_analysis: !!analysisData
+        }
+      })
+      .eq('id', documentId);
+      
+    if (analysisData) {
+      toast.success('Document analysis completed successfully');
+    } else {
+      toast.error('Document analysis completed but no results were returned');
+    }
   } catch (err: any) {
     console.error('Error triggering manual analysis:', err);
     toast.error(`Failed to trigger analysis: ${err.message}`);
+    
+    try {
+      // Update document status to failed
+      await supabase
+        .from('documents')
+        .update({
+          ai_processing_status: 'failed',
+          metadata: {
+            analysis_error: err.message,
+            analysis_failed_at: new Date().toISOString()
+          }
+        })
+        .eq('id', documentId);
+    } catch (updateErr) {
+      console.error('Failed to update document status:', updateErr);
+    }
   }
 };

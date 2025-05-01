@@ -1,4 +1,3 @@
-
 import { simulateUploadProgress } from "./progressSimulator";
 import logger from "@/utils/logger";
 import { supabase } from "@/lib/supabase";
@@ -157,7 +156,9 @@ export const triggerDocumentAnalysis = async (documentId: string, fileName: stri
         metadata: {
           analysis_initiated: true,
           analysis_initiated_at: new Date().toISOString(),
-          analysis_status: 'processing'
+          analysis_status: 'processing',
+          processing_monitor: 'v2',  // Mark that we're using the enhanced processing monitor
+          attempts: 1
         }
       })
       .eq('id', documentId);
@@ -170,7 +171,7 @@ export const triggerDocumentAnalysis = async (documentId: string, fileName: stri
     // Get document storage path
     const { data: docData, error: docError } = await supabase
       .from('documents')
-      .select('storage_path, title')
+      .select('storage_path, title, metadata')
       .eq('id', documentId)
       .single();
       
@@ -188,9 +189,18 @@ export const triggerDocumentAnalysis = async (documentId: string, fileName: stri
       status: 'initiated',
       details: {
         fileName,
-        storagePath: docData.storage_path
+        storagePath: docData.storage_path,
+        processingVersion: 'v2'
       }
     });
+    
+    // Ensure we have a fresh session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError || !session) {
+      logger.error('Session error for API request:', sessionError);
+      throw new Error('Authentication required for API request');
+    }
     
     // Call the edge function to analyze the document
     const { data, error } = await supabase.functions.invoke('process-ai-request', {
@@ -246,7 +256,21 @@ export const triggerDocumentAnalysis = async (documentId: string, fileName: stri
       }
     });
     
-  } catch (error) {
+    // Update document with completed status
+    await supabase
+      .from('documents')
+      .update({
+        ai_processing_status: 'complete',
+        metadata: {
+          ...(docData.metadata || {}),
+          analysis_completed_at: new Date().toISOString(),
+          analysis_status: 'complete',
+          has_analysis: true
+        }
+      })
+      .eq('id', documentId);
+    
+  } catch (error: any) {
     logger.error(`Document analysis error: ${error}`);
     
     // Update document status to error
@@ -318,7 +342,7 @@ export const createNotification = async (
 const requiresAnalysis = (fileName: string): boolean => {
   const lowerFileName = fileName.toLowerCase();
   
-  // Add other formsm that require special analysis
+  // Add other forms that require special analysis
   return lowerFileName.includes('form 31') || 
          lowerFileName.includes('form31') || 
          lowerFileName.includes('proof of claim') || 
@@ -331,5 +355,16 @@ const requiresAnalysis = (fileName: string): boolean => {
          lowerFileName.includes('form 65') ||
          lowerFileName.includes('form65') ||
          lowerFileName.includes('form 72') ||
-         lowerFileName.includes('form72');
+         lowerFileName.includes('form72') ||
+         // Add more common forms
+         lowerFileName.includes('form 21') ||
+         lowerFileName.includes('form21') ||
+         lowerFileName.includes('notice of bankruptcy') ||
+         lowerFileName.includes('form 33') ||
+         lowerFileName.includes('form33') ||
+         lowerFileName.includes('form 40') ||
+         lowerFileName.includes('form40') ||
+         lowerFileName.includes('notice of intention') ||
+         lowerFileName.includes('bankruptcy') ||
+         lowerFileName.includes('insolvency');
 };
