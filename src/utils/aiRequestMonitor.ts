@@ -68,7 +68,7 @@ export const triggerManualAnalysis = async (documentId: string): Promise<void> =
     // Get document details
     const { data: document, error: docError } = await supabase
       .from('documents')
-      .select('storage_path, title')
+      .select('storage_path, title, metadata')
       .eq('id', documentId)
       .single();
       
