@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { usePdfViewer } from "@/hooks/usePdfViewer";
 import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import { Button } from "@/components/ui/button";
-import { FileText, RefreshCw, ExternalLink, AlertTriangle, WifiOff } from "lucide-react";
+import { FileText, RefreshCw, ExternalLink, AlertTriangle, WifiOff, Info } from "lucide-react";
 import { toast } from "sonner";
 
 interface UniversalPDFViewerProps {
@@ -25,8 +25,9 @@ export const UniversalPDFViewer = ({
 }: UniversalPDFViewerProps) => {
   const [attemptedFallback, setAttemptedFallback] = useState(false);
   const { isOnline } = useNetworkStatus();
+  const [loadRetries, setLoadRetries] = useState(0);
   
-  // Use our PDF viewer hook to handle the loading and url generation
+  // Use our PDF viewer hook to handle loading and url generation
   const {
     pdfUrl,
     fileExists,
@@ -39,6 +40,7 @@ export const UniversalPDFViewer = ({
     bucketName,
     onSuccess: (result) => {
       console.log("PDF loaded successfully:", result.method);
+      setLoadRetries(0);
       if (onLoad) onLoad();
     },
     onError: (err) => {
@@ -60,12 +62,20 @@ export const UniversalPDFViewer = ({
     retryWithFallback();
     toast.info("Trying alternative PDF viewing method...");
   };
+
+  // Function to handle retry when PDF fails to load
+  const handleRetry = () => {
+    setLoadRetries(prev => prev + 1);
+    retry();
+    toast.info("Retrying PDF load...");
+  };
   
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-full bg-muted/20 border rounded-md p-6">
         <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent mb-4"></div>
         <p className="text-muted-foreground text-center">Loading PDF...</p>
+        <p className="text-xs text-muted-foreground mt-2">Document: {storagePath}</p>
       </div>
     );
   }
@@ -83,14 +93,23 @@ export const UniversalPDFViewer = ({
               <p>You are currently offline. Please check your internet connection.</p>
             </div>
           ) : !fileExists ? (
-            <p>The requested PDF file does not exist or you don't have permission to view it.</p>
+            <div className="flex flex-col items-center gap-2">
+              <Info className="h-6 w-6 text-amber-500" />
+              <p>The requested PDF file does not exist or you don't have permission to view it.</p>
+              <p className="text-xs">Path: {storagePath}</p>
+              <p className="text-xs">Bucket: {bucketName}</p>
+            </div>
           ) : (
-            <p>{error?.message || "There was an error loading this PDF."}</p>
+            <div>
+              <p>{error?.message || "There was an error loading this PDF."}</p>
+              <p className="text-xs mt-2">Document path: {storagePath}</p>
+              <p className="text-xs">{loadRetries > 0 ? `Retry attempts: ${loadRetries}` : ''}</p>
+            </div>
           )}
         </div>
         
         <div className="flex flex-row gap-2 mt-2">
-          <Button onClick={retry} size="sm" variant="outline" disabled={!isOnline}>
+          <Button onClick={handleRetry} size="sm" variant="outline" disabled={!isOnline}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Retry
           </Button>

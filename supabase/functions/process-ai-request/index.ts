@@ -238,7 +238,7 @@ serve(async (req) => {
           },
           {
             role: 'user',
-            content: `Please analyze the following document and provide a comprehensive analysis including extracted information, risk assessment, and regulatory compliance check:\n\nDocument Title: ${documentTitle}\n\nDocument Content:\n${documentText}`
+            content: `Please analyze the following document and provide a comprehensive analysis including extracted information, risk assessment, and regulatory compliance check in JSON format:\n\nDocument Title: ${documentTitle}\n\nDocument Content:\n${documentText}`
           }
         ],
         temperature: 0.3,
@@ -270,27 +270,17 @@ serve(async (req) => {
       console.log("Added Exa regulatory references to analysis result");
     }
     
-    // If we have a document ID, save the analysis results
+    // Save analysis results to database if we have a document ID
     if (documentId) {
       try {
-        // Get current user ID from auth header or default to 'system'
-        const authHeader = req.headers.get('Authorization');
-        let userId = 'system';
+        console.log(`Saving analysis results for document ID: ${documentId}`);
         
-        // If we have auth header, extract user ID
-        if (authHeader) {
-          try {
-            const token = authHeader.replace('Bearer ', '');
-            const { data: userData } = await supabase.auth.getUser(token);
-            if (userData?.user?.id) {
-              userId = userData.user.id;
-            }
-          } catch (authError) {
-            console.error("Error getting user ID from token:", authError);
-          }
+        // Get current user for attribution
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          console.warn("No authenticated user found when saving analysis");
         }
-        
-        console.log(`Saving analysis results for document ${documentId}`);
         
         // Check if document analysis already exists
         const { data: existingAnalysis } = await supabase
@@ -299,9 +289,9 @@ serve(async (req) => {
           .eq('document_id', documentId)
           .maybeSingle();
           
-        if (existingAnalysis) {
+        if (existingAnalysis?.id) {
           // Update existing analysis
-          const { error: updateError } = await supabase
+          await supabase
             .from('document_analysis')
             .update({
               content: analysisResult,
@@ -309,129 +299,99 @@ serve(async (req) => {
             })
             .eq('id', existingAnalysis.id);
             
-          if (updateError) {
-            console.error("Error updating document analysis:", updateError);
-          } else {
-            console.log(`Updated existing analysis for document ${documentId}`);
-          }
+          console.log(`Updated existing analysis for document ${documentId}`);
         } else {
-          // Create new analysis record
-          const { error: insertError } = await supabase
+          // Create new analysis
+          await supabase
             .from('document_analysis')
-            .insert([{
+            .insert({
               document_id: documentId,
-              user_id: userId,
+              user_id: user?.id,
               content: analysisResult
-            }]);
+            });
             
-          if (insertError) {
-            console.error("Error creating document analysis:", insertError);
-          } else {
-            console.log(`Created new analysis for document ${documentId}`);
-          }
+          console.log(`Created new analysis for document ${documentId}`);
         }
         
-        // Update document metadata with extracted information and status
-        const { error: docUpdateError } = await supabase
+        // Update document metadata with extracted info
+        const { data: updatedDoc, error: updateError } = await supabase
           .from('documents')
           .update({
             metadata: {
               ...analysisResult.extracted_info,
               analyzed_at: new Date().toISOString(),
-              has_analysis: true
+              has_analysis: true,
+              processing_steps_completed: [
+                "documentIngestion",
+                "documentClassification",
+                "dataExtraction",
+                "riskAssessment",
+                "documentOrganization",
+                "analysisComplete"
+              ]
             },
             ai_processing_status: 'complete'
           })
-          .eq('id', documentId);
+          .eq('id', documentId)
+          .select('id')
+          .single();
           
-        if (docUpdateError) {
-          console.error("Error updating document metadata:", docUpdateError);
-        } else {
-          console.log(`Updated document metadata for ${documentId}`);
-        }
+        console.log(`Updated document metadata for ${documentId}`);
         
-        // If client name is available, create client record if it doesn't exist
-        if (includeClientExtraction && analysisResult.extracted_info?.clientName) {
-          await createClientIfNotExists(analysisResult.extracted_info, supabase);
+        // Check if we have a client name that should be created
+        if (analysisResult.extracted_info?.clientName) {
+          console.log(`Checking if client exists: ${analysisResult.extracted_info.clientName}`);
+          
+          // Try to create client if not exists
+          const { data: existingClients } = await supabase
+            .from('clients')
+            .select('id')
+            .ilike('name', analysisResult.extracted_info.clientName)
+            .limit(1);
+            
+          if (!existingClients || existingClients.length === 0) {
+            console.log(`Creating new client: ${analysisResult.extracted_info.clientName}`);
+            
+            // Create new client from extracted info
+            const { data: newClient, error: clientError } = await supabase
+              .from('clients')
+              .insert({
+                name: analysisResult.extracted_info.clientName,
+                email: analysisResult.extracted_info.clientEmail || null,
+                phone: analysisResult.extracted_info.clientPhone || null,
+                metadata: {
+                  address: analysisResult.extracted_info.clientAddress || null,
+                  totalDebts: analysisResult.extracted_info.totalDebts || null,
+                  totalAssets: analysisResult.extracted_info.totalAssets || null
+                }
+              })
+              .select('id')
+              .single();
+              
+            if (clientError) {
+              console.error("Error creating client:", clientError);
+            } else {
+              console.log(`Created new client with ID: ${newClient.id}`);
+            }
+          }
         }
-      } catch (saveError) {
-        console.error("Error saving analysis results:", saveError);
+      } catch (dbError) {
+        console.error("Error saving analysis results:", dbError);
+        // Continue despite DB error - we can still return results to user
       }
     }
     
     console.log("Analysis complete, returning results");
     
-    return new Response(
-      JSON.stringify({
-        success: true,
-        response: "Document analyzed successfully",
-        analysis: analysisResult
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  } catch (error) {
-    console.error('Error in process-ai-request function:', error);
-    
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message || 'Unknown error occurred'
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500
-      }
-    );
+    // Return the analysis result
+    return new Response(JSON.stringify(analysisResult), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  } catch (error: any) {
+    console.error("Error in process-ai-request function:", error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
   }
 });
-
-// Helper function to create client if not exists
-async function createClientIfNotExists(clientInfo: any, supabase: any) {
-  if (!clientInfo?.clientName) {
-    return null;
-  }
-  
-  console.log("Checking if client exists:", clientInfo.clientName);
-  
-  const clientName = clientInfo.clientName.trim();
-  
-  // Check if client already exists
-  const { data: existingClients } = await supabase
-    .from('clients')
-    .select('id')
-    .ilike('name', clientName)
-    .limit(1);
-    
-  // If client exists, return their ID
-  if (existingClients && existingClients.length > 0) {
-    console.log("Client already exists:", clientName);
-    return existingClients[0].id;
-  }
-  
-  console.log("Creating new client:", clientName);
-  
-  // Create new client
-  const { data: newClient, error } = await supabase
-    .from('clients')
-    .insert({
-      name: clientName,
-      email: clientInfo.clientEmail || null,
-      phone: clientInfo.clientPhone || null,
-      metadata: {
-        address: clientInfo.clientAddress || null,
-        totalDebts: clientInfo.totalDebts || null,
-        totalAssets: clientInfo.totalAssets || null,
-        monthlyIncome: clientInfo.monthlyIncome || null
-      }
-    })
-    .select('id')
-    .single();
-    
-  if (error) {
-    console.error("Error creating client:", error);
-  } else {
-    console.log("Created new client with ID:", newClient?.id);
-  }
-    
-  return newClient?.id || null;
-}
