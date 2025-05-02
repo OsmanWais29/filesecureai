@@ -1,154 +1,67 @@
+import { refreshSession } from "@/hooks/useAuthState";
+import { toast } from "sonner";
 
-import { supabase } from "@/lib/supabase";
-
-let monitoringActive = false;
-let monitoringInterval: number | null = null;
-const MONITORING_INTERVAL = 5 * 60 * 1000; // Check every 5 minutes
-
-/**
- * Verifies the JWT token's validity
- */
-export const verifyJwtToken = async (): Promise<{ 
-  isValid: boolean; 
-  reason?: string;
-}> => {
-  try {
-    // Get current session
-    const { data: sessionData } = await supabase.auth.getSession();
-    
-    if (!sessionData || !sessionData.session) {
-      console.warn("JWT verification failed: No active session found");
-      return {
-        isValid: false,
-        reason: 'No active session found'
-      };
-    }
-    
-    const token = sessionData.session.access_token;
-    
-    // Basic token structure check
-    if (!token || token.split('.').length !== 3) {
-      console.warn("JWT verification failed: Token has invalid format");
-      return {
-        isValid: false,
-        reason: 'Token has invalid format'
-      };
-    }
-    
-    // Check expiration
-    const expiresAt = sessionData.session.expires_at;
-    const currentTime = Math.floor(Date.now() / 1000);
-    
-    if (expiresAt < currentTime) {
-      console.warn("JWT verification failed: Token has expired");
-      return {
-        isValid: false,
-        reason: 'Token has expired'
-      };
-    }
-    
-    console.log("JWT verification passed: Token is valid");
-    return {
-      isValid: true
-    };
-    
-  } catch (error) {
-    console.error("JWT verification error:", error);
-    return {
-      isValid: false,
-      reason: error instanceof Error ? error.message : 'Unknown error checking JWT'
-    };
-  }
-};
+let monitoringIntervalId: number | null = null;
+const MONITORING_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 /**
- * Refreshes the JWT token if necessary
+ * Checks if the JWT token is valid and refreshes it if needed
  */
-export const checkAndRefreshToken = async (): Promise<{
-  isValid: boolean;
-  wasRefreshed: boolean;
-  reason?: string;
-}> => {
+export const checkAndRefreshToken = async (): Promise<boolean> => {
   try {
-    const status = await verifyJwtToken();
-    
-    if (!status.isValid) {
-      console.log("Token invalid, refreshing...");
-      const { data, error } = await supabase.auth.refreshSession();
-      
-      if (error || !data.session) {
-        console.error("Failed to refresh token:", error);
-        return {
-          isValid: false,
-          wasRefreshed: false,
-          reason: error?.message || "Failed to refresh session"
-        };
-      }
-      
-      console.log("Token refreshed successfully");
-      return {
-        isValid: true,
-        wasRefreshed: true
-      };
+    const refreshed = await refreshSession();
+    if (refreshed) {
+      console.log('JWT token refreshed successfully');
+      return true;
     }
-    
-    return {
-      isValid: true,
-      wasRefreshed: false
-    };
+    return false;
   } catch (error) {
-    console.error("Error in checkAndRefreshToken:", error);
-    return {
-      isValid: false,
-      wasRefreshed: false,
-      reason: error instanceof Error ? error.message : "Unknown error"
-    };
-  }
-};
-
-/**
- * Fixes authentication issues by refreshing tokens
- */
-export const fixAuthenticationIssues = async (): Promise<boolean> => {
-  try {
-    const { wasRefreshed } = await checkAndRefreshToken();
-    return wasRefreshed;
-  } catch (error) {
-    console.error("Error fixing auth issues:", error);
+    console.error('Error refreshing JWT token:', error);
     return false;
   }
 };
 
 /**
- * Starts JWT monitoring service
+ * Start monitoring JWT token and refresh it periodically
  */
-export const startJwtMonitoring = (): void => {
-  if (monitoringActive) {
-    return; // Already running
+export const startJwtMonitoring = () => {
+  // Clear any existing interval
+  if (monitoringIntervalId) {
+    stopJwtMonitoring();
   }
   
-  monitoringActive = true;
-  console.log("JWT monitoring started");
+  console.log('Starting JWT token monitoring');
   
-  // Run an initial check
+  // Initial check
   checkAndRefreshToken();
   
-  // Setup interval
-  monitoringInterval = window.setInterval(() => {
-    checkAndRefreshToken();
+  // Set up interval to check periodically
+  monitoringIntervalId = window.setInterval(async () => {
+    console.log('Performing periodic JWT token check');
+    const refreshed = await checkAndRefreshToken();
+    
+    if (!refreshed) {
+      toast.warning("Session token could not be refreshed. You may need to login again soon.");
+    }
   }, MONITORING_INTERVAL);
 };
 
 /**
- * Stops JWT monitoring service
+ * Stop JWT token monitoring
  */
-export const stopJwtMonitoring = (): void => {
-  if (!monitoringActive || monitoringInterval === null) {
-    return;
+export const stopJwtMonitoring = () => {
+  if (monitoringIntervalId) {
+    console.log('Stopping JWT token monitoring');
+    window.clearInterval(monitoringIntervalId);
+    monitoringIntervalId = null;
   }
-  
-  clearInterval(monitoringInterval);
-  monitoringInterval = null;
-  monitoringActive = false;
-  console.log("JWT monitoring stopped");
+};
+
+/**
+ * Verify if the JWT token is still valid
+ */
+export const verifyJwtToken = async (): Promise<boolean> => {
+  // This function can be extended to actually verify the token using 
+  // the Supabase client or a custom JWT verification function
+  return await checkAndRefreshToken();
 };

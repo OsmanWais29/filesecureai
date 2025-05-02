@@ -38,10 +38,10 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
 
   return (
     <DocumentPreviewContent
-      {...previewState}
       storagePath={storagePath}
       documentId={documentId}
       title={title}
+      previewState={previewState}
     />
   );
 };

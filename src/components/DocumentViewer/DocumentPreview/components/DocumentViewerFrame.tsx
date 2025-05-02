@@ -20,7 +20,7 @@ export const DocumentViewerFrame: React.FC<DocumentViewerFrameProps> = ({
   onOpenInNewTab,
   onDownload
 }) => {
-  const googleDocsViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true`;
+  const googleDocsViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}`;
 
   if (isLoading) {
     return (

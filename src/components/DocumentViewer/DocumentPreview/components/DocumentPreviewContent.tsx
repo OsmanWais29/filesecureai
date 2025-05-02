@@ -11,13 +11,6 @@ import { DocumentPreviewContentProps } from "../types";
 import { Button } from "@/components/ui/button";
 import { Download, ExternalLink } from "lucide-react";
 
-export interface DocumentPreviewContentProps {
-  storagePath: string;
-  documentId?: string;
-  title?: string;
-  previewState: any;
-}
-
 export const DocumentPreviewContent: React.FC<DocumentPreviewContentProps> = ({
   storagePath,
   documentId,
