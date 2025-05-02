@@ -1,7 +1,8 @@
 
 import { supabase, ensureFreshToken } from "@/lib/supabase";
 import { authenticatedStorageOperation } from "@/hooks/useAuthenticatedFetch";
-import { verifyJwtToken, testDirectUpload } from "./jwtDiagnostics";
+import { verifyJwtToken } from "./jwtVerifier";
+import { testDirectUpload } from "./storageDiagnostics";
 
 // Define an extended StorageError type to handle potential properties
 interface ExtendedStorageError {

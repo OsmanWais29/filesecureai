@@ -2,6 +2,43 @@
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
+// Token refresh interval in milliseconds (5 minutes)
+const TOKEN_REFRESH_INTERVAL = 5 * 60 * 1000;
+
+// Store the interval ID for cleanup
+let monitoringIntervalId: number | null = null;
+
+/**
+ * Start JWT token monitoring with automatic refresh
+ */
+export const startJwtMonitoring = (): void => {
+  // Clear any existing interval first
+  stopJwtMonitoring();
+  
+  console.log("Starting JWT monitoring...");
+  
+  // Check token immediately on start
+  checkAndRefreshToken();
+  
+  // Set up regular monitoring
+  monitoringIntervalId = window.setInterval(() => {
+    checkAndRefreshToken().catch(error => {
+      console.error("Error in JWT monitoring:", error);
+    });
+  }, TOKEN_REFRESH_INTERVAL);
+};
+
+/**
+ * Stop JWT token monitoring
+ */
+export const stopJwtMonitoring = (): void => {
+  if (monitoringIntervalId !== null) {
+    clearInterval(monitoringIntervalId);
+    monitoringIntervalId = null;
+    console.log("JWT monitoring stopped");
+  }
+};
+
 /**
  * Checks the current JWT token validity and refreshes if needed
  * @returns Promise with token status information
