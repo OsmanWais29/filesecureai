@@ -251,9 +251,12 @@ export const TrusteeCoPliotModal = ({
                 </div>
               </TabsContent>
 
-              <TabsContent value="verification" className="flex-1 overflow-y-auto">
-                <div className="h-full overflow-y-auto px-3 py-3 space-y-4">
-                  {/* Enhanced verification overview */}
+              <TabsContent 
+                value="verification" 
+                className="flex-1 overflow-hidden flex flex-col"
+              >
+                <div className="flex-1 overflow-y-auto space-y-4 px-3 py-3">
+                  {/* Enhanced verification overview - Fixed spacing issues */}
                   <Card className="border shadow-sm">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-lg">Verification Overview</CardTitle>
@@ -317,15 +320,15 @@ export const TrusteeCoPliotModal = ({
                     </CardContent>
                   </Card>
                   
-                  {/* Detailed verification sections */}
-                  <Accordion type="multiple" defaultValue={["income"]} className="space-y-2">
+                  {/* Detailed verification sections - Improved accordion spacing */}
+                  <Accordion type="multiple" defaultValue={["income"]} className="space-y-3">
                     {verificationData.sections.map(section => (
-                      <AccordionItem key={section.id} value={section.id} className="border rounded-md">
+                      <AccordionItem key={section.id} value={section.id} className="border rounded-md overflow-hidden">
                         <AccordionTrigger className="text-base font-medium px-4 py-3 hover:no-underline hover:bg-muted/50">
                           {section.title}
                         </AccordionTrigger>
-                        <AccordionContent className="px-4 pb-3">
-                          <div className="space-y-3">
+                        <AccordionContent className="px-4 pb-3 pt-1">
+                          <div className="space-y-2">
                             {section.items.map(item => (
                               <div key={item.id} className="flex items-start gap-3 p-2 rounded-md border border-gray-200 bg-card">
                                 <div className="mt-0.5">{item.icon}</div>
@@ -345,14 +348,14 @@ export const TrusteeCoPliotModal = ({
                       </AccordionItem>
                     ))}
                   </Accordion>
-                  
-                  {/* Actions */}
-                  <div className="py-4 sticky bottom-0 bg-background">
-                    <Button className="w-full flex items-center gap-2">
-                      Request Trustee Review
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </div>
+                </div>
+                
+                {/* Actions - Fixed sticky positioning at bottom */}
+                <div className="py-4 px-3 sticky bottom-0 bg-background border-t mt-2">
+                  <Button className="w-full flex items-center gap-2">
+                    Request Trustee Review
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
                 </div>
               </TabsContent>
             </Tabs>
