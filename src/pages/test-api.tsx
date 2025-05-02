@@ -1,14 +1,14 @@
 
 import { TestAnalysisConnection } from "@/components/TestAnalysisConnection";
-import { Shell } from "@/components/Shell";
+import { MainLayout } from "@/components/layout/MainLayout";
 
 export default function TestApiPage() {
   return (
-    <Shell>
+    <MainLayout>
       <div className="py-10">
         <h1 className="text-2xl font-bold mb-6 text-center">API Connection Test</h1>
         <TestAnalysisConnection />
       </div>
-    </Shell>
+    </MainLayout>
   );
 }

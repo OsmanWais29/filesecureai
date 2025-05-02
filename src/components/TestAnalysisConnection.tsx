@@ -74,7 +74,8 @@ export const TestAnalysisConnection = () => {
           toast({
             title: "Analysis received!",
             description: "The API connection is working correctly.",
-            variant: "success"
+            // Change from "success" to "default" as "success" is not a valid variant
+            variant: "default" 
           });
         } else {
           setError("No analysis data found. The API request may have failed.");
