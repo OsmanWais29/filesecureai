@@ -1,15 +1,14 @@
 
 import React from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { TabContentComponents } from "./TabContentComponents";
-import { IncomeExpenseData, Client } from "../../types";
 
 interface FormTabsProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   hasUnsavedChanges: boolean;
-  formData: IncomeExpenseData;
-  previousMonthData: IncomeExpenseData;
+  formData: any;
+  previousMonthData: any;
   historicalData: any[];
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onFrequencyChange: (field: string, value: string) => void;
@@ -18,7 +17,8 @@ interface FormTabsProps {
   isSubmitting: boolean;
   handleFieldSelectChange: (field: string, value: string) => void;
   isNewClientMode?: boolean;
-  newClient?: Client;
+  newClient?: any;
+  onConsentChange?: (checked: boolean) => void;
 }
 
 export const FormTabs = ({
@@ -35,32 +35,51 @@ export const FormTabs = ({
   isSubmitting,
   handleFieldSelectChange,
   isNewClientMode = false,
-  newClient
+  newClient,
+  onConsentChange
 }: FormTabsProps) => {
+  // Handle consent change with default if not provided
   const handleConsentChange = (checked: boolean) => {
-    const consentEvent = {
-      target: {
-        name: "consent_signature",
-        value: checked ? "signed" : ""
+    if (onConsentChange) {
+      onConsentChange(checked);
+    } else {
+      // Default implementation
+      const consentEvent = {
+        target: {
+          name: 'consent_data_use',
+          value: checked ? 'true' : 'false'
+        }
+      } as React.ChangeEvent<HTMLInputElement>;
+      
+      onChange(consentEvent);
+      
+      // Set consent date to today
+      if (checked) {
+        const todayDate = new Date().toISOString().split('T')[0];
+        const dateEvent = {
+          target: {
+            name: 'consent_date',
+            value: todayDate
+          }
+        } as React.ChangeEvent<HTMLInputElement>;
+        
+        onChange(dateEvent);
       }
-    } as React.ChangeEvent<HTMLInputElement>;
-    
-    onChange(consentEvent);
+    }
   };
-  
+
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <TabsList className="grid grid-cols-6 w-full mb-8">
-        <TabsTrigger value="client">Client Profile</TabsTrigger>
+      <TabsList className="grid grid-cols-5 mb-6">
+        <TabsTrigger value="client">Client</TabsTrigger>
         <TabsTrigger value="income">Income</TabsTrigger>
         <TabsTrigger value="expenses">Expenses</TabsTrigger>
-        <TabsTrigger value="savings">Savings/Calc</TabsTrigger>
-        <TabsTrigger value="uploads">Documents</TabsTrigger>
-        <TabsTrigger value="signature">Signature</TabsTrigger>
+        <TabsTrigger value="savings">Savings</TabsTrigger>
+        <TabsTrigger value="signature">Sign</TabsTrigger>
       </TabsList>
-      
-      <TabsContent value="client" className="space-y-6">
-        <TabContentComponents.ClientProfileTabContent 
+
+      <TabsContent value="client">
+        <TabContentComponents.ClientProfileTabContent
           formData={formData}
           onChange={onChange}
           onSaveDraft={handleSaveDraft}
@@ -70,10 +89,10 @@ export const FormTabs = ({
           newClient={newClient}
         />
       </TabsContent>
-      
-      <TabsContent value="income" className="space-y-6">
-        <TabContentComponents.IncomeTabContent 
-          formData={formData} 
+
+      <TabsContent value="income">
+        <TabContentComponents.IncomeTabContent
+          formData={formData}
           previousMonthData={previousMonthData}
           onChange={onChange}
           onFrequencyChange={onFrequencyChange}
@@ -81,46 +100,36 @@ export const FormTabs = ({
           setActiveTab={setActiveTab}
         />
       </TabsContent>
-      
-      <TabsContent value="expenses" className="space-y-6">
-        <TabContentComponents.ExpensesTabContent 
-          formData={formData} 
+
+      <TabsContent value="expenses">
+        <TabContentComponents.ExpensesTabContent
+          formData={formData}
           previousMonthData={previousMonthData}
           onChange={onChange}
           onSaveDraft={handleSaveDraft}
           setActiveTab={setActiveTab}
         />
       </TabsContent>
-      
-      <TabsContent value="savings" className="space-y-6">
-        <TabContentComponents.SavingsTabContent 
-          formData={formData} 
+
+      <TabsContent value="savings">
+        <TabContentComponents.SavingsTabContent
+          formData={formData}
           previousMonthData={previousMonthData}
           onChange={onChange}
           onSaveDraft={handleSaveDraft}
           setActiveTab={setActiveTab}
         />
       </TabsContent>
-      
-      <TabsContent value="uploads" className="space-y-6">
-        <TabContentComponents.UploadsTabContent 
+
+      <TabsContent value="signature">
+        <TabContentComponents.SignatureTabContent
           formData={formData}
-          clientName={formData.full_name || newClient?.name || "New Client"}
-          onSaveDraft={handleSaveDraft}
-          setActiveTab={setActiveTab}
-        />
-      </TabsContent>
-      
-      <TabsContent value="signature" className="space-y-6">
-        <TabContentComponents.SignatureTabContent 
-          formData={formData}
+          onChange={onChange}
           onConsentChange={handleConsentChange}
-          onChange={onChange}
           onSaveDraft={handleSaveDraft}
-          setActiveTab={setActiveTab}
           handleDocumentSubmit={handleDocumentSubmit}
-          selectedClient={newClient}
           isSubmitting={isSubmitting}
+          setActiveTab={setActiveTab}
         />
       </TabsContent>
     </Tabs>

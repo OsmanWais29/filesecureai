@@ -9,7 +9,6 @@ import { SavingsInsuranceSection } from "./form/SavingsInsuranceSection";
 import { SurplusIncomeSection } from "./form/SurplusIncomeSection";
 import { SignatureConsentSection } from "./form/SignatureConsentSection";
 import { HistoricalComparison } from "./components/HistoricalComparison";
-import { DocumentUploadSection } from "./components/DocumentUploadSection";
 import { PrintButton } from "./form/PrintButton";
 import { useIncomeExpenseForm } from "./hooks/useIncomeExpenseForm";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,7 +19,6 @@ import { FormAlerts } from "./form/FormAlerts";
 import { NoClientSelected } from "./form/NoClientSelected";
 import { PeriodSelection } from "./form/PeriodSelection";
 import { useFormSubmission } from "./hooks/useFormSubmission";
-import { FileUploadSection } from "./form/upload/FileUploadSection";
 import { supabase } from "@/lib/supabase";
 
 interface IncomeExpenseFormProps {
@@ -69,31 +67,6 @@ export const IncomeExpenseForm = ({ selectedClient }: IncomeExpenseFormProps) =>
       } as React.ChangeEvent<HTMLInputElement>;
       
       handleChange(dateEvent);
-    }
-  };
-
-  // Custom function to handle document upload completion
-  const handleDocumentUploadComplete = async (documentId: string) => {
-    if (currentRecordId) {
-      console.log(`Linking document ${documentId} to financial record ${currentRecordId}`);
-      try {
-        // Link the document to the financial record
-        const { error } = await supabase
-          .from("document_links")
-          .insert({
-            document_id: documentId,
-            record_id: currentRecordId,
-            link_type: "financial_record"
-          });
-          
-        if (error) {
-          console.error("Error linking document:", error);
-        }
-      } catch (error) {
-        console.error("Error linking document:", error);
-      }
-    } else {
-      console.warn("No current record ID available to link the document");
     }
   };
 
@@ -195,11 +168,6 @@ export const IncomeExpenseForm = ({ selectedClient }: IncomeExpenseFormProps) =>
             formData={formData}
             onChange={handleChange}
             onConsentChange={handleConsentChange}
-          />
-          
-          <FileUploadSection 
-            clientName={selectedClient?.name}
-            onDocumentUpload={handleDocumentUploadComplete} 
           />
           
           <Button type="submit" disabled={isSubmitting} className="w-full">

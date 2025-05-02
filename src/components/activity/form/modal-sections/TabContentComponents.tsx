@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Save } from "lucide-react";
@@ -12,7 +13,6 @@ import { SignatureConsentSection } from "../SignatureConsentSection";
 import { PrintButton } from "../PrintButton";
 import { SmartCreateDocumentButton } from "../SmartCreateDocumentButton";
 import { Client } from "../../types";
-import { FileUploadSection } from "../upload/FileUploadSection";
 
 // Create the TabContentComponents object with all components
 export const TabContentComponents = {
@@ -146,27 +146,28 @@ export const TabContentComponents = {
           <Button type="button" variant="outline" onClick={onSaveDraft}>
             <Save className="h-4 w-4 mr-2" /> Save Draft
           </Button>
-          <Button type="button" onClick={() => setActiveTab("uploads")}>
-            Next: Documents
+          <Button type="button" onClick={() => setActiveTab("signature")}>
+            Next: Sign & Submit
           </Button>
         </div>
       </div>
     </div>
   ),
 
-  UploadsTabContent: ({ 
+  SignatureTabContent: ({ 
     formData, 
-    clientName,
+    onChange, 
+    onConsentChange,
     onSaveDraft, 
+    handleDocumentSubmit,
+    isSubmitting,
     setActiveTab 
   }: any) => (
     <div className="space-y-6">
-      <FileUploadSection 
-        clientName={clientName}
-        onDocumentUpload={(documentId) => {
-          console.log("Document uploaded:", documentId);
-          // Document was uploaded, could store this ID in the form data if needed
-        }} 
+      <SignatureConsentSection
+        formData={formData}
+        onChange={onChange}
+        onConsentChange={onConsentChange}
       />
       
       <div className="flex justify-between gap-2">
@@ -177,53 +178,8 @@ export const TabContentComponents = {
           <Button type="button" variant="outline" onClick={onSaveDraft}>
             <Save className="h-4 w-4 mr-2" /> Save Draft
           </Button>
-          <Button type="button" onClick={() => setActiveTab("signature")}>
-            Next: Signature & Consent
-          </Button>
-        </div>
-      </div>
-    </div>
-  ),
-
-  SignatureTabContent: ({ 
-    formData, 
-    onChange,
-    onConsentChange, 
-    onSaveDraft, 
-    setActiveTab, 
-    handleDocumentSubmit,
-    selectedClient,
-    isSubmitting
-  }: any) => (
-    <div className="space-y-6">
-      <SignatureConsentSection
-        formData={formData}
-        onChange={onChange}
-        onConsentChange={onConsentChange}
-      />
-      
-      <div className="flex justify-between gap-2">
-        <Button type="button" variant="outline" onClick={() => setActiveTab("uploads")}>
-          Back
-        </Button>
-        <div className="flex gap-2">
-          <Button type="button" variant="outline" onClick={onSaveDraft}>
-            <Save className="h-4 w-4 mr-2" /> Save Draft
-          </Button>
-          <PrintButton formData={formData} />
-          <Button 
-            type="submit" 
-            onClick={handleDocumentSubmit}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                Creating...
-              </>
-            ) : (
-              "Submit & Create Client"
-            )}
+          <Button type="submit" disabled={isSubmitting} onClick={handleDocumentSubmit}>
+            {isSubmitting ? "Submitting..." : "Submit Form"}
           </Button>
         </div>
       </div>

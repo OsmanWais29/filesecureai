@@ -9,8 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Bot, Mic, Send, ArrowRight, AlertCircle, CheckCircle, FileUp, X } from "lucide-react";
-import { FileUploadSection } from "../../form/upload/FileUploadSection";
+import { Bot, Mic, Send, ArrowRight, AlertCircle, CheckCircle, X } from "lucide-react";
 
 interface TrusteeCoPliotModalProps {
   open: boolean;
@@ -64,8 +63,9 @@ export const TrusteeCoPliotModal = ({
       // Simulate AI response
       setTimeout(() => {
         if (message.toLowerCase().includes("paystub") || message.toLowerCase().includes("upload")) {
-          addMessage("assistant", "Great! Please upload your paystub or income statement in the Documents tab. I'll help you verify the information.");
-          setActiveTab("documents");
+          addMessage("assistant", "Thank you for providing that information. I'll make a note of it in your file.");
+          // Increase completion percentage
+          setCompletionPercentage(Math.min(completionPercentage + 10, 100));
         } else if (message.toLowerCase().includes("$")) {
           addMessage("assistant", "I've noted that amount. Could you provide any documentation for this income? If not, we'll need to create an exception memo explaining why.");
           // Increase completion percentage
@@ -79,17 +79,6 @@ export const TrusteeCoPliotModal = ({
 
   const addMessage = (role: "user" | "assistant", content: string) => {
     setChatMessages(prev => [...prev, { role, content }]);
-  };
-
-  const handleDocumentUpload = (documentId: string) => {
-    console.log("Document uploaded:", documentId);
-    
-    // Simulate document processing
-    setTimeout(() => {
-      addMessage("assistant", "Thank you for uploading the document. I've analyzed it and found the following information:\n\n- Net Pay: $2,420.35\n- Employer: ABC Company\n- Pay Period: July 1-15, 2024\n\nIs this correct? This differs from your entered amount of $2,000.");
-      setActiveTab("conversation");
-      setCompletionPercentage(Math.min(completionPercentage + 15, 100));
-    }, 2500);
   };
 
   return (
@@ -106,16 +95,15 @@ export const TrusteeCoPliotModal = ({
         </DialogHeader>
 
         <div className="flex flex-col sm:flex-row gap-4 flex-1 overflow-hidden">
-          {/* Left Panel - Chat & Documents */}
+          {/* Left Panel - Chat & Verification */}
           <div className="flex-1 flex flex-col overflow-hidden">
             <Tabs 
               value={activeTab} 
               onValueChange={setActiveTab} 
               className="flex-1 flex flex-col overflow-hidden"
             >
-              <TabsList className="grid grid-cols-3">
+              <TabsList className="grid grid-cols-2">
                 <TabsTrigger value="conversation">Conversation</TabsTrigger>
-                <TabsTrigger value="documents">Documents</TabsTrigger>
                 <TabsTrigger value="verification">Verification</TabsTrigger>
               </TabsList>
 
@@ -172,15 +160,6 @@ export const TrusteeCoPliotModal = ({
                   >
                     <Send className="h-4 w-4" />
                   </Button>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="documents" className="flex-1 overflow-y-auto">
-                <div className="space-y-4">
-                  <FileUploadSection 
-                    clientName={clientId ? `Client-${clientId}` : "New Client"}
-                    onDocumentUpload={handleDocumentUpload}
-                  />
                 </div>
               </TabsContent>
 
