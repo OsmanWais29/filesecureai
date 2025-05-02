@@ -13,7 +13,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { 
   Bot, Mic, Send, ArrowRight, AlertCircle, CheckCircle, X, 
   FileCheck, AlertTriangle, CreditCard, Wallet, ReceiptText, 
-  FileText, HelpCircle, ShieldAlert, ShieldCheck 
+  FileText, HelpCircle, ShieldAlert, ShieldCheck, MessageSquare
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
