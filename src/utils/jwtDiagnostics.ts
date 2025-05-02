@@ -11,5 +11,6 @@ export {
   checkAndRefreshToken,
   fixAuthenticationIssues,
   startJwtMonitoring,
-  stopJwtMonitoring
+  stopJwtMonitoring,
+  verifyJwtToken as monitoringVerifyJwt
 } from "./jwtMonitoring";
