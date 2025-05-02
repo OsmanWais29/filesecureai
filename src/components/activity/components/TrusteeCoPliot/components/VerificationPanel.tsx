@@ -6,7 +6,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { FileCheck, ArrowRight, CheckCircle, AlertTriangle, X, AlertCircle, ShieldAlert } from "lucide-react";
+import { FileCheck, ArrowRight, CheckCircle, AlertTriangle, X, AlertCircle, ShieldAlert, FileText } from "lucide-react";
 import { VerificationData, VerificationStatus, RiskLevel, IconType } from "../types";
 
 interface VerificationPanelProps {
