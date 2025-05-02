@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -25,18 +25,10 @@ export const TrusteeCoPliotModal = ({
   const { completionPercentage, chatMessages } = useChatMessages();
   const { verificationData } = useVerificationData();
   
-  // Determine the default active tab based on chat messages
-  // If no chat messages, default to verification tab
+  // Set the default tab directly based on chat messages - no useEffect needed
   const [activeTab, setActiveTab] = useState<string>(
     chatMessages.length > 0 ? "conversation" : "verification"
   );
-
-  // Update active tab if chat messages change
-  useEffect(() => {
-    if (chatMessages.length === 0 && activeTab === "conversation") {
-      setActiveTab("verification");
-    }
-  }, [chatMessages, activeTab]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -72,11 +64,26 @@ export const TrusteeCoPliotModal = ({
                 </TabsList>
               </div>
 
+              {/* Only render the conversation tab content if there are messages */}
               <TabsContent 
                 value="conversation" 
-                className="flex-1 flex flex-col overflow-hidden mt-0 pt-4 px-4 pb-4"
+                className="flex-1 flex flex-col overflow-hidden mt-0 p-0"
               >
-                <ChatPanel />
+                {chatMessages.length > 0 ? (
+                  <div className="flex-1 flex flex-col overflow-hidden pt-4 px-4 pb-4">
+                    <ChatPanel />
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full p-8 text-center">
+                    <div className="max-w-md">
+                      <MessageSquare className="mx-auto h-10 w-10 text-muted-foreground/50 mb-4" />
+                      <h3 className="text-lg font-medium mb-2">No conversation started</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Use the form below to ask questions about this client's data and receive AI-powered assistance.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent 
