@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -253,9 +252,9 @@ export const TrusteeCoPliotModal = ({
               </TabsContent>
 
               <TabsContent value="verification" className="flex-1 overflow-y-auto">
-                <div className="p-4 space-y-6">
+                <div className="h-full overflow-y-auto px-3 py-3 space-y-4">
                   {/* Enhanced verification overview */}
-                  <Card className="mb-6">
+                  <Card className="border shadow-sm">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-lg">Verification Overview</CardTitle>
                       <CardDescription>
@@ -289,11 +288,11 @@ export const TrusteeCoPliotModal = ({
                   </Card>
 
                   {/* Risk profile */}
-                  <Card className="mb-6">
+                  <Card className="border shadow-sm">
                     <CardHeader className="pb-2">
                       <div className="flex justify-between items-center">
                         <CardTitle className="text-lg">Risk Profile</CardTitle>
-                        <Badge className={`${getRiskLevelColor(verificationData.riskProfile.level)}`}>
+                        <Badge className={getRiskLevelColor(verificationData.riskProfile.level)}>
                           {verificationData.riskProfile.level.charAt(0).toUpperCase() + verificationData.riskProfile.level.slice(1)} Risk
                         </Badge>
                       </div>
@@ -319,19 +318,19 @@ export const TrusteeCoPliotModal = ({
                   </Card>
                   
                   {/* Detailed verification sections */}
-                  <Accordion type="multiple" defaultValue={["income"]}>
+                  <Accordion type="multiple" defaultValue={["income"]} className="space-y-2">
                     {verificationData.sections.map(section => (
-                      <AccordionItem key={section.id} value={section.id}>
-                        <AccordionTrigger className="text-base font-medium">
+                      <AccordionItem key={section.id} value={section.id} className="border rounded-md">
+                        <AccordionTrigger className="text-base font-medium px-4 py-3 hover:no-underline hover:bg-muted/50">
                           {section.title}
                         </AccordionTrigger>
-                        <AccordionContent>
-                          <div className="space-y-4 pt-2">
+                        <AccordionContent className="px-4 pb-3">
+                          <div className="space-y-3">
                             {section.items.map(item => (
-                              <div key={item.id} className="flex items-start gap-2 p-2 rounded-md border border-gray-200">
-                                <div className="mt-1">{item.icon}</div>
+                              <div key={item.id} className="flex items-start gap-3 p-2 rounded-md border border-gray-200 bg-card">
+                                <div className="mt-0.5">{item.icon}</div>
                                 <div className="flex-1">
-                                  <div className="flex justify-between items-center">
+                                  <div className="flex justify-between items-center mb-0.5">
                                     <h4 className="font-medium">{item.label}</h4>
                                     <Badge className={getStatusColor(item.status)}>
                                       {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
@@ -348,7 +347,7 @@ export const TrusteeCoPliotModal = ({
                   </Accordion>
                   
                   {/* Actions */}
-                  <div className="pt-4">
+                  <div className="py-4 sticky bottom-0 bg-background">
                     <Button className="w-full flex items-center gap-2">
                       Request Trustee Review
                       <ArrowRight className="h-4 w-4" />
@@ -361,12 +360,12 @@ export const TrusteeCoPliotModal = ({
           
           {/* Right Panel - Status & Stats */}
           <div className="w-full sm:w-64 space-y-4">
-            <Card>
+            <Card className="border shadow-sm">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm">Directive 11R2 Status</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4 text-sm">
+                <div className="space-y-3 text-sm">
                   <div className="space-y-1">
                     <p className="font-medium">Net Income</p>
                     <p className="text-muted-foreground">$2,420.35</p>
@@ -379,7 +378,7 @@ export const TrusteeCoPliotModal = ({
                     <p className="font-medium">Surplus</p>
                     <p className="text-muted-foreground">$217.35</p>
                   </div>
-                  <div className="pt-2">
+                  <div className="pt-1">
                     <Progress value={75} className="h-2" />
                     <p className="text-xs mt-1">75% Complete</p>
                   </div>
@@ -387,7 +386,7 @@ export const TrusteeCoPliotModal = ({
               </CardContent>
             </Card>
             
-            <Card>
+            <Card className="border shadow-sm">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm">Risk Assessment</CardTitle>
               </CardHeader>
@@ -416,7 +415,7 @@ export const TrusteeCoPliotModal = ({
               </CardContent>
             </Card>
             
-            <Card>
+            <Card className="border shadow-sm">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm">Verification Status</CardTitle>
               </CardHeader>
