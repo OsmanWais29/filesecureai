@@ -9,7 +9,6 @@ export * from "./reliableUpload";
 // Explicitly rename the import to avoid conflicts
 export { 
   checkAndRefreshToken,
-  fixAuthenticationIssues,
   startJwtMonitoring,
   stopJwtMonitoring,
   verifyJwtToken as monitoringVerifyJwt

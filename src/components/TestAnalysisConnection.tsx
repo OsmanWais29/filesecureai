@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -22,7 +21,7 @@ export const TestAnalysisConnection = () => {
       // First ensure we have a fresh auth token
       const tokenStatus = await checkAndRefreshToken();
       if (!tokenStatus.isValid) {
-        throw new Error(`Authentication issue: ${tokenStatus.reason}`);
+        throw new Error(`Authentication issue: ${tokenStatus.reason || 'Unknown error'}`);
       }
       
       // Create a test document in the database

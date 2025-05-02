@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import DocumentPreview from "./DocumentPreview";
 import { useDocumentDetails } from "./hooks/useDocumentDetails";
 
@@ -12,7 +12,12 @@ export const EnhancedDocumentViewer: React.FC<EnhancedDocumentViewerProps> = ({
   documentId,
   documentTitle
 }) => {
-  const { document, isLoading, error } = useDocumentDetails(documentId);
+  const { document, isLoading, error, fetchDocumentDetails } = useDocumentDetails(documentId);
+  
+  useEffect(() => {
+    // Fetch document details on component mount
+    fetchDocumentDetails();
+  }, [documentId]);
   
   if (isLoading) {
     return <div>Loading document details...</div>;

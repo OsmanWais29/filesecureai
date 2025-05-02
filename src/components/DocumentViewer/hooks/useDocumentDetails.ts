@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { DocumentDetails } from "../types";
@@ -11,10 +12,16 @@ export const useDocumentDetails = (
   documentId: string, 
   options: UseDocumentDetailsOptions = {}
 ) => {
+  const [document, setDocument] = useState<DocumentDetails | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchDocumentDetails = async () => {
     try {
+      setIsLoading(true);
+      setError(null);
+      
       // For Form 47 documents by ID, we can use a fallback if the direct fetch fails
       const isForm47ID = documentId.toLowerCase().includes('form-47') || 
                           documentId.toLowerCase().includes('consumer-proposal');
@@ -57,25 +64,38 @@ export const useDocumentDetails = (
       }
 
       if (!document) {
-        console.error("Document not found:", documentId);
-        if (options.onError) options.onError(new Error(`Document not found: ${documentId}`));
+        const errorMessage = `Document not found: ${documentId}`;
+        console.error(errorMessage);
+        setError(errorMessage);
+        if (options.onError) options.onError(new Error(errorMessage));
         return null;
       }
       
       // Process the analysis content
       const processedDocument = processDocumentData(document);
       
+      setDocument(processedDocument);
+      setError(null);
+      
       if (options.onSuccess) options.onSuccess(processedDocument);
       return processedDocument;
       
     } catch (error: any) {
       console.error('Error fetching document details:', error);
+      setError(error.message || 'An unknown error occurred');
       if (options.onError) options.onError(error);
       return null;
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  return { fetchDocumentDetails };
+  return { 
+    document,
+    isLoading,
+    error,
+    fetchDocumentDetails 
+  };
 };
 
 /**
