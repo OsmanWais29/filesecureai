@@ -4,39 +4,21 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { HelpCircle } from "lucide-react";
+import { FormFieldProps } from "../types";
 
-interface NumberInputProps {
-  id: string;
-  name: string;
-  label: string;
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  tooltip?: string;
-  required?: boolean;
-  disabled?: boolean;
-  className?: string;
-}
-
-export const NumberInput = ({
+export const FormField = ({
   id,
   name,
   label,
   value,
   onChange,
-  tooltip,
   required = false,
+  tooltip,
+  placeholder,
+  type = "text",
   disabled = false,
   className = "",
-}: NumberInputProps) => {
-  // Handle number input validation
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    // Only allow numbers and decimal point
-    if (value === "" || /^[0-9]*\.?[0-9]*$/.test(value)) {
-      onChange(e);
-    }
-  };
-
+}: FormFieldProps & { disabled?: boolean; className?: string; type?: string }) => {
   return (
     <div className="grid grid-cols-1 gap-2">
       <div className="flex items-center gap-2">
@@ -60,14 +42,13 @@ export const NumberInput = ({
       <Input
         id={id}
         name={name}
-        type="text"
         value={value}
-        onChange={handleChange}
+        onChange={onChange}
         required={required}
-        disabled={disabled}
+        placeholder={placeholder}
         className={className}
-        inputMode="decimal"
-        pattern="[0-9]*\.?[0-9]*"
+        type={type}
+        disabled={disabled}
       />
     </div>
   );

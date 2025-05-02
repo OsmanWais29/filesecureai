@@ -1,4 +1,6 @@
+
 import { IncomeExpenseData } from "../types";
+import { HistoricalData } from "./types";
 
 export const initialFormData: IncomeExpenseData = {
   full_name: "",

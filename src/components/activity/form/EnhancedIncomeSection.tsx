@@ -1,10 +1,9 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FormGroup } from "./FormGroup";
 import { IncomeExpenseData } from "../types";
 import { NumberInput } from "./NumberInput";
-import { Dollar } from "lucide-react";
+import { DollarSign } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { calculateTotalDebtor, calculateTotalHousehold, calculateTotalSpouse } from "../utils/calculationUtils";
 
@@ -99,7 +98,7 @@ export const EnhancedIncomeSection = ({
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            <Dollar className="h-5 w-5" />
+            <DollarSign className="h-5 w-5" />
             Income Information
           </CardTitle>
           
