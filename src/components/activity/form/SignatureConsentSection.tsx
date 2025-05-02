@@ -1,16 +1,13 @@
 
 import React from "react";
-import { IncomeExpenseData } from "../types";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { FormField } from "./FormField";
+import { IncomeExpenseData } from "../types";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Signature } from "lucide-react";
 
 interface SignatureConsentSectionProps {
   formData: IncomeExpenseData;
@@ -18,75 +15,82 @@ interface SignatureConsentSectionProps {
   onConsentChange: (checked: boolean) => void;
 }
 
-export const SignatureConsentSection = ({ 
-  formData, 
+export const SignatureConsentSection = ({
+  formData,
   onChange,
-  onConsentChange
+  onConsentChange,
 }: SignatureConsentSectionProps) => {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Signature & Consent</CardTitle>
-        <CardDescription>
-          Verify information and provide consent
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="electronic_signature">Electronic Signature</Label>
-            <Input
-              id="electronic_signature"
-              name="electronic_signature"
-              value={formData.electronic_signature || ""}
-              onChange={onChange}
-              placeholder="Type your full name as signature"
-            />
-          </div>
+    <>
+      <Card className="shadow-md">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Signature className="h-5 w-5" />
+            Signature & Consent
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-6">
+          <FormField
+            id="electronic_signature"
+            name="electronic_signature"
+            label="Debtor's Signature"
+            value={formData.electronic_signature || ""}
+            onChange={onChange}
+            placeholder="Type your full name to sign"
+            tooltip="Electronic signature - type your full legal name"
+            required
+          />
           
-          <div className="space-y-2">
-            <Label htmlFor="verification_date">Date Verified</Label>
-            <Input
-              id="verification_date"
-              name="verification_date"
-              type="date"
-              value={formData.verification_date || ""}
-              onChange={onChange}
-            />
-          </div>
-          
-          <div className="col-span-2 flex items-start space-x-2 pt-4">
-            <Checkbox 
-              id="consent_data_use" 
-              checked={formData.consent_data_use === "true"}
-              onCheckedChange={(checked) => onConsentChange(checked as boolean)}
-            />
-            <div className="grid gap-1.5 leading-none">
+          <FormField
+            id="verification_date"
+            name="verification_date"
+            label="Date Signed"
+            value={formData.verification_date || ""}
+            onChange={onChange}
+            type="date"
+            required
+          />
+
+          <div className="grid grid-cols-1 gap-2">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="consent_data_use"
+                checked={formData.consent_data_use === "true"}
+                onCheckedChange={(checked) => onConsentChange(!!checked)}
+              />
               <Label
                 htmlFor="consent_data_use"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                className="text-sm font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               >
-                I consent to the use of this data for financial analysis and record-keeping purposes
+                I consent to the collection, use, and storage of this financial information as required by law.
               </Label>
-              <p className="text-sm text-muted-foreground">
-                By checking this box, you agree that the information provided is complete and accurate.
-              </p>
             </div>
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="consent_date">Consent Date</Label>
-            <Input
-              id="consent_date"
-              name="consent_date"
-              type="date"
-              value={formData.consent_date || ""}
+        </CardContent>
+      </Card>
+      
+      {/* Trustee Declaration Section */}
+      <Card className="shadow-md">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Signature className="h-5 w-5" />
+            Trustee Declaration
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <div className="grid grid-cols-1 gap-2">
+            <Label htmlFor="trustee_comments">Trustee Comments</Label>
+            <Textarea
+              id="trustee_comments"
+              name="trustee_comments"
+              placeholder="Enter any relevant comments or notes"
+              value={formData.trustee_comments || ""}
               onChange={onChange}
-              readOnly
+              className="min-h-[100px]"
             />
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </>
   );
 };

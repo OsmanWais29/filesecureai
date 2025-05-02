@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Save } from "lucide-react";
 import { ClientProfileSection } from "../ClientProfileSection";
 import { EnhancedIncomeSection } from "../EnhancedIncomeSection";
+import { NonDiscretionaryExpensesSection } from "../NonDiscretionaryExpensesSection";
 import { EssentialExpensesSection } from "../EssentialExpensesSection";
 import { DiscretionaryExpensesSection } from "../DiscretionaryExpensesSection";
 import { SavingsInsuranceSection } from "../SavingsInsuranceSection";
+import { SurplusIncomeSection } from "../SurplusIncomeSection";
 import { SignatureConsentSection } from "../SignatureConsentSection";
 import { PrintButton } from "../PrintButton";
 import { SmartCreateDocumentButton } from "../SmartCreateDocumentButton";
@@ -83,6 +85,12 @@ export const TabContentComponents = {
     setActiveTab 
   }: any) => (
     <div className="space-y-6">
+      <NonDiscretionaryExpensesSection
+        formData={formData}
+        previousMonthData={previousMonthData}
+        onChange={onChange}
+      />
+    
       <EssentialExpensesSection 
         formData={formData} 
         previousMonthData={previousMonthData}
@@ -122,6 +130,11 @@ export const TabContentComponents = {
       <SavingsInsuranceSection 
         formData={formData} 
         previousMonthData={previousMonthData}
+        onChange={onChange}
+      />
+      
+      <SurplusIncomeSection
+        formData={formData}
         onChange={onChange}
       />
       

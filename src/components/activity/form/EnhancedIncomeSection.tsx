@@ -1,203 +1,310 @@
-import React, { useEffect } from "react";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FormGroup } from "./FormGroup";
 import { IncomeExpenseData } from "../types";
-import { ComparisonField } from "./ComparisonField";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { NumberInput } from "./NumberInput";
+import { Dollar } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { calculateTotalDebtor, calculateTotalHousehold, calculateTotalSpouse } from "../utils/calculationUtils";
 
 interface EnhancedIncomeSectionProps {
   formData: IncomeExpenseData;
-  previousMonthData?: IncomeExpenseData | null;
-  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  previousMonthData?: IncomeExpenseData;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onFrequencyChange: (value: string) => void;
 }
 
-export const EnhancedIncomeSection = ({ 
-  formData, 
-  previousMonthData, 
-  onChange, 
-  onFrequencyChange 
+export const EnhancedIncomeSection = ({
+  formData,
+  previousMonthData,
+  onChange,
+  onFrequencyChange,
 }: EnhancedIncomeSectionProps) => {
-  // Income source fields with labels
-  const incomeFields = [
-    { id: "employment_income", label: "Employment Income" },
-    { id: "pension_annuities", label: "Pension/Annuities" },
-    { id: "child_spousal_support", label: "Child/Spousal Support" },
-    { id: "self_employment_income", label: "Self-Employment Income" },
-    { id: "government_benefits", label: "Government Benefits" },
-    { id: "rental_income", label: "Rental Income" },
-    { id: "other_income", label: "Other (specify)" }
-  ];
-  
-  // Calculate totals
-  const calculateDebtorTotal = () => {
-    let total = 0;
-    incomeFields.forEach(field => {
-      total += parseFloat(formData[field.id as keyof IncomeExpenseData] as string || '0');
-    });
-    return total.toFixed(2);
-  };
-  
-  const calculateSpouseTotal = () => {
-    let total = 0;
-    incomeFields.forEach(field => {
-      const fieldId = `spouse_${field.id}` as keyof IncomeExpenseData;
-      total += parseFloat(formData[fieldId] as string || '0');
-    });
-    return total.toFixed(2);
-  };
-  
-  // Update totals when values change
-  const handleTotalsUpdate = () => {
-    const debtorTotal = calculateDebtorTotal();
-    const spouseTotal = calculateSpouseTotal();
+  // Calculate total income for debtor
+  const handleDebtorIncomeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(e);
     
-    // Only update if the values are different to prevent infinite loops
-    if (formData.total_monthly_income !== debtorTotal) {
-      const e = {
-        target: {
-          name: 'total_monthly_income',
-          value: debtorTotal
-        }
-      } as React.ChangeEvent<HTMLInputElement>;
-      onChange(e);
-    }
+    const newFormData = {
+      ...formData,
+      [e.target.name]: e.target.value,
+    };
     
-    if (formData.spouse_total_monthly_income !== spouseTotal) {
-      const e = {
-        target: {
-          name: 'spouse_total_monthly_income',
-          value: spouseTotal
-        }
-      } as React.ChangeEvent<HTMLInputElement>;
-      onChange(e);
-    }
+    const total = calculateTotalDebtor(newFormData);
+    
+    const totalEvent = {
+      target: {
+        name: "total_monthly_income",
+        value: total.toString(),
+      },
+    } as React.ChangeEvent<HTMLInputElement>;
+    
+    onChange(totalEvent);
+    
+    // Also update household income
+    updateHouseholdIncome(newFormData);
   };
-  
-  // Call the update function whenever the component renders
-  useEffect(() => {
-    handleTotalsUpdate();
-  }, [formData, onChange]);
-  
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Monthly Income Details</CardTitle>
-        <CardDescription>
-          Record all sources of income for the debtor and spouse/partner if applicable
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[250px]">Source of Income</TableHead>
-              <TableHead>Debtor Amount</TableHead>
-              <TableHead>Spouse Amount</TableHead>
-              <TableHead className="text-right">Previous Month</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {incomeFields.map(field => (
-              <TableRow key={field.id}>
-                <TableCell>{field.label}</TableCell>
-                <TableCell>
-                  <Input
-                    type="number"
-                    name={field.id}
-                    value={formData[field.id as keyof IncomeExpenseData] as string}
-                    onChange={onChange}
-                    step="0.01"
-                    placeholder="0.00"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    type="number"
-                    name={`spouse_${field.id}`}
-                    value={formData[`spouse_${field.id}` as keyof IncomeExpenseData] as string}
-                    onChange={onChange}
-                    step="0.01"
-                    placeholder="0.00"
-                  />
-                </TableCell>
-                <TableCell className="text-right">
-                  {previousMonthData ? 
-                    `$${parseFloat(previousMonthData[field.id as keyof IncomeExpenseData] as string || '0').toFixed(2)}` : 
-                    'N/A'}
-                </TableCell>
-              </TableRow>
-            ))}
-            
-            {/* Other income description field */}
-            <TableRow>
-              <TableCell colSpan={2}>
-                <div className="space-y-1">
-                  <Label htmlFor="other_income_description">Specify Other Income</Label>
-                  <Input
-                    id="other_income_description"
-                    name="other_income_description"
-                    value={formData.other_income_description}
-                    onChange={onChange}
-                    placeholder="Describe other income sources"
-                  />
-                </div>
-              </TableCell>
-              <TableCell colSpan={2}></TableCell>
-            </TableRow>
-            
-            {/* Total Row */}
-            <TableRow className="font-bold">
-              <TableCell>Total Monthly Net Income</TableCell>
-              <TableCell>
-                ${calculateDebtorTotal()}
-              </TableCell>
-              <TableCell>
-                ${calculateSpouseTotal()}
-              </TableCell>
-              <TableCell className="text-right">
-                {previousMonthData ? 
-                  `$${parseFloat(previousMonthData.total_monthly_income || '0').toFixed(2)}` : 
-                  'N/A'}
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
 
-        <div className="space-y-2">
-          <Label>Income Frequency</Label>
-          <Select onValueChange={onFrequencyChange} value={formData.income_frequency || 'monthly'}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select frequency" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="monthly">Monthly</SelectItem>
-              <SelectItem value="bi-weekly">Bi-Weekly</SelectItem>
-              <SelectItem value="weekly">Weekly</SelectItem>
-            </SelectContent>
-          </Select>
+  // Calculate total income for spouse
+  const handleSpouseIncomeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(e);
+    
+    const newFormData = {
+      ...formData,
+      [e.target.name]: e.target.value,
+    };
+    
+    const total = calculateTotalSpouse(newFormData);
+    
+    const totalEvent = {
+      target: {
+        name: "spouse_total_monthly_income",
+        value: total.toString(),
+      },
+    } as React.ChangeEvent<HTMLInputElement>;
+    
+    onChange(totalEvent);
+    
+    // Also update household income
+    updateHouseholdIncome(newFormData);
+  };
+  
+  // Calculate total household income
+  const handleOtherHouseholdIncomeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(e);
+    
+    const newFormData = {
+      ...formData,
+      [e.target.name]: e.target.value,
+    };
+    
+    updateHouseholdIncome(newFormData);
+  };
+  
+  const updateHouseholdIncome = (data: IncomeExpenseData) => {
+    const total = calculateTotalHousehold(data);
+    
+    const totalEvent = {
+      target: {
+        name: "total_household_income",
+        value: total.toString(),
+      },
+    } as React.ChangeEvent<HTMLInputElement>;
+    
+    onChange(totalEvent);
+  };
+
+  return (
+    <Card className="shadow-md">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Dollar className="h-5 w-5" />
+            Income Information
+          </CardTitle>
+          
+          <div className="flex items-center gap-2">
+            <Label htmlFor="income-frequency">Income Frequency:</Label>
+            <Select
+              value={formData.income_frequency || "monthly"}
+              onValueChange={onFrequencyChange}
+            >
+              <SelectTrigger id="income-frequency" className="w-[130px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="monthly">Monthly</SelectItem>
+                <SelectItem value="bi-weekly">Bi-Weekly</SelectItem>
+                <SelectItem value="weekly">Weekly</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
+      </CardHeader>
+      
+      <CardContent className="grid gap-6">
+        {/* Debtor Income */}
+        <FormGroup title="Debtor's Income">
+          <div className="grid md:grid-cols-2 gap-4">
+            <NumberInput
+              id="employment_income"
+              name="employment_income"
+              label="Employment Income (Gross)"
+              value={formData.employment_income || ""}
+              onChange={handleDebtorIncomeChange}
+              required
+            />
+            
+            <NumberInput
+              id="pension_annuities"
+              name="pension_annuities"
+              label="Pension/Annuities"
+              value={formData.pension_annuities || ""}
+              onChange={handleDebtorIncomeChange}
+            />
+            
+            <NumberInput
+              id="child_spousal_support"
+              name="child_spousal_support"
+              label="Child/Spousal Support"
+              value={formData.child_spousal_support || ""}
+              onChange={handleDebtorIncomeChange}
+            />
+            
+            <NumberInput
+              id="self_employment_income"
+              name="self_employment_income"
+              label="Self-Employment Income"
+              value={formData.self_employment_income || ""}
+              onChange={handleDebtorIncomeChange}
+            />
+            
+            <NumberInput
+              id="government_benefits"
+              name="government_benefits"
+              label="Government Benefits"
+              value={formData.government_benefits || ""}
+              onChange={handleDebtorIncomeChange}
+            />
+            
+            <NumberInput
+              id="rental_income"
+              name="rental_income"
+              label="Rental Income"
+              value={formData.rental_income || ""}
+              onChange={handleDebtorIncomeChange}
+            />
+            
+            <div className="grid grid-cols-1 gap-2">
+              <NumberInput
+                id="other_income"
+                name="other_income"
+                label="Other Income"
+                value={formData.other_income || ""}
+                onChange={handleDebtorIncomeChange}
+              />
+              {formData.other_income && parseFloat(formData.other_income) > 0 && (
+                <input
+                  type="text"
+                  id="other_income_description"
+                  name="other_income_description"
+                  placeholder="Description of other income"
+                  className="border rounded p-2 text-sm"
+                  value={formData.other_income_description || ""}
+                  onChange={onChange}
+                />
+              )}
+            </div>
+            
+            <NumberInput
+              id="total_monthly_income"
+              name="total_monthly_income"
+              label="Total Monthly Income"
+              value={formData.total_monthly_income || ""}
+              onChange={onChange}
+              required
+              disabled
+              className="font-bold"
+            />
+          </div>
+        </FormGroup>
+        
+        {/* Spouse Income */}
+        {formData.marital_status === "married" || formData.marital_status === "common_law" ? (
+          <FormGroup title="Spouse's Income">
+            <div className="grid md:grid-cols-2 gap-4">
+              <NumberInput
+                id="spouse_employment_income"
+                name="spouse_employment_income"
+                label="Employment Income (Gross)"
+                value={formData.spouse_employment_income || ""}
+                onChange={handleSpouseIncomeChange}
+              />
+              
+              <NumberInput
+                id="spouse_pension_annuities"
+                name="spouse_pension_annuities"
+                label="Pension/Annuities"
+                value={formData.spouse_pension_annuities || ""}
+                onChange={handleSpouseIncomeChange}
+              />
+              
+              <NumberInput
+                id="spouse_child_spousal_support"
+                name="spouse_child_spousal_support"
+                label="Child/Spousal Support"
+                value={formData.spouse_child_spousal_support || ""}
+                onChange={handleSpouseIncomeChange}
+              />
+              
+              <NumberInput
+                id="spouse_self_employment_income"
+                name="spouse_self_employment_income"
+                label="Self-Employment Income"
+                value={formData.spouse_self_employment_income || ""}
+                onChange={handleSpouseIncomeChange}
+              />
+              
+              <NumberInput
+                id="spouse_government_benefits"
+                name="spouse_government_benefits"
+                label="Government Benefits"
+                value={formData.spouse_government_benefits || ""}
+                onChange={handleSpouseIncomeChange}
+              />
+              
+              <NumberInput
+                id="spouse_rental_income"
+                name="spouse_rental_income"
+                label="Rental Income"
+                value={formData.spouse_rental_income || ""}
+                onChange={handleSpouseIncomeChange}
+              />
+              
+              <NumberInput
+                id="spouse_other_income"
+                name="spouse_other_income"
+                label="Other Income"
+                value={formData.spouse_other_income || ""}
+                onChange={handleSpouseIncomeChange}
+              />
+              
+              <NumberInput
+                id="spouse_total_monthly_income"
+                name="spouse_total_monthly_income"
+                label="Total Monthly Income"
+                value={formData.spouse_total_monthly_income || ""}
+                onChange={onChange}
+                disabled
+                className="font-bold"
+              />
+            </div>
+          </FormGroup>
+        ) : null}
+        
+        {/* Total Household Income */}
+        <FormGroup title="Household Income">
+          <div className="grid md:grid-cols-2 gap-4">
+            <NumberInput
+              id="other_household_income"
+              name="other_household_income"
+              label="Other Household Income"
+              value={formData.other_household_income || ""}
+              onChange={handleOtherHouseholdIncomeChange}
+              tooltip="Income from other household members"
+            />
+            
+            <NumberInput
+              id="total_household_income"
+              name="total_household_income"
+              label="Total Household Income"
+              value={formData.total_household_income || ""}
+              onChange={onChange}
+              disabled
+              className="font-bold"
+            />
+          </div>
+        </FormGroup>
       </CardContent>
     </Card>
   );

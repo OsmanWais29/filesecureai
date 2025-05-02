@@ -54,7 +54,7 @@ export const FormTabs = ({
         <TabsTrigger value="client">Client Profile</TabsTrigger>
         <TabsTrigger value="income">Income</TabsTrigger>
         <TabsTrigger value="expenses">Expenses</TabsTrigger>
-        <TabsTrigger value="savings">Savings/Insurance</TabsTrigger>
+        <TabsTrigger value="savings">Savings/Calc</TabsTrigger>
         <TabsTrigger value="signature">Signature & Submit</TabsTrigger>
       </TabsList>
       

@@ -1,9 +1,12 @@
+
 import { Button } from "@/components/ui/button";
 import { ClientProfileSection } from "./form/ClientProfileSection";
 import { EnhancedIncomeSection } from "./form/EnhancedIncomeSection";
+import { NonDiscretionaryExpensesSection } from "./form/NonDiscretionaryExpensesSection";
 import { EssentialExpensesSection } from "./form/EssentialExpensesSection";
 import { DiscretionaryExpensesSection } from "./form/DiscretionaryExpensesSection";
 import { SavingsInsuranceSection } from "./form/SavingsInsuranceSection";
+import { SurplusIncomeSection } from "./form/SurplusIncomeSection";
 import { SignatureConsentSection } from "./form/SignatureConsentSection";
 import { HistoricalComparison } from "./components/HistoricalComparison";
 import { DocumentUploadSection } from "./components/DocumentUploadSection";
@@ -153,6 +156,13 @@ export const IncomeExpenseForm = ({ selectedClient }: IncomeExpenseFormProps) =>
             onFrequencyChange={handleFrequencyChange('income')}
           />
           
+          {/* Non-Discretionary Expenses Section */}
+          <NonDiscretionaryExpensesSection
+            formData={formData}
+            previousMonthData={previousMonthData}
+            onChange={handleChange}
+          />
+          
           {/* Essential Expenses Section */}
           <EssentialExpensesSection 
             formData={formData} 
@@ -174,7 +184,13 @@ export const IncomeExpenseForm = ({ selectedClient }: IncomeExpenseFormProps) =>
             onChange={handleChange}
           />
           
-          {/* New Signature & Consent Section */}
+          {/* Surplus Income Section */}
+          <SurplusIncomeSection
+            formData={formData}
+            onChange={handleChange}
+          />
+          
+          {/* Signature & Consent Section */}
           <SignatureConsentSection
             formData={formData}
             onChange={handleChange}

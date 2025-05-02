@@ -1,9 +1,6 @@
-
 import { IncomeExpenseData } from "../types";
-import { HistoricalData } from "./types";
 
 export const initialFormData: IncomeExpenseData = {
-  // Client Information
   full_name: "",
   residential_address: "",
   phone_home: "",
@@ -14,6 +11,7 @@ export const initialFormData: IncomeExpenseData = {
   spouse_name: "",
   household_size: "",
   submission_date: new Date().toISOString().split('T')[0],
+  date_of_filing: "",
   
   // Income Information - Debtor
   employment_income: "",
@@ -35,6 +33,17 @@ export const initialFormData: IncomeExpenseData = {
   spouse_rental_income: "",
   spouse_other_income: "",
   spouse_total_monthly_income: "",
+  
+  // Other Household Income
+  other_household_income: "",
+  total_household_income: "",
+  
+  // Non-Discretionary Expenses
+  child_support_payments: "",
+  medical_expenses: "",
+  fines_penalties: "",
+  other_mandatory_deductions: "",
+  total_non_discretionary: "",
   
   // Essential Expenses
   mortgage_rent: "",
@@ -59,6 +68,8 @@ export const initialFormData: IncomeExpenseData = {
   clothing: "",
   pet_care: "",
   leisure_travel: "",
+  telephone_internet: "",
+  insurance: "",
   other_discretionary: "",
   other_discretionary_description: "",
   total_discretionary_expenses: "",
@@ -78,6 +89,20 @@ export const initialFormData: IncomeExpenseData = {
   other_insurance: "",
   other_insurance_description: "",
   total_insurance: "",
+  
+  // Surplus Income Calculation
+  net_income: "",
+  applicable_threshold: "",
+  surplus_amount: "",
+  
+  // Signature & Consent
+  electronic_signature: "",
+  verification_date: "",
+  consent_data_use: "",
+  consent_date: "",
+  
+  // Trustee Declaration
+  trustee_comments: "",
   
   // Frequency settings
   income_frequency: "monthly",

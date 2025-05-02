@@ -1,124 +1,167 @@
 
-import React, { useEffect } from "react";
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { NumberInput } from "./NumberInput";
 import { IncomeExpenseData } from "../types";
-import { ComparisonField } from "./ComparisonField";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Home } from "lucide-react";
 
 interface EssentialExpensesSectionProps {
   formData: IncomeExpenseData;
-  previousMonthData?: IncomeExpenseData | null;
-  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  previousMonthData?: IncomeExpenseData;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-export const EssentialExpensesSection = ({ 
-  formData, 
-  previousMonthData, 
-  onChange 
+export const EssentialExpensesSection = ({
+  formData,
+  previousMonthData,
+  onChange,
 }: EssentialExpensesSectionProps) => {
-  // Essential expense fields with labels
-  const expenseFields = [
-    { id: "mortgage_rent", label: "Mortgage/Rent" },
-    { id: "utilities", label: "Utilities (Electricity, Gas, Water)" },
-    { id: "groceries", label: "Groceries" },
-    { id: "child_care", label: "Child Care" },
-    { id: "medical_dental", label: "Medical/Dental Expenses" },
-    { id: "transportation", label: "Transportation (Car, Public Transit)" },
-    { id: "education_tuition", label: "Education/Tuition" },
-    { id: "debt_repayments", label: "Debt Repayments" },
-    { id: "misc_essential_expenses", label: "Miscellaneous Essential Expenses" }
-  ];
-  
   // Calculate total essential expenses
-  const calculateTotal = () => {
-    let total = 0;
-    expenseFields.forEach(field => {
-      total += parseFloat(formData[field.id as keyof IncomeExpenseData] as string || '0');
-    });
-    return total.toFixed(2);
+  const handleEssentialChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(e);
+    
+    const newFormData = {
+      ...formData,
+      [e.target.name]: e.target.value,
+    };
+    
+    // Calculate total
+    const rent = parseFloat(newFormData.mortgage_rent || "0") || 0;
+    const utilities = parseFloat(newFormData.utilities || "0") || 0;
+    const groceries = parseFloat(newFormData.groceries || "0") || 0;
+    const childCare = parseFloat(newFormData.child_care || "0") || 0;
+    const medicalDental = parseFloat(newFormData.medical_dental || "0") || 0;
+    const transportation = parseFloat(newFormData.transportation || "0") || 0;
+    const education = parseFloat(newFormData.education_tuition || "0") || 0;
+    const debt = parseFloat(newFormData.debt_repayments || "0") || 0;
+    const telephone = parseFloat(newFormData.telephone_internet || "0") || 0;
+    const insurance = parseFloat(newFormData.insurance || "0") || 0;
+    const misc = parseFloat(newFormData.misc_essential_expenses || "0") || 0;
+    
+    const total = rent + utilities + groceries + childCare + medicalDental + 
+                 transportation + education + debt + telephone + insurance + misc;
+    
+    const totalEvent = {
+      target: {
+        name: "total_essential_expenses",
+        value: total.toFixed(2),
+      },
+    } as React.ChangeEvent<HTMLInputElement>;
+    
+    onChange(totalEvent);
   };
-  
-  // Update total when values change
-  useEffect(() => {
-    const total = calculateTotal();
-    if (formData.total_essential_expenses !== total) {
-      const e = {
-        target: {
-          name: 'total_essential_expenses',
-          value: total
-        }
-      } as React.ChangeEvent<HTMLInputElement>;
-      onChange(e);
-    }
-  }, [formData, onChange]);
-  
+
   return (
-    <Card>
+    <Card className="shadow-md">
       <CardHeader>
-        <CardTitle>Essential Monthly Expenses</CardTitle>
-        <CardDescription>
-          Record all necessary monthly expenses
-        </CardDescription>
+        <CardTitle className="flex items-center gap-2">
+          <Home className="h-5 w-5" />
+          Monthly Expenses
+        </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[250px]">Expense Category</TableHead>
-              <TableHead>Amount ($)</TableHead>
-              <TableHead className="text-right">Previous Month</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {expenseFields.map(field => (
-              <TableRow key={field.id}>
-                <TableCell>{field.label}</TableCell>
-                <TableCell>
-                  <ComparisonField
-                    id={field.id}
-                    name={field.id}
-                    label=""
-                    value={formData[field.id as keyof IncomeExpenseData] as string}
-                    previousValue={previousMonthData ? previousMonthData[field.id as keyof IncomeExpenseData] as string : undefined}
-                    onChange={onChange}
-                    placeholder="0.00"
-                  />
-                </TableCell>
-                <TableCell className="text-right">
-                  {previousMonthData ? 
-                    `$${parseFloat(previousMonthData[field.id as keyof IncomeExpenseData] as string || '0').toFixed(2)}` : 
-                    'N/A'}
-                </TableCell>
-              </TableRow>
-            ))}
-            
-            {/* Total Row */}
-            <TableRow className="font-bold">
-              <TableCell>Total Non-Discretionary Expenses</TableCell>
-              <TableCell>
-                ${calculateTotal()}
-              </TableCell>
-              <TableCell className="text-right">
-                {previousMonthData ? 
-                  `$${parseFloat(previousMonthData.total_essential_expenses || '0').toFixed(2)}` : 
-                  'N/A'}
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
+      <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <NumberInput
+          id="mortgage_rent"
+          name="mortgage_rent"
+          label="Mortgage/Rent"
+          value={formData.mortgage_rent || ""}
+          onChange={handleEssentialChange}
+          required
+        />
+        
+        <NumberInput
+          id="utilities"
+          name="utilities"
+          label="Utilities"
+          value={formData.utilities || ""}
+          onChange={handleEssentialChange}
+        />
+        
+        <NumberInput
+          id="groceries"
+          name="groceries"
+          label="Groceries"
+          value={formData.groceries || ""}
+          onChange={handleEssentialChange}
+        />
+        
+        <NumberInput
+          id="transportation"
+          name="transportation"
+          label="Transportation"
+          value={formData.transportation || ""}
+          onChange={handleEssentialChange}
+          tooltip="Car payments, gas, public transit, etc."
+        />
+        
+        <NumberInput
+          id="telephone_internet"
+          name="telephone_internet"
+          label="Telephone/Internet"
+          value={formData.telephone_internet || ""}
+          onChange={handleEssentialChange}
+        />
+        
+        <NumberInput
+          id="insurance"
+          name="insurance"
+          label="Insurance"
+          value={formData.insurance || ""}
+          onChange={handleEssentialChange}
+          tooltip="All insurance types"
+        />
+        
+        <NumberInput
+          id="child_care"
+          name="child_care"
+          label="Child Care"
+          value={formData.child_care || ""}
+          onChange={handleEssentialChange}
+        />
+        
+        <NumberInput
+          id="medical_dental"
+          name="medical_dental"
+          label="Medical & Dental"
+          value={formData.medical_dental || ""}
+          onChange={handleEssentialChange}
+        />
+        
+        <NumberInput
+          id="education_tuition"
+          name="education_tuition"
+          label="Education/Tuition"
+          value={formData.education_tuition || ""}
+          onChange={handleEssentialChange}
+        />
+        
+        <NumberInput
+          id="debt_repayments"
+          name="debt_repayments"
+          label="Debt Repayments"
+          value={formData.debt_repayments || ""}
+          onChange={handleEssentialChange}
+          tooltip="Minimum payments on debts"
+        />
+        
+        <NumberInput
+          id="misc_essential_expenses"
+          name="misc_essential_expenses"
+          label="Other"
+          value={formData.misc_essential_expenses || ""}
+          onChange={handleEssentialChange}
+        />
+        
+        <NumberInput
+          id="total_essential_expenses"
+          name="total_essential_expenses"
+          label="Total Monthly Expenses"
+          value={formData.total_essential_expenses || ""}
+          onChange={onChange}
+          required
+          disabled
+          className="font-bold"
+        />
       </CardContent>
     </Card>
   );

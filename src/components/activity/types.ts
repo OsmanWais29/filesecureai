@@ -1,4 +1,3 @@
-
 export interface IncomeExpenseData {
   // Client Information
   client_id?: string;
@@ -12,6 +11,7 @@ export interface IncomeExpenseData {
   spouse_name: string;
   household_size: string;
   submission_date: string;
+  date_of_filing: string; // New field for Date of Filing
   
   // Income Information - Debtor
   employment_income: string;
@@ -34,6 +34,17 @@ export interface IncomeExpenseData {
   spouse_other_income: string;
   spouse_total_monthly_income: string;
   
+  // Other Household Income
+  other_household_income: string; // New field
+  total_household_income: string; // New field
+  
+  // Non-Discretionary Expenses
+  child_support_payments: string; // New field
+  medical_expenses: string; // New field
+  fines_penalties: string; // New field
+  other_mandatory_deductions: string; // New field
+  total_non_discretionary: string; // New field
+
   // Essential Expenses
   mortgage_rent: string;
   utilities: string;
@@ -57,6 +68,8 @@ export interface IncomeExpenseData {
   clothing: string;
   pet_care: string;
   leisure_travel: string;
+  telephone_internet: string; // New field
+  insurance: string; // New field
   other_discretionary: string;
   other_discretionary_description: string;
   total_discretionary_expenses: string;
@@ -77,11 +90,19 @@ export interface IncomeExpenseData {
   other_insurance_description: string;
   total_insurance: string;
   
+  // Surplus Income Calculation
+  net_income: string; // New field
+  applicable_threshold: string; // New field
+  surplus_amount: string; // New field
+  
   // Signature & Consent
   electronic_signature?: string;
   verification_date?: string;
   consent_data_use?: string;
   consent_date?: string;
+  
+  // Trustee Declaration
+  trustee_comments: string; // New field
   
   // Frequency settings
   income_frequency: 'monthly' | 'bi-weekly' | 'weekly';
