@@ -172,8 +172,8 @@ export const TrusteeCoPliotModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="p-4 pb-0">
           <DialogTitle className="flex items-center gap-2">
             <Bot className="h-5 w-5" /> 
             TrusteeCo-Pilot Assistant
@@ -183,7 +183,7 @@ export const TrusteeCoPliotModal = ({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col sm:flex-row gap-4 flex-1 overflow-hidden">
+        <div className="flex flex-col sm:flex-row flex-1 overflow-hidden">
           {/* Left Panel - Chat & Verification */}
           <div className="flex-1 flex flex-col overflow-hidden">
             <Tabs 
@@ -191,34 +191,41 @@ export const TrusteeCoPliotModal = ({
               onValueChange={setActiveTab} 
               className="flex-1 flex flex-col overflow-hidden"
             >
-              <TabsList className="grid grid-cols-2">
-                <TabsTrigger value="conversation">Conversation</TabsTrigger>
-                <TabsTrigger value="verification">Verification</TabsTrigger>
-              </TabsList>
+              <div className="px-4 pt-2">
+                <TabsList className="grid grid-cols-2 w-full">
+                  <TabsTrigger value="conversation">Conversation</TabsTrigger>
+                  <TabsTrigger value="verification">Verification</TabsTrigger>
+                </TabsList>
+              </div>
 
-              <TabsContent value="conversation" className="flex-1 flex flex-col overflow-hidden">
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 border rounded-md mb-4">
-                  {chatMessages.map((msg, index) => (
-                    <div 
-                      key={index}
-                      className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
+              <TabsContent 
+                value="conversation" 
+                className="flex-1 flex flex-col overflow-hidden mt-0 pt-4 px-4 pb-4"
+              >
+                <div className="flex-1 overflow-y-auto border rounded-md mb-4">
+                  <div className="p-4 space-y-4">
+                    {chatMessages.map((msg, index) => (
                       <div 
-                        className={`max-w-[80%] rounded-lg p-3 ${
-                          msg.role === 'user' 
-                            ? 'bg-primary text-primary-foreground ml-auto' 
-                            : 'bg-muted'
-                        }`}
+                        key={index}
+                        className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                       >
-                        {msg.content.split('\n').map((text, i) => (
-                          <React.Fragment key={i}>
-                            {text}
-                            {i < msg.content.split('\n').length - 1 && <br />}
-                          </React.Fragment>
-                        ))}
+                        <div 
+                          className={`max-w-[80%] rounded-lg p-3 ${
+                            msg.role === 'user' 
+                              ? 'bg-primary text-primary-foreground ml-auto' 
+                              : 'bg-muted'
+                          }`}
+                        >
+                          {msg.content.split('\n').map((text, i) => (
+                            <React.Fragment key={i}>
+                              {text}
+                              {i < msg.content.split('\n').length - 1 && <br />}
+                            </React.Fragment>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
 
                 <div className="flex items-center space-x-2">
@@ -254,208 +261,213 @@ export const TrusteeCoPliotModal = ({
 
               <TabsContent 
                 value="verification" 
-                className="flex-1 flex flex-col overflow-hidden p-0 m-0"
+                className="flex-1 flex flex-col overflow-hidden mt-0"
               >
-                <div className="flex-1 overflow-y-auto">
-                  <div className="space-y-4 p-4">
-                    {/* Enhanced verification overview */}
-                    <Card className="border shadow-sm">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg">Verification Overview</CardTitle>
-                        <CardDescription>
-                          {verificationData.stats.overallScore < 50 
-                            ? "Significant verification issues detected" 
-                            : verificationData.stats.overallScore < 80 
-                              ? "Additional documentation may be required" 
-                              : "Good progress, minor issues to address"}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <Progress value={verificationData.stats.overallScore} className="h-2 mb-2" />
-                        <div className="text-sm text-muted-foreground flex justify-between">
-                          <span>{verificationData.stats.overallScore}% verified</span>
-                          <div className="flex gap-4">
-                            <span className="flex items-center gap-1">
-                              <CheckCircle className="h-3 w-3 text-green-500" />
-                              {verificationData.stats.verified} verified
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <AlertTriangle className="h-3 w-3 text-yellow-500" />
-                              {verificationData.stats.flagged} flagged
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <X className="h-3 w-3 text-red-500" />
-                              {verificationData.stats.missing} missing
-                            </span>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    {/* Risk profile */}
-                    <Card className="border shadow-sm">
-                      <CardHeader className="pb-2">
-                        <div className="flex justify-between items-center">
-                          <CardTitle className="text-lg">Risk Profile</CardTitle>
-                          <Badge className={getRiskLevelColor(verificationData.riskProfile.level)}>
-                            {verificationData.riskProfile.level.charAt(0).toUpperCase() + verificationData.riskProfile.level.slice(1)} Risk
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div>
-                          <h4 className="text-sm font-medium mb-2">Primary Risk Factors</h4>
-                          <ul className="list-disc pl-5 space-y-1">
-                            {verificationData.riskProfile.primaryFactors.map((factor, idx) => (
-                              <li key={idx} className="text-sm text-muted-foreground">{factor}</li>
-                            ))}
-                          </ul>
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-medium mb-2">Recommendations</h4>
-                          <ul className="list-disc pl-5 space-y-1">
-                            {verificationData.riskProfile.recommendations.map((rec, idx) => (
-                              <li key={idx} className="text-sm text-muted-foreground">{rec}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    {/* Detailed verification sections */}
-                    <Accordion type="multiple" defaultValue={["income"]} className="space-y-3">
-                      {verificationData.sections.map(section => (
-                        <AccordionItem key={section.id} value={section.id} className="border rounded-md overflow-hidden">
-                          <AccordionTrigger className="text-base font-medium px-4 py-3 hover:no-underline hover:bg-muted/50">
-                            {section.title}
-                          </AccordionTrigger>
-                          <AccordionContent className="px-4 pb-3 pt-1">
-                            <div className="space-y-2">
-                              {section.items.map(item => (
-                                <div key={item.id} className="flex items-start gap-3 p-2 rounded-md border border-gray-200 bg-card">
-                                  <div className="mt-0.5">{item.icon}</div>
-                                  <div className="flex-1">
-                                    <div className="flex justify-between items-center mb-0.5">
-                                      <h4 className="font-medium">{item.label}</h4>
-                                      <Badge className={getStatusColor(item.status)}>
-                                        {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-                                      </Badge>
-                                    </div>
-                                    <p className="text-sm text-muted-foreground">{item.details}</p>
-                                  </div>
-                                </div>
-                              ))}
+                {/* Completely revamped verification tab with proper layout */}
+                <div className="flex-1 flex flex-col overflow-hidden">
+                  <div className="flex-1 overflow-y-auto">
+                    <div className="p-4 space-y-4">
+                      {/* Verification Overview Card */}
+                      <Card className="border shadow-sm">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-lg">Verification Overview</CardTitle>
+                          <CardDescription>
+                            {verificationData.stats.overallScore < 50 
+                              ? "Significant verification issues detected" 
+                              : verificationData.stats.overallScore < 80 
+                                ? "Additional documentation may be required" 
+                                : "Good progress, minor issues to address"}
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <Progress value={verificationData.stats.overallScore} className="h-2 mb-2" />
+                          <div className="text-sm text-muted-foreground flex justify-between">
+                            <span>{verificationData.stats.overallScore}% verified</span>
+                            <div className="flex gap-4">
+                              <span className="flex items-center gap-1">
+                                <CheckCircle className="h-3 w-3 text-green-500" />
+                                {verificationData.stats.verified} verified
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <AlertTriangle className="h-3 w-3 text-yellow-500" />
+                                {verificationData.stats.flagged} flagged
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <X className="h-3 w-3 text-red-500" />
+                                {verificationData.stats.missing} missing
+                              </span>
                             </div>
-                          </AccordionContent>
-                        </AccordionItem>
-                      ))}
-                    </Accordion>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Risk Profile Card */}
+                      <Card className="border shadow-sm">
+                        <CardHeader className="pb-2">
+                          <div className="flex justify-between items-center">
+                            <CardTitle className="text-lg">Risk Profile</CardTitle>
+                            <Badge className={getRiskLevelColor(verificationData.riskProfile.level)}>
+                              {verificationData.riskProfile.level.charAt(0).toUpperCase() + verificationData.riskProfile.level.slice(1)} Risk
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div>
+                            <h4 className="text-sm font-medium mb-2">Primary Risk Factors</h4>
+                            <ul className="list-disc pl-5 space-y-1">
+                              {verificationData.riskProfile.primaryFactors.map((factor, idx) => (
+                                <li key={idx} className="text-sm text-muted-foreground">{factor}</li>
+                              ))}
+                            </ul>
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-medium mb-2">Recommendations</h4>
+                            <ul className="list-disc pl-5 space-y-1">
+                              {verificationData.riskProfile.recommendations.map((rec, idx) => (
+                                <li key={idx} className="text-sm text-muted-foreground">{rec}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      {/* Detailed Verification Sections */}
+                      <Accordion type="multiple" defaultValue={["income"]} className="space-y-3">
+                        {verificationData.sections.map(section => (
+                          <AccordionItem key={section.id} value={section.id} className="border rounded-md overflow-hidden">
+                            <AccordionTrigger className="text-base font-medium px-4 py-3 hover:no-underline hover:bg-muted/50">
+                              {section.title}
+                            </AccordionTrigger>
+                            <AccordionContent className="px-4 pb-3 pt-1">
+                              <div className="space-y-2">
+                                {section.items.map(item => (
+                                  <div key={item.id} className="flex items-start gap-3 p-2 rounded-md border border-gray-200 bg-card">
+                                    <div className="mt-0.5">{item.icon}</div>
+                                    <div className="flex-1">
+                                      <div className="flex justify-between items-center mb-0.5">
+                                        <h4 className="font-medium">{item.label}</h4>
+                                        <Badge className={getStatusColor(item.status)}>
+                                          {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                                        </Badge>
+                                      </div>
+                                      <p className="text-sm text-muted-foreground">{item.details}</p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        ))}
+                      </Accordion>
+                    </div>
                   </div>
-                </div>
-                
-                {/* Actions */}
-                <div className="py-4 px-4 sticky bottom-0 bg-background border-t mt-auto">
-                  <Button className="w-full flex items-center gap-2">
-                    Request Trustee Review
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
+                  
+                  {/* Sticky Action Button */}
+                  <div className="sticky bottom-0 bg-background border-t p-4 mt-auto">
+                    <Button className="w-full flex items-center justify-center gap-2">
+                      Request Trustee Review
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </TabsContent>
             </Tabs>
           </div>
           
           {/* Right Panel - Status & Stats */}
-          <div className="w-full sm:w-64 space-y-4">
-            <Card className="border shadow-sm">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Directive 11R2 Status</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 text-sm">
-                  <div className="space-y-1">
-                    <p className="font-medium">Net Income</p>
-                    <p className="text-muted-foreground">$2,420.35</p>
+          <div className="w-full sm:w-64 p-4 border-l border-gray-200 dark:border-gray-800 overflow-y-auto">
+            <div className="space-y-4">
+              <Card className="border shadow-sm">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Directive 11R2 Status</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3 text-sm">
+                    <div className="space-y-1">
+                      <p className="font-medium">Net Income</p>
+                      <p className="text-muted-foreground">$2,420.35</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="font-medium">Threshold</p>
+                      <p className="text-muted-foreground">$2,203.00</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="font-medium">Surplus</p>
+                      <p className="text-muted-foreground">$217.35</p>
+                    </div>
+                    <div className="pt-1">
+                      <Progress value={75} className="h-2" />
+                      <p className="text-xs mt-1">75% Complete</p>
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <p className="font-medium">Threshold</p>
-                    <p className="text-muted-foreground">$2,203.00</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="font-medium">Surplus</p>
-                    <p className="text-muted-foreground">$217.35</p>
-                  </div>
-                  <div className="pt-1">
-                    <Progress value={75} className="h-2" />
-                    <p className="text-xs mt-1">75% Complete</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="border shadow-sm">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Risk Assessment</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm flex items-center gap-1">
-                    <ShieldAlert className="h-4 w-4 text-red-500" />
-                    High Risk
-                  </span>
-                  <span className="text-xs text-muted-foreground">1</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm flex items-center gap-1">
-                    <AlertCircle className="h-4 w-4 text-yellow-500" />
-                    Medium Risk
-                  </span>
-                  <span className="text-xs text-muted-foreground">2</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm flex items-center gap-1">
-                    <ShieldCheck className="h-4 w-4 text-green-500" />
-                    Low Risk
-                  </span>
-                  <span className="text-xs text-muted-foreground">3</span>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="border shadow-sm">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Verification Status</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 text-sm">
+                </CardContent>
+              </Card>
+              
+              <Card className="border shadow-sm">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Risk Assessment</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1">
-                      <FileCheck className="h-4 w-4 text-green-500" />
-                      Verified
+                    <span className="text-sm flex items-center gap-1">
+                      <ShieldAlert className="h-4 w-4 text-red-500" />
+                      High Risk
                     </span>
-                    <span className="text-xs text-muted-foreground">{verificationData.stats.verified}</span>
+                    <span className="text-xs text-muted-foreground">1</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1">
-                      <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                      Flagged
+                    <span className="text-sm flex items-center gap-1">
+                      <AlertCircle className="h-4 w-4 text-yellow-500" />
+                      Medium Risk
                     </span>
-                    <span className="text-xs text-muted-foreground">{verificationData.stats.flagged}</span>
+                    <span className="text-xs text-muted-foreground">2</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1">
-                      <X className="h-4 w-4 text-red-500" />
-                      Missing
+                    <span className="text-sm flex items-center gap-1">
+                      <ShieldCheck className="h-4 w-4 text-green-500" />
+                      Low Risk
                     </span>
-                    <span className="text-xs text-muted-foreground">{verificationData.stats.missing}</span>
+                    <span className="text-xs text-muted-foreground">3</span>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Button className="w-full flex items-center gap-2">
-              Request Trustee Review
-              <ArrowRight className="h-4 w-4" />
-            </Button>
+                </CardContent>
+              </Card>
+              
+              <Card className="border shadow-sm">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Verification Status</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1">
+                        <FileCheck className="h-4 w-4 text-green-500" />
+                        Verified
+                      </span>
+                      <span className="text-xs text-muted-foreground">{verificationData.stats.verified}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1">
+                        <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                        Flagged
+                      </span>
+                      <span className="text-xs text-muted-foreground">{verificationData.stats.flagged}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1">
+                        <X className="h-4 w-4 text-red-500" />
+                        Missing
+                      </span>
+                      <span className="text-xs text-muted-foreground">{verificationData.stats.missing}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Button className="w-full flex items-center gap-2">
+                Request Trustee Review
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>
