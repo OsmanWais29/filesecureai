@@ -263,11 +263,11 @@ export const TrusteeCoPliotModal = ({
                 value="verification" 
                 className="flex-1 flex flex-col overflow-hidden mt-0"
               >
-                {/* Completely revamped verification tab with proper layout */}
+                {/* Completely revamped verification tab with proper layout and overview at top */}
                 <div className="flex-1 flex flex-col overflow-hidden">
                   <div className="flex-1 overflow-y-auto">
                     <div className="p-4 space-y-4">
-                      {/* Verification Overview Card */}
+                      {/* Verification Overview Card - Moved to the top */}
                       <Card className="border shadow-sm">
                         <CardHeader className="pb-2">
                           <CardTitle className="text-lg">Verification Overview</CardTitle>
@@ -363,7 +363,7 @@ export const TrusteeCoPliotModal = ({
                   </div>
                   
                   {/* Sticky Action Button */}
-                  <div className="sticky bottom-0 bg-background border-t p-4 mt-auto">
+                  <div className="sticky bottom-0 bg-background border-t p-4">
                     <Button className="w-full flex items-center justify-center gap-2">
                       Request Trustee Review
                       <ArrowRight className="h-4 w-4" />
@@ -462,11 +462,6 @@ export const TrusteeCoPliotModal = ({
                   </div>
                 </CardContent>
               </Card>
-              
-              <Button className="w-full flex items-center gap-2">
-                Request Trustee Review
-                <ArrowRight className="h-4 w-4" />
-              </Button>
             </div>
           </div>
         </div>
