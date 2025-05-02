@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -22,9 +22,21 @@ export const TrusteeCoPliotModal = ({
   onOpenChange,
   clientId
 }: TrusteeCoPliotModalProps) => {
-  const [activeTab, setActiveTab] = useState<string>("conversation");
-  const { completionPercentage } = useChatMessages();
+  const { completionPercentage, chatMessages } = useChatMessages();
   const { verificationData } = useVerificationData();
+  
+  // Determine the default active tab based on chat messages
+  // If no chat messages, default to verification tab
+  const [activeTab, setActiveTab] = useState<string>(
+    chatMessages.length > 0 ? "conversation" : "verification"
+  );
+
+  // Update active tab if chat messages change
+  useEffect(() => {
+    if (chatMessages.length === 0 && activeTab === "conversation") {
+      setActiveTab("verification");
+    }
+  }, [chatMessages, activeTab]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
