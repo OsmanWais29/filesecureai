@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -253,11 +254,11 @@ export const TrusteeCoPliotModal = ({
 
               <TabsContent 
                 value="verification" 
-                className="flex-1 overflow-hidden flex flex-col p-0 mt-0"
+                className="flex-1 flex flex-col overflow-hidden p-0 m-0"
               >
                 <div className="flex-1 overflow-y-auto">
-                  <div className="space-y-4 px-3 py-3">
-                    {/* Enhanced verification overview - Fixed spacing issues */}
+                  <div className="space-y-4 p-4">
+                    {/* Enhanced verification overview */}
                     <Card className="border shadow-sm">
                       <CardHeader className="pb-2">
                         <CardTitle className="text-lg">Verification Overview</CardTitle>
@@ -321,7 +322,7 @@ export const TrusteeCoPliotModal = ({
                       </CardContent>
                     </Card>
                     
-                    {/* Detailed verification sections - Improved accordion spacing */}
+                    {/* Detailed verification sections */}
                     <Accordion type="multiple" defaultValue={["income"]} className="space-y-3">
                       {verificationData.sections.map(section => (
                         <AccordionItem key={section.id} value={section.id} className="border rounded-md overflow-hidden">
@@ -352,8 +353,8 @@ export const TrusteeCoPliotModal = ({
                   </div>
                 </div>
                 
-                {/* Actions - Fixed sticky positioning at bottom */}
-                <div className="py-4 px-3 sticky bottom-0 bg-background border-t">
+                {/* Actions */}
+                <div className="py-4 px-4 sticky bottom-0 bg-background border-t mt-auto">
                   <Button className="w-full flex items-center gap-2">
                     Request Trustee Review
                     <ArrowRight className="h-4 w-4" />
