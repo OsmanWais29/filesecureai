@@ -1,6 +1,5 @@
 
 import { useState } from "react";
-import { CheckCircle, AlertTriangle, X, AlertCircle } from "lucide-react";
 import { VerificationData } from "../types";
 
 export function useVerificationData() {
@@ -11,37 +10,37 @@ export function useVerificationData() {
         id: "income",
         title: "Income Verification",
         items: [
-          { id: "primary", status: "verified", label: "Primary income", details: "Paystub verified ($2,420.35)", icon: <CheckCircle className="h-5 w-5 text-green-500" /> },
-          { id: "secondary", status: "pending", label: "Secondary income", details: "Cash income needs documentation", icon: <AlertTriangle className="h-5 w-5 text-yellow-500" /> },
-          { id: "spouse", status: "missing", label: "Spouse income", details: "Documentation missing", icon: <X className="h-5 w-5 text-red-500" /> }
+          { id: "primary", status: "verified", label: "Primary income", details: "Paystub verified ($2,420.35)", iconType: "check-circle" },
+          { id: "secondary", status: "pending", label: "Secondary income", details: "Cash income needs documentation", iconType: "alert-triangle" },
+          { id: "spouse", status: "missing", label: "Spouse income", details: "Documentation missing", iconType: "x" }
         ]
       },
       {
         id: "expenses",
         title: "Expense Verification",
         items: [
-          { id: "rent", status: "verified", label: "Housing expenses", details: "Rent receipt verified ($1,200)", icon: <CheckCircle className="h-5 w-5 text-green-500" /> },
-          { id: "utilities", status: "verified", label: "Utilities", details: "Matches average ($275)", icon: <CheckCircle className="h-5 w-5 text-green-500" /> },
-          { id: "food", status: "flagged", label: "Food expenses", details: "Above threshold for household size", icon: <AlertCircle className="h-5 w-5 text-yellow-500" /> },
-          { id: "transportation", status: "verified", label: "Transportation", details: "Within acceptable range", icon: <CheckCircle className="h-5 w-5 text-green-500" /> }
+          { id: "rent", status: "verified", label: "Housing expenses", details: "Rent receipt verified ($1,200)", iconType: "check-circle" },
+          { id: "utilities", status: "verified", label: "Utilities", details: "Matches average ($275)", iconType: "check-circle" },
+          { id: "food", status: "flagged", label: "Food expenses", details: "Above threshold for household size", iconType: "alert-circle" },
+          { id: "transportation", status: "verified", label: "Transportation", details: "Within acceptable range", iconType: "check-circle" }
         ]
       },
       {
         id: "compliance",
         title: "Regulatory Compliance",
         items: [
-          { id: "surplus", status: "flagged", label: "Surplus income", details: "Exceeds threshold by $217.35", icon: <AlertTriangle className="h-5 w-5 text-yellow-500" /> },
-          { id: "directive", status: "verified", label: "Directive 11R2", details: "Calculation follows current guidelines", icon: <CheckCircle className="h-5 w-5 text-green-500" /> },
-          { id: "exceptions", status: "required", label: "Exception memo", details: "Required for cash income", icon: <AlertCircle className="h-5 w-5 text-yellow-500" /> }
+          { id: "surplus", status: "flagged", label: "Surplus income", details: "Exceeds threshold by $217.35", iconType: "alert-triangle" },
+          { id: "directive", status: "verified", label: "Directive 11R2", details: "Calculation follows current guidelines", iconType: "check-circle" },
+          { id: "exceptions", status: "required", label: "Exception memo", details: "Required for cash income", iconType: "alert-circle" }
         ]
       },
       {
         id: "consistency",
         title: "Data Consistency",
         items: [
-          { id: "month-over-month", status: "flagged", label: "Month-over-month", details: "15% increase in discretionary expenses", icon: <AlertTriangle className="h-5 w-5 text-yellow-500" /> },
-          { id: "family-size", status: "verified", label: "Family size alignment", details: "All dependents accounted for", icon: <CheckCircle className="h-5 w-5 text-green-500" /> },
-          { id: "cross-document", status: "verified", label: "Cross-document validation", details: "Form 65 matches intake data", icon: <CheckCircle className="h-5 w-5 text-green-500" /> }
+          { id: "month-over-month", status: "flagged", label: "Month-over-month", details: "15% increase in discretionary expenses", iconType: "alert-triangle" },
+          { id: "family-size", status: "verified", label: "Family size alignment", details: "All dependents accounted for", iconType: "check-circle" },
+          { id: "cross-document", status: "verified", label: "Cross-document validation", details: "Form 65 matches intake data", iconType: "check-circle" }
         ]
       }
     ],

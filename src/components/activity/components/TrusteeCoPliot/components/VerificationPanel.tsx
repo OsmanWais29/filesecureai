@@ -6,8 +6,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { FileCheck, ArrowRight, CheckCircle, AlertTriangle, X, FileText, ShieldAlert } from "lucide-react";
-import { VerificationData, VerificationStatus, RiskLevel } from "../types";
+import { FileCheck, ArrowRight, CheckCircle, AlertTriangle, X, AlertCircle, ShieldAlert } from "lucide-react";
+import { VerificationData, VerificationStatus, RiskLevel, IconType } from "../types";
 
 interface VerificationPanelProps {
   verificationData: VerificationData;
@@ -33,6 +33,22 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({ verificati
       case 'medium': return 'bg-yellow-100 text-yellow-800';
       case 'low': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Helper function to render icon based on iconType
+  const renderIcon = (iconType: IconType) => {
+    switch (iconType) {
+      case 'check-circle':
+        return <CheckCircle className="h-5 w-5 text-green-500" />;
+      case 'alert-triangle':
+        return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
+      case 'x':
+        return <X className="h-5 w-5 text-red-500" />;
+      case 'alert-circle':
+        return <AlertCircle className="h-5 w-5 text-yellow-500" />;
+      default:
+        return null;
     }
   };
 
@@ -120,7 +136,7 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({ verificati
                 <div className="space-y-2">
                   {section.items.map(item => (
                     <div key={item.id} className="flex items-start gap-3 p-2 rounded-md border border-gray-200 bg-background">
-                      <div className="mt-0.5">{item.icon}</div>
+                      <div className="mt-0.5">{renderIcon(item.iconType)}</div>
                       <div className="flex-1">
                         <div className="flex justify-between items-center mb-0.5">
                           <h4 className="font-medium">{item.label}</h4>

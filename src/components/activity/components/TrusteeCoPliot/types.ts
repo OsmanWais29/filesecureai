@@ -1,13 +1,14 @@
 
 export type VerificationStatus = "verified" | "flagged" | "pending" | "missing" | "required";
 export type RiskLevel = "high" | "medium" | "low";
+export type IconType = "check-circle" | "alert-triangle" | "x" | "alert-circle";
 
 export interface VerificationItem {
   id: string;
   status: VerificationStatus;
   label: string;
   details: string;
-  icon: React.ReactNode;
+  iconType: IconType;
 }
 
 export interface VerificationSection {
