@@ -9,7 +9,12 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Bot, Mic, Send, ArrowRight, AlertCircle, CheckCircle, X } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { 
+  Bot, Mic, Send, ArrowRight, AlertCircle, CheckCircle, X, 
+  FileCheck, AlertTriangle, CreditCard, Wallet, ReceiptText, 
+  FileText, HelpCircle, ShieldAlert, ShieldCheck 
+} from "lucide-react";
 
 interface TrusteeCoPliotModalProps {
   open: boolean;
@@ -29,6 +34,68 @@ export const TrusteeCoPliotModal = ({
   const [chatMessages, setChatMessages] = useState([
     { role: "assistant", content: "Hi there! I'm your TrusteeCo-Pilot. Let's get started on your monthly Form 65. What was your source of income this month?" },
   ]);
+
+  // Enhanced verification data
+  const verificationData = {
+    sections: [
+      {
+        id: "income",
+        title: "Income Verification",
+        items: [
+          { id: "primary", status: "verified", label: "Primary income", details: "Paystub verified ($2,420.35)", icon: <CheckCircle className="h-5 w-5 text-green-500" /> },
+          { id: "secondary", status: "pending", label: "Secondary income", details: "Cash income needs documentation", icon: <AlertTriangle className="h-5 w-5 text-yellow-500" /> },
+          { id: "spouse", status: "missing", label: "Spouse income", details: "Documentation missing", icon: <X className="h-5 w-5 text-red-500" /> }
+        ]
+      },
+      {
+        id: "expenses",
+        title: "Expense Verification",
+        items: [
+          { id: "rent", status: "verified", label: "Housing expenses", details: "Rent receipt verified ($1,200)", icon: <CheckCircle className="h-5 w-5 text-green-500" /> },
+          { id: "utilities", status: "verified", label: "Utilities", details: "Matches average ($275)", icon: <CheckCircle className="h-5 w-5 text-green-500" /> },
+          { id: "food", status: "flagged", label: "Food expenses", details: "Above threshold for household size", icon: <AlertCircle className="h-5 w-5 text-yellow-500" /> },
+          { id: "transportation", status: "verified", label: "Transportation", details: "Within acceptable range", icon: <CheckCircle className="h-5 w-5 text-green-500" /> }
+        ]
+      },
+      {
+        id: "compliance",
+        title: "Regulatory Compliance",
+        items: [
+          { id: "surplus", status: "flagged", label: "Surplus income", details: "Exceeds threshold by $217.35", icon: <AlertTriangle className="h-5 w-5 text-yellow-500" /> },
+          { id: "directive", status: "verified", label: "Directive 11R2", details: "Calculation follows current guidelines", icon: <CheckCircle className="h-5 w-5 text-green-500" /> },
+          { id: "exceptions", status: "required", label: "Exception memo", details: "Required for cash income", icon: <AlertCircle className="h-5 w-5 text-yellow-500" /> }
+        ]
+      },
+      {
+        id: "consistency",
+        title: "Data Consistency",
+        items: [
+          { id: "month-over-month", status: "flagged", label: "Month-over-month", details: "15% increase in discretionary expenses", icon: <AlertTriangle className="h-5 w-5 text-yellow-500" /> },
+          { id: "family-size", status: "verified", label: "Family size alignment", details: "All dependents accounted for", icon: <CheckCircle className="h-5 w-5 text-green-500" /> },
+          { id: "cross-document", status: "verified", label: "Cross-document validation", details: "Form 65 matches intake data", icon: <CheckCircle className="h-5 w-5 text-green-500" /> }
+        ]
+      }
+    ],
+    riskProfile: {
+      level: "medium",
+      primaryFactors: [
+        "Cash income without proper documentation",
+        "Above-threshold food expenses",
+        "Surplus income exceeds BIA guidelines"
+      ],
+      recommendations: [
+        "Request exception memo for cash income",
+        "Schedule verification meeting for expense review",
+        "Review surplus income implications with trustee"
+      ]
+    },
+    stats: {
+      verified: 7,
+      flagged: 4, 
+      missing: 1,
+      overallScore: 75
+    }
+  };
 
   const toggleRecording = () => {
     setIsRecording(!isRecording);
@@ -79,6 +146,28 @@ export const TrusteeCoPliotModal = ({
 
   const addMessage = (role: "user" | "assistant", content: string) => {
     setChatMessages(prev => [...prev, { role, content }]);
+  };
+
+  // Helper function to get color based on status
+  const getStatusColor = (status: string): string => {
+    switch (status) {
+      case 'verified': return 'bg-green-100 text-green-800';
+      case 'flagged': return 'bg-yellow-100 text-yellow-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'missing': return 'bg-red-100 text-red-800';
+      case 'required': return 'bg-blue-100 text-blue-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  // Helper function to get risk level color
+  const getRiskLevelColor = (level: string): string => {
+    switch (level) {
+      case 'high': return 'bg-red-100 text-red-800';
+      case 'medium': return 'bg-yellow-100 text-yellow-800';
+      case 'low': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
   };
 
   return (
@@ -164,46 +253,106 @@ export const TrusteeCoPliotModal = ({
               </TabsContent>
 
               <TabsContent value="verification" className="flex-1 overflow-y-auto">
-                <Card className="mb-4">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">Form Completion Status</CardTitle>
-                    <CardDescription>
-                      {completionPercentage < 50 
-                        ? "You still have several items to complete" 
-                        : completionPercentage < 90 
-                          ? "Good progress, just a few more items needed" 
-                          : "Almost done!"}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Progress value={completionPercentage} className="h-2 mb-2" />
-                    <p className="text-sm text-muted-foreground">{completionPercentage}% complete</p>
-                  </CardContent>
-                </Card>
-                
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                      <h3 className="font-medium">Income Details</h3>
-                    </div>
-                    <p className="text-sm text-muted-foreground pl-7">Primary income verified with paystub</p>
-                  </div>
+                <div className="p-4 space-y-6">
+                  {/* Enhanced verification overview */}
+                  <Card className="mb-6">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg">Verification Overview</CardTitle>
+                      <CardDescription>
+                        {verificationData.stats.overallScore < 50 
+                          ? "Significant verification issues detected" 
+                          : verificationData.stats.overallScore < 80 
+                            ? "Additional documentation may be required" 
+                            : "Good progress, minor issues to address"}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Progress value={verificationData.stats.overallScore} className="h-2 mb-2" />
+                      <div className="text-sm text-muted-foreground flex justify-between">
+                        <span>{verificationData.stats.overallScore}% verified</span>
+                        <div className="flex gap-4">
+                          <span className="flex items-center gap-1">
+                            <CheckCircle className="h-3 w-3 text-green-500" />
+                            {verificationData.stats.verified} verified
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <AlertTriangle className="h-3 w-3 text-yellow-500" />
+                            {verificationData.stats.flagged} flagged
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <X className="h-3 w-3 text-red-500" />
+                            {verificationData.stats.missing} missing
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Risk profile */}
+                  <Card className="mb-6">
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-center">
+                        <CardTitle className="text-lg">Risk Profile</CardTitle>
+                        <Badge className={`${getRiskLevelColor(verificationData.riskProfile.level)}`}>
+                          {verificationData.riskProfile.level.charAt(0).toUpperCase() + verificationData.riskProfile.level.slice(1)} Risk
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <h4 className="text-sm font-medium mb-2">Primary Risk Factors</h4>
+                        <ul className="list-disc pl-5 space-y-1">
+                          {verificationData.riskProfile.primaryFactors.map((factor, idx) => (
+                            <li key={idx} className="text-sm text-muted-foreground">{factor}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium mb-2">Recommendations</h4>
+                        <ul className="list-disc pl-5 space-y-1">
+                          {verificationData.riskProfile.recommendations.map((rec, idx) => (
+                            <li key={idx} className="text-sm text-muted-foreground">{rec}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </CardContent>
+                  </Card>
                   
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="h-5 w-5 text-yellow-500" />
-                      <h3 className="font-medium">Additional Income</h3>
-                    </div>
-                    <p className="text-sm text-muted-foreground pl-7">Side income requires documentation</p>
-                  </div>
+                  {/* Detailed verification sections */}
+                  <Accordion type="multiple" defaultValue={["income"]}>
+                    {verificationData.sections.map(section => (
+                      <AccordionItem key={section.id} value={section.id}>
+                        <AccordionTrigger className="text-base font-medium">
+                          {section.title}
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="space-y-4 pt-2">
+                            {section.items.map(item => (
+                              <div key={item.id} className="flex items-start gap-2 p-2 rounded-md border border-gray-200">
+                                <div className="mt-1">{item.icon}</div>
+                                <div className="flex-1">
+                                  <div className="flex justify-between items-center">
+                                    <h4 className="font-medium">{item.label}</h4>
+                                    <Badge className={getStatusColor(item.status)}>
+                                      {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-sm text-muted-foreground">{item.details}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
                   
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <X className="h-5 w-5 text-red-500" />
-                      <h3 className="font-medium">Expense Verification</h3>
-                    </div>
-                    <p className="text-sm text-muted-foreground pl-7">Rent receipt needed</p>
+                  {/* Actions */}
+                  <div className="pt-4">
+                    <Button className="w-full flex items-center gap-2">
+                      Request Trustee Review
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               </TabsContent>
@@ -244,15 +393,24 @@ export const TrusteeCoPliotModal = ({
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">High Risk</span>
+                  <span className="text-sm flex items-center gap-1">
+                    <ShieldAlert className="h-4 w-4 text-red-500" />
+                    High Risk
+                  </span>
                   <span className="text-xs text-muted-foreground">1</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">Medium Risk</span>
+                  <span className="text-sm flex items-center gap-1">
+                    <AlertCircle className="h-4 w-4 text-yellow-500" />
+                    Medium Risk
+                  </span>
                   <span className="text-xs text-muted-foreground">2</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">Low Risk</span>
+                  <span className="text-sm flex items-center gap-1">
+                    <ShieldCheck className="h-4 w-4 text-green-500" />
+                    Low Risk
+                  </span>
                   <span className="text-xs text-muted-foreground">3</span>
                 </div>
               </CardContent>
@@ -260,21 +418,30 @@ export const TrusteeCoPliotModal = ({
             
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Documentation</CardTitle>
+                <CardTitle className="text-sm">Verification Status</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center justify-between">
-                    <span>Uploaded</span>
-                    <span className="text-xs text-muted-foreground">1</span>
+                    <span className="flex items-center gap-1">
+                      <FileCheck className="h-4 w-4 text-green-500" />
+                      Verified
+                    </span>
+                    <span className="text-xs text-muted-foreground">{verificationData.stats.verified}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Pending</span>
-                    <span className="text-xs text-muted-foreground">2</span>
+                    <span className="flex items-center gap-1">
+                      <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                      Flagged
+                    </span>
+                    <span className="text-xs text-muted-foreground">{verificationData.stats.flagged}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Verified</span>
-                    <span className="text-xs text-muted-foreground">1</span>
+                    <span className="flex items-center gap-1">
+                      <X className="h-4 w-4 text-red-500" />
+                      Missing
+                    </span>
+                    <span className="text-xs text-muted-foreground">{verificationData.stats.missing}</span>
                   </div>
                 </div>
               </CardContent>
