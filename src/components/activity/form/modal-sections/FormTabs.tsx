@@ -50,12 +50,13 @@ export const FormTabs = ({
   
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <TabsList className="grid grid-cols-5 w-full mb-8">
+      <TabsList className="grid grid-cols-6 w-full mb-8">
         <TabsTrigger value="client">Client Profile</TabsTrigger>
         <TabsTrigger value="income">Income</TabsTrigger>
         <TabsTrigger value="expenses">Expenses</TabsTrigger>
         <TabsTrigger value="savings">Savings/Calc</TabsTrigger>
-        <TabsTrigger value="signature">Signature & Submit</TabsTrigger>
+        <TabsTrigger value="uploads">Documents</TabsTrigger>
+        <TabsTrigger value="signature">Signature</TabsTrigger>
       </TabsList>
       
       <TabsContent value="client" className="space-y-6">
@@ -96,6 +97,15 @@ export const FormTabs = ({
           formData={formData} 
           previousMonthData={previousMonthData}
           onChange={onChange}
+          onSaveDraft={handleSaveDraft}
+          setActiveTab={setActiveTab}
+        />
+      </TabsContent>
+      
+      <TabsContent value="uploads" className="space-y-6">
+        <TabContentComponents.UploadsTabContent 
+          formData={formData}
+          clientName={formData.full_name || newClient?.name || "New Client"}
           onSaveDraft={handleSaveDraft}
           setActiveTab={setActiveTab}
         />

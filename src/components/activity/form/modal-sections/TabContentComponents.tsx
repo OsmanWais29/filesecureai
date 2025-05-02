@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Save } from "lucide-react";
@@ -13,6 +12,7 @@ import { SignatureConsentSection } from "../SignatureConsentSection";
 import { PrintButton } from "../PrintButton";
 import { SmartCreateDocumentButton } from "../SmartCreateDocumentButton";
 import { Client } from "../../types";
+import { FileUploadSection } from "../upload/FileUploadSection";
 
 // Create the TabContentComponents object with all components
 export const TabContentComponents = {
@@ -146,6 +146,37 @@ export const TabContentComponents = {
           <Button type="button" variant="outline" onClick={onSaveDraft}>
             <Save className="h-4 w-4 mr-2" /> Save Draft
           </Button>
+          <Button type="button" onClick={() => setActiveTab("uploads")}>
+            Next: Documents
+          </Button>
+        </div>
+      </div>
+    </div>
+  ),
+
+  UploadsTabContent: ({ 
+    formData, 
+    clientName,
+    onSaveDraft, 
+    setActiveTab 
+  }: any) => (
+    <div className="space-y-6">
+      <FileUploadSection 
+        clientName={clientName}
+        onDocumentUpload={(documentId) => {
+          console.log("Document uploaded:", documentId);
+          // Document was uploaded, could store this ID in the form data if needed
+        }} 
+      />
+      
+      <div className="flex justify-between gap-2">
+        <Button type="button" variant="outline" onClick={() => setActiveTab("savings")}>
+          Back
+        </Button>
+        <div className="flex gap-2">
+          <Button type="button" variant="outline" onClick={onSaveDraft}>
+            <Save className="h-4 w-4 mr-2" /> Save Draft
+          </Button>
           <Button type="button" onClick={() => setActiveTab("signature")}>
             Next: Signature & Consent
           </Button>
@@ -172,7 +203,7 @@ export const TabContentComponents = {
       />
       
       <div className="flex justify-between gap-2">
-        <Button type="button" variant="outline" onClick={() => setActiveTab("savings")}>
+        <Button type="button" variant="outline" onClick={() => setActiveTab("uploads")}>
           Back
         </Button>
         <div className="flex gap-2">
