@@ -3,7 +3,8 @@ export const simulateProcessingStages = (
   isSpecialForm: boolean,
   isExcel: boolean
 ): Promise<void> => {
-  const simulationTime = isSpecialForm ? 2000 : (isExcel ? 1500 : 1000);
+  // Define different processing times based on file type for a realistic experience
+  const simulationTime = isSpecialForm ? 2500 : (isExcel ? 1800 : 1200);
   
   return new Promise((resolve) => {
     setTimeout(() => {

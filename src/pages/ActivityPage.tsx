@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { useLocation } from "react-router-dom";
 import { IncomeExpenseButton } from "@/components/activity/components/IncomeExpenseButton";
+import { TrusteeCoPliotButton } from "@/components/activity/components/TrusteeCoPliot/TrusteeCoPliotButton"; // Add this import
 
 // Valid UUID format mockup
 const MOCK_CLIENTS = [
@@ -108,9 +109,13 @@ export const ActivityPage = () => {
                       availableClients={clients}
                     />
                   </div>
-                  <div className="w-full md:w-auto mt-2 md:mt-0">
+                  <div className="w-full md:w-auto mt-2 md:mt-0 flex gap-2">
                     <IncomeExpenseButton 
                       onClientCreated={handleClientCreated}
+                    />
+                    <TrusteeCoPliotButton 
+                      clientId={selectedClient?.id}
+                      variant="secondary"
                     />
                   </div>
                 </div>
