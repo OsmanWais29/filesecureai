@@ -1,165 +1,155 @@
 
 import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
-interface TokenStatus {
-  isValid: boolean;
+/**
+ * Checks the current JWT token validity and refreshes if needed
+ * @returns Promise with token status information
+ */
+export const checkAndRefreshToken = async (): Promise<{ 
+  isValid: boolean; 
   reason?: string;
-  expiry?: number;
-  remainingTime?: number;
-}
-
-/**
- * Monitors JWT token status and handles refresh
- */
-let monitoringInterval: ReturnType<typeof setInterval> | null = null;
-let lastRefreshAttempt = 0;
-
-/**
- * Start monitoring the JWT token and refresh if needed
- */
-export function startJwtMonitoring(intervalMs = 60000) {
-  if (monitoringInterval) {
-    stopJwtMonitoring();
-  }
-  
-  monitoringInterval = setInterval(() => {
-    checkAndRefreshToken().catch(err => {
-      console.error('JWT monitoring error:', err);
-    });
-  }, intervalMs);
-  
-  console.log('JWT token monitoring started');
-  
-  // Perform initial check
-  checkAndRefreshToken().catch(err => {
-    console.error('Initial JWT check error:', err);
-  });
-  
-  return () => stopJwtMonitoring();
-}
-
-/**
- * Stop the JWT monitoring
- */
-export function stopJwtMonitoring() {
-  if (monitoringInterval) {
-    clearInterval(monitoringInterval);
-    monitoringInterval = null;
-    console.log('JWT token monitoring stopped');
-  }
-}
-
-/**
- * Check the JWT token status and refresh if needed
- */
-export async function checkAndRefreshToken(forceRefresh = false): Promise<TokenStatus> {
+  refreshed?: boolean;
+}> => {
   try {
     // Get current session
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: sessionData } = await supabase.auth.getSession();
     
-    if (!session) {
-      return { isValid: false, reason: 'No active session found' };
+    if (!sessionData || !sessionData.session) {
+      console.error('No active session found');
+      return {
+        isValid: false,
+        reason: 'No active session found'
+      };
     }
     
-    const now = Math.floor(Date.now() / 1000); // Current time in seconds
-    const token = session.access_token;
+    // Check if token is close to expiration (within 5 minutes)
+    const expiresAt = sessionData.session.expires_at;
+    const currentTime = Math.floor(Date.now() / 1000);
+    const timeUntilExpiry = expiresAt - currentTime;
     
-    if (!token) {
-      return { isValid: false, reason: 'No access token in session' };
+    // If token expires in less than 5 minutes (300 seconds), refresh it
+    if (timeUntilExpiry < 300) {
+      console.log(`Token expiring soon (${timeUntilExpiry}s remaining). Refreshing...`);
+      
+      const { data, error } = await supabase.auth.refreshSession();
+      
+      if (error) {
+        console.error('Failed to refresh session:', error);
+        return {
+          isValid: false,
+          reason: `Failed to refresh session: ${error.message}`
+        };
+      }
+      
+      console.log('Token refreshed successfully');
+      return {
+        isValid: true,
+        refreshed: true
+      };
     }
     
-    // Parse JWT to get expiry
-    const payload = parseJwt(token);
-    if (!payload || !payload.exp) {
-      return { isValid: false, reason: 'Invalid token format or missing expiry' };
+    // Token is valid and not close to expiry
+    return {
+      isValid: true
+    };
+    
+  } catch (error) {
+    console.error('Error checking/refreshing token:', error);
+    return {
+      isValid: false,
+      reason: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+};
+
+/**
+ * Utility function to diagnose JWT token issues
+ */
+export const verifyJwtToken = async (): Promise<{ 
+  isValid: boolean; 
+  reason?: string;
+}> => {
+  try {
+    // Get current session
+    const { data: sessionData } = await supabase.auth.getSession();
+    
+    if (!sessionData || !sessionData.session) {
+      return {
+        isValid: false,
+        reason: 'No active session found'
+      };
     }
     
-    const expiryTime = payload.exp;
-    const remainingTime = expiryTime - now;
+    const token = sessionData.session.access_token;
     
-    // Token is expired or about to expire soon (within 5 minutes)
-    const needsRefresh = remainingTime < 300 || forceRefresh;
+    // Basic token structure check
+    if (!token || token.split('.').length !== 3) {
+      return {
+        isValid: false,
+        reason: 'Token has invalid format'
+      };
+    }
     
-    // Throttle refresh attempts to avoid hammering the auth endpoint
-    if (needsRefresh && (forceRefresh || now - lastRefreshAttempt > 60)) {
-      console.log(`JWT token ${forceRefresh ? 'force refresh' : 'expiring soon'}. Refreshing...`);
-      lastRefreshAttempt = now;
+    // Check expiration
+    const expiresAt = sessionData.session.expires_at;
+    const currentTime = Math.floor(Date.now() / 1000);
+    
+    if (expiresAt < currentTime) {
+      return {
+        isValid: false,
+        reason: 'Token has expired'
+      };
+    }
+    
+    return {
+      isValid: true
+    };
+    
+  } catch (error) {
+    return {
+      isValid: false,
+      reason: error instanceof Error ? error.message : 'Unknown error checking JWT'
+    };
+  }
+};
+
+/**
+ * Fix common JWT authentication issues
+ */
+export const fixAuthenticationIssues = async (): Promise<boolean> => {
+  try {
+    toast.info("Attempting to resolve authentication issues...");
+    
+    // First check the current token
+    const tokenStatus = await verifyJwtToken();
+    
+    if (!tokenStatus.isValid) {
+      console.log(`Token invalid: ${tokenStatus.reason}`);
       
       // Try to refresh the session
       const { data, error } = await supabase.auth.refreshSession();
       
-      if (error) {
-        console.error('Token refresh failed:', error);
-        return { 
-          isValid: false, 
-          reason: `Token refresh failed: ${error.message}`,
-          expiry: expiryTime,
-          remainingTime 
-        };
+      if (error || !data.session) {
+        console.error("Failed to refresh session:", error);
+        
+        // Try to reuse any existing session
+        const { data: sessionData } = await supabase.auth.getSession();
+        
+        if (!sessionData.session) {
+          toast.error("Authentication error: Your session has expired. Please log in again.");
+          return false;
+        }
       }
       
-      if (!data.session) {
-        return { 
-          isValid: false, 
-          reason: 'No session returned after refresh',
-          expiry: expiryTime,
-          remainingTime  
-        };
-      }
-      
-      console.log('JWT token refreshed successfully');
-      
-      // Parse new token to get updated expiry
-      const newPayload = parseJwt(data.session.access_token);
-      const newExpiry = newPayload?.exp;
-      const newRemainingTime = newExpiry ? newExpiry - now : undefined;
-      
-      return { 
-        isValid: true,
-        expiry: newExpiry,
-        remainingTime: newRemainingTime
-      };
+      toast.success("Authentication refreshed successfully");
+      return true;
     }
     
-    // Token is still valid
-    const status = { 
-      isValid: true,
-      expiry: expiryTime,
-      remainingTime
-    };
-    
-    // Log token status for debugging (only occasionally)
-    if (Math.random() < 0.1) { // Log only ~10% of the time
-      console.log(`JWT token valid for ${Math.floor(remainingTime / 60)} minutes`);
-    }
-    
-    return status;
+    return true;
   } catch (error) {
-    console.error('Error checking JWT token status:', error);
-    return { 
-      isValid: false, 
-      reason: `Error checking token: ${error instanceof Error ? error.message : String(error)}`
-    };
+    console.error("Error fixing authentication:", error);
+    toast.error("Failed to resolve authentication issues");
+    return false;
   }
-}
-
-/**
- * Parse a JWT token and return the payload
- */
-function parseJwt(token: string) {
-  try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
-    );
-    
-    return JSON.parse(jsonPayload);
-  } catch (error) {
-    console.error('Error parsing JWT:', error);
-    return null;
-  }
-}
+};

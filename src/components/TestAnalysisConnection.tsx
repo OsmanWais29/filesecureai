@@ -22,6 +22,11 @@ export const TestAnalysisConnection = () => {
       const testText = "This is a test document for analysis. It contains example text to verify API connectivity.";
       const testFileName = `test-document-${Date.now()}.txt`;
       
+      toast({
+        title: "Creating test document",
+        description: "Uploading test content to storage...",
+      });
+      
       // Upload test document to storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('documents')
@@ -32,6 +37,11 @@ export const TestAnalysisConnection = () => {
       if (uploadError) {
         throw new Error(`Upload failed: ${uploadError.message}`);
       }
+      
+      toast({
+        title: "Document uploaded",
+        description: "Creating database record...",
+      });
       
       // Create document record in the database
       const { data: documentData, error: documentError } = await supabase
@@ -57,9 +67,20 @@ export const TestAnalysisConnection = () => {
       
       // Trigger analysis on the test document
       console.log("Triggering analysis for test document:", documentData.id);
+      
+      toast({
+        title: "Calling DeepSeek API",
+        description: "Triggering document analysis...",
+      });
+      
       await triggerManualAnalysis(documentData.id);
       
       // Check the result after a moment
+      toast({
+        title: "Waiting for results",
+        description: "Please wait while the analysis completes...",
+      });
+      
       setTimeout(async () => {
         const { data: analysisData, error: analysisError } = await supabase
           .from('document_analysis')
@@ -79,6 +100,11 @@ export const TestAnalysisConnection = () => {
           });
         } else {
           setError("No analysis data found. The API request may have failed.");
+          toast({
+            title: "No analysis data found",
+            description: "The API request may have failed. Check the logs for more details.",
+            variant: "destructive"
+          });
         }
         
         setIsLoading(false);

@@ -33,8 +33,18 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
     
+    // Check if this is a ping request for health checking
+    const reqData = await req.json();
+    if (reqData && reqData.ping === true) {
+      console.log("Received ping request, responding with pong");
+      return new Response(
+        JSON.stringify({ status: "ok", message: "pong" }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     // Get request parameters
-    const { documentId, message, includeRegulatory = true, includeClientExtraction = true, storagePath, title = '' } = await req.json();
+    const { documentId, message, includeRegulatory = true, includeClientExtraction = true, storagePath, title = '' } = reqData;
     
     if (!documentId && !message && !storagePath) {
       console.error("No document ID, message, or storagePath provided");
@@ -189,209 +199,207 @@ serve(async (req) => {
         'Authorization': `Bearer ${deepseekApiKey}`
       },
       body: JSON.stringify({
-        model: 'deepseek-chat',
+        model: 'deepseek-coder',
         messages: [
-          {
-            role: 'system',
-            content: systemPrompt + `\n\nYou must extract information, create a comprehensive risk assessment, and check compliance with the Bankruptcy and Insolvency Act. The risk assessment should clearly describe any problems and cite specific BIA sections that may be violated. 
-            
-            I WANT you to return your response in JSON format as follows:
-            {
-              "extracted_info": {
-                "formNumber": "Form number (e.g., 31, 47, 76)",
-                "formType": "Type of form (e.g., proof-of-claim, consumer-proposal)",
-                "clientName": "Name of debtor/client",
-                "trusteeName": "Name of trustee",
-                "dateSigned": "Date when document was signed",
-                "summary": "Brief summary of the document",
-                "clientAddress": "Client's address if available",
-                "clientPhone": "Client's phone number if available",
-                "clientEmail": "Client's email if available",
-                "totalDebts": "Total debts amount if present",
-                "totalAssets": "Total assets amount if present",
-                "monthlyIncome": "Monthly income if present",
-                "additionalFields": {
-                  // Any other relevant fields extracted from the document
-                }
-              },
-              "risks": [
-                {
-                  "type": "Type of risk",
-                  "description": "Detailed description of the risk",
-                  "severity": "high/medium/low",
-                  "regulation": "Relevant BIA section or other regulation",
-                  "impact": "Potential impact of this risk",
-                  "requiredAction": "Required action to mitigate risk",
-                  "solution": "Recommended solution",
-                  "deadline": "Recommended deadline for resolution"
-                }
-                // Add more risk items as needed
-              ],
-              "regulatory_compliance": {
-                "status": "compliant/non-compliant/partially-compliant",
-                "details": "Explanation of compliance status",
-                "references": [
-                  "References to relevant laws and regulations"
-                ]
-              }
-            }`
-          },
-          {
-            role: 'user',
-            content: `Please analyze the following document and provide a comprehensive analysis including extracted information, risk assessment, and regulatory compliance check in JSON format:\n\nDocument Title: ${documentTitle}\n\nDocument Content:\n${documentText}`
-          }
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Document Title: ${documentTitle}\n\nDocument Content:\n${documentText}\n\n${regulatoryReferences.length > 0 ? 'Regulatory References:\n' + JSON.stringify(regulatoryReferences, null, 2) : ''}` }
         ],
         temperature: 0.3,
+        max_tokens: 2000,
         response_format: { type: "json_object" }
-      })
+      }),
     });
-    
+
     if (!deepseekResponse.ok) {
-      const errorText = await deepseekResponse.text();
-      console.error(`DeepSeek API error: ${deepseekResponse.status} - ${errorText}`);
-      throw new Error(`DeepSeek API error: ${deepseekResponse.status} - ${errorText}`);
+      console.error(`DeepSeek API error: ${deepseekResponse.status}`);
+      throw new Error(`DeepSeek API returned ${deepseekResponse.status}`);
     }
-    
-    const aiOutput = await deepseekResponse.json();
-    const aiResponse = aiOutput.choices?.[0]?.message?.content || '{}';
-    
-    let analysisResult;
+
+    // Parse the DeepSeek response
+    const deepseekData = await deepseekResponse.json();
+    console.log("Successfully parsed DeepSeek response");
+
+    // Extract the content from the response
+    let analysisContent;
     try {
-      analysisResult = JSON.parse(aiResponse);
-      console.log("Successfully parsed DeepSeek response");
+      const responseText = deepseekData.choices[0].message.content;
+      analysisContent = JSON.parse(responseText);
     } catch (parseError) {
-      console.error("Error parsing DeepSeek response:", parseError);
-      throw new Error(`Failed to parse AI response: ${parseError.message}`);
+      console.error("Error parsing DeepSeek JSON response:", parseError);
+      throw new Error("Failed to parse DeepSeek response");
     }
-    
-    // Add regulatory references to the response
-    if (regulatoryReferences.length > 0) {
-      analysisResult.exa_references = regulatoryReferences;
-      console.log("Added Exa regulatory references to analysis result");
-    }
-    
-    // Save analysis results to database if we have a document ID
-    if (documentId) {
-      try {
-        console.log(`Saving analysis results for document ID: ${documentId}`);
-        
-        // Get current user for attribution
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-          console.warn("No authenticated user found when saving analysis");
-        }
-        
-        // Check if document analysis already exists
-        const { data: existingAnalysis } = await supabase
-          .from('document_analysis')
-          .select('id')
-          .eq('document_id', documentId)
-          .maybeSingle();
-          
-        if (existingAnalysis?.id) {
-          // Update existing analysis
-          await supabase
-            .from('document_analysis')
-            .update({
-              content: analysisResult,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', existingAnalysis.id);
-            
-          console.log(`Updated existing analysis for document ${documentId}`);
-        } else {
-          // Create new analysis
-          await supabase
-            .from('document_analysis')
-            .insert({
-              document_id: documentId,
-              user_id: user?.id,
-              content: analysisResult
-            });
-            
-          console.log(`Created new analysis for document ${documentId}`);
-        }
-        
-        // Update document metadata with extracted info
-        const { data: updatedDoc, error: updateError } = await supabase
-          .from('documents')
-          .update({
-            metadata: {
-              ...analysisResult.extracted_info,
-              analyzed_at: new Date().toISOString(),
-              has_analysis: true,
-              processing_steps_completed: [
-                "documentIngestion",
-                "documentClassification",
-                "dataExtraction",
-                "riskAssessment",
-                "documentOrganization",
-                "analysisComplete"
-              ]
-            },
-            ai_processing_status: 'complete'
-          })
-          .eq('id', documentId)
-          .select('id')
-          .single();
-          
-        console.log(`Updated document metadata for ${documentId}`);
-        
-        // Check if we have a client name that should be created
-        if (analysisResult.extracted_info?.clientName) {
-          console.log(`Checking if client exists: ${analysisResult.extracted_info.clientName}`);
-          
-          // Try to create client if not exists
-          const { data: existingClients } = await supabase
-            .from('clients')
-            .select('id')
-            .ilike('name', analysisResult.extracted_info.clientName)
-            .limit(1);
-            
-          if (!existingClients || existingClients.length === 0) {
-            console.log(`Creating new client: ${analysisResult.extracted_info.clientName}`);
-            
-            // Create new client from extracted info
-            const { data: newClient, error: clientError } = await supabase
-              .from('clients')
-              .insert({
-                name: analysisResult.extracted_info.clientName,
-                email: analysisResult.extracted_info.clientEmail || null,
-                phone: analysisResult.extracted_info.clientPhone || null,
-                metadata: {
-                  address: analysisResult.extracted_info.clientAddress || null,
-                  totalDebts: analysisResult.extracted_info.totalDebts || null,
-                  totalAssets: analysisResult.extracted_info.totalAssets || null
-                }
-              })
-              .select('id')
-              .single();
-              
-            if (clientError) {
-              console.error("Error creating client:", clientError);
-            } else {
-              console.log(`Created new client with ID: ${newClient.id}`);
-            }
-          }
-        }
-      } catch (dbError) {
-        console.error("Error saving analysis results:", dbError);
-        // Continue despite DB error - we can still return results to user
+
+    // Add regulatory references to the analysis result
+    const analysisResult = {
+      ...analysisContent,
+      regulatory_references: regulatoryReferences,
+      timestamp: new Date().toISOString(),
+      debug_info: {
+        model: 'deepseek-coder',
+        document_id: documentId,
+        document_title: documentTitle,
+        document_length: documentText.length,
+        has_regulatory_references: regulatoryReferences.length > 0
       }
+    };
+
+    console.log("Added Exa regulatory references to analysis result");
+
+    // Save the analysis result to the database
+    try {
+      console.log(`Saving analysis results for document ID: ${documentId}`);
+
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        console.error("No authenticated user found when saving analysis");
+      }
+
+      // Check if an analysis already exists for this document
+      const { data: existingAnalysis, error: checkError } = await supabase
+        .from('document_analysis')
+        .select('id')
+        .eq('document_id', documentId)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error("Error checking existing analysis:", checkError);
+      }
+
+      if (existingAnalysis) {
+        // Update existing analysis
+        const { error: updateError } = await supabase
+          .from('document_analysis')
+          .update({
+            content: analysisResult,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingAnalysis.id);
+
+        if (updateError) {
+          console.error("Error updating existing analysis:", updateError);
+          throw updateError;
+        }
+      } else {
+        // Create new analysis record
+        const { error: insertError } = await supabase
+          .from('document_analysis')
+          .insert({
+            document_id: documentId,
+            user_id: user?.id || '00000000-0000-0000-0000-000000000000', // Use a placeholder if no user
+            content: analysisResult
+          });
+
+        if (insertError) {
+          console.error("Error creating new analysis:", insertError);
+          throw insertError;
+        }
+        console.log(`Created new analysis for document ${documentId}`);
+      }
+
+      // Update document metadata with the analysis timestamp
+      const { error: docUpdateError } = await supabase
+        .from('documents')
+        .update({
+          metadata: {
+            analysis_completed_at: new Date().toISOString(),
+            has_analysis: true,
+            analysis_status: 'complete'
+          },
+          ai_processing_status: 'complete'
+        })
+        .eq('id', documentId);
+
+      if (docUpdateError) {
+        console.error("Error updating document metadata:", docUpdateError);
+      }
+      console.log(`Updated document metadata for ${documentId}`);
+
+      // Try to create client record if client info is available
+      if (analysisResult.extracted_info && analysisResult.extracted_info.clientName) {
+        try {
+          await createClientIfNotExists(analysisResult.extracted_info);
+        } catch (clientError) {
+          console.error("Error creating client record:", clientError);
+        }
+      } else {
+        console.log("Checking if client exists: Not available");
+      }
+    } catch (dbError) {
+      console.error("Error saving analysis to database:", dbError);
     }
-    
+
     console.log("Analysis complete, returning results");
-    
+
     // Return the analysis result
-    return new Response(JSON.stringify(analysisResult), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
-  } catch (error: any) {
-    console.error("Error in process-ai-request function:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    return new Response(
+      JSON.stringify(analysisResult),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
+  } catch (error) {
+    console.error('Error processing document:', error);
+    
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
   }
 });
+
+// Helper function to create client if not exists
+async function createClientIfNotExists(clientInfo: any) {
+  if (!clientInfo?.clientName) {
+    return null;
+  }
+  
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+  const supabase = createClient(supabaseUrl, supabaseKey);
+  
+  try {
+    const clientName = clientInfo.clientName.trim();
+    
+    // Check if client already exists
+    const { data: existingClients, error: checkError } = await supabase
+      .from('clients')
+      .select('id')
+      .ilike('name', clientName)
+      .limit(1);
+      
+    if (checkError) throw checkError;
+    
+    // If client exists, return their ID
+    if (existingClients && existingClients.length > 0) {
+      return existingClients[0].id;
+    }
+    
+    // Create new client
+    const { data: newClient, error } = await supabase
+      .from('clients')
+      .insert({
+        name: clientName,
+        email: clientInfo.clientEmail || null,
+        phone: clientInfo.clientPhone || null,
+        metadata: {
+          address: clientInfo.clientAddress || null,
+          totalDebts: clientInfo.totalDebts || null,
+          totalAssets: clientInfo.totalAssets || null,
+          monthlyIncome: clientInfo.monthlyIncome || null
+        }
+      })
+      .select('id')
+      .single();
+      
+    if (error) throw error;
+    
+    return newClient.id;
+  } catch (error) {
+    console.error('Error in createClientIfNotExists:', error);
+    return null;
+  }
+}
