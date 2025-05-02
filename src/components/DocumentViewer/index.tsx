@@ -1,6 +1,6 @@
 
 import { useEffect, useMemo } from "react";
-import { DocumentPreview } from "./DocumentPreview";
+import DocumentPreview from "./DocumentPreview";
 import { useDocumentViewer } from "./hooks/useDocumentViewer";
 import { Sidebar } from "./Sidebar";
 import { CollaborationPanel } from "./CollaborationPanel";

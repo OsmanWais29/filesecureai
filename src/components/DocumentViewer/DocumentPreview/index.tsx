@@ -1,7 +1,7 @@
 
 import React, { useEffect } from 'react';
 import usePreviewState from './hooks/usePreviewState';
-import DocumentPreviewContent from './DocumentPreviewContent';
+import { DocumentPreviewContent } from './components/DocumentPreviewContent';
 import { startJwtMonitoring, stopJwtMonitoring } from "@/utils/jwtMonitoring";
 
 interface DocumentPreviewProps {
@@ -39,6 +39,9 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
   return (
     <DocumentPreviewContent
       {...previewState}
+      storagePath={storagePath}
+      documentId={documentId}
+      title={title}
     />
   );
 };
