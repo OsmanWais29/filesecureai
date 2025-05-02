@@ -7,10 +7,11 @@ interface SignUpData {
   fullName: string;
   userId: string;
   avatarUrl: string | null;
+  userType?: 'trustee' | 'client';
 }
 
 export const authService = {
-  async signUp({ email, password, fullName, userId, avatarUrl }: SignUpData) {
+  async signUp({ email, password, fullName, userId, avatarUrl, userType = 'trustee' }: SignUpData) {
     // First, sign up the user
     const { error: signUpError, data } = await supabase.auth.signUp({
       email,
@@ -20,6 +21,7 @@ export const authService = {
           full_name: fullName,
           user_id: userId,
           avatar_url: avatarUrl,
+          user_type: userType,
         },
         emailRedirectTo: window.location.origin,
       }
@@ -38,6 +40,7 @@ export const authService = {
           user_id: userId,
           avatar_url: avatarUrl,
           email: email,
+          user_type: userType,
         });
 
       if (profileError) throw profileError;
@@ -46,13 +49,20 @@ export const authService = {
     return data;
   },
 
-  async signIn(email: string, password: string) {
+  async signIn(email: string, password: string, userType: 'trustee' | 'client' = 'trustee') {
     const { error, data } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     
     if (error) throw error;
+    
+    // Verify user type matches to prevent clients accessing trustee portal and vice versa
+    if (data.user?.user_metadata?.user_type && data.user.user_metadata.user_type !== userType) {
+      await supabase.auth.signOut();
+      throw new Error(`Invalid account type. Please use the ${userType === 'trustee' ? 'Trustee' : 'Client'} Portal.`);
+    }
+    
     return data;
   },
 

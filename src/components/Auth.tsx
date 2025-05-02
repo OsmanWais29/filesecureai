@@ -3,10 +3,14 @@ import { useState } from 'react';
 import { AuthLayout } from './auth/AuthLayout';
 import { AuthForm } from './auth/AuthForm';
 import { ConfirmationSentScreen } from './auth/ConfirmationSentScreen';
+import { ClientPortalForm } from './auth/ClientPortalForm';
+
+export type AuthMode = 'trustee' | 'client';
 
 export const Auth = () => {
   const [confirmationSent, setConfirmationSent] = useState(false);
   const [confirmationEmail, setConfirmationEmail] = useState('');
+  const [authMode, setAuthMode] = useState<AuthMode>('trustee');
 
   const handleConfirmationSent = (email: string) => {
     setConfirmationEmail(email);
@@ -17,6 +21,10 @@ export const Auth = () => {
     setConfirmationSent(false);
   };
 
+  const toggleAuthMode = () => {
+    setAuthMode(prev => prev === 'trustee' ? 'client' : 'trustee');
+  };
+
   return (
     <AuthLayout>
       {confirmationSent ? (
@@ -25,7 +33,17 @@ export const Auth = () => {
           onBackToSignIn={handleBackToSignIn}
         />
       ) : (
-        <AuthForm onConfirmationSent={handleConfirmationSent} />
+        authMode === 'trustee' ? (
+          <AuthForm 
+            onConfirmationSent={handleConfirmationSent} 
+            onSwitchToClientPortal={toggleAuthMode}
+          />
+        ) : (
+          <ClientPortalForm 
+            onConfirmationSent={handleConfirmationSent}
+            onSwitchToTrusteePortal={toggleAuthMode}
+          />
+        )
       )}
     </AuthLayout>
   );

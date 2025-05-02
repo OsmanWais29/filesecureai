@@ -11,6 +11,7 @@ import EFilingPage from "./pages/EFilingPage";
 import ProfilePage from "./pages/ProfilePage";
 import Support from "./pages/Support";
 import Index from "./pages/Index";
+import ClientPortal from "./pages/ClientPortal";
 import DocumentViewerPage from "./pages/DocumentViewerPage";
 import ClientViewerPage from "./pages/ClientViewerPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -24,6 +25,7 @@ function App() {
     <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/login" element={<Index />} /> {/* Ensure /login also maps to Index which handles auth */}
+      <Route path="/client-portal" element={<ClientPortal />} /> {/* New dedicated client portal route */}
       <Route path="/crm" element={<CRMPage />} />
       <Route path="/documents" element={<DocumentsPage />} />
       <Route path="/document-viewer/:documentId" element={<DocumentViewerPage />} />

@@ -2,27 +2,25 @@
 import React, { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Lock, AlertTriangle, Mail, UserPlus } from 'lucide-react';
-import { SignUpFields } from './SignUpFields';
+import { Lock, AlertTriangle, Mail, UserPlus, User } from 'lucide-react';
 import { AuthFields } from './AuthFields';
 import { validateAuthForm } from './authValidation';
 import { authService } from './authService';
 import { useRateLimiting } from './hooks/useRateLimiting';
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { AuthMode } from '../Auth';
 
-interface AuthFormProps {
+interface ClientPortalFormProps {
   onConfirmationSent: (email: string) => void;
-  onSwitchToClientPortal: () => void;
+  onSwitchToTrusteePortal: () => void;
 }
 
-export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFormProps) => {
+export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }: ClientPortalFormProps) => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [userId, setUserId] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -35,8 +33,7 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
       email,
       password,
       isSignUp,
-      fullName,
-      userId
+      fullName
     });
     
     if (!validation.isValid) {
@@ -44,7 +41,6 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
       return;
     }
 
-    // Check for rate limiting
     if (isRateLimited) {
       setError(`Too many attempts. Please wait ${timeLeft} seconds before trying again`);
       return;
@@ -55,35 +51,34 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
 
     try {
       if (isSignUp) {
+        // Client signup
         const { user } = await authService.signUp({
           email,
           password,
           fullName,
-          userId,
-          avatarUrl,
-          userType: 'trustee', // Add user type for role-based access
+          userId: email, // Using email as userId for clients
+          avatarUrl: null,
+          userType: 'client', // Add user type for role-based access
         });
 
         if (user?.identities?.length === 0) {
-          // User already exists but hasn't confirmed their email
           setError("This email is already registered but not confirmed. Please check your email for the confirmation link.");
         } else {
           onConfirmationSent(email);
           toast({
             title: "Success",
-            description: "Please check your email to confirm your account",
+            description: "Please check your email to confirm your client account",
           });
         }
       } else {
         try {
-          await authService.signIn(email, password, 'trustee'); // Add user type for role-based validation
+          await authService.signIn(email, password, 'client'); // Add user type for role validation
           toast({
-            title: "Success",
+            title: "Welcome to Client Portal",
             description: "Successfully signed in!",
           });
         } catch (signInError: any) {
           if (signInError.message.includes('Email not confirmed')) {
-            // Handle the email confirmation error specifically
             setError("Please check your email and confirm your account before signing in.");
           } else {
             throw signInError;
@@ -91,7 +86,6 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
         }
       }
 
-      // Reset attempts on successful auth
       resetAttempts();
     } catch (error: any) {
       console.error('Auth error:', error);
@@ -115,10 +109,10 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
     <div className="w-full max-w-md mx-auto space-y-8 rounded-xl border bg-card/95 p-8 shadow-lg backdrop-blur-sm">
       <div className="text-center space-y-2">
         <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary/80 bg-clip-text text-transparent">
-          {isSignUp ? 'Create Your Trustee Account' : 'Trustee Login'}
+          {isSignUp ? 'Create Client Account' : 'Client Portal Login'}
         </h1>
         <p className="text-sm text-muted-foreground">
-          {isSignUp ? 'Sign up to access SecureFiles AI' : 'Sign in to continue to SecureFiles AI'}
+          {isSignUp ? 'Sign up to access your files and documents' : 'Sign in to view your files and documents'}
         </p>
       </div>
 
@@ -131,14 +125,22 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
 
       <form onSubmit={handleAuth} className="space-y-5">
         {isSignUp && (
-          <SignUpFields
-            fullName={fullName}
-            setFullName={setFullName}
-            userId={userId}
-            setUserId={setUserId}
-            avatarUrl={avatarUrl}
-            setAvatarUrl={setAvatarUrl}
-          />
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="fullName" className="text-sm font-medium flex items-center gap-1.5">
+                <User className="h-3.5 w-3.5 text-muted-foreground" />
+                Full Name
+              </Label>
+              <Input
+                id="fullName"
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="John Doe"
+                className="w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
         )}
 
         <AuthFields
@@ -162,7 +164,7 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
           ) : isSignUp ? (
             <>
               <UserPlus className="h-4 w-4" />
-              <span>Sign Up</span>
+              <span>Create Client Account</span>
             </>
           ) : (
             <>
@@ -185,7 +187,7 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
         </div>
         <div className="relative flex justify-center text-xs">
           <span className="bg-card px-2 text-muted-foreground">
-            {isSignUp ? 'Already have an account?' : "Don't have an account?"}
+            {isSignUp ? 'Already have a client account?' : "Need a client account?"}
           </span>
         </div>
       </div>
@@ -199,16 +201,16 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
           variant="ghost"
           className="text-sm text-primary hover:text-primary/90 hover:underline transition-colors"
         >
-          {isSignUp ? 'Sign in instead' : "Create an account"}
+          {isSignUp ? 'Sign in instead' : "Create client account"}
         </Button>
         
         <div className="pt-2">
           <Button
-            onClick={onSwitchToClientPortal}
+            onClick={onSwitchToTrusteePortal}
             variant="outline"
             className="w-full text-sm"
           >
-            Switch to Client Portal
+            Switch to Trustee Portal
           </Button>
         </div>
       </div>
