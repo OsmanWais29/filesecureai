@@ -25,7 +25,7 @@ export const TrusteeCoPliotModal = ({
   const { completionPercentage, chatMessages } = useChatMessages();
   const { verificationData } = useVerificationData();
   
-  // Set the default tab directly based on chat messages - no useEffect needed
+  // Set the default tab directly based on chat messages
   const [activeTab, setActiveTab] = useState<string>(
     chatMessages.length > 0 ? "conversation" : "verification"
   );
@@ -65,26 +65,16 @@ export const TrusteeCoPliotModal = ({
               </div>
 
               {/* Only render the conversation tab content if there are messages */}
-              <TabsContent 
-                value="conversation" 
-                className="flex-1 flex flex-col overflow-hidden mt-0 p-0"
-              >
-                {chatMessages.length > 0 ? (
+              {chatMessages.length > 0 && (
+                <TabsContent 
+                  value="conversation" 
+                  className="flex-1 flex flex-col overflow-hidden mt-0 p-0"
+                >
                   <div className="flex-1 flex flex-col overflow-hidden pt-4 px-4 pb-4">
                     <ChatPanel />
                   </div>
-                ) : (
-                  <div className="flex items-center justify-center h-full p-8 text-center">
-                    <div className="max-w-md">
-                      <MessageSquare className="mx-auto h-10 w-10 text-muted-foreground/50 mb-4" />
-                      <h3 className="text-lg font-medium mb-2">No conversation started</h3>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Use the form below to ask questions about this client's data and receive AI-powered assistance.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </TabsContent>
+                </TabsContent>
+              )}
 
               <TabsContent 
                 value="verification" 

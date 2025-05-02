@@ -53,7 +53,7 @@ export const VerificationPanel: React.FC<VerificationPanelProps> = ({ verificati
   };
 
   return (
-    <ScrollArea className="h-full">
+    <ScrollArea className="h-full pt-4">
       <div className="p-4 space-y-4">
         {/* Verification Overview Card */}
         <Card className="border shadow-sm bg-card">

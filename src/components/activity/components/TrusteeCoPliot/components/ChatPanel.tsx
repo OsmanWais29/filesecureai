@@ -3,7 +3,7 @@ import React, { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Mic, Send } from "lucide-react";
-import { useChatMessages, ChatMessage } from "../hooks/useChatMessages";
+import { useChatMessages } from "../hooks/useChatMessages";
 import { cn } from "@/lib/utils";
 
 interface ChatPanelProps {
