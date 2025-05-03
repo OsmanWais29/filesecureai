@@ -1,11 +1,13 @@
-import React from "react";
+
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, AlertCircle } from "lucide-react";
+import { Calendar, AlertCircle, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
 
 interface Client {
   id: string;
@@ -24,6 +26,12 @@ interface ClientListProps {
 
 export const ClientList = ({ clients, selectedClientId, onClientSelect }: ClientListProps) => {
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  // Filter clients based on search query
+  const filteredClients = clients.filter(client => 
+    client.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
   
   const handleSelectClient = (clientId: string) => {
     console.log("ClientList: Selected client ID:", clientId);
@@ -44,57 +52,71 @@ export const ClientList = ({ clients, selectedClientId, onClientSelect }: Client
         <p className="text-xs text-muted-foreground">Select a client to view their documents</p>
       </div>
       
+      {/* Search Input */}
+      <div className="p-3 border-b">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search clients..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 py-1"
+          />
+        </div>
+      </div>
+      
       <ScrollArea className="flex-1">
         <div className="p-3 space-y-3">
-          {clients.map(client => (
-            <Card 
-              key={client.id}
-              className={cn(
-                "p-3 cursor-pointer hover:border-primary/50 transition-colors",
-                selectedClientId === client.id && "bg-muted border-primary"
-              )}
-              onClick={() => handleSelectClient(client.id)}
-            >
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <div className="font-medium">{client.name}</div>
-                  {client.status && (
-                    <Badge 
-                      variant={
-                        client.status === "active" ? "default" : 
-                        client.status === "pending" ? "outline" :
-                        client.status === "flagged" ? "destructive" : "secondary"
-                      }
-                      className="text-xs"
-                    >
-                      {client.status}
-                    </Badge>
-                  )}
-                </div>
-                
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <span>{client.location || "Unknown location"}</span>
-                  {client.lastActivity && (
-                    <span className="flex items-center text-xs">
-                      <Calendar className="h-3 w-3 mr-1" />
-                      {client.lastActivity}
-                    </span>
-                  )}
-                </div>
-                
-                {client.needsAttention && (
-                  <div className="flex items-center gap-1 text-amber-600 text-xs mt-1">
-                    <AlertCircle className="h-3 w-3" />
-                    <span>Needs attention</span>
-                  </div>
+          {filteredClients.length > 0 ? (
+            filteredClients.map(client => (
+              <Card 
+                key={client.id}
+                className={cn(
+                  "p-3 cursor-pointer hover:border-primary/50 transition-colors",
+                  selectedClientId === client.id && "bg-muted border-primary"
                 )}
-              </div>
-            </Card>
-          ))}
-          
-          {clients.length === 0 && (
+                onClick={() => handleSelectClient(client.id)}
+              >
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <div className="font-medium">{client.name}</div>
+                    {client.status && (
+                      <Badge 
+                        variant={
+                          client.status === "active" ? "default" : 
+                          client.status === "pending" ? "outline" :
+                          client.status === "flagged" ? "destructive" : "secondary"
+                        }
+                        className="text-xs"
+                      >
+                        {client.status}
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <span>{client.location || "Unknown location"}</span>
+                    {client.lastActivity && (
+                      <span className="flex items-center text-xs">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        {client.lastActivity}
+                      </span>
+                    )}
+                  </div>
+                  
+                  {client.needsAttention && (
+                    <div className="flex items-center gap-1 text-amber-600 text-xs mt-1">
+                      <AlertCircle className="h-3 w-3" />
+                      <span>Needs attention</span>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            ))
+          ) : (
             <div className="text-center p-8 text-muted-foreground">
-              No clients found
+              {searchQuery ? "No matching clients found" : "No clients found"}
             </div>
           )}
         </div>
