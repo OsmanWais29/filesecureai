@@ -16,33 +16,43 @@ export const CRMTabs = () => {
       <h2 className="text-xl font-bold">Dashboard Modules</h2>
       <p className="text-muted-foreground">Access tools and features to manage your clients efficiently.</p>
       
-      <Tabs defaultValue="scheduling" className="space-y-6">
-        <TabsList className="grid grid-cols-6 w-full">
+      <Tabs defaultValue="clients" className="space-y-6">
+        <TabsList className="grid grid-cols-5 w-full">
+          <TabsTrigger value="clients" className="flex items-center gap-1">
+            <Users className="h-4 w-4" />
+            <span className="hidden sm:inline">Client Profile</span>
+          </TabsTrigger>
           <TabsTrigger value="scheduling" className="flex items-center gap-1">
             <Calendar className="h-4 w-4" />
-            <span className="hidden sm:inline">Scheduling</span>
+            <span className="hidden sm:inline">Dashboard</span>
+          </TabsTrigger>
+          <TabsTrigger value="workflow" className="flex items-center gap-1">
+            <BrainCog className="h-4 w-4" />
+            <span className="hidden sm:inline">Activity</span>
           </TabsTrigger>
           <TabsTrigger value="documents" className="flex items-center gap-1">
             <FileCheck className="h-4 w-4" />
             <span className="hidden sm:inline">Documents</span>
           </TabsTrigger>
-          <TabsTrigger value="workflow" className="flex items-center gap-1">
-            <BrainCog className="h-4 w-4" />
-            <span className="hidden sm:inline">AI Workflow</span>
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-1">
-            <BarChart className="h-4 w-4" />
-            <span className="hidden sm:inline">Analytics</span>
-          </TabsTrigger>
           <TabsTrigger value="meetings" className="flex items-center gap-1">
             <Video className="h-4 w-4" />
             <span className="hidden sm:inline">Meetings Hub</span>
           </TabsTrigger>
-          <TabsTrigger value="clients" className="flex items-center gap-1">
-            <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Client Profile</span>
-          </TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="clients" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Client Profiles</CardTitle>
+              <CardDescription>View and manage your client profiles</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="h-64 bg-muted/40 rounded-lg flex items-center justify-center">
+                <p className="text-muted-foreground">Client profiles will appear here</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
         
         <TabsContent value="scheduling" className="space-y-4">
           <IntelligentScheduling />
@@ -92,20 +102,6 @@ export const CRMTabs = () => {
         
         <TabsContent value="meetings" className="space-y-4">
           <MeetingsTabs />
-        </TabsContent>
-        
-        <TabsContent value="clients" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Client Profiles</CardTitle>
-              <CardDescription>View and manage your client profiles</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="h-64 bg-muted/40 rounded-lg flex items-center justify-center">
-                <p className="text-muted-foreground">Client profiles will appear here</p>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>
