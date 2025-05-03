@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useClientInsights } from "./hooks/useClientInsights";
 import { ClientProfilePanel } from "./components/profile/ClientProfilePanel";
@@ -5,7 +6,7 @@ import { ClientActivityPanel } from "./components/profile/ClientActivityPanel";
 import { ClientIntelligencePanel } from "./components/profile/ClientIntelligencePanel";
 import { ClientGridView } from "./components/ClientGridView";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info, LayoutGrid, User, Activity, FileText } from "lucide-react";
+import { Info, LayoutGrid, User, Activity, FileText, Video } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,7 @@ import { Search, Filter } from "lucide-react";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CRMTabs } from "./page/CRMTabs";
+import { MeetingsTabs } from "@/components/meetings/MeetingsTabs";
 
 interface ClientDashboardProps {
   clientId?: string;
@@ -136,9 +138,9 @@ export const ClientDashboard = ({ clientId: propClientId, clientName: propClient
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="client" className="w-full">
+      <Tabs defaultValue="profile" className="w-full">
         <TabsList className="w-full justify-start mb-6 bg-muted/30">
-          <TabsTrigger value="client" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+          <TabsTrigger value="profile" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <User className="h-4 w-4 mr-2" />
             Client Profile
           </TabsTrigger>
@@ -154,9 +156,13 @@ export const ClientDashboard = ({ clientId: propClientId, clientName: propClient
             <FileText className="h-4 w-4 mr-2" />
             Documents
           </TabsTrigger>
+          <TabsTrigger value="meetings" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <Video className="h-4 w-4 mr-2" />
+            Meetings Hub
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="client" className="mt-0">
+        <TabsContent value="profile" className="mt-0">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold">{selectedClientName}'s Profile</h1>
@@ -261,6 +267,10 @@ export const ClientDashboard = ({ clientId: propClientId, clientName: propClient
               </div>
             </div>
           </div>
+        </TabsContent>
+
+        <TabsContent value="meetings" className="mt-0">
+          <MeetingsTabs />
         </TabsContent>
       </Tabs>
     </div>
