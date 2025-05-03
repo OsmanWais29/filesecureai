@@ -1,7 +1,6 @@
 
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MeetingsHeader } from "./MeetingsHeader";
 import { MeetingsOverview } from "./MeetingsOverview";
 import { UpcomingMeetings } from "./UpcomingMeetings";
 import { JoinMeetingPanel } from "./JoinMeetingPanel";

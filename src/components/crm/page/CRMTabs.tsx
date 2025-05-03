@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { IntelligentScheduling } from "@/components/crm/IntelligentScheduling";
 import { DocumentVault } from "@/components/crm/DocumentVault";
 import { AIWorkflow } from "@/components/crm/AIWorkflow";
-import { Calendar, FileCheck, BrainCog, BarChart, Video } from "lucide-react";
+import { Calendar, FileCheck, BrainCog, BarChart, Video, Users } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MeetingsTabs } from "@/components/meetings/MeetingsTabs";
 import { useState } from "react";
@@ -17,7 +17,7 @@ export const CRMTabs = () => {
       <p className="text-muted-foreground">Access tools and features to manage your clients efficiently.</p>
       
       <Tabs defaultValue="scheduling" className="space-y-6">
-        <TabsList className="grid grid-cols-5 w-full">
+        <TabsList className="grid grid-cols-6 w-full">
           <TabsTrigger value="scheduling" className="flex items-center gap-1">
             <Calendar className="h-4 w-4" />
             <span className="hidden sm:inline">Scheduling</span>
@@ -37,6 +37,10 @@ export const CRMTabs = () => {
           <TabsTrigger value="meetings" className="flex items-center gap-1">
             <Video className="h-4 w-4" />
             <span className="hidden sm:inline">Meetings Hub</span>
+          </TabsTrigger>
+          <TabsTrigger value="clients" className="flex items-center gap-1">
+            <Users className="h-4 w-4" />
+            <span className="hidden sm:inline">Client Profile</span>
           </TabsTrigger>
         </TabsList>
         
@@ -88,6 +92,20 @@ export const CRMTabs = () => {
         
         <TabsContent value="meetings" className="space-y-4">
           <MeetingsTabs />
+        </TabsContent>
+        
+        <TabsContent value="clients" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Client Profiles</CardTitle>
+              <CardDescription>View and manage your client profiles</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="h-64 bg-muted/40 rounded-lg flex items-center justify-center">
+                <p className="text-muted-foreground">Client profiles will appear here</p>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
