@@ -1,6 +1,6 @@
 
 import { useState, useCallback } from "react";
-import { ProcessingOptions, ProcessingStatus, ConversionResult } from "../types";
+import { ProcessingOptions, ProcessingStatus, ConversionResult, ProcessingStage } from "../types";
 import { toast } from "sonner";
 import { extractTextFromPdf } from "@/utils/documents/pdfUtils";
 import { processDocument } from "../utils/pdfProcessing";
@@ -95,7 +95,7 @@ export const useConverter = () => {
             status: progress >= 100 ? 'complete' : 'processing', 
             progress, 
             message 
-          };
+          } as ProcessingStage;
         }
         return stage;
       });
@@ -162,6 +162,7 @@ export const useConverter = () => {
       // Set conversion result
       const result: ConversionResult = {
         xml,
+        json: processingOptions.outputFormat === 'json' ? processedDocument : undefined,
         extractedData: {
           metadata: {
             filename: uploadedFile.name,

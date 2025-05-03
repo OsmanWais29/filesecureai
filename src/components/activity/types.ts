@@ -31,6 +31,7 @@ export interface IncomeExpenseData {
   occupation?: string;
   spouse_name?: string;
   household_size?: string;
+  submission_date?: string;
   
   // Income Fields
   employment_income?: string;
@@ -41,18 +42,27 @@ export interface IncomeExpenseData {
   other_income?: string;
   total_monthly_income?: string;
   
+  // Additional Income Fields
+  pension_annuities?: string;
+  child_spousal_support?: string;
+  government_benefits?: string;
+  rental_income?: string;
+  other_income_description?: string;
+  income_frequency?: string;
+  
   // Spouse Income Fields
   spouse_employment_income?: string;
   spouse_other_income?: string;
   spouse_total_monthly_income?: string;
-  
-  // Additional Income Fields
-  pension_annuities?: string;
-  child_spousal_support?: string;
-  income_frequency?: string;
+  spouse_pension_annuities?: string;
+  spouse_child_spousal_support?: string;
+  spouse_self_employment_income?: string;
+  spouse_government_benefits?: string;
+  spouse_rental_income?: string;
   
   // Household Income
   total_household_income?: string;
+  other_household_income?: string;
   
   // Expense Fields - Non-discretionary
   child_support_payments?: string;
@@ -210,4 +220,17 @@ export interface SurplusIncomeSectionProps {
   isViewMode?: boolean;
   isFieldEditable?: (fieldName: string) => boolean;
   onToggleFieldEdit?: (fieldName: string) => void;
+}
+
+export interface FormFieldProps {
+  label: string;
+  name: string;
+  value: string | undefined;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  type?: string;
+  placeholder?: string;
+  required?: boolean;
+  disabled?: boolean;
+  className?: string;
+  icon?: React.ReactNode;
 }

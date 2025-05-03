@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Download, Copy, Check, FileJson, FileXml } from "lucide-react";
+import { Download, Copy, Check, FileJson, File } from "lucide-react";
 import { ConversionResult } from "./types";
 
 interface XMLPreviewProps {
@@ -84,7 +84,7 @@ export const XMLPreview: React.FC<XMLPreviewProps> = ({ result, onDownload }) =>
           <div className="flex items-center justify-between px-6 pt-6 pb-2">
             <TabsList>
               <TabsTrigger value="xml" className="flex items-center">
-                <FileXml className="h-4 w-4 mr-1" />
+                <File className="h-4 w-4 mr-1" />
                 XML
               </TabsTrigger>
               <TabsTrigger value="json" disabled={!result.json} className="flex items-center">
@@ -98,7 +98,7 @@ export const XMLPreview: React.FC<XMLPreviewProps> = ({ result, onDownload }) =>
             
             <div className="flex items-center space-x-2">
               {result.validationErrors.length === 0 ? (
-                <Badge variant="success" className="bg-green-100 text-green-800 hover:bg-green-100">
+                <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-100">
                   Valid
                 </Badge>
               ) : (
@@ -108,7 +108,7 @@ export const XMLPreview: React.FC<XMLPreviewProps> = ({ result, onDownload }) =>
               )}
               
               {result.validationWarnings.length > 0 && (
-                <Badge variant="warning" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
+                <Badge variant="outline" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
                   {result.validationWarnings.length} Warnings
                 </Badge>
               )}

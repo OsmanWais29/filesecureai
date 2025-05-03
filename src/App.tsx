@@ -47,7 +47,6 @@ function App() {
       <Route path="/support" element={<Support />} />
       <Route path="/SAFA" element={<ConBrandingPage />} />
       <Route path="/storage-diagnostics" element={<StorageDiagnosticsPage />} />
-      <Route path="/pdf-viewer-demo" element={<PDFViewerDemo />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

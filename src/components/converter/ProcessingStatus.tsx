@@ -125,7 +125,7 @@ export const ProcessingStatus: React.FC<ProcessingStatusProps> = ({ status }) =>
         )}
 
         {status.warnings.length > 0 && (
-          <Alert variant="warning">
+          <Alert>
             <Info className="h-4 w-4" />
             <AlertTitle>Warnings</AlertTitle>
             <AlertDescription>

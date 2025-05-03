@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback } from "react";
-import { FileUpload, UploadCloud, X, File } from "lucide-react";
+import { Upload, UploadCloud, X, File } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 
@@ -78,7 +78,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
             <div className="max-w-xs w-full">
               <label htmlFor="file-upload" className="w-full">
                 <Button className="w-full cursor-pointer" onClick={() => {}}>
-                  <FileUpload className="h-4 w-4 mr-2" />
+                  <Upload className="h-4 w-4 mr-2" />
                   Select PDF
                 </Button>
                 <input
