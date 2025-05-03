@@ -95,59 +95,61 @@ export const ActivityPage = () => {
               <h1 className="text-3xl font-bold">Smart Income & Expense Management</h1>
             </div>
             
-            {/* Redesigned Client Information Card */}
-            <Card className="border-none shadow-lg overflow-hidden">
-              <div className="bg-gradient-to-r from-primary/20 to-primary/5 border-b">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center gap-2 mb-1">
-                    <UserRound className="h-5 w-5 text-primary" />
-                    <CardTitle>Client Information</CardTitle>
-                  </div>
-                  <CardDescription>Select a client to manage their financial data</CardDescription>
-                </CardHeader>
-              </div>
+            {/* Centered Client Information Card */}
+            <div className="flex justify-center">
+              <Card className="border-none shadow-lg overflow-hidden max-w-3xl w-full">
+                <div className="bg-gradient-to-r from-primary/20 to-primary/5 border-b">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <UserRound className="h-5 w-5 text-primary" />
+                      <CardTitle>Client Information</CardTitle>
+                    </div>
+                    <CardDescription>Select a client to manage their financial data</CardDescription>
+                  </CardHeader>
+                </div>
 
-              <CardContent className="p-6 pt-6">
-                <div className="space-y-6">
-                  {/* Large Client Selector */}
-                  <div className="bg-card border rounded-lg p-4 shadow-sm">
-                    <label className="text-sm font-medium mb-2 block text-muted-foreground">
-                      Select Client
-                    </label>
-                    <ClientSelector 
-                      selectedClient={selectedClient}
-                      onClientSelect={handleClientSelect}
-                      availableClients={clients}
-                    />
-                  </div>
-                  
-                  {/* Actions Buttons in Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium mb-2 text-muted-foreground">
-                        Create Financial Form
-                      </span>
-                      <IncomeExpenseButton 
-                        onClientCreated={handleClientCreated}
-                        size="default"
-                        className="w-full"
+                <CardContent className="p-6 pt-6">
+                  <div className="space-y-6">
+                    {/* Large Client Selector */}
+                    <div className="bg-card border rounded-lg p-4 shadow-sm">
+                      <label className="text-sm font-medium mb-2 block text-muted-foreground">
+                        Select Client
+                      </label>
+                      <ClientSelector 
+                        selectedClient={selectedClient}
+                        onClientSelect={handleClientSelect}
+                        availableClients={clients}
                       />
                     </div>
                     
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium mb-2 text-muted-foreground">
-                        AI Assistance
-                      </span>
-                      <TrusteeCoPliotButton 
-                        clientId={selectedClient?.id}
-                        size="default"
-                        className="w-full"
-                      />
+                    {/* Actions Buttons in Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium mb-2 text-muted-foreground">
+                          Create Financial Form
+                        </span>
+                        <IncomeExpenseButton 
+                          onClientCreated={handleClientCreated}
+                          size="default"
+                          className="w-full"
+                        />
+                      </div>
+                      
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium mb-2 text-muted-foreground">
+                          AI Assistance
+                        </span>
+                        <TrusteeCoPliotButton 
+                          clientId={selectedClient?.id}
+                          size="default"
+                          className="w-full"
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
             
             <Tabs 
               defaultValue="form" 
