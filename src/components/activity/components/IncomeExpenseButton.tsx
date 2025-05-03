@@ -34,14 +34,13 @@ export const IncomeExpenseButton = ({
   return (
     <>
       <Button 
-        variant={variant} 
+        variant="default" 
         size={size}
-        className={`flex items-center gap-2 ${className}`}
+        className={`flex items-center justify-center gap-2 ${className} hover:opacity-90 transition-all shadow-sm`}
         onClick={handleOpenModal}
       >
-        <Plus className="h-4 w-4" />
-        <FileText className="h-4 w-4" />
-        Create Income & Expense Form
+        <FileText className="h-5 w-5" />
+        <span>Create Income & Expense Form</span>
       </Button>
       
       <IncomeExpenseModal 

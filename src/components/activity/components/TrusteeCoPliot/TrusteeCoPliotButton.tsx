@@ -27,15 +27,13 @@ export const TrusteeCoPliotButton = ({
   return (
     <>
       <Button 
-        variant="default" 
+        variant="secondary" 
         size={size}
-        className={`flex items-center gap-2 ${className} bg-gradient-to-r from-primary/90 to-primary hover:opacity-90 transition-all shadow-md`}
+        className={`flex items-center justify-center gap-2 ${className} hover:bg-secondary/90 transition-all border border-border/50 shadow-sm`}
         onClick={handleOpenModal}
       >
-        <div className="bg-white/30 rounded-full p-1">
-          <Bot className="h-4 w-4" />
-        </div>
-        <span className="font-medium text-primary-foreground">TrusteeCo-Pilot</span>
+        <Bot className="h-5 w-5 text-primary" />
+        <span className="font-medium">TrusteeCo-Pilot</span>
       </Button>
       
       <TrusteeCoPliotModal 

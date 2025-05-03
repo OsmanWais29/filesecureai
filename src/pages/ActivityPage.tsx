@@ -12,7 +12,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { useLocation } from "react-router-dom";
 import { IncomeExpenseButton } from "@/components/activity/components/IncomeExpenseButton";
-import { TrusteeCoPliotButton } from "@/components/activity/components/TrusteeCoPliot/TrusteeCoPliotButton"; // Add this import
+import { TrusteeCoPliotButton } from "@/components/activity/components/TrusteeCoPliot/TrusteeCoPliotButton"; 
+import { UserRound } from "lucide-react";
 
 // Valid UUID format mockup
 const MOCK_CLIENTS = [
@@ -94,29 +95,55 @@ export const ActivityPage = () => {
               <h1 className="text-3xl font-bold">Smart Income & Expense Management</h1>
             </div>
             
-            {/* Global Client Selection Card with Create Form Button */}
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>Client Information</CardTitle>
-                <CardDescription>Select a client or create a new form</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col md:flex-row justify-between gap-4 items-start md:items-center">
-                  <div className="w-full md:w-3/4">
+            {/* Redesigned Client Information Card */}
+            <Card className="border-none shadow-lg overflow-hidden">
+              <div className="bg-gradient-to-r from-primary/20 to-primary/5 border-b">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <UserRound className="h-5 w-5 text-primary" />
+                    <CardTitle>Client Information</CardTitle>
+                  </div>
+                  <CardDescription>Select a client to manage their financial data</CardDescription>
+                </CardHeader>
+              </div>
+
+              <CardContent className="p-6 pt-6">
+                <div className="space-y-6">
+                  {/* Large Client Selector */}
+                  <div className="bg-card border rounded-lg p-4 shadow-sm">
+                    <label className="text-sm font-medium mb-2 block text-muted-foreground">
+                      Select Client
+                    </label>
                     <ClientSelector 
                       selectedClient={selectedClient}
                       onClientSelect={handleClientSelect}
                       availableClients={clients}
                     />
                   </div>
-                  <div className="w-full md:w-auto mt-2 md:mt-0 flex gap-2">
-                    <IncomeExpenseButton 
-                      onClientCreated={handleClientCreated}
-                    />
-                    <TrusteeCoPliotButton 
-                      clientId={selectedClient?.id}
-                      variant="secondary"
-                    />
+                  
+                  {/* Actions Buttons in Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium mb-2 text-muted-foreground">
+                        Create Financial Form
+                      </span>
+                      <IncomeExpenseButton 
+                        onClientCreated={handleClientCreated}
+                        size="default"
+                        className="w-full"
+                      />
+                    </div>
+                    
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium mb-2 text-muted-foreground">
+                        AI Assistance
+                      </span>
+                      <TrusteeCoPliotButton 
+                        clientId={selectedClient?.id}
+                        size="default"
+                        className="w-full"
+                      />
+                    </div>
                   </div>
                 </div>
               </CardContent>
