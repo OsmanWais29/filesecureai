@@ -15,7 +15,10 @@ export const MeetingsTabs = () => {
   
   return (
     <div className="space-y-6">
-      <MeetingsHeader />
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold">Meetings Hub</h2>
+        <p className="text-muted-foreground">Manage, schedule, and organize client meetings</p>
+      </div>
       
       <Tabs 
         value={activeTab} 
