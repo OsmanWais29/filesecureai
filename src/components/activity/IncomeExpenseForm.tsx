@@ -12,7 +12,7 @@ import { HistoricalComparison } from "./components/HistoricalComparison";
 import { PrintButton } from "./form/PrintButton";
 import { useIncomeExpenseForm } from "./hooks/useIncomeExpenseForm";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Client } from "./types";
 import { FormAlerts } from "./form/FormAlerts";
@@ -20,12 +20,15 @@ import { NoClientSelected } from "./form/NoClientSelected";
 import { PeriodSelection } from "./form/PeriodSelection";
 import { useFormSubmission } from "./hooks/useFormSubmission";
 import { supabase } from "@/lib/supabase";
+import { useEditableFields } from "./hooks/useEditableFields";
 
 interface IncomeExpenseFormProps {
   selectedClient: Client | null;
 }
 
 export const IncomeExpenseForm = ({ selectedClient }: IncomeExpenseFormProps) => {
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
+  
   const {
     formData,
     isSubmitting,
@@ -45,6 +48,9 @@ export const IncomeExpenseForm = ({ selectedClient }: IncomeExpenseFormProps) =>
     handleSubmit,
     selectedClient
   });
+  
+  // Add use of the editable fields hook
+  const { isFieldEditable, toggleFieldEdit, setAllFieldsToViewMode } = useEditableFields();
 
   const handleConsentChange = (checked: boolean) => {
     const consentEvent = {
@@ -82,6 +88,18 @@ export const IncomeExpenseForm = ({ selectedClient }: IncomeExpenseFormProps) =>
       return () => clearTimeout(timer);
     }
   }, [selectedClient]);
+  
+  // Set to view mode when client or period changes
+  useEffect(() => {
+    setAllFieldsToViewMode();
+  }, [selectedClient, selectedPeriod, setAllFieldsToViewMode]);
+  
+  // Set first load flag to false after initial loading
+  useEffect(() => {
+    if (!isDataLoading && isFirstLoad) {
+      setIsFirstLoad(false);
+    }
+  }, [isDataLoading, isFirstLoad]);
 
   if (!selectedClient) {
     return <NoClientSelected />;
@@ -119,6 +137,9 @@ export const IncomeExpenseForm = ({ selectedClient }: IncomeExpenseFormProps) =>
             formData={formData} 
             onChange={handleChange}
             onMaritalStatusChange={(value) => handleFieldSelectChange('marital_status', value)}
+            isViewMode={!isFirstLoad}
+            isFieldEditable={isFieldEditable}
+            onToggleFieldEdit={toggleFieldEdit}
           />
           
           {/* Enhanced Income Section */}
@@ -127,6 +148,9 @@ export const IncomeExpenseForm = ({ selectedClient }: IncomeExpenseFormProps) =>
             previousMonthData={previousMonthData}
             onChange={handleChange}
             onFrequencyChange={handleFrequencyChange('income')}
+            isViewMode={!isFirstLoad}
+            isFieldEditable={isFieldEditable}
+            onToggleFieldEdit={toggleFieldEdit}
           />
           
           {/* Non-Discretionary Expenses Section */}
@@ -134,6 +158,9 @@ export const IncomeExpenseForm = ({ selectedClient }: IncomeExpenseFormProps) =>
             formData={formData}
             previousMonthData={previousMonthData}
             onChange={handleChange}
+            isViewMode={!isFirstLoad}
+            isFieldEditable={isFieldEditable}
+            onToggleFieldEdit={toggleFieldEdit}
           />
           
           {/* Essential Expenses Section */}
@@ -141,6 +168,9 @@ export const IncomeExpenseForm = ({ selectedClient }: IncomeExpenseFormProps) =>
             formData={formData} 
             previousMonthData={previousMonthData}
             onChange={handleChange}
+            isViewMode={!isFirstLoad}
+            isFieldEditable={isFieldEditable}
+            onToggleFieldEdit={toggleFieldEdit}
           />
           
           {/* Discretionary Expenses Section */}
@@ -148,6 +178,9 @@ export const IncomeExpenseForm = ({ selectedClient }: IncomeExpenseFormProps) =>
             formData={formData} 
             previousMonthData={previousMonthData}
             onChange={handleChange}
+            isViewMode={!isFirstLoad}
+            isFieldEditable={isFieldEditable}
+            onToggleFieldEdit={toggleFieldEdit}
           />
           
           {/* Savings & Insurance Section */}
@@ -155,12 +188,18 @@ export const IncomeExpenseForm = ({ selectedClient }: IncomeExpenseFormProps) =>
             formData={formData} 
             previousMonthData={previousMonthData}
             onChange={handleChange}
+            isViewMode={!isFirstLoad}
+            isFieldEditable={isFieldEditable}
+            onToggleFieldEdit={toggleFieldEdit}
           />
           
           {/* Surplus Income Section */}
           <SurplusIncomeSection
             formData={formData}
             onChange={handleChange}
+            isViewMode={!isFirstLoad}
+            isFieldEditable={isFieldEditable}
+            onToggleFieldEdit={toggleFieldEdit}
           />
           
           {/* Signature & Consent Section */}
@@ -168,10 +207,14 @@ export const IncomeExpenseForm = ({ selectedClient }: IncomeExpenseFormProps) =>
             formData={formData}
             onChange={handleChange}
             onConsentChange={handleConsentChange}
+            isViewMode={!isFirstLoad}
+            isFieldEditable={isFieldEditable}
+            onToggleFieldEdit={toggleFieldEdit}
+            clientName={selectedClient.name}
           />
           
           <Button type="submit" disabled={isSubmitting} className="w-full">
-            {isSubmitting ? "Submitting..." : "Submit Financial Data"}
+            {isSubmitting ? "Updating..." : currentRecordId ? "Update Financial Data" : "Submit Financial Data"}
           </Button>
         </>
       )}

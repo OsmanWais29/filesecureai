@@ -10,14 +10,16 @@ interface SmartCreateDocumentButtonProps {
   formData: IncomeExpenseData;
   selectedClient: { id: string; name: string } | null;
   isSubmitting: boolean;
-  onSubmit: (e: React.FormEvent) => void; // Updated to expect void return type instead of Promise<void>
+  onSubmit: (e: React.FormEvent) => void;
+  isUpdate?: boolean;
 }
 
 export const SmartCreateDocumentButton = ({ 
   formData, 
   selectedClient, 
   isSubmitting,
-  onSubmit 
+  onSubmit,
+  isUpdate = false
 }: SmartCreateDocumentButtonProps) => {
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -71,8 +73,8 @@ export const SmartCreateDocumentButton = ({
       
       // Simulate document creation and categorization
       setTimeout(() => {
-        toast.success("Document created and categorized successfully", {
-          description: `Added to ${selectedClient.name}'s Financial Statements folder`,
+        toast.success(isUpdate ? "Document updated successfully" : "Document created and categorized successfully", {
+          description: `${isUpdate ? "Updated in" : "Added to"} ${selectedClient.name}'s Financial Statements folder`,
           action: {
             label: "View Document",
             onClick: () => navigate(`/client/${selectedClient.id}/documents`)
@@ -82,8 +84,8 @@ export const SmartCreateDocumentButton = ({
         setIsProcessing(false);
       }, 1500);
     } catch (error) {
-      console.error("Error creating document:", error);
-      toast.error("Failed to create document");
+      console.error("Error with document:", error);
+      toast.error(isUpdate ? "Failed to update document" : "Failed to create document");
       setIsProcessing(false);
     }
   };
@@ -98,7 +100,7 @@ export const SmartCreateDocumentButton = ({
       {isProcessing ? (
         <>
           <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-          Processing...
+          {isUpdate ? "Updating..." : "Processing..."}
         </>
       ) : (
         <>
@@ -107,7 +109,7 @@ export const SmartCreateDocumentButton = ({
           ) : (
             <FileText className="h-4 w-4" />
           )}
-          Create Income & Expense Document
+          {isUpdate ? "Update Income & Expense Document" : "Create Income & Expense Document"}
         </>
       )}
     </Button>
