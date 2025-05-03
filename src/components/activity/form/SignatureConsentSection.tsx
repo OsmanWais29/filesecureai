@@ -94,13 +94,31 @@ export const SignatureConsentSection = ({
                 type="date"
                 required
               />
+              
+              <div className="text-center">
+                <button 
+                  type="button" 
+                  onClick={() => setUseDocuSign(true)}
+                  className="text-primary underline text-sm"
+                >
+                  Request New Signature via DocuSign
+                </button>
+              </div>
+              
+              {useDocuSign && (
+                <DocuSignIntegration 
+                  clientName={clientName || formData.full_name || "Client"}
+                  formId={formData.id?.toString() || "new"}
+                  onSignatureComplete={handleSignatureComplete}
+                />
+              )}
             </>
           ) : (
             <>
               {useDocuSign ? (
                 <DocuSignIntegration 
                   clientName={clientName || formData.full_name || "Client"}
-                  formId={formData.id || "new"}
+                  formId={formData.id?.toString() || "new"}
                   onSignatureComplete={handleSignatureComplete}
                 />
               ) : (

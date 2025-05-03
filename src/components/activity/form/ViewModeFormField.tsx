@@ -1,6 +1,6 @@
 
 import { ViewModeField } from "./ViewModeField";
-import { useTooltip } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { HelpCircle } from "lucide-react";
 
 interface ViewModeFormFieldProps {
@@ -34,19 +34,22 @@ export const ViewModeFormField = ({
   isMultiline = false,
   className = ""
 }: ViewModeFormFieldProps) => {
-  // This is a stub for now - in a real implementation, you would have a real tooltip component
-  const showTooltip = (message: string) => {
-    // In a real implementation, you'd show a tooltip
-    console.log("Tooltip:", message);
-  };
-
+  // Create a label with tooltip if provided
   const fullLabel = tooltip ? (
     <span className="flex items-center gap-1">
       {label}
-      <HelpCircle 
-        className="h-4 w-4 text-muted-foreground cursor-help" 
-        onMouseEnter={() => tooltip && showTooltip(tooltip)}
-      />
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <HelpCircle 
+              className="h-4 w-4 text-muted-foreground cursor-help"
+            />
+          </TooltipTrigger>
+          <TooltipContent>
+            {tooltip}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </span>
   ) : (
     label
