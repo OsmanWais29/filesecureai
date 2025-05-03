@@ -20,6 +20,7 @@ import StorageDiagnosticsPage from "./pages/StorageDiagnosticsPage";
 import NotesStandalonePage from "./pages/meetings/NotesStandalonePage";
 import AgendaStandalonePage from "./pages/meetings/AgendaStandalonePage";
 import FeedbackStandalonePage from "./pages/meetings/FeedbackStandalonePage";
+import ConverterPage from "./pages/ConverterPage";
 import "./App.css";
 
 function App() {
@@ -38,6 +39,7 @@ function App() {
       <Route path="/calendar-fullscreen" element={<CalendarFullscreenPage />} />
       <Route path="/activity" element={<ActivityPage />} />
       <Route path="/analytics" element={<AnalyticsPage />} />
+      <Route path="/converter" element={<ConverterPage />} /> {/* Add the new converter route */}
       <Route path="/e-filing" element={<EFilingPage />} />
       <Route path="/notifications" element={<NotificationsPage />} />
       <Route path="/profile" element={<ProfilePage />} />
@@ -45,6 +47,7 @@ function App() {
       <Route path="/support" element={<Support />} />
       <Route path="/SAFA" element={<ConBrandingPage />} />
       <Route path="/storage-diagnostics" element={<StorageDiagnosticsPage />} />
+      <Route path="/pdf-viewer-demo" element={<PDFViewerDemo />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
