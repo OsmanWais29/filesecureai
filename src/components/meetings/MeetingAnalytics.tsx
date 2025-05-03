@@ -5,7 +5,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MeetingsAnalytics } from "@/components/analytics/meetings/MeetingsAnalytics";
 import { FeedbackAnalytics } from "./feedback/FeedbackAnalytics";
 
-export const MeetingAnalytics = () => {
+interface MeetingAnalyticsProps {
+  clientName?: string;
+}
+
+export const MeetingAnalytics = ({ clientName }: MeetingAnalyticsProps) => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="overview" className="space-y-4">
@@ -16,7 +20,7 @@ export const MeetingAnalytics = () => {
         </TabsList>
         
         <TabsContent value="overview" className="space-y-4">
-          <MeetingsAnalytics />
+          <MeetingsAnalytics clientName={clientName} />
         </TabsContent>
         
         <TabsContent value="feedback" className="space-y-4">
