@@ -2,35 +2,35 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
-export const MeetingsAnalytics = () => {
-  // Mock data for meetings analytics
+interface MeetingsAnalyticsProps {
+  clientName?: string;
+}
+
+export const MeetingsAnalytics = ({ clientName = "Client" }: MeetingsAnalyticsProps) => {
+  // Mock data for meetings analytics - client-specific if clientName is provided
   const meetingData = {
-    totalMeetings: 128,
-    completionRate: 92,
-    averageDuration: 42,
-    clientSatisfaction: 4.7,
+    totalMeetings: clientName ? 8 : 128,
+    completionRate: clientName ? 96 : 92,
+    averageDuration: clientName ? 38 : 42,
+    clientSatisfaction: clientName ? 4.9 : 4.7,
     meetingTypes: [
-      { type: "Initial Consultation", count: 45, percentage: 35 },
-      { type: "Follow-up", count: 38, percentage: 30 },
-      { type: "Document Review", count: 25, percentage: 20 },
-      { type: "Final Sign-off", count: 20, percentage: 15 }
+      { type: "Initial Consultation", count: clientName ? 2 : 45, percentage: clientName ? 25 : 35 },
+      { type: "Follow-up", count: clientName ? 3 : 38, percentage: clientName ? 37.5 : 30 },
+      { type: "Document Review", count: clientName ? 2 : 25, percentage: clientName ? 25 : 20 },
+      { type: "Final Sign-off", count: clientName ? 1 : 20, percentage: clientName ? 12.5 : 15 }
     ],
-    monthlyTrends: [
-      { month: "Jan", meetings: 18, satisfaction: 4.5 },
-      { month: "Feb", meetings: 22, satisfaction: 4.6 },
-      { month: "Mar", meetings: 20, satisfaction: 4.6 },
-      { month: "Apr", meetings: 25, satisfaction: 4.7 },
-      { month: "May", meetings: 23, satisfaction: 4.8 },
-      { month: "Jun", meetings: 20, satisfaction: 4.7 }
-    ]
   };
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold mb-2">Meeting Analytics</h2>
+        <h2 className="text-2xl font-bold mb-2">
+          {clientName ? `${clientName}'s Meeting Insights` : "Meeting Analytics"}
+        </h2>
         <p className="text-muted-foreground">
-          Comprehensive analysis of meeting performance and client feedback metrics
+          {clientName 
+            ? `Analysis of meetings with ${clientName} and feedback metrics` 
+            : "Comprehensive analysis of meeting performance and client feedback metrics"}
         </p>
       </div>
 
@@ -41,7 +41,9 @@ export const MeetingsAnalytics = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{meetingData.totalMeetings}</div>
-            <p className="text-xs text-muted-foreground mt-1">Last 30 days</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {clientName ? "Historical meetings" : "Last 30 days"}
+            </p>
           </CardContent>
         </Card>
         
@@ -51,7 +53,9 @@ export const MeetingsAnalytics = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{meetingData.completionRate}%</div>
-            <p className="text-xs text-muted-foreground mt-1">+2.5% from last month</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {clientName ? "Of scheduled meetings" : "+2.5% from last month"}
+            </p>
           </CardContent>
         </Card>
         
@@ -61,7 +65,7 @@ export const MeetingsAnalytics = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{meetingData.averageDuration} min</div>
-            <p className="text-xs text-muted-foreground mt-1">-3 min from last month</p>
+            <p className="text-xs text-muted-foreground mt-1">Per meeting</p>
           </CardContent>
         </Card>
         
@@ -80,7 +84,9 @@ export const MeetingsAnalytics = () => {
         <Card>
           <CardHeader>
             <CardTitle>Meeting Distribution by Type</CardTitle>
-            <CardDescription>Breakdown of meetings by category</CardDescription>
+            <CardDescription>
+              {clientName ? `Breakdown of meetings with ${clientName}` : "Breakdown of meetings by category"}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -105,7 +111,9 @@ export const MeetingsAnalytics = () => {
         <Card>
           <CardHeader>
             <CardTitle>Meeting Feedback Analysis</CardTitle>
-            <CardDescription>Key insights from client reviews</CardDescription>
+            <CardDescription>
+              {clientName ? `Key insights from ${clientName}'s feedback` : "Key insights from client reviews"}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -119,9 +127,11 @@ export const MeetingsAnalytics = () => {
               </div>
 
               <div className="p-4 border rounded-lg">
-                <h4 className="font-medium mb-2">Areas for Improvement</h4>
+                <h4 className="font-medium mb-2">
+                  {clientName ? "Areas for Improvement with this Client" : "Areas for Improvement"}
+                </h4>
                 <ul className="list-disc list-inside space-y-1 text-sm">
-                  <li>Meeting follow-up communication (76% satisfaction)</li>
+                  <li>Follow-up communication (76% satisfaction)</li>
                   <li>Technical platform experience (82% satisfaction)</li>
                   <li>Meeting duration optimization (78% satisfaction)</li>
                 </ul>

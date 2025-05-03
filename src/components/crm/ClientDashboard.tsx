@@ -270,7 +270,7 @@ export const ClientDashboard = ({ clientId: propClientId, clientName: propClient
         </TabsContent>
 
         <TabsContent value="meetings" className="mt-0">
-          <MeetingsTabs />
+          <MeetingsTabs clientName={selectedClientName} />
         </TabsContent>
       </Tabs>
     </div>
