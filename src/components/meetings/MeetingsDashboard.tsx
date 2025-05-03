@@ -1,7 +1,5 @@
 
 import { useState } from "react";
-import { MeetingsHeader } from "./MeetingsHeader";
-import { MeetingsTabs } from "./MeetingsTabs";
 import { UpcomingMeetings } from "./UpcomingMeetings";
 import { JoinMeetingPanel } from "./JoinMeetingPanel";
 import { MeetingNotes } from "./MeetingNotes";
@@ -13,27 +11,18 @@ import { useToast } from "@/hooks/use-toast";
 import { useEnhancedAnalytics } from "@/hooks/useEnhancedAnalytics";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ExternalLink, Video, Clipboard, ListChecks, X, BarChart2, MessageSquare } from "lucide-react";
 import { HotkeysProvider } from "@/hooks/useHotkeys";
 
 export const MeetingsDashboard = () => {
-  const [activeTab, setActiveTab] = useState<"upcoming" | "join" | "notes" | "agenda" | "analytics">("upcoming");
   const [isActiveCall, setIsActiveCall] = useState(false);
   const [showReviewDialog, setShowReviewDialog] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const { toast } = useToast();
   const analytics = useEnhancedAnalytics({ pageName: "Meetings" });
 
-  // Track tab changes
-  const handleTabChange = (tab: "upcoming" | "join" | "notes" | "agenda" | "analytics") => {
-    setActiveTab(tab);
-    analytics.trackInteraction("MeetingsTabs", `Changed to ${tab} tab`);
-  };
-
   const openNotesWindow = () => {
     const features = 'width=800,height=700,resizable=yes,scrollbars=yes';
-    const notesWindow = window.open('/meetings/notes-standalone', 'meetingNotes', features);
+    const notesWindow = window.open('/meetings/notes', 'meetingNotes', features);
     
     if (notesWindow) {
       notesWindow.focus();
@@ -53,7 +42,7 @@ export const MeetingsDashboard = () => {
 
   const openAgendaWindow = () => {
     const features = 'width=500,height=700,resizable=yes,scrollbars=yes';
-    const agendaWindow = window.open('/meetings/agenda-standalone', 'meetingAgenda', features);
+    const agendaWindow = window.open('/meetings/agenda', 'meetingAgenda', features);
     
     if (agendaWindow) {
       agendaWindow.focus();
@@ -95,9 +84,6 @@ export const MeetingsDashboard = () => {
     setTimeout(() => {
       setShowFeedbackDialog(true);
     }, 1000);
-    
-    // Switch to analytics tab to show the updated information
-    setActiveTab("analytics");
   };
 
   const handleRequestFeedback = () => {
@@ -112,23 +98,26 @@ export const MeetingsDashboard = () => {
   return (
     <HotkeysProvider>
       <div className="space-y-6 relative">
-        <MeetingsHeader 
-          activeTab={activeTab} 
-          setActiveTab={handleTabChange} 
-          isActiveCall={isActiveCall} 
-          onRequestFeedback={handleRequestFeedback}
-        />
+        {isActiveCall ? (
+          <div className="bg-amber-100 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 p-4 rounded-lg mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-medium">Active Meeting in Progress</h3>
+                <p className="text-sm text-muted-foreground">Meeting tools are available in separate windows.</p>
+              </div>
+              <Button variant="outline" onClick={endActiveCallMode}>
+                End Meeting
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex justify-end mb-4">
+            <Button onClick={startActiveCallMode} className="gap-2">
+              <span>Start Meeting Mode</span>
+            </Button>
+          </div>
+        )}
         
-        <MeetingsTabs activeTab={activeTab} setActiveTab={handleTabChange} />
-        
-        <div className="mt-6">
-          {activeTab === "upcoming" && <UpcomingMeetings />}
-          {activeTab === "join" && <JoinMeetingPanel />}
-          {activeTab === "notes" && <MeetingNotes />}
-          {activeTab === "agenda" && <MeetingAgenda />}
-          {activeTab === "analytics" && <MeetingAnalytics />}
-        </div>
-
         {/* Meeting Review Dialog */}
         <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
           <DialogContent className="sm:max-w-xl">
