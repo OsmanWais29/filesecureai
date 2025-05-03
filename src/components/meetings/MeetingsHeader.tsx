@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { Video, Calendar } from "lucide-react";
+import { Video } from "lucide-react";
 
 interface MeetingsHeaderProps {
   onStartMeetingMode?: () => void;
@@ -19,10 +19,6 @@ export const MeetingsHeader = ({
       </div>
       
       <div className="flex gap-2">
-        <Button variant="outline" className="gap-2">
-          <Calendar className="h-4 w-4" />
-          <span>Schedule</span>
-        </Button>
         {!isActiveCall && (
           <Button onClick={onStartMeetingMode} className="gap-2">
             <Video className="h-4 w-4" />
