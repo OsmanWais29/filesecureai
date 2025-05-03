@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,7 +7,11 @@ import { useTranscription } from "./notes/useTranscription";
 import { Badge } from "@/components/ui/badge";
 import { NotesControls } from "./notes/NotesControls";
 
-export const MeetingNotes = () => {
+interface MeetingNotesProps {
+  clientName?: string;
+}
+
+export const MeetingNotes = ({ clientName }: MeetingNotesProps) => {
   const {
     isRecording,
     transcription,
@@ -30,7 +33,7 @@ export const MeetingNotes = () => {
         <div>
           <h2 className="text-xl font-bold">Meeting Notes</h2>
           <p className="text-sm text-muted-foreground">
-            Record and transcribe meetings, generate summaries and action items
+            {clientName ? `Record and transcribe meetings with ${clientName}` : "Record and transcribe meetings, generate summaries and action items"}
           </p>
         </div>
         

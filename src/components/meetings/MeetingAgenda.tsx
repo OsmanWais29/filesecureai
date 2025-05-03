@@ -15,7 +15,11 @@ interface AgendaItem {
   timeEstimate: string;
 }
 
-export const MeetingAgenda = () => {
+interface MeetingAgendaProps {
+  clientName?: string;
+}
+
+export const MeetingAgenda = ({ clientName }: MeetingAgendaProps) => {
   const [agendaItems, setAgendaItems] = useState<AgendaItem[]>([
     { id: '1', text: 'Review previous meeting notes', completed: true, timeEstimate: '5 min' },
     { id: '2', text: 'Discuss progress on consumer proposal documentation', completed: false, timeEstimate: '15 min' },
@@ -111,7 +115,7 @@ export const MeetingAgenda = () => {
         <div>
           <h2 className="text-xl font-bold">Meeting Agenda</h2>
           <p className="text-sm text-muted-foreground">
-            Create and track agenda items for your meeting
+            {clientName ? `Create and track agenda items for meeting with ${clientName}` : "Create and track agenda items for your meeting"}
           </p>
         </div>
         
