@@ -2,7 +2,7 @@
 import React, { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Mic, Send } from "lucide-react";
+import { Mic, Send, Sparkles } from "lucide-react";
 import { useChatMessages } from "../hooks/useChatMessages";
 import { cn } from "@/lib/utils";
 
@@ -35,27 +35,41 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ className }) => {
       <div 
         id="chat-container" 
         ref={chatContainerRef}
-        className="flex-1 overflow-y-auto border rounded-md mb-4"
+        className="flex-1 overflow-y-auto border rounded-md mb-4 bg-background/50"
       >
         <div className="p-4 space-y-4">
           {chatMessages.map((msg, index) => (
             <div 
               key={index}
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-3 duration-300`}
             >
               <div 
-                className={`max-w-[80%] rounded-lg p-3 ${
+                className={`max-w-[80%] rounded-lg p-3 shadow-sm ${
                   msg.role === 'user' 
                     ? 'bg-primary text-primary-foreground ml-auto' 
-                    : 'bg-muted'
+                    : 'bg-muted/80 border border-border/50'
                 }`}
               >
-                {msg.content.split('\n').map((text, i) => (
-                  <React.Fragment key={i}>
-                    {text}
-                    {i < msg.content.split('\n').length - 1 && <br />}
-                  </React.Fragment>
-                ))}
+                {msg.role === 'assistant' && (
+                  <div className="flex items-center gap-1 text-xs text-primary mb-1 font-medium">
+                    <Sparkles className="h-3 w-3" />
+                    AI Assistant
+                  </div>
+                )}
+                <div className="prose-sm">
+                  {msg.content.split('\n').map((text, i) => (
+                    <React.Fragment key={i}>
+                      {text}
+                      {i < msg.content.split('\n').length - 1 && <br />}
+                    </React.Fragment>
+                  ))}
+                </div>
+                <div className="text-xs opacity-70 mt-1 text-right">
+                  {new Date().toLocaleTimeString(undefined, { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  })}
+                </div>
               </div>
             </div>
           ))}
@@ -63,7 +77,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ className }) => {
         </div>
       </div>
 
-      <div className="flex items-center space-x-2 p-2 border rounded-md bg-card">
+      <div className="flex items-center space-x-2 p-3 border rounded-md bg-card shadow-sm">
         <Button 
           type="button" 
           size="icon"
@@ -73,6 +87,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ className }) => {
             isRecording && "animate-pulse"
           )}
           onClick={toggleRecording}
+          aria-label={isRecording ? "Stop recording" : "Start recording"}
+          title={isRecording ? "Stop recording" : "Start recording"}
         >
           <Mic className="h-4 w-4" />
         </Button>
@@ -80,7 +96,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ className }) => {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Type your message..."
-          className="flex-1 min-h-[40px] resize-none"
+          className="flex-1 min-h-[40px] max-h-[120px] resize-none"
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
@@ -93,7 +109,10 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ className }) => {
           size="icon"
           variant="default"
           onClick={handleSendMessage}
-          className="bg-primary hover:bg-primary/90"
+          className="bg-primary hover:bg-primary/90 shadow-sm transition-colors"
+          disabled={!message.trim()}
+          aria-label="Send message"
+          title="Send message"
         >
           <Send className="h-4 w-4" />
         </Button>

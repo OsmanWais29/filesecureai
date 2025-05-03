@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Bot, Brain, Sparkles } from "lucide-react";
+import { Bot, Sparkles } from "lucide-react";
 import { TrusteeCoPliotModal } from "./TrusteeCoPliotModal";
 
 interface TrusteeCoPliotButtonProps {
@@ -29,12 +29,14 @@ export const TrusteeCoPliotButton = ({
       <Button 
         variant={variant} 
         size={size}
-        className={`flex items-center gap-2 ${className} bg-gradient-to-r from-primary/90 to-primary hover:from-primary hover:to-primary/90`}
+        className={`flex items-center gap-1.5 ${className} bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-sm transition-all`}
         onClick={handleOpenModal}
       >
-        <Bot className="h-4 w-4" />
-        <Sparkles className="h-3 w-3" />
-        TrusteeCo-Pilot
+        <div className="bg-white/20 p-0.5 rounded-full">
+          <Bot className="h-3.5 w-3.5" />
+        </div>
+        <span className="font-medium">TrusteeCo-Pilot</span>
+        <Sparkles className="h-3 w-3 ml-0.5" />
       </Button>
       
       <TrusteeCoPliotModal 

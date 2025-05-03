@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Bot, MessageSquare, FileCheck } from "lucide-react";
+import { Bot, MessageSquare, FileCheck, Sparkles } from "lucide-react";
 
 import { ChatPanel } from "./components/ChatPanel";
 import { VerificationPanel } from "./components/VerificationPanel";
@@ -32,12 +32,15 @@ export const TrusteeCoPliotModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0 gap-0">
-        <DialogHeader className="p-4 border-b bg-muted/30">
+      <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogHeader className="p-4 border-b bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
           <DialogTitle className="flex items-center gap-2">
-            <Bot className="h-5 w-5 text-primary" /> 
+            <div className="bg-white/20 p-1.5 rounded-full">
+              <Bot className="h-5 w-5" />
+            </div>
             TrusteeCo-Pilot Assistant
-            <Badge variant="secondary" className="ml-2 bg-primary/20 text-primary">
+            <Badge variant="outline" className="ml-2 bg-white/20 border-white/30 text-white flex items-center gap-1">
+              <Sparkles className="h-3 w-3" />
               AI-Powered
             </Badge>
           </DialogTitle>
@@ -53,12 +56,19 @@ export const TrusteeCoPliotModal = ({
             >
               <div className="px-4 pt-4 border-b">
                 <TabsList className="grid grid-cols-2 w-full">
-                  <TabsTrigger value="conversation" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                    <MessageSquare className="h-4 w-4 mr-2" />
+                  <TabsTrigger 
+                    value="conversation" 
+                    className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground flex items-center gap-1.5"
+                    disabled={chatMessages.length === 0}
+                  >
+                    <MessageSquare className="h-4 w-4" />
                     Conversation
                   </TabsTrigger>
-                  <TabsTrigger value="verification" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                    <FileCheck className="h-4 w-4 mr-2" />
+                  <TabsTrigger 
+                    value="verification" 
+                    className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground flex items-center gap-1.5"
+                  >
+                    <FileCheck className="h-4 w-4" />
                     Verification
                   </TabsTrigger>
                 </TabsList>
