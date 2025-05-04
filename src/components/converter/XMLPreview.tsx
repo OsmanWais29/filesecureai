@@ -1,11 +1,11 @@
 
 import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Download, Copy, Check, FileJson, File } from "lucide-react";
 import { ConversionResult } from "./types";
-import { Download, Check, AlertCircle, Info } from "lucide-react";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 interface XMLPreviewProps {
   result: ConversionResult;
@@ -14,143 +14,187 @@ interface XMLPreviewProps {
 
 export const XMLPreview: React.FC<XMLPreviewProps> = ({ result, onDownload }) => {
   const [activeTab, setActiveTab] = useState("xml");
+  const [copied, setCopied] = useState(false);
   
-  // Format XML with proper indentation for display
-  const formatXml = (xml: string) => {
-    // XML is already formatted in our implementation
-    return xml;
+  const handleCopy = () => {
+    const textToCopy = activeTab === "xml" ? result.xml : JSON.stringify(result.json, null, 2);
+    navigator.clipboard.writeText(textToCopy);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
   
-  // Format JSON for display
-  const formatJson = (json: any) => {
-    return JSON.stringify(json, null, 2);
+  // Format XML for display
+  const formatXml = (xml: string) => {
+    // Very basic formatting for readability
+    let formatted = xml;
+    
+    // Replace > with >\n
+    formatted = formatted.replace(/>/g, ">\n");
+    
+    // Add indentation
+    let indent = 0;
+    const lines = formatted.split("\n");
+    formatted = lines.map(line => {
+      let temp = line.trim();
+      
+      // Decrease indent for closing tags
+      if (temp.startsWith("</")) {
+        indent -= 2;
+      }
+      
+      // Add current indentation
+      const result = " ".repeat(indent) + temp;
+      
+      // Increase indent for opening tags (if not self-closing)
+      if (temp.startsWith("<") && !temp.startsWith("</") && !temp.endsWith("/>")) {
+        indent += 2;
+      }
+      
+      return result;
+    }).join("\n");
+    
+    return formatted;
   };
 
   return (
     <div className="space-y-4">
-      <Card className="shadow-sm">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-lg">Conversion Result</CardTitle>
-          <Button onClick={onDownload}>
-            <Download className="h-4 w-4 mr-2" />
-            Download XML
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold">Conversion Result</h3>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCopy}
+          >
+            {copied ? <Check className="h-4 w-4 mr-1" /> : <Copy className="h-4 w-4 mr-1" />}
+            {copied ? "Copied" : "Copy"}
           </Button>
-        </CardHeader>
-        <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-3 mb-4">
-              <TabsTrigger value="xml">XML Output</TabsTrigger>
-              <TabsTrigger value="json" disabled={!result.json}>Data Preview</TabsTrigger>
-              <TabsTrigger value="validation">Validation</TabsTrigger>
+          <Button
+            size="sm"
+            onClick={onDownload}
+          >
+            <Download className="h-4 w-4 mr-1" />
+            Download
+          </Button>
+        </div>
+      </div>
+      
+      <Card className="shadow-sm">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <div className="flex items-center justify-between px-6 pt-6 pb-2">
+            <TabsList>
+              <TabsTrigger value="xml" className="flex items-center">
+                <File className="h-4 w-4 mr-1" />
+                XML
+              </TabsTrigger>
+              <TabsTrigger value="json" disabled={!result.json} className="flex items-center">
+                <FileJson className="h-4 w-4 mr-1" />
+                JSON
+              </TabsTrigger>
+              <TabsTrigger value="tree" className="flex items-center">
+                Data Structure
+              </TabsTrigger>
             </TabsList>
             
-            <TabsContent value="xml" className="space-y-4">
+            <div className="flex items-center space-x-2">
+              {result.validationErrors.length === 0 ? (
+                <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-100">
+                  Valid
+                </Badge>
+              ) : (
+                <Badge variant="destructive">
+                  {result.validationErrors.length} Errors
+                </Badge>
+              )}
+              
+              {result.validationWarnings.length > 0 && (
+                <Badge variant="outline" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
+                  {result.validationWarnings.length} Warnings
+                </Badge>
+              )}
+            </div>
+          </div>
+          
+          <CardContent className="pt-2">
+            <TabsContent value="xml" className="mt-0">
               <div className="relative">
-                <pre className="p-4 bg-muted rounded-md text-sm overflow-x-auto max-h-[500px] overflow-y-auto">
-                  <code className="text-xs">{formatXml(result.xml)}</code>
+                <pre className="bg-muted rounded-md p-4 overflow-x-auto text-xs font-mono max-h-96">
+                  {formatXml(result.xml)}
                 </pre>
               </div>
             </TabsContent>
             
-            <TabsContent value="json" className="space-y-4">
+            <TabsContent value="json" className="mt-0">
               {result.json ? (
                 <div className="relative">
-                  <pre className="p-4 bg-muted rounded-md text-sm overflow-x-auto max-h-[500px] overflow-y-auto">
-                    <code className="text-xs">{formatJson(result.json)}</code>
+                  <pre className="bg-muted rounded-md p-4 overflow-x-auto text-xs font-mono max-h-96">
+                    {JSON.stringify(result.json, null, 2)}
                   </pre>
                 </div>
               ) : (
-                <div className="text-center p-8 text-muted-foreground">
-                  No JSON data available
+                <div className="bg-muted rounded-md p-4 text-center text-sm text-muted-foreground">
+                  JSON output not available. Change output format to JSON in processing options.
                 </div>
               )}
             </TabsContent>
             
-            <TabsContent value="validation" className="space-y-4">
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  {result.validationErrors.length === 0 ? (
-                    <div className="flex items-center text-green-600">
-                      <Check className="h-5 w-5 mr-1" />
-                      <span>XML validation passed</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center text-destructive">
-                      <AlertCircle className="h-5 w-5 mr-1" />
-                      <span>{result.validationErrors.length} validation errors found</span>
-                    </div>
-                  )}
-                </div>
+            <TabsContent value="tree" className="mt-0">
+              <div className="bg-muted rounded-md p-4 max-h-96 overflow-y-auto">
+                <h4 className="text-sm font-medium mb-2">Extracted Data</h4>
                 
-                {result.validationErrors.length > 0 && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Validation Errors</AlertTitle>
-                    <AlertDescription>
-                      <ul className="list-disc pl-5 space-y-1 text-sm">
-                        {result.validationErrors.map((error, index) => (
-                          <li key={index}>{error}</li>
-                        ))}
-                      </ul>
-                    </AlertDescription>
-                  </Alert>
-                )}
-                
-                {result.validationWarnings.length > 0 && (
-                  <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertTitle>Validation Warnings</AlertTitle>
-                    <AlertDescription>
-                      <ul className="list-disc pl-5 space-y-1 text-sm">
-                        {result.validationWarnings.map((warning, index) => (
-                          <li key={index}>{warning}</li>
-                        ))}
-                      </ul>
-                    </AlertDescription>
-                  </Alert>
-                )}
-                
-                <div className="space-y-3 pt-2">
-                  <h3 className="text-sm font-medium">Extraction Summary</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-muted p-3 rounded-md">
-                      <div className="text-xs text-muted-foreground">Filename</div>
-                      <div className="font-medium">{result.extractedData.metadata.filename}</div>
-                    </div>
-                    <div className="bg-muted p-3 rounded-md">
-                      <div className="text-xs text-muted-foreground">Page Count</div>
-                      <div className="font-medium">{result.extractedData.metadata.pageCount}</div>
-                    </div>
-                    <div className="bg-muted p-3 rounded-md">
-                      <div className="text-xs text-muted-foreground">Processing Time</div>
-                      <div className="font-medium">{(result.extractedData.metadata.processingTime / 1000).toFixed(2)}s</div>
-                    </div>
-                    <div className="bg-muted p-3 rounded-md">
-                      <div className="text-xs text-muted-foreground">Status</div>
-                      <div className={`font-medium ${result.extractedData.metadata.success ? 'text-green-600' : 'text-destructive'}`}>
-                        {result.extractedData.metadata.success ? 'Success' : 'Failed'}
+                <div className="space-y-4">
+                  <div>
+                    <h5 className="text-xs font-medium text-muted-foreground mb-1">Metadata</h5>
+                    <div className="space-y-1">
+                      <div className="flex text-xs">
+                        <span className="font-mono w-32">Filename:</span>
+                        <span>{result.extractedData.metadata.filename}</span>
+                      </div>
+                      <div className="flex text-xs">
+                        <span className="font-mono w-32">Page Count:</span>
+                        <span>{result.extractedData.metadata.pageCount}</span>
+                      </div>
+                      <div className="flex text-xs">
+                        <span className="font-mono w-32">Processing Time:</span>
+                        <span>{(result.extractedData.metadata.processingTime / 1000).toFixed(2)}s</span>
                       </div>
                     </div>
                   </div>
-                </div>
-                
-                <div className="space-y-3">
-                  <h3 className="text-sm font-medium">Extracted Sections</h3>
-                  <div className="space-y-2">
-                    {result.extractedData.sections.map((section, index) => (
-                      <div key={index} className="bg-muted p-3 rounded-md">
-                        <div className="font-medium">{section.name}</div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {section.fields.length} fields extracted
+                  
+                  <div>
+                    <h5 className="text-xs font-medium text-muted-foreground mb-1">Sections</h5>
+                    <div className="space-y-3">
+                      {result.extractedData.sections.map((section, idx) => (
+                        <div key={idx} className="border rounded p-2 bg-background">
+                          <h6 className="text-xs font-medium mb-1">{section.name}</h6>
+                          <div className="space-y-1">
+                            {section.fields.map((field, fidx) => (
+                              <div key={fidx} className="flex text-xs items-center">
+                                <span className="font-mono w-32 truncate" title={field.name}>
+                                  {field.name}:
+                                </span>
+                                <span className="truncate flex-1" title={String(field.value)}>
+                                  {String(field.value)}
+                                </span>
+                              </div>
+                            ))}
+                            
+                            {section.tables && section.tables.length > 0 && (
+                              <div className="mt-2">
+                                <span className="text-xs font-medium">Tables: </span>
+                                <span className="text-xs">{section.tables.length} tables found</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
             </TabsContent>
-          </Tabs>
-        </CardContent>
+          </CardContent>
+        </Tabs>
       </Card>
     </div>
   );

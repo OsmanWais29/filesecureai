@@ -104,6 +104,7 @@ const Index = () => {
 
   // Handle auth errors
   if (authError) {
+    // Fix the Error to string conversion here
     return <AuthErrorDisplay error={authError instanceof Error ? authError.message : String(authError)} />;
   }
 
