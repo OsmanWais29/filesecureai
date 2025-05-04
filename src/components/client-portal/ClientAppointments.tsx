@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { 
   Card, 
@@ -107,7 +106,7 @@ export const ClientAppointments = () => {
       case "video":
         return <Video className="h-4 w-4" />;
       case "phone":
-        return <MessageSqule className="h-4 w-4" />;
+        return <MessageSquare className="h-4 w-4" />;
     }
   };
 

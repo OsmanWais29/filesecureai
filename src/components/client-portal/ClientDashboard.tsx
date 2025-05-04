@@ -5,8 +5,13 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "./StatusBadge";
 import { Progress } from "@/components/ui/progress";
 import { CalendarIcon, Clock, FileCheck, FileText, ShieldCheck, CircleAlert, Bell } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 export const ClientDashboard = () => {
+  // Use navigate for routing
+  const navigate = useNavigate();
+  
   // Mock data for demonstration - would come from API in real implementation
   const estateStatus = {
     status: "Active",
@@ -40,6 +45,41 @@ export const ClientDashboard = () => {
     ]
   };
 
+  // Handler functions for buttons
+  const handleViewDetails = () => {
+    toast.info("Estate file details will be displayed here");
+    // In a real app, this might navigate to a detailed estate view
+    // navigate(`/client-portal/estate/${estateStatus.fileNumber}`);
+  };
+  
+  const handleCompleteTask = (taskId: string) => {
+    toast.success("Task marked as complete");
+    // In a real app, this would update the task status in the database
+  };
+  
+  const handleViewAllTasks = () => {
+    navigate('/client-portal/tasks');
+  };
+  
+  const handleViewAllNotifications = () => {
+    toast.info("All notifications will be displayed here");
+    // In a real app, this might navigate to a notifications page
+    // navigate('/client-portal/notifications');
+  };
+  
+  const handleScheduleAppointment = () => {
+    navigate('/client-portal/appointments');
+  };
+  
+  const handleRescheduleAppointment = (appointmentId: string) => {
+    toast.info("Reschedule appointment form will be displayed here");
+    navigate(`/client-portal/appointments?action=reschedule&id=${appointmentId}`);
+  };
+  
+  const handleViewAllDocuments = () => {
+    navigate('/client-portal/documents');
+  };
+
   return (
     <div className="p-4 md:p-6 w-full max-w-full">
       {/* Welcome Message */}
@@ -61,7 +101,7 @@ export const ClientDashboard = () => {
                 Filed on {estateStatus.dateOfFiling}
               </CardDescription>
             </div>
-            <Button variant="outline" size="lg">View Details</Button>
+            <Button variant="outline" size="lg" onClick={handleViewDetails}>View Details</Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -127,7 +167,7 @@ export const ClientDashboard = () => {
               ))}
             </CardContent>
             <CardFooter>
-              <Button variant="ghost" className="ml-auto">View All Notifications</Button>
+              <Button variant="ghost" className="ml-auto" onClick={handleViewAllNotifications}>View All Notifications</Button>
             </CardFooter>
           </Card>
         
@@ -145,14 +185,14 @@ export const ClientDashboard = () => {
                       <p className="font-medium text-lg">{task.title}</p>
                       <p className="text-muted-foreground">Due {task.due}</p>
                     </div>
-                    <Button>Complete</Button>
+                    <Button onClick={() => handleCompleteTask(task.id)}>Complete</Button>
                   </div>
                 </div>
               ))}
             </CardContent>
             <CardFooter className="flex justify-between">
               <p className="text-muted-foreground">{estateStatus.tasks.filter(task => task.status === "pending").length} tasks pending</p>
-              <Button variant="ghost">View All Tasks</Button>
+              <Button variant="ghost" onClick={handleViewAllTasks}>View All Tasks</Button>
             </CardFooter>
           </Card>
         </div>
@@ -177,12 +217,19 @@ export const ClientDashboard = () => {
                     <p className="font-medium">{appointment.title}</p>
                   </div>
                   <p className="text-muted-foreground text-sm ml-11">{appointment.date} at {appointment.time}</p>
-                  <Button variant="outline" size="sm" className="mt-3 ml-auto">Reschedule</Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-3 ml-auto" 
+                    onClick={() => handleRescheduleAppointment(appointment.id)}
+                  >
+                    Reschedule
+                  </Button>
                 </div>
               ))}
             </CardContent>
             <CardFooter className="flex justify-center">
-              <Button>Schedule New Appointment</Button>
+              <Button onClick={handleScheduleAppointment}>Schedule New Appointment</Button>
             </CardFooter>
           </Card>
           
@@ -209,7 +256,7 @@ export const ClientDashboard = () => {
               ))}
             </CardContent>
             <CardFooter>
-              <Button variant="ghost" className="ml-auto">View All Documents</Button>
+              <Button variant="ghost" className="ml-auto" onClick={handleViewAllDocuments}>View All Documents</Button>
             </CardFooter>
           </Card>
         </div>
