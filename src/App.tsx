@@ -14,11 +14,12 @@ import ActivityPage from "./pages/trustee/ActivityPage";
 import AnalyticsPage from "./pages/trustee/AnalyticsPage";
 import EFilingPage from "./pages/trustee/EFilingPage";
 import ProfilePage from "./pages/trustee/ProfilePage";
-import Support from "./pages/trustee/Support";
+import Support from "./pages/Support"; // Fixed import path
 import SettingsPage from "./pages/trustee/SettingsPage";
 import NotificationsPage from "./pages/trustee/NotificationsPage";
 import ConBrandingPage from "./pages/trustee/ConBrandingPage";
 import ConverterPage from "./pages/trustee/ConverterPage";
+import MeetingsPage from "./pages/MeetingsPage"; // Add MeetingsPage import
 
 import "./App.css";
 
@@ -41,6 +42,7 @@ function App() {
       <Route path="/profile" element={<ProfilePage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/support" element={<Support />} />
+      <Route path="/meetings" element={<MeetingsPage />} /> {/* Add MeetingsPage route */}
       <Route path="/SAFA" element={<ConBrandingPage />} />
 
       {/* Client portal routes - use the ClientPortal layout for all client portal routes */}
