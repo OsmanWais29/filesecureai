@@ -26,9 +26,9 @@ import "./App.css";
 function App() {
   return (
     <Routes>
+      {/* Trustee application routes */}
       <Route path="/" element={<Index />} />
-      <Route path="/login" element={<Index />} /> {/* Ensure /login also maps to Index which handles auth */}
-      <Route path="/client-portal" element={<ClientPortal />} /> {/* New dedicated client portal route */}
+      <Route path="/login" element={<Index />} />
       <Route path="/crm" element={<CRMPage />} />
       <Route path="/documents" element={<DocumentsPage />} />
       <Route path="/document-viewer/:documentId" element={<DocumentViewerPage />} />
@@ -39,7 +39,7 @@ function App() {
       <Route path="/calendar-fullscreen" element={<CalendarFullscreenPage />} />
       <Route path="/activity" element={<ActivityPage />} />
       <Route path="/analytics" element={<AnalyticsPage />} />
-      <Route path="/converter" element={<ConverterPage />} /> {/* Add the new converter route */}
+      <Route path="/converter" element={<ConverterPage />} />
       <Route path="/e-filing" element={<EFilingPage />} />
       <Route path="/notifications" element={<NotificationsPage />} />
       <Route path="/profile" element={<ProfilePage />} />
@@ -47,6 +47,11 @@ function App() {
       <Route path="/support" element={<Support />} />
       <Route path="/SAFA" element={<ConBrandingPage />} />
       <Route path="/storage-diagnostics" element={<StorageDiagnosticsPage />} />
+
+      {/* Client portal routes - use the ClientPortal layout for all client portal routes */}
+      <Route path="/client-portal/*" element={<ClientPortal />} />
+
+      {/* 404 catch-all route */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

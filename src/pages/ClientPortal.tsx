@@ -10,16 +10,6 @@ import { ClientDashboard } from "@/components/client-portal/ClientDashboard";
 import { ClientDocuments } from "@/components/client-portal/ClientDocuments";
 
 // Create basic components for the client portal pages
-const DocumentsPage = () => (
-  <div className="p-4 md:p-6 w-full">
-    <h1 className="text-2xl font-bold mb-4">My Documents</h1>
-    <p className="text-muted-foreground mb-6">View and manage all your case documents in one place.</p>
-    <div className="bg-muted rounded-lg p-8 text-center">
-      <p>Documents panel coming soon. Your documents will be accessible here.</p>
-    </div>
-  </div>
-);
-
 const TasksPage = () => (
   <div className="p-4 md:p-6 w-full">
     <h1 className="text-2xl font-bold mb-4">Tasks & Requirements</h1>

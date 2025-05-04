@@ -9,7 +9,15 @@ export const ClientSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
-  const isActive = (path: string) => location.pathname === path;
+  // Determine if a menu item is active based on the current path
+  const isActive = (path: string) => {
+    // Handle root path specially
+    if (path === "/client-portal" && location.pathname === "/client-portal") {
+      return true;
+    }
+    // For other paths, check if the current path starts with the menu item path
+    return path !== "/client-portal" && location.pathname.startsWith(path);
+  };
 
   const menuItems = [
     { 
