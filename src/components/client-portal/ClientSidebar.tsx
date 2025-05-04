@@ -45,19 +45,7 @@ export const ClientSidebar = () => {
   ];
 
   return (
-    <div className="w-64 h-full flex flex-col border-r bg-background">
-      {/* Logo area */}
-      <div className="p-4 border-b flex items-center gap-2">
-        <img
-          src="/lovable-uploads/01eb992b-a293-4ef9-a5ff-fa81da6a95ed.png"
-          alt="SecureFiles AI"
-          className="h-8"
-        />
-        <div className="bg-blue-800 text-white text-xs px-2 py-1 rounded font-semibold">
-          CLIENT PORTAL
-        </div>
-      </div>
-      
+    <div className="h-full flex flex-col border-r bg-background overflow-hidden">
       {/* Navigation items */}
       <ScrollArea className="flex-1 py-2">
         <nav className="px-2 space-y-1">

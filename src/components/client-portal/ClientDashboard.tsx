@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "./StatusBadge";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CalendarIcon, Clock, FileCheck, FileText, ShieldCheck, CircleAlert, Bell } from "lucide-react";
 
 export const ClientDashboard = () => {
@@ -42,15 +41,15 @@ export const ClientDashboard = () => {
   };
 
   return (
-    <div className="space-y-6 w-full max-w-7xl mx-auto">
+    <div className="p-4 md:p-6 w-full max-w-full">
       {/* Welcome Message */}
-      <div className="text-center mb-6">
+      <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">Welcome Back</h1>
         <p className="text-muted-foreground text-lg">Here's an overview of your consumer proposal. Your next payment is due on June 15, 2025.</p>
       </div>
 
       {/* Status Overview Card */}
-      <Card className="border-l-4 border-l-green-500 shadow-sm">
+      <Card className="border-l-4 border-l-green-500 shadow-sm mb-6">
         <CardHeader className="pb-2">
           <div className="flex justify-between items-center">
             <div>
@@ -101,8 +100,9 @@ export const ClientDashboard = () => {
         </CardContent>
       </Card>
 
-      {/* Two-column layout for the rest of the content */}
+      {/* Content grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left column - spans 2/3 on large screens */}
         <div className="lg:col-span-2 space-y-6">
           {/* Recent Notifications */}
           <Card className="shadow-sm">
@@ -157,6 +157,7 @@ export const ClientDashboard = () => {
           </Card>
         </div>
         
+        {/* Right column - spans 1/3 on large screens */}
         <div className="space-y-6">
           {/* Upcoming Appointments */}
           <Card className="shadow-sm">

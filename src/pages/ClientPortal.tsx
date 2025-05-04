@@ -10,9 +10,9 @@ import { ClientDashboard } from "@/components/client-portal/ClientDashboard";
 
 // Create basic components for the client portal pages
 const DocumentsPage = () => (
-  <div className="w-full h-full space-y-4">
-    <h1 className="text-2xl font-bold">My Documents</h1>
-    <p className="text-muted-foreground">View and manage all your case documents in one place.</p>
+  <div className="p-4 md:p-6 w-full">
+    <h1 className="text-2xl font-bold mb-4">My Documents</h1>
+    <p className="text-muted-foreground mb-6">View and manage all your case documents in one place.</p>
     <div className="bg-muted rounded-lg p-8 text-center">
       <p>Documents panel coming soon. Your documents will be accessible here.</p>
     </div>
@@ -20,9 +20,9 @@ const DocumentsPage = () => (
 );
 
 const TasksPage = () => (
-  <div className="w-full h-full space-y-4">
-    <h1 className="text-2xl font-bold">Tasks & Requirements</h1>
-    <p className="text-muted-foreground">Track your outstanding tasks and requirements.</p>
+  <div className="p-4 md:p-6 w-full">
+    <h1 className="text-2xl font-bold mb-4">Tasks & Requirements</h1>
+    <p className="text-muted-foreground mb-6">Track your outstanding tasks and requirements.</p>
     <div className="bg-muted rounded-lg p-8 text-center">
       <p>Tasks panel coming soon. Your tasks and requirements will be visible here.</p>
     </div>
@@ -30,9 +30,9 @@ const TasksPage = () => (
 );
 
 const AppointmentsPage = () => (
-  <div className="w-full h-full space-y-4">
-    <h1 className="text-2xl font-bold">Appointments</h1>
-    <p className="text-muted-foreground">View and manage your scheduled appointments.</p>
+  <div className="p-4 md:p-6 w-full">
+    <h1 className="text-2xl font-bold mb-4">Appointments</h1>
+    <p className="text-muted-foreground mb-6">View and manage your scheduled appointments.</p>
     <div className="bg-muted rounded-lg p-8 text-center">
       <p>Appointments panel coming soon. Your meetings will be scheduled here.</p>
     </div>
@@ -40,9 +40,9 @@ const AppointmentsPage = () => (
 );
 
 const MessagesPage = () => (
-  <div className="w-full h-full space-y-4">
-    <h1 className="text-2xl font-bold">Messages</h1>
-    <p className="text-muted-foreground">Communicate securely with your trustee and support team.</p>
+  <div className="p-4 md:p-6 w-full">
+    <h1 className="text-2xl font-bold mb-4">Messages</h1>
+    <p className="text-muted-foreground mb-6">Communicate securely with your trustee and support team.</p>
     <div className="bg-muted rounded-lg p-8 text-center">
       <p>Messages panel coming soon. Your communications will appear here.</p>
     </div>
@@ -50,9 +50,9 @@ const MessagesPage = () => (
 );
 
 const SupportPage = () => (
-  <div className="w-full h-full space-y-4">
-    <h1 className="text-2xl font-bold">Support</h1>
-    <p className="text-muted-foreground">Get help with your case or technical issues.</p>
+  <div className="p-4 md:p-6 w-full">
+    <h1 className="text-2xl font-bold mb-4">Support</h1>
+    <p className="text-muted-foreground mb-6">Get help with your case or technical issues.</p>
     <div className="bg-muted rounded-lg p-8 text-center">
       <p>Support panel coming soon. You'll be able to submit and track support requests here.</p>
     </div>
@@ -60,7 +60,7 @@ const SupportPage = () => (
 );
 
 const NotFoundPage = () => (
-  <div className="flex flex-col items-center justify-center h-full w-full py-16">
+  <div className="flex flex-col items-center justify-center p-4 md:p-6">
     <h1 className="text-3xl font-bold mb-4">Page Not Found</h1>
     <p className="text-muted-foreground mb-6">The page you're looking for doesn't exist or has been moved.</p>
     <button 

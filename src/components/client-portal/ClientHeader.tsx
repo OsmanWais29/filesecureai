@@ -25,10 +25,15 @@ export const ClientHeader = () => {
   };
 
   return (
-    <header className="border-b bg-white dark:bg-background shadow-sm">
-      <div className="flex h-16 items-center px-4 md:px-6">
+    <header className="h-16 border-b bg-white dark:bg-background shadow-sm w-full flex-shrink-0">
+      <div className="flex h-full items-center px-4 md:px-6">
         {/* Left side - client portal title */}
         <div className="flex items-center">
+          <img
+            src="/lovable-uploads/01eb992b-a293-4ef9-a5ff-fa81da6a95ed.png"
+            alt="SecureFiles AI"
+            className="h-8 mr-3"
+          />
           <h1 className="text-lg font-semibold">Client Portal</h1>
         </div>
         
