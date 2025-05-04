@@ -1,6 +1,6 @@
-import { useState } from "react"
-import { useTheme } from "next-themes"
-import { useRouter } from "next/navigation"
+
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   File,
   FileUp,
@@ -9,11 +9,10 @@ import {
   LogOut,
   Settings,
   User,
-} from "lucide-react"
+} from "lucide-react";
 
-import { cn } from "@/lib/utils"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,45 +20,53 @@ import {
   DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { ModeToggle } from "@/components/mode-toggle"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import { SidebarNavItem } from "@/types"
-import { Skeleton } from "@/components/ui/skeleton"
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Added for theme toggling
+import { useTheme } from "@/components/ui/theme-provider";
+import { Moon, Sun } from "lucide-react";
+
+interface SidebarNavItem {
+  label: string;
+  icon: React.ReactNode;
+  href: string;
+}
 
 interface DashboardLayoutProps {
-  children: React.ReactNode
-  navItems?: SidebarNavItem[]
+  children: React.ReactNode;
+  navItems?: SidebarNavItem[];
 }
 
 export function MainLayout({ children }: DashboardLayoutProps) {
-  const router = useRouter()
-  const { theme } = useTheme()
-  const [isSidebarOpen, setSidebarOpen] = useState(false)
+  const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
+  const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   const toggleSidebar = () => {
-    setSidebarOpen(!isSidebarOpen)
-  }
+    setSidebarOpen(!isSidebarOpen);
+  };
 
   const navItems = [
     {
       label: "Home",
       icon: <Home className="h-5 w-5" />,
-      href: "/dashboard",
+      href: "/",
     },
     {
       label: "Dashboard",
       icon: <LayoutDashboard className="h-5 w-5" />,
-      href: "/dashboard",
+      href: "/",
     },
     {
       label: "Activity",
       icon: <File className="h-5 w-5" />,
-      href: "/activity",
+      href: "/activities",
     },
     {
       label: "Converter",
@@ -67,6 +74,24 @@ export function MainLayout({ children }: DashboardLayoutProps) {
       href: "/converter",
     },
   ];
+
+  // Simple theme toggle component
+  const ModeToggle = () => {
+    return (
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+      >
+        {theme === "dark" ? (
+          <Sun className="h-5 w-5" />
+        ) : (
+          <Moon className="h-5 w-5" />
+        )}
+        <span className="sr-only">Toggle theme</span>
+      </Button>
+    );
+  };
 
   return (
     <div className="flex h-screen antialiased text-foreground">
@@ -88,7 +113,7 @@ export function MainLayout({ children }: DashboardLayoutProps) {
                   key={item.href}
                   variant="ghost"
                   className="w-full justify-start"
-                  onClick={() => router.push(item.href)}
+                  onClick={() => navigate(item.href)}
                 >
                   {item.icon}
                   {item.label}
@@ -161,7 +186,7 @@ export function MainLayout({ children }: DashboardLayoutProps) {
                     key={item.href}
                     variant="ghost"
                     className="w-full justify-start"
-                    onClick={() => router.push(item.href)}
+                    onClick={() => navigate(item.href)}
                   >
                     {item.icon}
                     {item.label}
@@ -218,5 +243,5 @@ export function MainLayout({ children }: DashboardLayoutProps) {
         <div className="flex-1 p-6">{children}</div>
       </main>
     </div>
-  )
+  );
 }

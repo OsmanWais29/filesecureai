@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   createBrowserRouter,
@@ -9,6 +10,7 @@ import { MainLayout } from './components/layout/MainLayout';
 import DashboardPage from './pages/DashboardPage';
 import IncomeExpenseForm from './components/activity/form/IncomeExpenseForm';
 import ConverterPage from './pages/ConverterPage';
+import { ThemeProvider } from './components/ui/theme-provider';
 
 const router = createBrowserRouter([
   {
@@ -25,14 +27,16 @@ const router = createBrowserRouter([
   },
   {
     path: "/converter",
-    element: <ConverterPage />,
+    element: <MainLayout><ConverterPage /></MainLayout>,
   },
 ]);
 
 function App() {
   return (
     <React.StrictMode>
-      <RouterProvider router={router} />
+      <ThemeProvider defaultTheme="light">
+        <RouterProvider router={router} />
+      </ThemeProvider>
     </React.StrictMode>
   );
 }
