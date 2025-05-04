@@ -133,9 +133,6 @@ export const useConverter = () => {
       // Stage 1: Extract text from PDF
       updateStageProgress("extraction", 10, "Starting text extraction...");
       
-      // Convert file to ArrayBuffer
-      const buffer = await uploadedFile.arrayBuffer();
-      
       // Extract text from PDF
       updateStageProgress("extraction", 40, "Processing PDF pages...");
       const extractedText = await extractTextFromPdf(URL.createObjectURL(uploadedFile));
@@ -170,7 +167,14 @@ export const useConverter = () => {
             processingTime: new Date().getTime() - processingStatus.startTime.getTime(),
             success: true
           },
-          sections: processedDocument.sections || []
+          sections: processedDocument.sections.map(section => ({
+            name: section.title,
+            fields: [{ 
+              name: "content", 
+              value: section.content, 
+              confidence: processedDocument.confidence 
+            }]
+          }))
         },
         validationErrors: [],
         validationWarnings: []

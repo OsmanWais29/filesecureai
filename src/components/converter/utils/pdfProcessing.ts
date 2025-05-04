@@ -27,12 +27,12 @@ export interface ProcessedDocument {
   confidence: number;
 }
 
-export const processDocument = async (file: File, options: any): Promise<ProcessedDocument> => {
+export const processDocument = async (pdfText: string, options: any): Promise<ProcessedDocument> => {
   // This is a mock implementation that would be replaced with actual PDF processing
   return {
     id: Date.now().toString(),
-    title: file.name,
-    content: "Processed document content",
+    title: "Processed Document",
+    content: pdfText.substring(0, 1000) || "Processed document content",
     metadata: {
       author: "Unknown",
       createdDate: new Date().toISOString(),
@@ -55,7 +55,7 @@ export const processDocument = async (file: File, options: any): Promise<Process
         caption: "Sample Table"
       }
     ],
-    extractedText: "This is a mock extracted text for demonstration purposes.",
+    extractedText: pdfText || "This is a mock extracted text for demonstration purposes.",
     ocr: options.useOcr || false,
     confidence: 0.85
   };
