@@ -22,6 +22,7 @@ export const PDFToXMLConverter = () => {
     handleOptionsChange,
     handleStartProcessing,
     handleBatchProcessing,
+    handleDownloadXml,
     isProcessing
   } = useConverter();
 
