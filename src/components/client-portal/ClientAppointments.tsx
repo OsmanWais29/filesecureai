@@ -23,7 +23,7 @@ import {
   Users, 
   MapPin, 
   Video, 
-  MessageSqule, 
+  MessageSquare, 
   ArrowRight,
   ChevronRight,
   BookOpen,
