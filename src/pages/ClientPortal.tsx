@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Routes, Route } from "react-router-dom";
 import { Auth } from "@/components/Auth";
 import { useAuthState } from "@/hooks/useAuthState";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -29,7 +29,11 @@ const ClientPortal = () => {
 
   // Show loading spinner while auth state is being determined
   if (isLoading) {
-    return <LoadingSpinner />;
+    return (
+      <div className="h-screen w-full flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
   }
 
   // Handle auth errors
@@ -39,13 +43,23 @@ const ClientPortal = () => {
 
   // If not authenticated, show client portal auth component
   if (!session) {
-    return <Auth />;
+    return <Auth isClientPortal={true} />;
   }
 
   // Show client portal dashboard for authenticated clients
   return (
     <ClientPortalLayout>
-      <ClientDashboard />
+      <Routes>
+        <Route path="/" element={<ClientDashboard />} />
+        <Route path="/documents" element={<div>Documents page coming soon</div>} />
+        <Route path="/tasks" element={<div>Tasks page coming soon</div>} />
+        <Route path="/appointments" element={<div>Appointments page coming soon</div>} />
+        <Route path="/messages" element={<div>Messages page coming soon</div>} />
+        <Route path="/support" element={<div>Support page coming soon</div>} />
+        <Route path="/profile" element={<div>Profile page coming soon</div>} />
+        <Route path="/settings" element={<div>Settings page coming soon</div>} />
+        <Route path="*" element={<div>Page not found</div>} />
+      </Routes>
     </ClientPortalLayout>
   );
 };

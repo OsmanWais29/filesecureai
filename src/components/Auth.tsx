@@ -7,10 +7,14 @@ import { ClientPortalForm } from './auth/ClientPortalForm';
 
 export type AuthMode = 'trustee' | 'client';
 
-export const Auth = () => {
+interface AuthProps {
+  isClientPortal?: boolean;
+}
+
+export const Auth = ({ isClientPortal = false }: AuthProps) => {
   const [confirmationSent, setConfirmationSent] = useState(false);
   const [confirmationEmail, setConfirmationEmail] = useState('');
-  const [authMode, setAuthMode] = useState<AuthMode>('trustee');
+  const [authMode, setAuthMode] = useState<AuthMode>(isClientPortal ? 'client' : 'trustee');
 
   const handleConfirmationSent = (email: string) => {
     setConfirmationEmail(email);
@@ -26,7 +30,7 @@ export const Auth = () => {
   };
 
   return (
-    <AuthLayout>
+    <AuthLayout isClientPortal={isClientPortal}>
       {confirmationSent ? (
         <ConfirmationSentScreen 
           email={confirmationEmail}

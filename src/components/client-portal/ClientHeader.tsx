@@ -12,12 +12,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, LogOut, Settings, HelpCircle, FileText } from "lucide-react";
+import { Bell, HelpCircle, LogOut, Settings, User } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export const ClientHeader = () => {
   const { user, signOut } = useAuthState();
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const fullName = user?.user_metadata?.full_name || "Client";
   const initials = fullName
@@ -33,41 +35,36 @@ export const ClientHeader = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-white dark:bg-background shadow-sm">
+    <header className="sticky top-0 z-30 w-full border-b bg-white dark:bg-background shadow-sm">
       <div className="container flex h-16 items-center px-4 sm:px-6">
-        <div className="flex items-center gap-2">
-          <img
-            src="/lovable-uploads/01eb992b-a293-4ef9-a5ff-fa81da6a95ed.png"
-            alt="SecureFiles AI"
-            className="h-8"
-          />
-          <div className="bg-blue-800 text-white text-xs px-2 py-1 rounded font-semibold">
-            CLIENT PORTAL
+        {!isMobile && (
+          <div className="flex items-center gap-2 mr-4">
+            <h1 className="text-lg font-semibold">Client Dashboard</h1>
           </div>
-        </div>
+        )}
 
         <div className="flex flex-1 items-center justify-end space-x-2">
-          <nav className="flex items-center space-x-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="hidden md:flex items-center gap-1"
-              onClick={() => {}}
-            >
-              <FileText className="h-4 w-4" />
-              <span>My Documents</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="hidden md:flex items-center gap-1"
-              onClick={() => {}}
-            >
-              <HelpCircle className="h-4 w-4" />
-              <span>Support</span>
-            </Button>
-          </nav>
+          {/* Notifications */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative"
+            aria-label="Notifications"
+          >
+            <Bell className="h-5 w-5" />
+            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500"></span>
+          </Button>
+          
+          {/* Help */}
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Help"
+          >
+            <HelpCircle className="h-5 w-5" />
+          </Button>
 
+          {/* User menu */}
           <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
             <DropdownMenuTrigger asChild>
               <Button
@@ -95,11 +92,11 @@ export const ClientHeader = () => {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => {}}>
+              <DropdownMenuItem onClick={() => navigate("/client-portal/profile")}>
                 <User className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {}}>
+              <DropdownMenuItem onClick={() => navigate("/client-portal/settings")}>
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
               </DropdownMenuItem>
