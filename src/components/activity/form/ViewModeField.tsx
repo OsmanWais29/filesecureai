@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 interface ViewModeFieldProps {
   id: string;
   name: string;
-  label: string;
+  label: React.ReactNode; // Changed from string to ReactNode
   value: string | number;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   isEditable: boolean;
@@ -93,7 +93,7 @@ export const ViewModeField = ({
             className="h-6 w-6 p-0"
           >
             <Edit2 className="h-3.5 w-3.5" />
-            <span className="sr-only">Edit {label}</span>
+            <span className="sr-only">Edit {typeof label === 'string' ? label : 'field'}</span>
           </Button>
         )}
       </Label>

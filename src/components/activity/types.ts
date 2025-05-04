@@ -156,7 +156,7 @@ export interface HistoricalData {
   previousPeriod: IncomeExpenseData;
 }
 
-// Add these interfaces for the section components
+// Update these interfaces for the section components
 export interface ClientProfileSectionProps {
   formData: IncomeExpenseData;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
@@ -223,7 +223,7 @@ export interface SurplusIncomeSectionProps {
 }
 
 export interface FormFieldProps {
-  id: string; // Add missing id property
+  id: string;
   label: string;
   name: string;
   value: string | undefined;
@@ -233,6 +233,6 @@ export interface FormFieldProps {
   required?: boolean;
   disabled?: boolean;
   className?: string;
-  tooltip?: string; // Add missing tooltip property
+  tooltip?: string;
   icon?: React.ReactNode;
 }

@@ -61,7 +61,7 @@ export const ViewModeFormField = ({
       <ViewModeField
         id={id}
         name={name}
-        label={fullLabel}
+        label={fullLabel as string}
         value={value}
         onChange={onChange}
         isEditable={isEditable}
