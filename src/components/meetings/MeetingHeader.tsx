@@ -27,13 +27,10 @@ export const MeetingHeader = ({
                 </div>
                 <div>
                   <h3 className="font-medium">Active Meeting in Progress</h3>
-                  <p className="text-sm text-muted-foreground">Meeting tools are open in separate windows</p>
+                  <p className="text-sm text-muted-foreground">Meeting in progress</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={onRequestFeedback}>
-                  Request Feedback
-                </Button>
                 <Button variant="destructive" size="sm" onClick={onEndMeeting}>
                   End Meeting
                 </Button>
@@ -54,7 +51,7 @@ export const MeetingHeader = ({
             </Button>
             <Button className="gap-2" onClick={onStartMeetingMode}>
               <Video className="h-4 w-4" />
-              <span>Start Meeting Mode</span>
+              <span>Start Meeting</span>
             </Button>
           </div>
         </>

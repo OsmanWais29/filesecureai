@@ -1,37 +1,25 @@
 
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useState } from "react";
-import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
-import NotesStandalonePage from "./meetings/NotesStandalonePage";
-import AgendaStandalonePage from "./meetings/AgendaStandalonePage";
-import FeedbackStandalonePage from "./meetings/FeedbackStandalonePage";
-import { MeetingsOverview } from "@/components/meetings/MeetingsOverview";
+import { useLocation } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UpcomingMeetings } from "@/components/meetings/UpcomingMeetings";
 import { JoinMeetingPanel } from "@/components/meetings/JoinMeetingPanel";
-import { MeetingNotes } from "@/components/meetings/MeetingNotes";
-import { MeetingAgenda } from "@/components/meetings/MeetingAgenda";
 import { MeetingAnalytics } from "@/components/meetings/MeetingAnalytics";
 import { MeetingsAnalytics } from "@/components/analytics/meetings/MeetingsAnalytics";
+import { MeetingsOverview } from "@/components/meetings/MeetingsOverview";
 
 const MeetingsPage = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const location = useLocation();
-  const navigate = useNavigate();
 
   // Check if we're on the base meetings page
   const isMainPage = location.pathname === "/meetings" || location.pathname === "/meetings/";
 
   if (!isMainPage) {
-    // Handle standalone pages (notes, agenda, feedback)
-    return (
-      <Routes>
-        <Route path="/notes" element={<NotesStandalonePage />} />
-        <Route path="/agenda" element={<AgendaStandalonePage />} />
-        <Route path="/feedback" element={<FeedbackStandalonePage />} />
-      </Routes>
-    );
+    // Show 404 or redirect to main meetings page
+    return <div>Page not found</div>;
   }
 
   return (
@@ -71,18 +59,6 @@ const MeetingsPage = () => {
                   Join Meeting
                 </TabsTrigger>
                 <TabsTrigger 
-                  value="notes" 
-                  className="py-3 px-6 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-                >
-                  Notes
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="agenda" 
-                  className="py-3 px-6 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-                >
-                  Agenda
-                </TabsTrigger>
-                <TabsTrigger 
                   value="analytics" 
                   className="py-3 px-6 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
                 >
@@ -101,14 +77,6 @@ const MeetingsPage = () => {
                 
                 <TabsContent value="join" className="m-0">
                   <JoinMeetingPanel />
-                </TabsContent>
-                
-                <TabsContent value="notes" className="m-0">
-                  <MeetingNotes />
-                </TabsContent>
-                
-                <TabsContent value="agenda" className="m-0">
-                  <MeetingAgenda />
                 </TabsContent>
                 
                 <TabsContent value="analytics" className="m-0">

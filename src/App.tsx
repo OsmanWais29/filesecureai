@@ -18,10 +18,6 @@ import Support from "./pages/trustee/Support";
 import SettingsPage from "./pages/trustee/SettingsPage";
 import NotificationsPage from "./pages/trustee/NotificationsPage";
 import ConBrandingPage from "./pages/trustee/ConBrandingPage";
-import StorageDiagnosticsPage from "./pages/trustee/StorageDiagnosticsPage";
-import NotesStandalonePage from "./pages/trustee/meetings/NotesStandalonePage";
-import AgendaStandalonePage from "./pages/trustee/meetings/AgendaStandalonePage";
-import FeedbackStandalonePage from "./pages/trustee/meetings/FeedbackStandalonePage";
 import ConverterPage from "./pages/trustee/ConverterPage";
 
 import "./App.css";
@@ -36,9 +32,6 @@ function App() {
       <Route path="/documents" element={<DocumentsPage />} />
       <Route path="/document-viewer/:documentId" element={<DocumentViewerPage />} />
       <Route path="/client-viewer/:clientId" element={<ClientViewerPage />} />
-      <Route path="/meetings/notes" element={<NotesStandalonePage />} />
-      <Route path="/meetings/agenda" element={<AgendaStandalonePage />} />
-      <Route path="/meetings/feedback" element={<FeedbackStandalonePage />} />
       <Route path="/calendar-fullscreen" element={<CalendarFullscreenPage />} />
       <Route path="/activity" element={<ActivityPage />} />
       <Route path="/analytics" element={<AnalyticsPage />} />
@@ -49,7 +42,6 @@ function App() {
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/support" element={<Support />} />
       <Route path="/SAFA" element={<ConBrandingPage />} />
-      <Route path="/storage-diagnostics" element={<StorageDiagnosticsPage />} />
 
       {/* Client portal routes - use the ClientPortal layout for all client portal routes */}
       <Route path="/client-portal/*" element={<ClientPortal />} />
