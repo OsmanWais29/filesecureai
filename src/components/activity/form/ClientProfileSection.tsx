@@ -4,26 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormField } from "./FormField";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { IncomeExpenseData } from "../types";
+import { ClientProfileSectionProps } from "../types";
 import { CalendarDays, Home, User } from "lucide-react";
-import { Input } from "@/components/ui/input";
-
-interface ClientProfileSectionProps {
-  formData: IncomeExpenseData;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onMaritalStatusChange: (value: string) => void;
-  isNewClientMode?: boolean;
-  newClient?: {
-    id: string;
-    name: string;
-    status: string;
-  };
-}
 
 export const ClientProfileSection = ({
   formData,
   onChange,
   onMaritalStatusChange,
+  isViewMode = false,
+  isFieldEditable = () => false,
+  onToggleFieldEdit = () => {},
   isNewClientMode = false,
   newClient
 }: ClientProfileSectionProps) => {

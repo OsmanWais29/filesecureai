@@ -18,7 +18,7 @@ export const FormField = ({
   type = "text",
   disabled = false,
   className = "",
-}: FormFieldProps & { disabled?: boolean; className?: string; type?: string }) => {
+}: FormFieldProps) => {
   return (
     <div className="grid grid-cols-1 gap-2">
       <div className="flex items-center gap-2">

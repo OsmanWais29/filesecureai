@@ -1,4 +1,5 @@
 
+import React from "react";
 import { ViewModeField } from "./ViewModeField";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { HelpCircle } from "lucide-react";
@@ -6,7 +7,7 @@ import { HelpCircle } from "lucide-react";
 interface ViewModeFormFieldProps {
   id: string;
   name: string;
-  label: string;
+  label: React.ReactNode; // Changed from string to ReactNode
   value: string | number;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   isEditable: boolean;

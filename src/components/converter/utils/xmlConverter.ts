@@ -1,5 +1,5 @@
 
-import { ProcessedDocument } from "./pdfProcessing";
+import { processDocument } from "./pdfProcessing";
 
 export const convertToXml = (document: any): string => {
   // Simple XML generation function
@@ -22,15 +22,15 @@ export const convertToXml = (document: any): string => {
   if (document.sections) {
     document.sections.forEach((section: any) => {
       if (section.name === "CreditorInformation") {
-        addCreditorSection(xml, section);
+        xml = addCreditorSection(xml, section);
       } else if (section.name === "StatementInformation") {
-        addStatementSection(xml, section);
+        xml = addStatementSection(xml, section);
       } else if (section.name === "CustomerInformation") {
-        addCustomerSection(xml, section);
+        xml = addCustomerSection(xml, section);
       } else if (section.name === "AccountSummary") {
-        addAccountSummarySection(xml, section);
+        xml = addAccountSummarySection(xml, section);
       } else if (section.name === "Transactions") {
-        addTransactionsSection(xml, section);
+        xml = addTransactionsSection(xml, section);
       }
     });
   }
@@ -55,6 +55,19 @@ export const convertToXml = (document: any): string => {
   xml += '</CreditStatement>';
   
   return xml;
+};
+
+// Helper functions for XML sections
+
+// Helper function to escape XML special characters
+const escapeXml = (unsafe: string | undefined): string => {
+  if (!unsafe) return '';
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
 };
 
 // Helper function to add creditor information section
@@ -193,41 +206,29 @@ const addTransactionsSection = (xml: string, section: any): string => {
   let result = xml;
   result += '  <Transactions>\n';
   
-  // If we have tables, process them
+  // Check if we have transactions data
   if (section.tables && section.tables.length > 0) {
-    const table = section.tables[0];
+    const transactionsTable = section.tables[0];
     
-    // Get column indexes
-    const dateColIndex = table.columns.findIndex((c: string) => c === "TransactionDate");
-    const descrColIndex = table.columns.findIndex((c: string) => c === "Description");
-    const amountColIndex = table.columns.findIndex((c: string) => c === "Amount");
-    const categoryColIndex = table.columns.findIndex((c: string) => c === "Category");
-    
-    // Process each row as a transaction
-    for (const row of table.rows) {
+    // Process each transaction row
+    transactionsTable.rows.forEach((row: any) => {
       result += '    <Transaction>\n';
-      result += `      <TransactionDate>${escapeXml(String(row[dateColIndex] || ""))}</TransactionDate>\n`;
-      result += '      <PostingDate></PostingDate>\n'; // Not available in our data
+      result += `      <TransactionDate>${escapeXml(row.transactionDate)}</TransactionDate>\n`;
+      result += `      <PostingDate>${escapeXml(row.postingDate || row.transactionDate)}</PostingDate>\n`;
+      result += `      <TransactionType>${escapeXml(row.type || "PURCHASE")}</TransactionType>\n`;
+      result += `      <Description>${escapeXml(row.description || "")}</Description>\n`;
       
-      // Determine transaction type
-      let transactionType = "PURCHASE";
-      if (String(row[amountColIndex]).startsWith("-")) {
-        if (String(row[descrColIndex]).toLowerCase().includes("payment")) {
-          transactionType = "PAYMENT";
-        } else {
-          transactionType = "CREDIT";
-        }
+      if (row.merchantLocation) {
+        result += `      <MerchantLocation>${escapeXml(row.merchantLocation)}</MerchantLocation>\n`;
       }
       
-      result += `      <TransactionType>${transactionType}</TransactionType>\n`;
-      result += `      <Description>${escapeXml(String(row[descrColIndex] || ""))}</Description>\n`;
-      result += '      <ReferenceNumber>REF' + Math.floor(Math.random() * 1000000000) + '</ReferenceNumber>\n';
-      result += `      <Amount>${escapeXml(String(row[amountColIndex] || ""))}</Amount>\n`;
-      result += `      <Category>${escapeXml(String(row[categoryColIndex] || ""))}</Category>\n`;
+      result += `      <ReferenceNumber>${escapeXml(row.reference || "")}</ReferenceNumber>\n`;
+      result += `      <Amount>${escapeXml(row.amount || "0.00")}</Amount>\n`;
+      result += `      <Category>${escapeXml(row.category || "UNKNOWN")}</Category>\n`;
       result += '    </Transaction>\n';
-    }
+    });
   } else {
-    // Add some mock transactions
+    // Add sample transaction data if no data is available
     result += '    <Transaction>\n';
     result += '      <TransactionDate>2025-03-17</TransactionDate>\n';
     result += '      <PostingDate>2025-03-18</PostingDate>\n';
@@ -261,15 +262,4 @@ const addTransactionsSection = (xml: string, section: any): string => {
   result += '  </Transactions>\n';
   
   return result;
-};
-
-// Helper function to escape XML special characters
-const escapeXml = (unsafe: string | undefined): string => {
-  if (!unsafe) return '';
-  return unsafe
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
 };

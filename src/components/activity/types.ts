@@ -223,14 +223,16 @@ export interface SurplusIncomeSectionProps {
 }
 
 export interface FormFieldProps {
+  id: string; // Add missing id property
   label: string;
   name: string;
   value: string | undefined;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   type?: string;
   placeholder?: string;
   required?: boolean;
   disabled?: boolean;
   className?: string;
+  tooltip?: string; // Add missing tooltip property
   icon?: React.ReactNode;
 }
