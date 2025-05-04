@@ -1,153 +1,144 @@
 
-import { useState, useRef, useEffect } from "react";
+import React from "react";
+import { X } from "lucide-react";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { X, Send, Bot } from "lucide-react";
-import { useTheme } from "@/contexts/ThemeContext";
-
-interface ChatMessage {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-}
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Bot, User } from "lucide-react";
 
 interface SupportChatbotProps {
   onClose: () => void;
 }
 
-export const SupportChatbot = ({ onClose }: SupportChatbotProps) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
+export const SupportChatbot: React.FC<SupportChatbotProps> = ({ onClose }) => {
+  const [messages, setMessages] = React.useState([
     {
-      id: "welcome",
-      role: "assistant",
-      content: "Hello! I'm your AI assistant. How can I help you today with FileSecureAI?",
-      timestamp: new Date(),
+      id: 1,
+      content: "Hi there! I'm the SecureFiles AI Assistant. How can I help you today?",
+      sender: "bot",
+      timestamp: new Date().toISOString(),
     },
   ]);
-  const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const { theme } = useTheme();
-  const isDark = theme === "dark";
-
-  useEffect(() => {
-    // Focus input on mount
-    if (inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, []);
-
-  useEffect(() => {
-    // Scroll to bottom on new message
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const handleSendMessage = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  
+  const [input, setInput] = React.useState("");
+  
+  const handleSend = () => {
     if (!input.trim()) return;
-
-    const userMessage: ChatMessage = {
-      id: `user-${Date.now()}`,
-      role: "user",
+    
+    // Add user message
+    const userMessage = {
+      id: messages.length + 1,
       content: input,
-      timestamp: new Date(),
+      sender: "user",
+      timestamp: new Date().toISOString(),
     };
-
-    setMessages((prev) => [...prev, userMessage]);
+    
+    setMessages([...messages, userMessage]);
     setInput("");
-    setIsTyping(true);
-
-    // Simulate API response
+    
+    // Simulate AI response
     setTimeout(() => {
-      const botResponses = [
-        "Thanks for your question! You can find that information in our documentation section.",
-        "I understand your concern. Have you tried checking the settings menu?",
-        "That's a great question. The feature you're looking for is available in the Premium plan.",
-        "Let me help you with that. You can resolve this by refreshing the page and trying again.",
-        "I'd be happy to assist. This sounds like a technical issue. Would you like me to create a support ticket for you?",
-      ];
-      
-      const randomResponse = botResponses[Math.floor(Math.random() * botResponses.length)];
-      
-      const assistantMessage: ChatMessage = {
-        id: `assistant-${Date.now()}`,
-        role: "assistant",
-        content: randomResponse,
-        timestamp: new Date(),
+      const botMessage = {
+        id: messages.length + 2,
+        content: "I'm looking into this for you. Our AI is currently analyzing your question and will provide a detailed answer shortly.",
+        sender: "bot",
+        timestamp: new Date().toISOString(),
       };
       
-      setMessages((prev) => [...prev, assistantMessage]);
-      setIsTyping(false);
+      setMessages((prev) => [...prev, botMessage]);
     }, 1000);
   };
-
+  
   return (
-    <div className={`fixed right-4 bottom-4 w-80 sm:w-96 shadow-lg rounded-lg overflow-hidden flex flex-col ${isDark ? 'bg-background border border-border' : 'bg-white'} h-[450px] z-50`}>
-      <div className="p-3 border-b flex items-center justify-between">
-        <div className="flex items-center">
-          <Bot className="h-5 w-5 mr-2 text-primary" />
-          <h3 className="font-medium">AI Support Assistant</h3>
-        </div>
-        <Button variant="ghost" size="icon" onClick={onClose}>
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-      
-      <ScrollArea className="flex-1 p-3">
-        <div className="space-y-4">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-            >
-              <div
-                className={`max-w-[80%] rounded-lg p-3 ${
-                  message.role === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : isDark 
-                      ? "bg-muted text-foreground" 
-                      : "bg-gray-100 text-gray-800"
-                }`}
+    <div className="fixed bottom-4 right-4 w-96 z-50">
+      <Card className="shadow-xl border-primary/20">
+        <CardHeader className="bg-primary text-white p-3 flex flex-row justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Bot className="h-5 w-5" />
+            <h3 className="font-medium">AI Support Assistant</h3>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            className="h-8 w-8 text-white hover:bg-primary-foreground/20"
+            onClick={onClose}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </CardHeader>
+        
+        <CardContent className="p-0">
+          <div className="h-80 overflow-y-auto p-4 space-y-4">
+            {messages.map((message) => (
+              <div 
+                key={message.id} 
+                className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
               >
-                <p className="text-sm">{message.content}</p>
-                <p className="text-xs opacity-70 mt-1">
-                  {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </p>
-              </div>
-            </div>
-          ))}
-          {isTyping && (
-            <div className="flex justify-start">
-              <div className={`rounded-lg p-3 ${isDark ? "bg-muted" : "bg-gray-100"}`}>
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "0ms" }} />
-                  <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "150ms" }} />
-                  <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: "300ms" }} />
+                <div 
+                  className={`flex gap-2 max-w-[80%] ${
+                    message.sender === "user" 
+                      ? "flex-row-reverse" 
+                      : "flex-row"
+                  }`}
+                >
+                  <Avatar className="h-8 w-8 mt-1">
+                    {message.sender === "user" ? (
+                      <>
+                        <AvatarImage src="/avatar-placeholder.png" />
+                        <AvatarFallback>
+                          <User className="h-4 w-4" />
+                        </AvatarFallback>
+                      </>
+                    ) : (
+                      <>
+                        <AvatarImage src="/bot-avatar.png" />
+                        <AvatarFallback>
+                          <Bot className="h-4 w-4" />
+                        </AvatarFallback>
+                      </>
+                    )}
+                  </Avatar>
+                  
+                  <div 
+                    className={`rounded-lg p-3 ${
+                      message.sender === "user"
+                        ? "bg-primary/10 text-foreground"
+                        : "bg-muted text-foreground"
+                    }`}
+                  >
+                    {message.content}
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {new Date(message.timestamp).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-      </ScrollArea>
-      
-      <form onSubmit={handleSendMessage} className="p-3 border-t">
-        <div className="flex gap-2">
-          <Input
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your message..."
-            className="flex-1"
-          />
-          <Button type="submit" size="icon" disabled={!input.trim() || isTyping}>
-            <Send className="h-4 w-4" />
-          </Button>
-        </div>
-      </form>
+            ))}
+          </div>
+        </CardContent>
+        
+        <CardFooter className="border-t p-3">
+          <form 
+            className="flex w-full gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSend();
+            }}
+          >
+            <Input
+              placeholder="Type your question..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              className="flex-1"
+            />
+            <Button type="submit">Send</Button>
+          </form>
+        </CardFooter>
+      </Card>
     </div>
   );
 };
