@@ -59,26 +59,6 @@ const SupportPage = () => (
   </div>
 );
 
-const ProfilePage = () => (
-  <div className="space-y-4">
-    <h1 className="text-2xl font-bold">My Profile</h1>
-    <p className="text-muted-foreground">View and manage your personal information.</p>
-    <div className="bg-muted rounded-lg p-8 text-center">
-      <p>Profile management coming soon. You'll be able to update your details here.</p>
-    </div>
-  </div>
-);
-
-const SettingsPage = () => (
-  <div className="space-y-4">
-    <h1 className="text-2xl font-bold">Settings</h1>
-    <p className="text-muted-foreground">Manage your account preferences and notifications.</p>
-    <div className="bg-muted rounded-lg p-8 text-center">
-      <p>Settings panel coming soon. You'll be able to configure your preferences here.</p>
-    </div>
-  </div>
-);
-
 const NotFoundPage = () => (
   <div className="flex flex-col items-center justify-center h-full py-16">
     <h1 className="text-3xl font-bold mb-4">Page Not Found</h1>
@@ -140,8 +120,6 @@ const ClientPortal = () => {
         <Route path="/appointments" element={<AppointmentsPage />} />
         <Route path="/messages" element={<MessagesPage />} />
         <Route path="/support" element={<SupportPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </ClientPortalLayout>
