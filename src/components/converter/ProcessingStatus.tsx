@@ -3,7 +3,7 @@ import React from "react";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
-import { Info, AlertCircle, CheckCircle, Clock } from "lucide-react";
+import { Info, AlertCircle, CheckCircle, Clock, Hourglass, FileCheck, FileScan } from "lucide-react";
 import { ProcessingStatus as StatusType } from "./types";
 
 interface ProcessingStatusProps {
@@ -39,7 +39,7 @@ export const ProcessingStatus: React.FC<ProcessingStatusProps> = ({ status }) =>
       case 'pending':
         return <Clock className="h-5 w-5 text-muted-foreground" />;
       case 'processing':
-        return <Info className="h-5 w-5 text-primary" />;
+        return <FileScan className="h-5 w-5 text-primary animate-pulse" />;
       case 'complete':
         return <CheckCircle className="h-5 w-5 text-green-500" />;
       case 'error':
@@ -50,60 +50,95 @@ export const ProcessingStatus: React.FC<ProcessingStatusProps> = ({ status }) =>
   };
 
   return (
-    <Card className="shadow-sm">
-      <CardContent className="pt-6 space-y-4">
-        <div className="space-y-2">
+    <Card className="shadow-sm mt-6 border-none bg-card/80 backdrop-blur-sm">
+      <CardContent className="pt-6 space-y-6">
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <h3 className="text-base font-semibold">Processing Progress</h3>
+            <div className="flex items-center gap-3">
+              <div className="bg-primary/10 p-2 rounded-full">
+                <Hourglass className={`h-4 w-4 text-primary ${status.overallProgress < 100 ? 'animate-pulse' : ''}`} />
+              </div>
+              <h3 className="text-lg font-medium">Processing Progress</h3>
             </div>
-            <span className="text-sm text-muted-foreground">
-              Elapsed: {formatElapsedTime(status.startTime)}
-            </span>
+            <div className="flex items-center gap-2 text-sm">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground font-medium">
+                {formatElapsedTime(status.startTime)}
+              </span>
+            </div>
           </div>
 
-          <Progress value={status.overallProgress} className="h-2" />
-          
-          <div className="flex items-center justify-between text-sm">
-            <span>Overall Progress: {Math.round(status.overallProgress)}%</span>
-            {status.estimatedTimeRemaining && (
-              <span>
-                Remaining: {formatTimeRemaining(status.estimatedTimeRemaining)}
-              </span>
-            )}
+          <div className="space-y-2">
+            <Progress 
+              value={status.overallProgress} 
+              className="h-2" 
+              indicatorClassName={status.overallProgress === 100 ? "bg-green-500" : ""}
+            />
+            
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium">{Math.round(status.overallProgress)}% Complete</span>
+              {status.estimatedTimeRemaining && status.overallProgress < 100 && (
+                <span className="text-muted-foreground">
+                  Estimated time remaining: {formatTimeRemaining(status.estimatedTimeRemaining)}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium">Processing Stages</h4>
-          <div className="space-y-2">
+        <div className="space-y-4">
+          <h4 className="text-base font-medium flex items-center gap-2">
+            <FileCheck className="h-4 w-4 text-primary" /> 
+            Processing Stages
+          </h4>
+          
+          <div className="space-y-4 bg-background p-4 rounded-lg border">
             {status.stages.map((stage) => (
-              <div key={stage.id} className="flex items-center space-x-2">
-                {getStageIcon(stage.status)}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between text-sm mb-1">
-                    <span className={stage.status === 'processing' ? "font-medium" : ""}>
-                      {stage.name}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {Math.round(stage.progress)}%
-                    </span>
+              <div key={stage.id} className="space-y-2">
+                <div className="flex items-center gap-3">
+                  {getStageIcon(stage.status)}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`text-sm ${stage.status === 'processing' ? "font-medium text-primary" : stage.status === 'complete' ? "font-medium text-green-500" : ""}`}>
+                        {stage.name}
+                      </span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        stage.status === 'complete' 
+                          ? 'bg-green-100 text-green-700' 
+                          : stage.status === 'processing'
+                            ? 'bg-primary/20 text-primary animate-pulse'
+                            : stage.status === 'error'
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-muted text-muted-foreground'
+                      }`}>
+                        {stage.status === 'processing' 
+                          ? 'In progress' 
+                          : stage.status === 'complete'
+                            ? 'Complete'
+                            : stage.status === 'pending'
+                              ? 'Pending'
+                              : 'Error'}
+                      </span>
+                    </div>
+                    
+                    <Progress 
+                      value={stage.progress} 
+                      className={`h-1 ${
+                        stage.status === 'complete' 
+                          ? 'bg-green-100' 
+                          : stage.status === 'error' 
+                            ? 'bg-red-100' 
+                            : ''
+                      }`}
+                      indicatorClassName={stage.status === 'complete' ? "bg-green-500" : stage.status === 'processing' ? "bg-primary" : ""}
+                    />
+                    
+                    {stage.message && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {stage.message}
+                      </p>
+                    )}
                   </div>
-                  <Progress 
-                    value={stage.progress} 
-                    className={`h-1 ${
-                      stage.status === 'complete' 
-                        ? 'bg-green-100' 
-                        : stage.status === 'error' 
-                          ? 'bg-red-100' 
-                          : ''
-                    }`}
-                  />
-                  {stage.message && (
-                    <p className="text-xs text-muted-foreground mt-1 truncate">
-                      {stage.message}
-                    </p>
-                  )}
                 </div>
               </div>
             ))}
@@ -113,7 +148,7 @@ export const ProcessingStatus: React.FC<ProcessingStatusProps> = ({ status }) =>
         {status.errors.length > 0 && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Errors</AlertTitle>
+            <AlertTitle>Errors Detected</AlertTitle>
             <AlertDescription>
               <ul className="text-sm list-disc pl-5 space-y-1">
                 {status.errors.map((error, index) => (
@@ -125,10 +160,10 @@ export const ProcessingStatus: React.FC<ProcessingStatusProps> = ({ status }) =>
         )}
 
         {status.warnings.length > 0 && (
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertTitle>Warnings</AlertTitle>
-            <AlertDescription>
+          <Alert className="bg-amber-50 border-amber-200">
+            <Info className="h-4 w-4 text-amber-600" />
+            <AlertTitle className="text-amber-800">Warnings</AlertTitle>
+            <AlertDescription className="text-amber-700">
               <ul className="text-sm list-disc pl-5 space-y-1">
                 {status.warnings.map((warning, index) => (
                   <li key={index}>{warning}</li>
