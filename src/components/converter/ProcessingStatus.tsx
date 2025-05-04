@@ -71,8 +71,7 @@ export const ProcessingStatus: React.FC<ProcessingStatusProps> = ({ status }) =>
           <div className="space-y-2">
             <Progress 
               value={status.overallProgress} 
-              className="h-2" 
-              indicatorClassName={status.overallProgress === 100 ? "bg-green-500" : ""}
+              className={`h-2 ${status.overallProgress === 100 ? "bg-green-100" : ""}`} 
             />
             
             <div className="flex items-center justify-between text-sm">
@@ -130,7 +129,6 @@ export const ProcessingStatus: React.FC<ProcessingStatusProps> = ({ status }) =>
                             ? 'bg-red-100' 
                             : ''
                       }`}
-                      indicatorClassName={stage.status === 'complete' ? "bg-green-500" : stage.status === 'processing' ? "bg-primary" : ""}
                     />
                     
                     {stage.message && (

@@ -56,39 +56,40 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
   }, [onFileUpload]);
 
   return (
-    <div className="space-y-4 max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto">
       {!uploadedFile ? (
         <div
-          className={`border-2 border-dashed rounded-lg p-12 text-center ${
+          className={`border-2 border-dashed rounded-lg p-10 text-center ${
             isDragging 
-              ? "border-accent bg-accent/5 shadow-lg" 
-              : "border-gray-300 hover:border-primary/50 hover:bg-primary/5 transition-all"
+              ? "border-primary bg-primary/5" 
+              : "border-muted hover:border-primary/50 hover:bg-primary/5 transition-all"
           }`}
           onDragEnter={handleDragEnter}
           onDragLeave={handleDragLeave}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
         >
-          <div className="flex flex-col items-center justify-center space-y-6">
-            <div className={`rounded-full p-6 ${isDragging ? 'bg-accent/20' : 'bg-primary/10'}`}>
-              <UploadCloud className={`h-12 w-12 ${isDragging ? 'text-accent' : 'text-primary/80'}`} />
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <div className={`rounded-full p-4 ${isDragging ? 'bg-primary/20' : 'bg-primary/10'}`}>
+              <UploadCloud className={`h-10 w-10 ${isDragging ? 'text-primary' : 'text-primary/80'}`} />
             </div>
             
-            <div className="space-y-2 max-w-sm">
-              <h3 className="text-xl font-semibold">Upload your PDF</h3>
-              <p className="text-muted-foreground">
-                Drag and drop your PDF file here, or click the button below to select a file from your computer
+            <div className="space-y-2">
+              <h3 className="text-lg font-medium">Upload PDF Document</h3>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                Drag and drop your PDF file here, or click the button below to select a file
               </p>
             </div>
             
-            <div className="flex gap-4">
-              <label htmlFor="file-upload" className="w-full">
+            <div>
+              <label htmlFor="file-upload">
                 <Button 
-                  className="w-full cursor-pointer" 
-                  size="lg"
+                  className="cursor-pointer" 
+                  variant="default"
+                  size="sm"
                 >
                   <Upload className="h-4 w-4 mr-2" />
-                  Select PDF
+                  Select PDF File
                 </Button>
                 <input
                   id="file-upload"
@@ -106,16 +107,16 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
           </div>
         </div>
       ) : (
-        <div className="border rounded-lg p-6 bg-background shadow-sm">
+        <div className="border rounded-lg p-4 bg-background">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-4">
-              <div className="bg-primary/10 p-3 rounded-full">
-                <File className="h-8 w-8 text-primary" />
+            <div className="flex items-center space-x-3">
+              <div className="bg-primary/10 p-2 rounded-full">
+                <File className="h-6 w-6 text-primary" />
               </div>
               
               <div>
-                <h4 className="text-lg font-medium">{uploadedFile.name}</h4>
-                <p className="text-sm text-muted-foreground">
+                <h4 className="text-base font-medium">{uploadedFile.name}</h4>
+                <p className="text-xs text-muted-foreground">
                   {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB • PDF Document
                 </p>
               </div>
@@ -127,24 +128,22 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
               onClick={onRemoveFile}
               className="hover:bg-destructive/10 hover:text-destructive transition-colors"
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4" />
             </Button>
           </div>
           
           {uploadProgress < 100 ? (
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span>Uploading file...</span>
-                <span>{uploadProgress}%</span>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Uploading file...</span>
+                <span className="font-medium">{uploadProgress}%</span>
               </div>
-              <Progress value={uploadProgress} className="h-2" />
+              <Progress value={uploadProgress} className="h-1" />
             </div>
           ) : (
-            <div className="flex items-center text-sm text-green-600">
-              <div className="rounded-full bg-green-100 p-1 mr-2">
-                <FileCheck className="h-4 w-4" />
-              </div>
-              File uploaded successfully and ready for processing
+            <div className="flex items-center text-xs text-green-600">
+              <FileCheck className="h-4 w-4 mr-1.5" />
+              File uploaded successfully
             </div>
           )}
         </div>
