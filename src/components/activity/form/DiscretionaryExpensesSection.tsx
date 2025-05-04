@@ -1,6 +1,8 @@
+
 import React, { useEffect } from "react";
 import { IncomeExpenseData } from "../types";
 import { ComparisonField } from "./ComparisonField";
+import { ViewModeFormField } from "./ViewModeFormField";
 import {
   Card,
   CardContent,
@@ -23,12 +25,18 @@ interface DiscretionaryExpensesSectionProps {
   formData: IncomeExpenseData;
   previousMonthData?: IncomeExpenseData | null;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  isViewMode?: boolean;
+  isFieldEditable?: (fieldName: string) => boolean;
+  onToggleFieldEdit?: (fieldName: string) => void;
 }
 
 export const DiscretionaryExpensesSection = ({ 
   formData, 
   previousMonthData, 
-  onChange 
+  onChange,
+  isViewMode = false,
+  isFieldEditable = () => false,
+  onToggleFieldEdit = () => {},
 }: DiscretionaryExpensesSectionProps) => {
   // Discretionary expense fields with labels
   const expenseFields = [

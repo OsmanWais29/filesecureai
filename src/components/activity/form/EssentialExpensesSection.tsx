@@ -4,17 +4,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { NumberInput } from "./NumberInput";
 import { IncomeExpenseData } from "../types";
 import { Home } from "lucide-react";
+import { ViewModeFormField } from "./ViewModeFormField";
 
 interface EssentialExpensesSectionProps {
   formData: IncomeExpenseData;
   previousMonthData?: IncomeExpenseData;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  isViewMode?: boolean;
+  isFieldEditable?: (fieldName: string) => boolean;
+  onToggleFieldEdit?: (fieldName: string) => void;
 }
 
 export const EssentialExpensesSection = ({
   formData,
   previousMonthData,
   onChange,
+  isViewMode = false,
+  isFieldEditable = () => false,
+  onToggleFieldEdit = () => {},
 }: EssentialExpensesSectionProps) => {
   // Calculate total essential expenses
   const handleEssentialChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -60,108 +67,239 @@ export const EssentialExpensesSection = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <NumberInput
-          id="mortgage_rent"
-          name="mortgage_rent"
-          label="Mortgage/Rent"
-          value={formData.mortgage_rent || ""}
-          onChange={handleEssentialChange}
-          required
-        />
-        
-        <NumberInput
-          id="utilities"
-          name="utilities"
-          label="Utilities"
-          value={formData.utilities || ""}
-          onChange={handleEssentialChange}
-        />
-        
-        <NumberInput
-          id="groceries"
-          name="groceries"
-          label="Groceries"
-          value={formData.groceries || ""}
-          onChange={handleEssentialChange}
-        />
-        
-        <NumberInput
-          id="transportation"
-          name="transportation"
-          label="Transportation"
-          value={formData.transportation || ""}
-          onChange={handleEssentialChange}
-          tooltip="Car payments, gas, public transit, etc."
-        />
-        
-        <NumberInput
-          id="telephone_internet"
-          name="telephone_internet"
-          label="Telephone/Internet"
-          value={formData.telephone_internet || ""}
-          onChange={handleEssentialChange}
-        />
-        
-        <NumberInput
-          id="insurance"
-          name="insurance"
-          label="Insurance"
-          value={formData.insurance || ""}
-          onChange={handleEssentialChange}
-          tooltip="All insurance types"
-        />
-        
-        <NumberInput
-          id="child_care"
-          name="child_care"
-          label="Child Care"
-          value={formData.child_care || ""}
-          onChange={handleEssentialChange}
-        />
-        
-        <NumberInput
-          id="medical_dental"
-          name="medical_dental"
-          label="Medical & Dental"
-          value={formData.medical_dental || ""}
-          onChange={handleEssentialChange}
-        />
-        
-        <NumberInput
-          id="education_tuition"
-          name="education_tuition"
-          label="Education/Tuition"
-          value={formData.education_tuition || ""}
-          onChange={handleEssentialChange}
-        />
-        
-        <NumberInput
-          id="debt_repayments"
-          name="debt_repayments"
-          label="Debt Repayments"
-          value={formData.debt_repayments || ""}
-          onChange={handleEssentialChange}
-          tooltip="Minimum payments on debts"
-        />
-        
-        <NumberInput
-          id="misc_essential_expenses"
-          name="misc_essential_expenses"
-          label="Other"
-          value={formData.misc_essential_expenses || ""}
-          onChange={handleEssentialChange}
-        />
-        
-        <NumberInput
-          id="total_essential_expenses"
-          name="total_essential_expenses"
-          label="Total Monthly Expenses"
-          value={formData.total_essential_expenses || ""}
-          onChange={onChange}
-          required
-          disabled
-          className="font-bold"
-        />
+        {isViewMode ? (
+          <>
+            <ViewModeFormField
+              id="mortgage_rent"
+              name="mortgage_rent"
+              label="Mortgage/Rent"
+              value={formData.mortgage_rent || ""}
+              onChange={handleEssentialChange}
+              isEditable={isFieldEditable("mortgage_rent")}
+              onToggleEdit={() => onToggleFieldEdit("mortgage_rent")}
+              required
+            />
+            
+            <ViewModeFormField
+              id="utilities"
+              name="utilities"
+              label="Utilities"
+              value={formData.utilities || ""}
+              onChange={handleEssentialChange}
+              isEditable={isFieldEditable("utilities")}
+              onToggleEdit={() => onToggleFieldEdit("utilities")}
+            />
+            
+            <ViewModeFormField
+              id="groceries"
+              name="groceries"
+              label="Groceries"
+              value={formData.groceries || ""}
+              onChange={handleEssentialChange}
+              isEditable={isFieldEditable("groceries")}
+              onToggleEdit={() => onToggleFieldEdit("groceries")}
+            />
+            
+            <ViewModeFormField
+              id="transportation"
+              name="transportation"
+              label="Transportation"
+              value={formData.transportation || ""}
+              onChange={handleEssentialChange}
+              isEditable={isFieldEditable("transportation")}
+              onToggleEdit={() => onToggleFieldEdit("transportation")}
+              tooltip="Car payments, gas, public transit, etc."
+            />
+            
+            <ViewModeFormField
+              id="telephone_internet"
+              name="telephone_internet"
+              label="Telephone/Internet"
+              value={formData.telephone_internet || ""}
+              onChange={handleEssentialChange}
+              isEditable={isFieldEditable("telephone_internet")}
+              onToggleEdit={() => onToggleFieldEdit("telephone_internet")}
+            />
+            
+            <ViewModeFormField
+              id="insurance"
+              name="insurance"
+              label="Insurance"
+              value={formData.insurance || ""}
+              onChange={handleEssentialChange}
+              isEditable={isFieldEditable("insurance")}
+              onToggleEdit={() => onToggleFieldEdit("insurance")}
+              tooltip="All insurance types"
+            />
+            
+            <ViewModeFormField
+              id="child_care"
+              name="child_care"
+              label="Child Care"
+              value={formData.child_care || ""}
+              onChange={handleEssentialChange}
+              isEditable={isFieldEditable("child_care")}
+              onToggleEdit={() => onToggleFieldEdit("child_care")}
+            />
+            
+            <ViewModeFormField
+              id="medical_dental"
+              name="medical_dental"
+              label="Medical & Dental"
+              value={formData.medical_dental || ""}
+              onChange={handleEssentialChange}
+              isEditable={isFieldEditable("medical_dental")}
+              onToggleEdit={() => onToggleFieldEdit("medical_dental")}
+            />
+            
+            <ViewModeFormField
+              id="education_tuition"
+              name="education_tuition"
+              label="Education/Tuition"
+              value={formData.education_tuition || ""}
+              onChange={handleEssentialChange}
+              isEditable={isFieldEditable("education_tuition")}
+              onToggleEdit={() => onToggleFieldEdit("education_tuition")}
+            />
+            
+            <ViewModeFormField
+              id="debt_repayments"
+              name="debt_repayments"
+              label="Debt Repayments"
+              value={formData.debt_repayments || ""}
+              onChange={handleEssentialChange}
+              isEditable={isFieldEditable("debt_repayments")}
+              onToggleEdit={() => onToggleFieldEdit("debt_repayments")}
+              tooltip="Minimum payments on debts"
+            />
+            
+            <ViewModeFormField
+              id="misc_essential_expenses"
+              name="misc_essential_expenses"
+              label="Other"
+              value={formData.misc_essential_expenses || ""}
+              onChange={handleEssentialChange}
+              isEditable={isFieldEditable("misc_essential_expenses")}
+              onToggleEdit={() => onToggleFieldEdit("misc_essential_expenses")}
+            />
+            
+            <ViewModeFormField
+              id="total_essential_expenses"
+              name="total_essential_expenses"
+              label="Total Monthly Expenses"
+              value={formData.total_essential_expenses || ""}
+              onChange={onChange}
+              isEditable={false}
+              onToggleEdit={() => {}}
+              className="font-bold"
+            />
+          </>
+        ) : (
+          <>
+            <NumberInput
+              id="mortgage_rent"
+              name="mortgage_rent"
+              label="Mortgage/Rent"
+              value={formData.mortgage_rent || ""}
+              onChange={handleEssentialChange}
+              required
+            />
+            
+            <NumberInput
+              id="utilities"
+              name="utilities"
+              label="Utilities"
+              value={formData.utilities || ""}
+              onChange={handleEssentialChange}
+            />
+            
+            <NumberInput
+              id="groceries"
+              name="groceries"
+              label="Groceries"
+              value={formData.groceries || ""}
+              onChange={handleEssentialChange}
+            />
+            
+            <NumberInput
+              id="transportation"
+              name="transportation"
+              label="Transportation"
+              value={formData.transportation || ""}
+              onChange={handleEssentialChange}
+              tooltip="Car payments, gas, public transit, etc."
+            />
+            
+            <NumberInput
+              id="telephone_internet"
+              name="telephone_internet"
+              label="Telephone/Internet"
+              value={formData.telephone_internet || ""}
+              onChange={handleEssentialChange}
+            />
+            
+            <NumberInput
+              id="insurance"
+              name="insurance"
+              label="Insurance"
+              value={formData.insurance || ""}
+              onChange={handleEssentialChange}
+              tooltip="All insurance types"
+            />
+            
+            <NumberInput
+              id="child_care"
+              name="child_care"
+              label="Child Care"
+              value={formData.child_care || ""}
+              onChange={handleEssentialChange}
+            />
+            
+            <NumberInput
+              id="medical_dental"
+              name="medical_dental"
+              label="Medical & Dental"
+              value={formData.medical_dental || ""}
+              onChange={handleEssentialChange}
+            />
+            
+            <NumberInput
+              id="education_tuition"
+              name="education_tuition"
+              label="Education/Tuition"
+              value={formData.education_tuition || ""}
+              onChange={handleEssentialChange}
+            />
+            
+            <NumberInput
+              id="debt_repayments"
+              name="debt_repayments"
+              label="Debt Repayments"
+              value={formData.debt_repayments || ""}
+              onChange={handleEssentialChange}
+              tooltip="Minimum payments on debts"
+            />
+            
+            <NumberInput
+              id="misc_essential_expenses"
+              name="misc_essential_expenses"
+              label="Other"
+              value={formData.misc_essential_expenses || ""}
+              onChange={handleEssentialChange}
+            />
+            
+            <NumberInput
+              id="total_essential_expenses"
+              name="total_essential_expenses"
+              label="Total Monthly Expenses"
+              value={formData.total_essential_expenses || ""}
+              onChange={onChange}
+              required
+              disabled
+              className="font-bold"
+            />
+          </>
+        )}
       </CardContent>
     </Card>
   );

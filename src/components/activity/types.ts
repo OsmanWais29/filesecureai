@@ -156,7 +156,7 @@ export interface HistoricalData {
   previousPeriod: IncomeExpenseData;
 }
 
-// Update these interfaces for the section components
+// Update these interfaces for the section components with the missing props
 export interface ClientProfileSectionProps {
   formData: IncomeExpenseData;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;

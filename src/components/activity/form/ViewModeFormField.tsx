@@ -7,7 +7,7 @@ import { HelpCircle } from "lucide-react";
 interface ViewModeFormFieldProps {
   id: string;
   name: string;
-  label: React.ReactNode; // Changed from string to ReactNode
+  label: React.ReactNode; // This remains React.ReactNode
   value: string | number;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   isEditable: boolean;

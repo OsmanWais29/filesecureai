@@ -3,6 +3,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FormGroup } from "./FormGroup";
 import { IncomeExpenseData } from "../types";
 import { NumberInput } from "./NumberInput";
+import { ViewModeFormField } from "./ViewModeFormField";
 import { DollarSign } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { calculateTotalDebtor, calculateTotalHousehold, calculateTotalSpouse } from "../utils/calculationUtils";
@@ -12,6 +13,9 @@ interface EnhancedIncomeSectionProps {
   previousMonthData?: IncomeExpenseData;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onFrequencyChange: (value: string) => void;
+  isViewMode?: boolean;
+  isFieldEditable?: (fieldName: string) => boolean;
+  onToggleFieldEdit?: (fieldName: string) => void;
 }
 
 export const EnhancedIncomeSection = ({
@@ -19,6 +23,9 @@ export const EnhancedIncomeSection = ({
   previousMonthData,
   onChange,
   onFrequencyChange,
+  isViewMode = false,
+  isFieldEditable = () => false,
+  onToggleFieldEdit = () => {},
 }: EnhancedIncomeSectionProps) => {
   // Calculate total income for debtor
   const handleDebtorIncomeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,86 +132,188 @@ export const EnhancedIncomeSection = ({
         {/* Debtor Income */}
         <FormGroup title="Debtor's Income">
           <div className="grid md:grid-cols-2 gap-4">
-            <NumberInput
-              id="employment_income"
-              name="employment_income"
-              label="Employment Income (Gross)"
-              value={formData.employment_income || ""}
-              onChange={handleDebtorIncomeChange}
-              required
-            />
-            
-            <NumberInput
-              id="pension_annuities"
-              name="pension_annuities"
-              label="Pension/Annuities"
-              value={formData.pension_annuities || ""}
-              onChange={handleDebtorIncomeChange}
-            />
-            
-            <NumberInput
-              id="child_spousal_support"
-              name="child_spousal_support"
-              label="Child/Spousal Support"
-              value={formData.child_spousal_support || ""}
-              onChange={handleDebtorIncomeChange}
-            />
-            
-            <NumberInput
-              id="self_employment_income"
-              name="self_employment_income"
-              label="Self-Employment Income"
-              value={formData.self_employment_income || ""}
-              onChange={handleDebtorIncomeChange}
-            />
-            
-            <NumberInput
-              id="government_benefits"
-              name="government_benefits"
-              label="Government Benefits"
-              value={formData.government_benefits || ""}
-              onChange={handleDebtorIncomeChange}
-            />
-            
-            <NumberInput
-              id="rental_income"
-              name="rental_income"
-              label="Rental Income"
-              value={formData.rental_income || ""}
-              onChange={handleDebtorIncomeChange}
-            />
-            
-            <div className="grid grid-cols-1 gap-2">
-              <NumberInput
-                id="other_income"
-                name="other_income"
-                label="Other Income"
-                value={formData.other_income || ""}
-                onChange={handleDebtorIncomeChange}
-              />
-              {formData.other_income && parseFloat(formData.other_income) > 0 && (
-                <input
-                  type="text"
-                  id="other_income_description"
-                  name="other_income_description"
-                  placeholder="Description of other income"
-                  className="border rounded p-2 text-sm"
-                  value={formData.other_income_description || ""}
-                  onChange={onChange}
+            {isViewMode ? (
+              <>
+                <ViewModeFormField
+                  id="employment_income"
+                  name="employment_income"
+                  label="Employment Income (Gross)"
+                  value={formData.employment_income || ""}
+                  onChange={handleDebtorIncomeChange}
+                  isEditable={isFieldEditable("employment_income")}
+                  onToggleEdit={() => onToggleFieldEdit("employment_income")}
+                  required
                 />
-              )}
-            </div>
-            
-            <NumberInput
-              id="total_monthly_income"
-              name="total_monthly_income"
-              label="Total Monthly Income"
-              value={formData.total_monthly_income || ""}
-              onChange={onChange}
-              required
-              disabled
-              className="font-bold"
-            />
+                
+                <ViewModeFormField
+                  id="pension_annuities"
+                  name="pension_annuities"
+                  label="Pension/Annuities"
+                  value={formData.pension_annuities || ""}
+                  onChange={handleDebtorIncomeChange}
+                  isEditable={isFieldEditable("pension_annuities")}
+                  onToggleEdit={() => onToggleFieldEdit("pension_annuities")}
+                />
+                
+                <ViewModeFormField
+                  id="child_spousal_support"
+                  name="child_spousal_support"
+                  label="Child/Spousal Support"
+                  value={formData.child_spousal_support || ""}
+                  onChange={handleDebtorIncomeChange}
+                  isEditable={isFieldEditable("child_spousal_support")}
+                  onToggleEdit={() => onToggleFieldEdit("child_spousal_support")}
+                />
+                
+                <ViewModeFormField
+                  id="self_employment_income"
+                  name="self_employment_income"
+                  label="Self-Employment Income"
+                  value={formData.self_employment_income || ""}
+                  onChange={handleDebtorIncomeChange}
+                  isEditable={isFieldEditable("self_employment_income")}
+                  onToggleEdit={() => onToggleFieldEdit("self_employment_income")}
+                />
+                
+                <ViewModeFormField
+                  id="government_benefits"
+                  name="government_benefits"
+                  label="Government Benefits"
+                  value={formData.government_benefits || ""}
+                  onChange={handleDebtorIncomeChange}
+                  isEditable={isFieldEditable("government_benefits")}
+                  onToggleEdit={() => onToggleFieldEdit("government_benefits")}
+                />
+                
+                <ViewModeFormField
+                  id="rental_income"
+                  name="rental_income"
+                  label="Rental Income"
+                  value={formData.rental_income || ""}
+                  onChange={handleDebtorIncomeChange}
+                  isEditable={isFieldEditable("rental_income")}
+                  onToggleEdit={() => onToggleFieldEdit("rental_income")}
+                />
+                
+                <div className="grid grid-cols-1 gap-2">
+                  <ViewModeFormField
+                    id="other_income"
+                    name="other_income"
+                    label="Other Income"
+                    value={formData.other_income || ""}
+                    onChange={handleDebtorIncomeChange}
+                    isEditable={isFieldEditable("other_income")}
+                    onToggleEdit={() => onToggleFieldEdit("other_income")}
+                  />
+                  {formData.other_income && parseFloat(formData.other_income) > 0 && (
+                    <input
+                      type="text"
+                      id="other_income_description"
+                      name="other_income_description"
+                      placeholder="Description of other income"
+                      className="border rounded p-2 text-sm"
+                      value={formData.other_income_description || ""}
+                      onChange={onChange}
+                    />
+                  )}
+                </div>
+                
+                <ViewModeFormField
+                  id="total_monthly_income"
+                  name="total_monthly_income"
+                  label="Total Monthly Income"
+                  value={formData.total_monthly_income || ""}
+                  onChange={onChange}
+                  isEditable={false}
+                  onToggleEdit={() => {}}
+                  required
+                  className="font-bold"
+                />
+              </>
+            ) : (
+              <>
+                <NumberInput
+                  id="employment_income"
+                  name="employment_income"
+                  label="Employment Income (Gross)"
+                  value={formData.employment_income || ""}
+                  onChange={handleDebtorIncomeChange}
+                  required
+                />
+                
+                <NumberInput
+                  id="pension_annuities"
+                  name="pension_annuities"
+                  label="Pension/Annuities"
+                  value={formData.pension_annuities || ""}
+                  onChange={handleDebtorIncomeChange}
+                />
+                
+                <NumberInput
+                  id="child_spousal_support"
+                  name="child_spousal_support"
+                  label="Child/Spousal Support"
+                  value={formData.child_spousal_support || ""}
+                  onChange={handleDebtorIncomeChange}
+                />
+                
+                <NumberInput
+                  id="self_employment_income"
+                  name="self_employment_income"
+                  label="Self-Employment Income"
+                  value={formData.self_employment_income || ""}
+                  onChange={handleDebtorIncomeChange}
+                />
+                
+                <NumberInput
+                  id="government_benefits"
+                  name="government_benefits"
+                  label="Government Benefits"
+                  value={formData.government_benefits || ""}
+                  onChange={handleDebtorIncomeChange}
+                />
+                
+                <NumberInput
+                  id="rental_income"
+                  name="rental_income"
+                  label="Rental Income"
+                  value={formData.rental_income || ""}
+                  onChange={handleDebtorIncomeChange}
+                />
+                
+                <div className="grid grid-cols-1 gap-2">
+                  <NumberInput
+                    id="other_income"
+                    name="other_income"
+                    label="Other Income"
+                    value={formData.other_income || ""}
+                    onChange={handleDebtorIncomeChange}
+                  />
+                  {formData.other_income && parseFloat(formData.other_income) > 0 && (
+                    <input
+                      type="text"
+                      id="other_income_description"
+                      name="other_income_description"
+                      placeholder="Description of other income"
+                      className="border rounded p-2 text-sm"
+                      value={formData.other_income_description || ""}
+                      onChange={onChange}
+                    />
+                  )}
+                </div>
+                
+                <NumberInput
+                  id="total_monthly_income"
+                  name="total_monthly_income"
+                  label="Total Monthly Income"
+                  value={formData.total_monthly_income || ""}
+                  onChange={onChange}
+                  required
+                  disabled
+                  className="font-bold"
+                />
+              </>
+            )}
           </div>
         </FormGroup>
         
@@ -212,71 +321,158 @@ export const EnhancedIncomeSection = ({
         {formData.marital_status === "married" || formData.marital_status === "common_law" ? (
           <FormGroup title="Spouse's Income">
             <div className="grid md:grid-cols-2 gap-4">
-              <NumberInput
-                id="spouse_employment_income"
-                name="spouse_employment_income"
-                label="Employment Income (Gross)"
-                value={formData.spouse_employment_income || ""}
-                onChange={handleSpouseIncomeChange}
-              />
-              
-              <NumberInput
-                id="spouse_pension_annuities"
-                name="spouse_pension_annuities"
-                label="Pension/Annuities"
-                value={formData.spouse_pension_annuities || ""}
-                onChange={handleSpouseIncomeChange}
-              />
-              
-              <NumberInput
-                id="spouse_child_spousal_support"
-                name="spouse_child_spousal_support"
-                label="Child/Spousal Support"
-                value={formData.spouse_child_spousal_support || ""}
-                onChange={handleSpouseIncomeChange}
-              />
-              
-              <NumberInput
-                id="spouse_self_employment_income"
-                name="spouse_self_employment_income"
-                label="Self-Employment Income"
-                value={formData.spouse_self_employment_income || ""}
-                onChange={handleSpouseIncomeChange}
-              />
-              
-              <NumberInput
-                id="spouse_government_benefits"
-                name="spouse_government_benefits"
-                label="Government Benefits"
-                value={formData.spouse_government_benefits || ""}
-                onChange={handleSpouseIncomeChange}
-              />
-              
-              <NumberInput
-                id="spouse_rental_income"
-                name="spouse_rental_income"
-                label="Rental Income"
-                value={formData.spouse_rental_income || ""}
-                onChange={handleSpouseIncomeChange}
-              />
-              
-              <NumberInput
-                id="spouse_other_income"
-                name="spouse_other_income"
-                label="Other Income"
-                value={formData.spouse_other_income || ""}
-                onChange={handleSpouseIncomeChange}
-              />
-              
-              <NumberInput
-                id="spouse_total_monthly_income"
-                name="spouse_total_monthly_income"
-                label="Total Monthly Income"
-                value={formData.spouse_total_monthly_income || ""}
-                onChange={onChange}
-                disabled
-                className="font-bold"
-              />
+              {isViewMode ? (
+                <>
+                  <ViewModeFormField
+                    id="spouse_employment_income"
+                    name="spouse_employment_income"
+                    label="Employment Income (Gross)"
+                    value={formData.spouse_employment_income || ""}
+                    onChange={handleSpouseIncomeChange}
+                    isEditable={isFieldEditable("spouse_employment_income")}
+                    onToggleEdit={() => onToggleFieldEdit("spouse_employment_income")}
+                  />
+                  
+                  <ViewModeFormField
+                    id="spouse_pension_annuities"
+                    name="spouse_pension_annuities"
+                    label="Pension/Annuities"
+                    value={formData.spouse_pension_annuities || ""}
+                    onChange={handleSpouseIncomeChange}
+                    isEditable={isFieldEditable("spouse_pension_annuities")}
+                    onToggleEdit={() => onToggleFieldEdit("spouse_pension_annuities")}
+                  />
+                  
+                  <ViewModeFormField
+                    id="spouse_child_spousal_support"
+                    name="spouse_child_spousal_support"
+                    label="Child/Spousal Support"
+                    value={formData.spouse_child_spousal_support || ""}
+                    onChange={handleSpouseIncomeChange}
+                    isEditable={isFieldEditable("spouse_child_spousal_support")}
+                    onToggleEdit={() => onToggleFieldEdit("spouse_child_spousal_support")}
+                  />
+                  
+                  <ViewModeFormField
+                    id="spouse_self_employment_income"
+                    name="spouse_self_employment_income"
+                    label="Self-Employment Income"
+                    value={formData.spouse_self_employment_income || ""}
+                    onChange={handleSpouseIncomeChange}
+                    isEditable={isFieldEditable("spouse_self_employment_income")}
+                    onToggleEdit={() => onToggleFieldEdit("spouse_self_employment_income")}
+                  />
+                  
+                  <ViewModeFormField
+                    id="spouse_government_benefits"
+                    name="spouse_government_benefits"
+                    label="Government Benefits"
+                    value={formData.spouse_government_benefits || ""}
+                    onChange={handleSpouseIncomeChange}
+                    isEditable={isFieldEditable("spouse_government_benefits")}
+                    onToggleEdit={() => onToggleFieldEdit("spouse_government_benefits")}
+                  />
+                  
+                  <ViewModeFormField
+                    id="spouse_rental_income"
+                    name="spouse_rental_income"
+                    label="Rental Income"
+                    value={formData.spouse_rental_income || ""}
+                    onChange={handleSpouseIncomeChange}
+                    isEditable={isFieldEditable("spouse_rental_income")}
+                    onToggleEdit={() => onToggleFieldEdit("spouse_rental_income")}
+                  />
+                  
+                  <ViewModeFormField
+                    id="spouse_other_income"
+                    name="spouse_other_income"
+                    label="Other Income"
+                    value={formData.spouse_other_income || ""}
+                    onChange={handleSpouseIncomeChange}
+                    isEditable={isFieldEditable("spouse_other_income")}
+                    onToggleEdit={() => onToggleFieldEdit("spouse_other_income")}
+                  />
+                  
+                  <ViewModeFormField
+                    id="spouse_total_monthly_income"
+                    name="spouse_total_monthly_income"
+                    label="Total Monthly Income"
+                    value={formData.spouse_total_monthly_income || ""}
+                    onChange={onChange}
+                    isEditable={false}
+                    onToggleEdit={() => {}}
+                    className="font-bold"
+                  />
+                </>
+              ) : (
+                <>
+                  <NumberInput
+                    id="spouse_employment_income"
+                    name="spouse_employment_income"
+                    label="Employment Income (Gross)"
+                    value={formData.spouse_employment_income || ""}
+                    onChange={handleSpouseIncomeChange}
+                  />
+                  
+                  <NumberInput
+                    id="spouse_pension_annuities"
+                    name="spouse_pension_annuities"
+                    label="Pension/Annuities"
+                    value={formData.spouse_pension_annuities || ""}
+                    onChange={handleSpouseIncomeChange}
+                  />
+                  
+                  <NumberInput
+                    id="spouse_child_spousal_support"
+                    name="spouse_child_spousal_support"
+                    label="Child/Spousal Support"
+                    value={formData.spouse_child_spousal_support || ""}
+                    onChange={handleSpouseIncomeChange}
+                  />
+                  
+                  <NumberInput
+                    id="spouse_self_employment_income"
+                    name="spouse_self_employment_income"
+                    label="Self-Employment Income"
+                    value={formData.spouse_self_employment_income || ""}
+                    onChange={handleSpouseIncomeChange}
+                  />
+                  
+                  <NumberInput
+                    id="spouse_government_benefits"
+                    name="spouse_government_benefits"
+                    label="Government Benefits"
+                    value={formData.spouse_government_benefits || ""}
+                    onChange={handleSpouseIncomeChange}
+                  />
+                  
+                  <NumberInput
+                    id="spouse_rental_income"
+                    name="spouse_rental_income"
+                    label="Rental Income"
+                    value={formData.spouse_rental_income || ""}
+                    onChange={handleSpouseIncomeChange}
+                  />
+                  
+                  <NumberInput
+                    id="spouse_other_income"
+                    name="spouse_other_income"
+                    label="Other Income"
+                    value={formData.spouse_other_income || ""}
+                    onChange={handleSpouseIncomeChange}
+                  />
+                  
+                  <NumberInput
+                    id="spouse_total_monthly_income"
+                    name="spouse_total_monthly_income"
+                    label="Total Monthly Income"
+                    value={formData.spouse_total_monthly_income || ""}
+                    onChange={onChange}
+                    disabled
+                    className="font-bold"
+                  />
+                </>
+              )}
             </div>
           </FormGroup>
         ) : null}
@@ -284,24 +480,52 @@ export const EnhancedIncomeSection = ({
         {/* Total Household Income */}
         <FormGroup title="Household Income">
           <div className="grid md:grid-cols-2 gap-4">
-            <NumberInput
-              id="other_household_income"
-              name="other_household_income"
-              label="Other Household Income"
-              value={formData.other_household_income || ""}
-              onChange={handleOtherHouseholdIncomeChange}
-              tooltip="Income from other household members"
-            />
-            
-            <NumberInput
-              id="total_household_income"
-              name="total_household_income"
-              label="Total Household Income"
-              value={formData.total_household_income || ""}
-              onChange={onChange}
-              disabled
-              className="font-bold"
-            />
+            {isViewMode ? (
+              <>
+                <ViewModeFormField
+                  id="other_household_income"
+                  name="other_household_income"
+                  label="Other Household Income"
+                  value={formData.other_household_income || ""}
+                  onChange={handleOtherHouseholdIncomeChange}
+                  isEditable={isFieldEditable("other_household_income")}
+                  onToggleEdit={() => onToggleFieldEdit("other_household_income")}
+                  tooltip="Income from other household members"
+                />
+                
+                <ViewModeFormField
+                  id="total_household_income"
+                  name="total_household_income"
+                  label="Total Household Income"
+                  value={formData.total_household_income || ""}
+                  onChange={onChange}
+                  isEditable={false}
+                  onToggleEdit={() => {}}
+                  className="font-bold"
+                />
+              </>
+            ) : (
+              <>
+                <NumberInput
+                  id="other_household_income"
+                  name="other_household_income"
+                  label="Other Household Income"
+                  value={formData.other_household_income || ""}
+                  onChange={handleOtherHouseholdIncomeChange}
+                  tooltip="Income from other household members"
+                />
+                
+                <NumberInput
+                  id="total_household_income"
+                  name="total_household_income"
+                  label="Total Household Income"
+                  value={formData.total_household_income || ""}
+                  onChange={onChange}
+                  disabled
+                  className="font-bold"
+                />
+              </>
+            )}
           </div>
         </FormGroup>
       </CardContent>
