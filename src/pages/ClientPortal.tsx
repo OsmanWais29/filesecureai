@@ -7,6 +7,7 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { AuthErrorDisplay } from "@/components/auth/AuthErrorDisplay";
 import { ClientPortalLayout } from "@/components/client-portal/ClientPortalLayout";
 import { ClientDashboard } from "@/components/client-portal/ClientDashboard";
+import { ClientDocuments } from "@/components/client-portal/ClientDocuments";
 
 // Create basic components for the client portal pages
 const DocumentsPage = () => (
@@ -115,7 +116,7 @@ const ClientPortal = () => {
     <ClientPortalLayout>
       <Routes>
         <Route path="/" element={<ClientDashboard />} />
-        <Route path="/documents" element={<DocumentsPage />} />
+        <Route path="/documents" element={<ClientDocuments />} />
         <Route path="/tasks" element={<TasksPage />} />
         <Route path="/appointments" element={<AppointmentsPage />} />
         <Route path="/messages" element={<MessagesPage />} />
