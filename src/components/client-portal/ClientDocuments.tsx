@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,7 +34,7 @@ export const ClientDocuments = () => {
 
   // Placeholder document categories for demonstration
   const documentCategories = [
-    { id: "required", label: "Required Documents", count: 5 },
+    { id: "required", label: "Required Documents", count: 4 },
     { id: "submitted", label: "Submitted", count: documents.length },
     { id: "reviewed", label: "Reviewed", count: 0 }
   ];
@@ -44,8 +43,7 @@ export const ClientDocuments = () => {
     { id: "1", name: "Proof of Income", description: "Recent pay stubs or income statements", status: "required" },
     { id: "2", name: "Bank Statements", description: "Last 3 months of all bank accounts", status: "required" },
     { id: "3", name: "Tax Returns", description: "Most recent tax return", status: "required" },
-    { id: "4", name: "Credit Card Statements", description: "Last 3 months for all credit cards", status: "required" },
-    { id: "5", name: "Form 17", description: "Personal information form", status: "required" }
+    { id: "4", name: "Credit Card Statements", description: "Last 3 months for all credit cards", status: "required" }
   ];
 
   return (

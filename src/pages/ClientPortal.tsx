@@ -8,18 +8,9 @@ import { AuthErrorDisplay } from "@/components/auth/AuthErrorDisplay";
 import { ClientPortalLayout } from "@/components/client-portal/ClientPortalLayout";
 import { ClientDashboard } from "@/components/client-portal/ClientDashboard";
 import { ClientDocuments } from "@/components/client-portal/ClientDocuments";
+import { ClientTasks } from "@/components/client-portal/ClientTasks";
 
 // Create basic components for the client portal pages
-const TasksPage = () => (
-  <div className="p-4 md:p-6 w-full">
-    <h1 className="text-2xl font-bold mb-4">Tasks & Requirements</h1>
-    <p className="text-muted-foreground mb-6">Track your outstanding tasks and requirements.</p>
-    <div className="bg-muted rounded-lg p-8 text-center">
-      <p>Tasks panel coming soon. Your tasks and requirements will be visible here.</p>
-    </div>
-  </div>
-);
-
 const AppointmentsPage = () => (
   <div className="p-4 md:p-6 w-full">
     <h1 className="text-2xl font-bold mb-4">Appointments</h1>
@@ -107,7 +98,7 @@ const ClientPortal = () => {
       <Routes>
         <Route path="/" element={<ClientDashboard />} />
         <Route path="/documents" element={<ClientDocuments />} />
-        <Route path="/tasks" element={<TasksPage />} />
+        <Route path="/tasks" element={<ClientTasks />} />
         <Route path="/appointments" element={<AppointmentsPage />} />
         <Route path="/messages" element={<MessagesPage />} />
         <Route path="/support" element={<SupportPage />} />
