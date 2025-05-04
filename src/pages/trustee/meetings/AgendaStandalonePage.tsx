@@ -1,4 +1,4 @@
 
-import AgendaStandalonePage from "../../pages/meetings/AgendaStandalonePage";
+import AgendaStandalonePage from "../../meetings/AgendaStandalonePage";
 
 export default AgendaStandalonePage;

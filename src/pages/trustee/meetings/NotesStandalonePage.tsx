@@ -1,4 +1,4 @@
 
-import NotesStandalonePage from "../../pages/meetings/NotesStandalonePage";
+import NotesStandalonePage from "../../meetings/NotesStandalonePage";
 
 export default NotesStandalonePage;

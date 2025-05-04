@@ -1,4 +1,4 @@
 
-import FeedbackStandalonePage from "../../pages/meetings/FeedbackStandalonePage";
+import FeedbackStandalonePage from "../../meetings/FeedbackStandalonePage";
 
 export default FeedbackStandalonePage;
