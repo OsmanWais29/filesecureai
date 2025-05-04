@@ -9,18 +9,9 @@ import { ClientPortalLayout } from "@/components/client-portal/ClientPortalLayou
 import { ClientDashboard } from "@/components/client-portal/ClientDashboard";
 import { ClientDocuments } from "@/components/client-portal/ClientDocuments";
 import { ClientTasks } from "@/components/client-portal/ClientTasks";
+import { ClientAppointments } from "@/components/client-portal/ClientAppointments";
 
 // Create basic components for the client portal pages
-const AppointmentsPage = () => (
-  <div className="p-4 md:p-6 w-full">
-    <h1 className="text-2xl font-bold mb-4">Appointments</h1>
-    <p className="text-muted-foreground mb-6">View and manage your scheduled appointments.</p>
-    <div className="bg-muted rounded-lg p-8 text-center">
-      <p>Appointments panel coming soon. Your meetings will be scheduled here.</p>
-    </div>
-  </div>
-);
-
 const MessagesPage = () => (
   <div className="p-4 md:p-6 w-full">
     <h1 className="text-2xl font-bold mb-4">Messages</h1>
@@ -99,7 +90,7 @@ const ClientPortal = () => {
         <Route path="/" element={<ClientDashboard />} />
         <Route path="/documents" element={<ClientDocuments />} />
         <Route path="/tasks" element={<ClientTasks />} />
-        <Route path="/appointments" element={<AppointmentsPage />} />
+        <Route path="/appointments" element={<ClientAppointments />} />
         <Route path="/messages" element={<MessagesPage />} />
         <Route path="/support" element={<SupportPage />} />
         <Route path="*" element={<NotFoundPage />} />
