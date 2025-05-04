@@ -25,14 +25,16 @@ export const ClientHeader = () => {
   };
 
   return (
-    <div className="border-b bg-white dark:bg-background">
+    <header className="border-b bg-white dark:bg-background shadow-sm">
       <div className="flex h-16 items-center px-4 md:px-6">
-        {/* Left side - logo or title could go here */}
-        <div className="flex-1"></div>
+        {/* Left side - client portal title */}
+        <div className="flex items-center">
+          <h1 className="text-lg font-semibold">Client Portal</h1>
+        </div>
         
         {/* Right side - notifications and user dropdown */}
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="icon">
+        <div className="flex items-center gap-3 ml-auto">
+          <Button variant="outline" size="icon" className="relative">
             <BellIcon className="h-4 w-4" />
             <span className="sr-only">Notifications</span>
             <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500"></span>
@@ -40,10 +42,10 @@ export const ClientHeader = () => {
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="h-8 w-8 rounded-full overflow-hidden bg-muted flex items-center justify-center text-muted-foreground hover:bg-muted/80 transition-colors">
+              <Button variant="outline" size="icon" className="rounded-full">
                 <User className="h-4 w-4" />
                 <span className="sr-only">User menu</span>
-              </button>
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>John Doe</DropdownMenuLabel>
@@ -56,6 +58,6 @@ export const ClientHeader = () => {
           </DropdownMenu>
         </div>
       </div>
-    </div>
+    </header>
   );
 };
