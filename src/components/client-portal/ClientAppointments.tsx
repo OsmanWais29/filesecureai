@@ -241,130 +241,128 @@ export const ClientAppointments = () => {
                   <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
                   <TabsTrigger value="all">All</TabsTrigger>
                 </TabsList>
-              </Tabs>
-            </CardHeader>
-
-            <CardContent className="p-3">
-              <TabsContent value={activeTab} className="mt-0">
-                {filteredAppointments.length > 0 ? (
-                  <div className="space-y-4">
-                    {filteredAppointments.map((appointment) => (
-                      <Card key={appointment.id} className="overflow-hidden transition-all hover:shadow-md">
-                        <div className={`h-1 w-full ${
-                          appointment.status === 'upcoming' ? 'bg-blue-500' : 
-                          appointment.status === 'completed' ? 'bg-green-500' : 
-                          appointment.status === 'cancelled' ? 'bg-red-500' : 'bg-amber-500'
-                        }`}></div>
-                        <CardHeader className="pb-2 flex flex-row items-start justify-between">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <div className={`w-2 h-2 rounded-full ${
-                                appointment.status === 'upcoming' ? 'bg-blue-500' : 
-                                appointment.status === 'completed' ? 'bg-green-500' : 
-                                appointment.status === 'cancelled' ? 'bg-red-500' : 'bg-amber-500'
-                              }`}></div>
-                              <CardTitle className="text-lg">{appointment.title}</CardTitle>
+                
+                <TabsContent value={activeTab} className="mt-0">
+                  {filteredAppointments.length > 0 ? (
+                    <div className="space-y-4">
+                      {filteredAppointments.map((appointment) => (
+                        <Card key={appointment.id} className="overflow-hidden transition-all hover:shadow-md">
+                          <div className={`h-1 w-full ${
+                            appointment.status === 'upcoming' ? 'bg-blue-500' : 
+                            appointment.status === 'completed' ? 'bg-green-500' : 
+                            appointment.status === 'cancelled' ? 'bg-red-500' : 'bg-amber-500'
+                          }`}></div>
+                          <CardHeader className="pb-2 flex flex-row items-start justify-between">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${
+                                  appointment.status === 'upcoming' ? 'bg-blue-500' : 
+                                  appointment.status === 'completed' ? 'bg-green-500' : 
+                                  appointment.status === 'cancelled' ? 'bg-red-500' : 'bg-amber-500'
+                                }`}></div>
+                                <CardTitle className="text-lg">{appointment.title}</CardTitle>
+                              </div>
+                              <CardDescription>
+                                Scheduled with {appointment.with}
+                              </CardDescription>
                             </div>
-                            <CardDescription>
-                              Scheduled with {appointment.with}
-                            </CardDescription>
-                          </div>
-                          <StatusBadge status={appointment.status} size="md" />
-                        </CardHeader>
-                        
-                        <CardContent className="grid gap-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="flex items-start gap-3">
-                              <div className="rounded-full p-2 bg-primary/10 text-primary">
-                                <CalendarIcon className="h-4 w-4" />
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium">Date & Time</p>
-                                <p className="text-sm text-muted-foreground">{format(appointment.date, 'EEEE, MMMM d, yyyy')} at {appointment.time}</p>
-                              </div>
-                            </div>
-                            
-                            <div className="flex items-start gap-3">
-                              <div className="rounded-full p-2 bg-primary/10 text-primary">
-                                <Clock className="h-4 w-4" />
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium">Duration</p>
-                                <p className="text-sm text-muted-foreground">{appointment.duration}</p>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="flex items-start gap-3">
-                              <div className="rounded-full p-2 bg-primary/10 text-primary">
-                                {getAppointmentTypeIcon(appointment.type)}
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium">Meeting Type</p>
-                                <p className="text-sm text-muted-foreground">
-                                  {appointment.type === "in-person" ? "In-person Meeting" : 
-                                  appointment.type === "video" ? "Video Conference" : "Phone Call"}
-                                </p>
-                              </div>
-                            </div>
-                            
-                            {appointment.type === "in-person" && appointment.location && (
+                            <StatusBadge status={appointment.status} size="md" />
+                          </CardHeader>
+                          
+                          <CardContent className="grid gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <div className="flex items-start gap-3">
                                 <div className="rounded-full p-2 bg-primary/10 text-primary">
-                                  <MapPin className="h-4 w-4" />
+                                  <CalendarIcon className="h-4 w-4" />
                                 </div>
                                 <div>
-                                  <p className="text-sm font-medium">Location</p>
-                                  <p className="text-sm text-muted-foreground">{appointment.location}</p>
+                                  <p className="text-sm font-medium">Date & Time</p>
+                                  <p className="text-sm text-muted-foreground">{format(appointment.date, 'EEEE, MMMM d, yyyy')} at {appointment.time}</p>
                                 </div>
                               </div>
-                            )}
-                          </div>
-
-                          {appointment.notes && (
-                            <div className="bg-muted/30 p-3 rounded-md border-l-4 border-primary/30">
-                              <p className="text-sm font-medium mb-1">Notes:</p>
-                              <p className="text-sm text-muted-foreground">{appointment.notes}</p>
+                              
+                              <div className="flex items-start gap-3">
+                                <div className="rounded-full p-2 bg-primary/10 text-primary">
+                                  <Clock className="h-4 w-4" />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium">Duration</p>
+                                  <p className="text-sm text-muted-foreground">{appointment.duration}</p>
+                                </div>
+                              </div>
                             </div>
-                          )}
-                        </CardContent>
-                        
-                        <CardFooter className="border-t bg-muted/30 flex justify-end gap-2 pt-3 pb-3">
-                          {appointment.status === "upcoming" && (
-                            <>
-                              <Button variant="outline" size="sm">Reschedule</Button>
-                              {appointment.type === "video" && (
-                                <Button size="sm">Join Meeting</Button>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="flex items-start gap-3">
+                                <div className="rounded-full p-2 bg-primary/10 text-primary">
+                                  {getAppointmentTypeIcon(appointment.type)}
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium">Meeting Type</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {appointment.type === "in-person" ? "In-person Meeting" : 
+                                    appointment.type === "video" ? "Video Conference" : "Phone Call"}
+                                  </p>
+                                </div>
+                              </div>
+                              
+                              {appointment.type === "in-person" && appointment.location && (
+                                <div className="flex items-start gap-3">
+                                  <div className="rounded-full p-2 bg-primary/10 text-primary">
+                                    <MapPin className="h-4 w-4" />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium">Location</p>
+                                    <p className="text-sm text-muted-foreground">{appointment.location}</p>
+                                  </div>
+                                </div>
                               )}
-                            </>
-                          )}
-                          {appointment.status === "completed" && (
-                            <Button variant="outline" size="sm">View Summary</Button>
-                          )}
-                        </CardFooter>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <div className="rounded-full bg-muted p-4 mb-4">
-                      <Clock className="h-8 w-8 text-muted-foreground" />
+                            </div>
+
+                            {appointment.notes && (
+                              <div className="bg-muted/30 p-3 rounded-md border-l-4 border-primary/30">
+                                <p className="text-sm font-medium mb-1">Notes:</p>
+                                <p className="text-sm text-muted-foreground">{appointment.notes}</p>
+                              </div>
+                            )}
+                          </CardContent>
+                          
+                          <CardFooter className="border-t bg-muted/30 flex justify-end gap-2 pt-3 pb-3">
+                            {appointment.status === "upcoming" && (
+                              <>
+                                <Button variant="outline" size="sm">Reschedule</Button>
+                                {appointment.type === "video" && (
+                                  <Button size="sm">Join Meeting</Button>
+                                )}
+                              </>
+                            )}
+                            {appointment.status === "completed" && (
+                              <Button variant="outline" size="sm">View Summary</Button>
+                            )}
+                          </CardFooter>
+                        </Card>
+                      ))}
                     </div>
-                    <h3 className="text-lg font-medium mb-2">No {activeTab} appointments</h3>
-                    <p className="text-muted-foreground max-w-md mb-6 px-6">
-                      {activeTab === "upcoming" ? 
-                        "You don't have any upcoming appointments scheduled. Contact your trustee if you need to schedule a meeting." :
-                        activeTab === "completed" ?
-                        "You haven't completed any appointments yet. They will appear here after you've attended them." :
-                        activeTab === "cancelled" ?
-                        "You don't have any cancelled appointments." :
-                        "No appointments found."}
-                    </p>
-                  </div>
-                )}
-              </TabsContent>
-            </CardContent>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <div className="rounded-full bg-muted p-4 mb-4">
+                        <Clock className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                      <h3 className="text-lg font-medium mb-2">No {activeTab} appointments</h3>
+                      <p className="text-muted-foreground max-w-md mb-6 px-6">
+                        {activeTab === "upcoming" ? 
+                          "You don't have any upcoming appointments scheduled. Contact your trustee if you need to schedule a meeting." :
+                          activeTab === "completed" ?
+                          "You haven't completed any appointments yet. They will appear here after you've attended them." :
+                          activeTab === "cancelled" ?
+                          "You don't have any cancelled appointments." :
+                          "No appointments found."}
+                      </p>
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </CardHeader>
           </Card>
         </div>
       </div>
