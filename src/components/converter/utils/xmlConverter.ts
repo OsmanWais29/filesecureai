@@ -1,87 +1,106 @@
 
-import { ProcessedDocument } from "./pdfProcessing";
+interface ProcessedSection {
+  title: string;
+  content: string;
+}
 
+interface ProcessedDocument {
+  confidence: number;
+  sections: ProcessedSection[];
+}
+
+// Function to convert processed document to XML
 export const convertToXml = (document: ProcessedDocument): string => {
-  // Simple XML conversion for the document
-  const xmlParts = [
-    '<?xml version="1.0" encoding="UTF-8"?>',
-    '<document>',
-    `  <id>${document.id}</id>`,
-    `  <title>${escapeXml(document.title)}</title>`,
-    '  <metadata>',
-    `    <author>${escapeXml(document.metadata.author || '')}</author>`,
-    `    <createdDate>${document.metadata.createdDate || ''}</createdDate>`,
-    `    <pageCount>${document.metadata.pageCount || 0}</pageCount>`,
-    '    <keywords>',
-    ...(document.metadata.keywords || []).map(keyword => 
-      `      <keyword>${escapeXml(keyword)}</keyword>`
-    ),
-    '    </keywords>',
-    '  </metadata>',
-    '  <sections>',
-  ];
-
-  // Add sections
-  document.sections.forEach(section => {
-    xmlParts.push(`    <section id="${section.id}" type="${section.type}">`);
-    xmlParts.push(`      <title>${escapeXml(section.title)}</title>`);
-    xmlParts.push(`      <content>${escapeXml(section.content)}</content>`);
-    xmlParts.push('    </section>');
-  });
-
-  xmlParts.push('  </sections>');
+  // Create XML declaration
+  let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
   
-  // Add tables
-  if (document.tables && document.tables.length > 0) {
-    xmlParts.push('  <tables>');
-    document.tables.forEach(table => {
-      xmlParts.push(`    <table id="${table.id}">`);
-      if (table.caption) {
-        xmlParts.push(`      <caption>${escapeXml(table.caption)}</caption>`);
+  // Add root element with namespace
+  xml += '<CreditStatement xmlns="http://www.example.com/creditSchema">\n';
+  
+  // Add metadata
+  xml += '  <Metadata>\n';
+  xml += `    <ProcessingDateTime>${new Date().toISOString()}</ProcessingDateTime>\n`;
+  xml += '    <ProcessorVersion>1.0.0</ProcessorVersion>\n';
+  xml += `    <ConfidenceLevel>${document.confidence}</ConfidenceLevel>\n`;
+  xml += '  </Metadata>\n\n';
+  
+  // Process each section
+  document.sections.forEach(section => {
+    const safeSectionName = section.title
+      .replace(/[^a-zA-Z0-9]/g, '')
+      .replace(/^\d+/, ''); // Remove leading digits
+    
+    const sectionName = safeSectionName || 'Section';
+    
+    xml += `  <${sectionName}>\n`;
+    
+    // Process content based on section name
+    if (section.title.includes('CUSTOMER') || section.title.includes('CLIENT')) {
+      // Special handling for customer information
+      const lines = section.content.split('\n');
+      xml += '    <CustomerInformation>\n';
+      
+      lines.forEach(line => {
+        const parts = line.split(':');
+        if (parts.length === 2) {
+          const key = parts[0].trim()
+            .replace(/[^a-zA-Z0-9]/g, '')
+            .replace(/^\d+/, '');
+          const value = parts[1].trim();
+          
+          if (key && value) {
+            xml += `      <${key}>${escapeXml(value)}</${key}>\n`;
+          }
+        }
+      });
+      
+      xml += '    </CustomerInformation>\n';
+    } else if (section.title.includes('TRANSACTION') || section.title.includes('ACTIVITY')) {
+      // Special handling for transactions
+      xml += '    <Transactions>\n';
+      
+      // Simple transaction parsing
+      const lines = section.content.split('\n');
+      let currentTransaction = '';
+      
+      lines.forEach(line => {
+        if (line.match(/\d{2}\/\d{2}\/\d{4}/) || line.match(/\d{4}-\d{2}-\d{2}/)) {
+          // This looks like the start of a transaction
+          if (currentTransaction) {
+            xml += '      <Transaction>\n';
+            xml += `        <Details>${escapeXml(currentTransaction)}</Details>\n`;
+            xml += '      </Transaction>\n';
+          }
+          currentTransaction = line;
+        } else if (line.trim()) {
+          currentTransaction += ' ' + line;
+        }
+      });
+      
+      // Add the last transaction
+      if (currentTransaction) {
+        xml += '      <Transaction>\n';
+        xml += `        <Details>${escapeXml(currentTransaction)}</Details>\n`;
+        xml += '      </Transaction>\n';
       }
       
-      // Table headers
-      xmlParts.push('      <headers>');
-      table.headers.forEach(header => {
-        xmlParts.push(`        <header>${escapeXml(header)}</header>`);
-      });
-      xmlParts.push('      </headers>');
-      
-      // Table rows
-      xmlParts.push('      <rows>');
-      table.rows.forEach(row => {
-        xmlParts.push('        <row>');
-        row.forEach(cell => {
-          xmlParts.push(`          <cell>${escapeXml(cell)}</cell>`);
-        });
-        xmlParts.push('        </row>');
-      });
-      xmlParts.push('      </rows>');
-      
-      xmlParts.push('    </table>');
-    });
-    xmlParts.push('  </tables>');
-  }
-
-  // Add full extracted text
-  xmlParts.push('  <extractedText>');
-  xmlParts.push(`    <![CDATA[${document.extractedText}]]>`);
-  xmlParts.push('  </extractedText>');
-
-  // Add processing information
-  xmlParts.push('  <processingInfo>');
-  xmlParts.push(`    <ocr>${document.ocr}</ocr>`);
-  xmlParts.push(`    <confidence>${document.confidence}</confidence>`);
-  xmlParts.push('  </processingInfo>');
-
-  xmlParts.push('</document>');
-
-  return xmlParts.join('\n');
+      xml += '    </Transactions>\n';
+    } else {
+      // Generic content handling
+      xml += `    <Content><![CDATA[${section.content}]]></Content>\n`;
+    }
+    
+    xml += `  </${sectionName}>\n\n`;
+  });
+  
+  // Close root element
+  xml += '</CreditStatement>';
+  
+  return xml;
 };
 
 // Helper function to escape XML special characters
 const escapeXml = (unsafe: string): string => {
-  if (!unsafe) return '';
   return unsafe
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')

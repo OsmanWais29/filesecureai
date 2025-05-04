@@ -1,10 +1,9 @@
 
 import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Download, Copy, Check, FileJson, File } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Download, Check, AlertCircle, Copy } from "lucide-react";
 import { ConversionResult } from "./types";
 
 interface XMLPreviewProps {
@@ -15,187 +14,143 @@ interface XMLPreviewProps {
 export const XMLPreview: React.FC<XMLPreviewProps> = ({ result, onDownload }) => {
   const [activeTab, setActiveTab] = useState("xml");
   const [copied, setCopied] = useState(false);
-  
-  const handleCopy = () => {
-    const textToCopy = activeTab === "xml" ? result.xml : JSON.stringify(result.json, null, 2);
-    navigator.clipboard.writeText(textToCopy);
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(result.xml);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-  
-  // Format XML for display
-  const formatXml = (xml: string) => {
-    // Very basic formatting for readability
-    let formatted = xml;
-    
-    // Replace > with >\n
-    formatted = formatted.replace(/>/g, ">\n");
-    
-    // Add indentation
-    let indent = 0;
-    const lines = formatted.split("\n");
-    formatted = lines.map(line => {
-      let temp = line.trim();
-      
-      // Decrease indent for closing tags
-      if (temp.startsWith("</")) {
-        indent -= 2;
-      }
-      
-      // Add current indentation
-      const result = " ".repeat(indent) + temp;
-      
-      // Increase indent for opening tags (if not self-closing)
-      if (temp.startsWith("<") && !temp.startsWith("</") && !temp.endsWith("/>")) {
-        indent += 2;
-      }
-      
-      return result;
-    }).join("\n");
-    
-    return formatted;
-  };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Conversion Result</h3>
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleCopy}
-          >
-            {copied ? <Check className="h-4 w-4 mr-1" /> : <Copy className="h-4 w-4 mr-1" />}
-            {copied ? "Copied" : "Copy"}
-          </Button>
-          <Button
-            size="sm"
-            onClick={onDownload}
-          >
-            <Download className="h-4 w-4 mr-1" />
-            Download
-          </Button>
-        </div>
-      </div>
-      
-      <Card className="shadow-sm">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <div className="flex items-center justify-between px-6 pt-6 pb-2">
-            <TabsList>
-              <TabsTrigger value="xml" className="flex items-center">
-                <File className="h-4 w-4 mr-1" />
-                XML
-              </TabsTrigger>
-              <TabsTrigger value="json" disabled={!result.json} className="flex items-center">
-                <FileJson className="h-4 w-4 mr-1" />
-                JSON
-              </TabsTrigger>
-              <TabsTrigger value="tree" className="flex items-center">
-                Data Structure
-              </TabsTrigger>
-            </TabsList>
-            
-            <div className="flex items-center space-x-2">
-              {result.validationErrors.length === 0 ? (
-                <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-100">
-                  Valid
-                </Badge>
+    <Card className="shadow-sm">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle>Conversion Results</CardTitle>
+          <div className="flex space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={copyToClipboard}
+            >
+              {copied ? (
+                <>
+                  <Check className="h-4 w-4 mr-2 text-green-500" />
+                  Copied
+                </>
               ) : (
-                <Badge variant="destructive">
-                  {result.validationErrors.length} Errors
-                </Badge>
+                <>
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copy XML
+                </>
               )}
-              
-              {result.validationWarnings.length > 0 && (
-                <Badge variant="outline" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
-                  {result.validationWarnings.length} Warnings
-                </Badge>
-              )}
-            </div>
+            </Button>
+            <Button
+              size="sm"
+              onClick={onDownload}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Download XML
+            </Button>
           </div>
-          
-          <CardContent className="pt-2">
-            <TabsContent value="xml" className="mt-0">
-              <div className="relative">
-                <pre className="bg-muted rounded-md p-4 overflow-x-auto text-xs font-mono max-h-96">
-                  {formatXml(result.xml)}
-                </pre>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="json" className="mt-0">
-              {result.json ? (
-                <div className="relative">
-                  <pre className="bg-muted rounded-md p-4 overflow-x-auto text-xs font-mono max-h-96">
-                    {JSON.stringify(result.json, null, 2)}
-                  </pre>
-                </div>
-              ) : (
-                <div className="bg-muted rounded-md p-4 text-center text-sm text-muted-foreground">
-                  JSON output not available. Change output format to JSON in processing options.
-                </div>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="tree" className="mt-0">
-              <div className="bg-muted rounded-md p-4 max-h-96 overflow-y-auto">
-                <h4 className="text-sm font-medium mb-2">Extracted Data</h4>
-                
-                <div className="space-y-4">
-                  <div>
-                    <h5 className="text-xs font-medium text-muted-foreground mb-1">Metadata</h5>
-                    <div className="space-y-1">
-                      <div className="flex text-xs">
-                        <span className="font-mono w-32">Filename:</span>
-                        <span>{result.extractedData.metadata.filename}</span>
-                      </div>
-                      <div className="flex text-xs">
-                        <span className="font-mono w-32">Page Count:</span>
-                        <span>{result.extractedData.metadata.pageCount}</span>
-                      </div>
-                      <div className="flex text-xs">
-                        <span className="font-mono w-32">Processing Time:</span>
-                        <span>{(result.extractedData.metadata.processingTime / 1000).toFixed(2)}s</span>
-                      </div>
-                    </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="xml" value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="mb-4">
+            <TabsTrigger value="xml">XML Output</TabsTrigger>
+            <TabsTrigger value="structure">Document Structure</TabsTrigger>
+            <TabsTrigger value="validation">Validation</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="xml" className="space-y-4">
+            <div className="relative">
+              <pre className="bg-muted p-4 rounded-md overflow-auto text-xs h-96">
+                <code>{result.xml}</code>
+              </pre>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="structure" className="space-y-4">
+            <div className="space-y-4">
+              <div className="bg-muted p-4 rounded-md">
+                <h3 className="text-sm font-medium mb-2">Document Metadata</h3>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="text-muted-foreground">Filename:</div>
+                  <div>{result.extractedData.metadata.filename}</div>
+                  <div className="text-muted-foreground">Page Count:</div>
+                  <div>{result.extractedData.metadata.pageCount}</div>
+                  <div className="text-muted-foreground">Processing Time:</div>
+                  <div>{(result.extractedData.metadata.processingTime / 1000).toFixed(2)} seconds</div>
+                  <div className="text-muted-foreground">Status:</div>
+                  <div className={result.extractedData.metadata.success ? "text-green-500" : "text-red-500"}>
+                    {result.extractedData.metadata.success ? "Success" : "Failed"}
                   </div>
-                  
-                  <div>
-                    <h5 className="text-xs font-medium text-muted-foreground mb-1">Sections</h5>
-                    <div className="space-y-3">
-                      {result.extractedData.sections.map((section, idx) => (
-                        <div key={idx} className="border rounded p-2 bg-background">
-                          <h6 className="text-xs font-medium mb-1">{section.name}</h6>
-                          <div className="space-y-1">
-                            {section.fields.map((field, fidx) => (
-                              <div key={fidx} className="flex text-xs items-center">
-                                <span className="font-mono w-32 truncate" title={field.name}>
-                                  {field.name}:
-                                </span>
-                                <span className="truncate flex-1" title={String(field.value)}>
-                                  {String(field.value)}
-                                </span>
-                              </div>
-                            ))}
-                            
-                            {section.tables && section.tables.length > 0 && (
-                              <div className="mt-2">
-                                <span className="text-xs font-medium">Tables: </span>
-                                <span className="text-xs">{section.tables.length} tables found</span>
-                              </div>
-                            )}
-                          </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">Extracted Sections</h3>
+                {result.extractedData.sections.map((section, index) => (
+                  <div key={index} className="bg-muted p-4 rounded-md">
+                    <h4 className="text-sm font-medium mb-2">{section.name}</h4>
+                    <div className="space-y-2">
+                      {section.fields.map((field, i) => (
+                        <div key={i} className="grid grid-cols-2 gap-2 text-sm">
+                          <div className="text-muted-foreground">{field.name}:</div>
+                          <div className="truncate">{String(field.value)}</div>
                         </div>
                       ))}
                     </div>
                   </div>
-                </div>
+                ))}
               </div>
-            </TabsContent>
-          </CardContent>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="validation" className="space-y-4">
+            {(result.validationErrors.length === 0 && result.validationWarnings.length === 0) ? (
+              <div className="flex items-center p-4 bg-green-50 text-green-700 rounded-md">
+                <Check className="h-5 w-5 mr-2" />
+                <span>XML validation passed with no errors or warnings</span>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {result.validationErrors.length > 0 && (
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-medium flex items-center text-destructive">
+                      <AlertCircle className="h-4 w-4 mr-2" />
+                      Validation Errors
+                    </h3>
+                    <ul className="space-y-1 text-sm">
+                      {result.validationErrors.map((error, index) => (
+                        <li key={index} className="bg-red-50 text-red-700 p-2 rounded-md">
+                          {error}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {result.validationWarnings.length > 0 && (
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-medium flex items-center text-amber-600">
+                      <AlertCircle className="h-4 w-4 mr-2" />
+                      Validation Warnings
+                    </h3>
+                    <ul className="space-y-1 text-sm">
+                      {result.validationWarnings.map((warning, index) => (
+                        <li key={index} className="bg-amber-50 text-amber-700 p-2 rounded-md">
+                          {warning}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
-      </Card>
-    </div>
+      </CardContent>
+    </Card>
   );
 };

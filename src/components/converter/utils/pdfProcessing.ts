@@ -1,62 +1,83 @@
 
-// Type definitions for processed documents
-export interface ProcessedDocument {
-  id: string;
+import { ProcessingOptions } from "../types";
+
+interface ProcessedSection {
   title: string;
   content: string;
-  metadata: {
-    author?: string;
-    createdDate?: string;
-    pageCount?: number;
-    keywords?: string[];
-  };
-  sections: {
-    id: string;
-    title: string;
-    content: string;
-    type: string;
-  }[];
-  tables: {
-    id: string;
-    headers: string[];
-    rows: string[][];
-    caption?: string;
-  }[];
-  extractedText: string;
-  ocr: boolean;
-  confidence: number;
 }
 
-export const processDocument = async (pdfText: string, options: any): Promise<ProcessedDocument> => {
-  // This is a mock implementation that would be replaced with actual PDF processing
+interface ProcessedDocument {
+  confidence: number;
+  sections: ProcessedSection[];
+}
+
+// Mock function to process a document
+export const processDocument = async (text: string, options: ProcessingOptions): Promise<ProcessedDocument> => {
+  // This is a simplified implementation. In a real app, this would involve more complex processing.
+  
+  // Simulate processing time
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  
+  // Split text into sections based on line breaks and common headers
+  const lines = text.split('\n');
+  const sections: ProcessedSection[] = [];
+  
+  let currentTitle = "Document Header";
+  let currentContent = "";
+  
+  // Simple detection of sections based on line characteristics
+  for (const line of lines) {
+    // Simplified section detection based on line length and capitalization
+    const trimmedLine = line.trim();
+    
+    if (trimmedLine === '') {
+      continue;
+    }
+    
+    // Simple heuristic for section titles
+    if (trimmedLine.length < 50 && 
+        trimmedLine === trimmedLine.toUpperCase() && 
+        !trimmedLine.includes(':')) {
+      
+      // Save previous section if it has content
+      if (currentContent.trim()) {
+        sections.push({
+          title: currentTitle,
+          content: currentContent.trim()
+        });
+      }
+      
+      // Start a new section
+      currentTitle = trimmedLine;
+      currentContent = "";
+    } else {
+      currentContent += line + "\n";
+    }
+  }
+  
+  // Add the last section
+  if (currentContent.trim()) {
+    sections.push({
+      title: currentTitle,
+      content: currentContent.trim()
+    });
+  }
+  
+  // If no sections were detected, create a default one
+  if (sections.length === 0) {
+    sections.push({
+      title: "Document Content",
+      content: text
+    });
+  }
+  
+  // Apply additional processing based on options
+  if (options.detectSections) {
+    // Add some more refined section detection here
+  }
+  
   return {
-    id: Date.now().toString(),
-    title: "Processed Document",
-    content: pdfText.substring(0, 1000) || "Processed document content",
-    metadata: {
-      author: "Unknown",
-      createdDate: new Date().toISOString(),
-      pageCount: 1,
-      keywords: []
-    },
-    sections: [
-      {
-        id: "section1",
-        title: "Document Header",
-        content: "Mock header content",
-        type: "header"
-      }
-    ],
-    tables: [
-      {
-        id: "table1",
-        headers: ["Header 1", "Header 2"],
-        rows: [["Row 1 Cell 1", "Row 1 Cell 2"]],
-        caption: "Sample Table"
-      }
-    ],
-    extractedText: pdfText || "This is a mock extracted text for demonstration purposes.",
-    ocr: options.useOcr || false,
-    confidence: 0.85
+    confidence: options.confidence,
+    sections
   };
 };

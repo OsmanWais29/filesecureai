@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { BrainCog, Bell, FileText, Home, MessageCircle, PieChart, Settings, User, Users, FileCheck, Menu, X } from "lucide-react";
+import { BrainCog, Bell, FileText, Home, MessageCircle, PieChart, Settings, User, Users, FileCheck, Menu, X, Convert } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -41,6 +41,7 @@ export const MainSidebar = () => {
   const navigationItems = [
     { icon: Home, label: "Home", path: "/" },
     { icon: FileText, label: "Documents", path: "/documents" },
+    { icon: Convert, label: "Converter", path: "/converter" }, // Added new Converter link
     { icon: MessageCircle, label: "SAFA", path: "/SAFA" },
     { icon: Users, label: "CRM", path: "/crm" },
     { icon: BrainCog, label: "Smart Income Expense", path: "/activity" },
