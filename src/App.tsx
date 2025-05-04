@@ -10,7 +10,9 @@ import { MainLayout } from './components/layout/MainLayout';
 import DashboardPage from './pages/DashboardPage';
 import IncomeExpenseForm from './components/activity/form/IncomeExpenseForm';
 import ConverterPage from './pages/ConverterPage';
+import DocumentViewerPage from './pages/DocumentViewerPage';
 import { ThemeProvider } from './components/ui/theme-provider';
+import Index from './pages/Index';
 
 const router = createBrowserRouter([
   {
@@ -29,15 +31,21 @@ const router = createBrowserRouter([
     path: "/converter",
     element: <MainLayout><ConverterPage /></MainLayout>,
   },
+  {
+    path: "/document-viewer/:documentId",
+    element: <DocumentViewerPage />,
+  },
+  {
+    path: "/index",
+    element: <Index />,
+  }
 ]);
 
 function App() {
   return (
-    <React.StrictMode>
-      <ThemeProvider defaultTheme="light">
-        <RouterProvider router={router} />
-      </ThemeProvider>
-    </React.StrictMode>
+    <ThemeProvider defaultTheme="light">
+      <RouterProvider router={router} />
+    </ThemeProvider>
   );
 }
 
