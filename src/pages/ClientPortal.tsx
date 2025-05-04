@@ -8,15 +8,6 @@ import { AuthErrorDisplay } from "@/components/auth/AuthErrorDisplay";
 import { ClientPortalLayout } from "@/components/client-portal/ClientPortalLayout";
 import { ClientDashboard } from "@/components/client-portal/ClientDashboard";
 
-// Import all the client portal pages
-import ClientDocumentsPage from "@/pages/client-portal/ClientDocumentsPage";
-import ClientTasksPage from "@/pages/client-portal/ClientTasksPage";
-import ClientAppointmentsPage from "@/pages/client-portal/ClientAppointmentsPage";
-import ClientMessagesPage from "@/pages/client-portal/ClientMessagesPage";
-import ClientSupportPage from "@/pages/client-portal/ClientSupportPage";
-import ClientProfilePage from "@/pages/client-portal/ClientProfilePage";
-import ClientSettingsPage from "@/pages/client-portal/ClientSettingsPage";
-
 const ClientPortal = () => {
   const [error, setError] = useState<Error | null>(null);
   
@@ -60,13 +51,13 @@ const ClientPortal = () => {
     <ClientPortalLayout>
       <Routes>
         <Route path="/" element={<ClientDashboard />} />
-        <Route path="/documents" element={<ClientDocumentsPage />} />
-        <Route path="/tasks" element={<ClientTasksPage />} />
-        <Route path="/appointments" element={<ClientAppointmentsPage />} />
-        <Route path="/messages" element={<ClientMessagesPage />} />
-        <Route path="/support" element={<ClientSupportPage />} />
-        <Route path="/profile" element={<ClientProfilePage />} />
-        <Route path="/settings" element={<ClientSettingsPage />} />
+        <Route path="/documents" element={<div>Documents page coming soon</div>} />
+        <Route path="/tasks" element={<div>Tasks page coming soon</div>} />
+        <Route path="/appointments" element={<div>Appointments page coming soon</div>} />
+        <Route path="/messages" element={<div>Messages page coming soon</div>} />
+        <Route path="/support" element={<div>Support page coming soon</div>} />
+        <Route path="/profile" element={<div>Profile page coming soon</div>} />
+        <Route path="/settings" element={<div>Settings page coming soon</div>} />
         <Route path="*" element={<div>Page not found</div>} />
       </Routes>
     </ClientPortalLayout>
