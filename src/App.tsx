@@ -1,26 +1,29 @@
 
 import { Routes, Route } from "react-router-dom";
-import CRMPage from "./pages/CRMPage";
-import DocumentsPage from "./pages/documents/DocumentsPage";
 import NotFound from "./pages/NotFound";
-import CalendarFullscreenPage from "./pages/CalendarFullscreenPage";
-import ActivityPage from "./pages/ActivityPage";
-import AnalyticsPage from "./pages/AnalyticsPage";
-import EFilingPage from "./pages/EFilingPage";
-import ProfilePage from "./pages/ProfilePage";
-import Support from "./pages/Support";
-import Index from "./pages/Index";
 import ClientPortal from "./pages/ClientPortal";
-import DocumentViewerPage from "./pages/DocumentViewerPage";
-import ClientViewerPage from "./pages/ClientViewerPage";
-import SettingsPage from "./pages/SettingsPage";
-import NotificationsPage from "./pages/NotificationsPage";
-import ConBrandingPage from "./pages/ConBrandingPage";
-import StorageDiagnosticsPage from "./pages/StorageDiagnosticsPage";
-import NotesStandalonePage from "./pages/meetings/NotesStandalonePage";
-import AgendaStandalonePage from "./pages/meetings/AgendaStandalonePage";
-import FeedbackStandalonePage from "./pages/meetings/FeedbackStandalonePage";
-import ConverterPage from "./pages/ConverterPage";
+
+// Import from the trustee folder
+import Index from "./pages/trustee/Index";
+import CRMPage from "./pages/trustee/CRMPage";
+import DocumentsPage from "./pages/trustee/DocumentsPage";
+import DocumentViewerPage from "./pages/trustee/DocumentViewerPage";
+import ClientViewerPage from "./pages/trustee/ClientViewerPage";
+import CalendarFullscreenPage from "./pages/trustee/CalendarFullscreenPage";
+import ActivityPage from "./pages/trustee/ActivityPage";
+import AnalyticsPage from "./pages/trustee/AnalyticsPage";
+import EFilingPage from "./pages/trustee/EFilingPage";
+import ProfilePage from "./pages/trustee/ProfilePage";
+import Support from "./pages/trustee/Support";
+import SettingsPage from "./pages/trustee/SettingsPage";
+import NotificationsPage from "./pages/trustee/NotificationsPage";
+import ConBrandingPage from "./pages/trustee/ConBrandingPage";
+import StorageDiagnosticsPage from "./pages/trustee/StorageDiagnosticsPage";
+import NotesStandalonePage from "./pages/trustee/meetings/NotesStandalonePage";
+import AgendaStandalonePage from "./pages/trustee/meetings/AgendaStandalonePage";
+import FeedbackStandalonePage from "./pages/trustee/meetings/FeedbackStandalonePage";
+import ConverterPage from "./pages/trustee/ConverterPage";
+
 import "./App.css";
 
 function App() {

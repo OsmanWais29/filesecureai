@@ -6,44 +6,15 @@ import { useAuthState } from "@/hooks/useAuthState";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { AuthErrorDisplay } from "@/components/auth/AuthErrorDisplay";
 import { ClientPortalLayout } from "@/components/client-portal/ClientPortalLayout";
-import { ClientDashboard } from "@/components/client-portal/ClientDashboard";
-import { ClientDocuments } from "@/components/client-portal/ClientDocuments";
-import { ClientTasks } from "@/components/client-portal/ClientTasks";
-import { ClientAppointments } from "@/components/client-portal/ClientAppointments";
 
-// Create basic components for the client portal pages
-const MessagesPage = () => (
-  <div className="p-4 md:p-6 w-full">
-    <h1 className="text-2xl font-bold mb-4">Messages</h1>
-    <p className="text-muted-foreground mb-6">Communicate securely with your trustee and support team.</p>
-    <div className="bg-muted rounded-lg p-8 text-center">
-      <p>Messages panel coming soon. Your communications will appear here.</p>
-    </div>
-  </div>
-);
-
-const SupportPage = () => (
-  <div className="p-4 md:p-6 w-full">
-    <h1 className="text-2xl font-bold mb-4">Support</h1>
-    <p className="text-muted-foreground mb-6">Get help with your case or technical issues.</p>
-    <div className="bg-muted rounded-lg p-8 text-center">
-      <p>Support panel coming soon. You'll be able to submit and track support requests here.</p>
-    </div>
-  </div>
-);
-
-const NotFoundPage = () => (
-  <div className="flex flex-col items-center justify-center p-4 md:p-6">
-    <h1 className="text-3xl font-bold mb-4">Page Not Found</h1>
-    <p className="text-muted-foreground mb-6">The page you're looking for doesn't exist or has been moved.</p>
-    <button 
-      className="bg-primary text-primary-foreground px-4 py-2 rounded"
-      onClick={() => window.location.href = "/client-portal"}
-    >
-      Return to Dashboard
-    </button>
-  </div>
-);
+// Import from the new client-portal pages folder
+import Dashboard from "./client-portal/Dashboard";
+import Documents from "./client-portal/Documents";
+import Tasks from "./client-portal/Tasks";
+import Appointments from "./client-portal/Appointments";
+import Messages from "./client-portal/Messages";
+import Support from "./client-portal/Support";
+import NotFound from "./client-portal/NotFound";
 
 const ClientPortal = () => {
   const [error, setError] = useState<Error | null>(null);
@@ -87,13 +58,13 @@ const ClientPortal = () => {
   return (
     <ClientPortalLayout>
       <Routes>
-        <Route path="/" element={<ClientDashboard />} />
-        <Route path="/documents" element={<ClientDocuments />} />
-        <Route path="/tasks" element={<ClientTasks />} />
-        <Route path="/appointments" element={<ClientAppointments />} />
-        <Route path="/messages" element={<MessagesPage />} />
-        <Route path="/support" element={<SupportPage />} />
-        <Route path="*" element={<NotFoundPage />} />
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/documents" element={<Documents />} />
+        <Route path="/tasks" element={<Tasks />} />
+        <Route path="/appointments" element={<Appointments />} />
+        <Route path="/messages" element={<Messages />} />
+        <Route path="/support" element={<Support />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </ClientPortalLayout>
   );
