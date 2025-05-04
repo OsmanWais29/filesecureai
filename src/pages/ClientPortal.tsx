@@ -8,6 +8,90 @@ import { AuthErrorDisplay } from "@/components/auth/AuthErrorDisplay";
 import { ClientPortalLayout } from "@/components/client-portal/ClientPortalLayout";
 import { ClientDashboard } from "@/components/client-portal/ClientDashboard";
 
+// Create basic components for the client portal pages
+const DocumentsPage = () => (
+  <div className="space-y-4">
+    <h1 className="text-2xl font-bold">My Documents</h1>
+    <p className="text-muted-foreground">View and manage all your case documents in one place.</p>
+    <div className="bg-muted rounded-lg p-8 text-center">
+      <p>Documents panel coming soon. Your documents will be accessible here.</p>
+    </div>
+  </div>
+);
+
+const TasksPage = () => (
+  <div className="space-y-4">
+    <h1 className="text-2xl font-bold">Tasks & Requirements</h1>
+    <p className="text-muted-foreground">Track your outstanding tasks and requirements.</p>
+    <div className="bg-muted rounded-lg p-8 text-center">
+      <p>Tasks panel coming soon. Your tasks and requirements will be visible here.</p>
+    </div>
+  </div>
+);
+
+const AppointmentsPage = () => (
+  <div className="space-y-4">
+    <h1 className="text-2xl font-bold">Appointments</h1>
+    <p className="text-muted-foreground">View and manage your scheduled appointments.</p>
+    <div className="bg-muted rounded-lg p-8 text-center">
+      <p>Appointments panel coming soon. Your meetings will be scheduled here.</p>
+    </div>
+  </div>
+);
+
+const MessagesPage = () => (
+  <div className="space-y-4">
+    <h1 className="text-2xl font-bold">Messages</h1>
+    <p className="text-muted-foreground">Communicate securely with your trustee and support team.</p>
+    <div className="bg-muted rounded-lg p-8 text-center">
+      <p>Messages panel coming soon. Your communications will appear here.</p>
+    </div>
+  </div>
+);
+
+const SupportPage = () => (
+  <div className="space-y-4">
+    <h1 className="text-2xl font-bold">Support</h1>
+    <p className="text-muted-foreground">Get help with your case or technical issues.</p>
+    <div className="bg-muted rounded-lg p-8 text-center">
+      <p>Support panel coming soon. You'll be able to submit and track support requests here.</p>
+    </div>
+  </div>
+);
+
+const ProfilePage = () => (
+  <div className="space-y-4">
+    <h1 className="text-2xl font-bold">My Profile</h1>
+    <p className="text-muted-foreground">View and manage your personal information.</p>
+    <div className="bg-muted rounded-lg p-8 text-center">
+      <p>Profile management coming soon. You'll be able to update your details here.</p>
+    </div>
+  </div>
+);
+
+const SettingsPage = () => (
+  <div className="space-y-4">
+    <h1 className="text-2xl font-bold">Settings</h1>
+    <p className="text-muted-foreground">Manage your account preferences and notifications.</p>
+    <div className="bg-muted rounded-lg p-8 text-center">
+      <p>Settings panel coming soon. You'll be able to configure your preferences here.</p>
+    </div>
+  </div>
+);
+
+const NotFoundPage = () => (
+  <div className="flex flex-col items-center justify-center h-full py-16">
+    <h1 className="text-3xl font-bold mb-4">Page Not Found</h1>
+    <p className="text-muted-foreground mb-6">The page you're looking for doesn't exist or has been moved.</p>
+    <button 
+      className="bg-primary text-primary-foreground px-4 py-2 rounded"
+      onClick={() => window.location.href = "/client-portal"}
+    >
+      Return to Dashboard
+    </button>
+  </div>
+);
+
 const ClientPortal = () => {
   const [error, setError] = useState<Error | null>(null);
   
@@ -51,14 +135,14 @@ const ClientPortal = () => {
     <ClientPortalLayout>
       <Routes>
         <Route path="/" element={<ClientDashboard />} />
-        <Route path="/documents" element={<div>Documents page coming soon</div>} />
-        <Route path="/tasks" element={<div>Tasks page coming soon</div>} />
-        <Route path="/appointments" element={<div>Appointments page coming soon</div>} />
-        <Route path="/messages" element={<div>Messages page coming soon</div>} />
-        <Route path="/support" element={<div>Support page coming soon</div>} />
-        <Route path="/profile" element={<div>Profile page coming soon</div>} />
-        <Route path="/settings" element={<div>Settings page coming soon</div>} />
-        <Route path="*" element={<div>Page not found</div>} />
+        <Route path="/documents" element={<DocumentsPage />} />
+        <Route path="/tasks" element={<TasksPage />} />
+        <Route path="/appointments" element={<AppointmentsPage />} />
+        <Route path="/messages" element={<MessagesPage />} />
+        <Route path="/support" element={<SupportPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </ClientPortalLayout>
   );

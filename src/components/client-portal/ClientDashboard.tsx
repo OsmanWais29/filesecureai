@@ -7,7 +7,7 @@ import { useAuthState } from "@/hooks/useAuthState";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "./StatusBadge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CalendarIcon, Clock, FileCheck, FileText, FileUp, FolderCheck } from "lucide-react";
+import { CalendarIcon, Clock, FileCheck, FileText, FileUp, FolderCheck, Bell, ShieldCheck, CircleAlert } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 export const ClientDashboard = () => {
@@ -32,11 +32,17 @@ export const ClientDashboard = () => {
       { id: "3", title: "Review proposal terms", due: "2025-05-10", priority: "medium", status: "completed" }
     ],
     upcomingAppointments: [
-      { id: "1", title: "Monthly Review", date: "2025-05-20", time: "10:30 AM" }
+      { id: "1", title: "Monthly Review", date: "2025-05-20", time: "10:30 AM" },
+      { id: "2", title: "Financial Assessment", date: "2025-06-05", time: "2:00 PM" }
     ],
     recentDocuments: [
       { id: "1", title: "Form 47 - Consumer Proposal", date: "2025-04-12", status: "complete" },
-      { id: "2", title: "Income Verification", date: "2025-04-10", status: "pending" }
+      { id: "2", title: "Income Verification", date: "2025-04-10", status: "pending" },
+      { id: "3", title: "Bank Statements - March", date: "2025-04-08", status: "complete" }
+    ],
+    notifications: [
+      { id: "1", title: "Document approved", message: "Your Form 47 was approved", time: "1 hour ago", type: "success" },
+      { id: "2", title: "Upcoming deadline", message: "Bank statements due in 3 days", time: "5 hours ago", type: "warning" }
     ]
   };
   
@@ -54,7 +60,13 @@ export const ClientDashboard = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      {/* Welcome Message */}
+      <div>
+        <h1 className="text-2xl font-bold mb-2">Welcome Back</h1>
+        <p className="text-muted-foreground">Here's an overview of your consumer proposal. Your next payment is due on June 15, 2025.</p>
+      </div>
+
       {/* Status Overview Card */}
       <Card className="border-l-4 border-l-green-500">
         <CardHeader className="pb-2">
@@ -107,8 +119,35 @@ export const ClientDashboard = () => {
         </CardContent>
       </Card>
 
+      {/* Recent Notifications */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Bell className="h-5 w-5" />
+            Recent Notifications
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {estateStatus.notifications.map((notification) => (
+            <div key={notification.id} className="flex items-start gap-3 pb-3 border-b last:border-0 last:pb-0">
+              <div className={`mt-1 p-2 rounded-full ${notification.type === 'success' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'}`}>
+                {notification.type === 'success' ? <ShieldCheck className="h-4 w-4" /> : <CircleAlert className="h-4 w-4" />}
+              </div>
+              <div>
+                <p className="font-medium">{notification.title}</p>
+                <p className="text-sm text-muted-foreground">{notification.message}</p>
+                <p className="text-xs text-muted-foreground mt-1">{notification.time}</p>
+              </div>
+            </div>
+          ))}
+        </CardContent>
+        <CardFooter>
+          <Button variant="ghost" size="sm" className="ml-auto">View All Notifications</Button>
+        </CardFooter>
+      </Card>
+
       {/* Main Dashboard Content */}
-      <Tabs defaultValue="tasks">
+      <Tabs defaultValue="tasks" className="w-full">
         <TabsList className="grid grid-cols-3 mb-6">
           <TabsTrigger value="tasks">Tasks</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
@@ -139,6 +178,25 @@ export const ClientDashboard = () => {
               <p className="text-sm text-muted-foreground">{estateStatus.tasks.filter(task => task.status === "pending").length} tasks pending</p>
               <Button variant="ghost" size="sm">View All Tasks</Button>
             </CardFooter>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Completed Tasks</CardTitle>
+              <CardDescription>Recently completed requirements</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {estateStatus.tasks.filter(task => task.status === "completed").map(task => (
+                <div key={task.id} className="border-b py-3 last:border-0 last:pb-0 first:pt-0">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium line-through text-muted-foreground">{task.title}</p>
+                      <p className="text-sm text-muted-foreground">Completed</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
           </Card>
         </TabsContent>
         
@@ -205,6 +263,23 @@ export const ClientDashboard = () => {
             <CardFooter className="flex justify-end">
               <Button>Schedule New Appointment</Button>
             </CardFooter>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Meeting Preparation</CardTitle>
+              <CardDescription>Things to prepare for your upcoming meetings</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <p className="font-medium mb-2">For your Monthly Review on May 20th</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li className="text-sm">Recent bank statements (last 3 months)</li>
+                  <li className="text-sm">Pay stubs or income verification</li>
+                  <li className="text-sm">List of any new expenses or income changes</li>
+                </ul>
+              </div>
+            </CardContent>
           </Card>
         </TabsContent>
       </Tabs>

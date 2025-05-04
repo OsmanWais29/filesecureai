@@ -1,114 +1,80 @@
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useAuthState } from "@/hooks/useAuthState";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
+import { 
+  BellIcon, 
+  LogOut, 
+  Search, 
+  User 
+} from "lucide-react";
+import { 
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { Bell, HelpCircle, LogOut, Settings, User } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/lib/supabase";
 
 export const ClientHeader = () => {
-  const { user, signOut } = useAuthState();
   const navigate = useNavigate();
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const isMobile = useIsMobile();
 
-  const fullName = user?.user_metadata?.full_name || "Client";
-  const initials = fullName
-    .split(" ")
-    .map((name) => name[0])
-    .join("")
-    .toUpperCase();
-  const avatarUrl = user?.user_metadata?.avatar_url;
-
-  const handleLogout = async () => {
-    await signOut();
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
     navigate("/client-portal");
   };
 
   return (
-    <header className="sticky top-0 z-30 w-full border-b bg-white dark:bg-background shadow-sm">
-      <div className="container flex h-16 items-center px-4 sm:px-6">
-        {!isMobile && (
-          <div className="flex items-center gap-2 mr-4">
-            <h1 className="text-lg font-semibold">Client Dashboard</h1>
-          </div>
-        )}
-
-        <div className="flex flex-1 items-center justify-end space-x-2">
-          {/* Notifications */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="relative"
-            aria-label="Notifications"
-          >
-            <Bell className="h-5 w-5" />
+    <div className="border-b bg-white dark:bg-background">
+      <div className="flex h-16 items-center px-4 md:px-6">
+        {/* Left side - search */}
+        <div className="hidden md:flex">
+          <form className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <input
+              type="search"
+              placeholder="Search..."
+              className="rounded-md border border-input bg-background pl-8 pr-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            />
+          </form>
+        </div>
+        
+        {/* Right side - user dropdown and notifications */}
+        <div className="ml-auto flex items-center gap-3">
+          <Button variant="outline" size="icon">
+            <BellIcon className="h-4 w-4" />
+            <span className="sr-only">Notifications</span>
             <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500"></span>
           </Button>
           
-          {/* Help */}
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Help"
-          >
-            <HelpCircle className="h-5 w-5" />
-          </Button>
-
-          {/* User menu */}
-          <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
+          <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                className="relative h-9 w-9 rounded-full"
-                aria-label="User menu"
-              >
-                <Avatar className="h-8 w-8">
-                  {avatarUrl ? (
-                    <AvatarImage src={avatarUrl} alt={fullName} />
-                  ) : null}
-                  <AvatarFallback className="bg-primary text-white">
-                    {initials || "U"}
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
+              <button className="h-8 w-8 rounded-full overflow-hidden bg-muted flex items-center justify-center text-muted-foreground hover:bg-muted/80 transition-colors">
+                <User className="h-4 w-4" />
+                <span className="sr-only">User menu</span>
+              </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuLabel>
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{fullName}</p>
-                  <p className="text-xs leading-none text-muted-foreground">
-                    {user?.email}
-                  </p>
-                </div>
-              </DropdownMenuLabel>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>John Doe</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate("/client-portal/profile")}>
+              <DropdownMenuItem onClick={() => navigate('/client-portal/profile')}>
                 <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
+                Profile
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/client-portal/settings")}>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
+              <DropdownMenuItem onClick={() => navigate('/client-portal/settings')}>
+                <User className="mr-2 h-4 w-4" />
+                Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>
+              <DropdownMenuItem onClick={handleSignOut}>
                 <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
+                Sign out
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
-    </header>
+    </div>
   );
 };
