@@ -6,45 +6,18 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { useState } from "react";
+import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 
 export const ClientDashboard = () => {
   const { user } = useAuthState();
   const navigate = useNavigate();
+  const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
   
   // Get client name from user metadata or fallback to email
   const clientName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || "Client";
 
-  const quickAccessItems = [
-    {
-      title: "My Documents",
-      description: "Access and upload your documents",
-      icon: FileTextIcon,
-      path: "/client-portal/documents",
-      count: 12
-    },
-    {
-      title: "Tasks",
-      description: "View and complete required tasks",
-      icon: CheckSquare,
-      path: "/client-portal/tasks",
-      count: 3
-    },
-    {
-      title: "Appointments",
-      description: "Schedule and manage appointments",
-      icon: CalendarIcon,
-      path: "/client-portal/appointments",
-      count: 1
-    },
-    {
-      title: "Support",
-      description: "Get help with any questions",
-      icon: MessageCircle,
-      path: "/client-portal/support",
-      count: 0
-    }
-  ];
-  
   // Upcoming payments data
   const upcomingPayments = [
     {
@@ -64,6 +37,48 @@ export const ClientDashboard = () => {
     }
   ];
 
+  // Handle assistance request
+  const handleAssistanceRequest = async () => {
+    if (!user) return;
+    
+    setIsSubmittingRequest(true);
+    
+    try {
+      // Create a notification in the system for staff
+      const { error } = await supabase.functions.invoke('handle-notifications', {
+        body: {
+          action: 'create',
+          userId: 'admin', // This would target the admin or trustee in a real system
+          notification: {
+            title: 'Assistance Request',
+            message: `Client ${clientName} has requested assistance`,
+            type: 'support',
+            priority: 'high',
+            category: 'client_update',
+            metadata: {
+              clientId: user.id,
+              clientName,
+              requestTime: new Date().toISOString()
+            }
+          }
+        }
+      });
+
+      if (error) throw error;
+      
+      toast.success("Assistance request sent", {
+        description: "A trustee will contact you shortly"
+      });
+    } catch (error) {
+      console.error("Error sending assistance request:", error);
+      toast.error("Failed to send request", {
+        description: "Please try again or contact your trustee directly"
+      });
+    } finally {
+      setIsSubmittingRequest(false);
+    }
+  };
+
   return (
     <div className="p-4 md:p-6 bg-gray-50 dark:bg-background min-h-full">
       <div className="max-w-5xl mx-auto">
@@ -73,43 +88,6 @@ export const ClientDashboard = () => {
             <p className="text-primary-foreground/90 max-w-xl">
               Access your documents, tasks, and appointments from your secure client portal. Your journey to financial recovery is well underway.
             </p>
-          </div>
-        </div>
-        
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold mb-4 flex items-center">
-            <PieChart className="h-5 w-5 mr-2 text-primary" />
-            Quick Access
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {quickAccessItems.map((item) => (
-              <Card key={item.title} className="hover:shadow-md transition-shadow border-t-4 border-t-primary">
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <CardTitle className="text-base flex items-center">
-                      <item.icon className="h-5 w-5 mr-2 text-primary" />
-                      {item.title}
-                    </CardTitle>
-                    {item.count > 0 && (
-                      <Badge variant="secondary" className="ml-2">
-                        {item.count}
-                      </Badge>
-                    )}
-                  </div>
-                  <CardDescription>{item.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button 
-                    variant="outline"
-                    className="w-full justify-between text-primary group"
-                    onClick={() => navigate(item.path)}
-                  >
-                    Access {item.title}
-                    <ArrowRight className="h-4 w-4 ml-2 transform group-hover:translate-x-1 transition-transform" />
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
           </div>
         </div>
         
@@ -190,7 +168,7 @@ export const ClientDashboard = () => {
           </Card>
         </div>
         
-        <div>
+        <div className="mb-8">
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center">

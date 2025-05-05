@@ -108,6 +108,35 @@ serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    
+    if (action === 'supportRequest') {
+      // Create a notification for client assistance request
+      const { data, error } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: userId,
+          title: 'Client Assistance Request',
+          message: notification.message || 'A client has requested assistance',
+          type: 'support',
+          priority: 'high',
+          action_url: notification.action_url,
+          icon: 'help-circle', // Use a help icon
+          metadata: {
+            category: 'client_update',
+            clientId: notification.metadata?.clientId,
+            clientName: notification.metadata?.clientName,
+            requestTime: notification.metadata?.requestTime || new Date().toISOString()
+          }
+        })
+        .select();
+
+      if (error) throw error;
+
+      return new Response(
+        JSON.stringify({ success: true, notification: data[0] }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     throw new Error('Invalid action');
 
