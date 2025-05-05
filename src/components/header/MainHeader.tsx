@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { Search, LogOut, Menu, User, Bell, MoonStar, Sun } from "lucide-react";
+import { Search, LogOut, Menu, User, Bell, Sun } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -89,11 +89,7 @@ export const MainHeader = () => {
             className="rounded-full h-9 w-9"
             title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
           >
-            {theme === "dark" ? (
-              <Sun className="h-5 w-5 text-amber-400" />
-            ) : (
-              <MoonStar className="h-5 w-5 text-blue-600" />
-            )}
+            <Sun className="h-5 w-5" />
           </Button>
 
           {/* Notifications */}

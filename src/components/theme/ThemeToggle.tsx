@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Moon, Sun } from 'lucide-react';
+import { Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -23,7 +23,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({ className }) => {
             className={className}
             aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
           >
-            {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+            <Sun className="h-5 w-5" />
           </Button>
         </TooltipTrigger>
         <TooltipContent>
