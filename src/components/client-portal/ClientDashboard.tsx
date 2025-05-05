@@ -1,9 +1,11 @@
 
 import { useAuthState } from "@/hooks/useAuthState";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarIcon, FileTextIcon, CheckSquare, MessageCircle } from "lucide-react";
+import { CalendarIcon, FileTextIcon, CheckSquare, MessageCircle, PieChart, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 
 export const ClientDashboard = () => {
   const { user } = useAuthState();
@@ -17,57 +19,93 @@ export const ClientDashboard = () => {
       title: "My Documents",
       description: "Access and upload your documents",
       icon: FileTextIcon,
-      path: "/client-portal/documents"
+      path: "/client-portal/documents",
+      count: 12
     },
     {
       title: "Tasks",
       description: "View and complete required tasks",
       icon: CheckSquare,
-      path: "/client-portal/tasks"
+      path: "/client-portal/tasks",
+      count: 3
     },
     {
       title: "Appointments",
       description: "Schedule and manage appointments",
       icon: CalendarIcon,
-      path: "/client-portal/appointments"
+      path: "/client-portal/appointments",
+      count: 1
     },
     {
       title: "Support",
       description: "Get help with any questions",
       icon: MessageCircle,
-      path: "/client-portal/support"
+      path: "/client-portal/support",
+      count: 0
+    }
+  ];
+  
+  // Upcoming payments data
+  const upcomingPayments = [
+    {
+      date: "June 15, 2025",
+      amount: "$450.00",
+      status: "Upcoming"
+    },
+    {
+      date: "May 15, 2025",
+      amount: "$450.00",
+      status: "Completed"
+    },
+    {
+      date: "April 15, 2025",
+      amount: "$450.00",
+      status: "Completed"
     }
   ];
 
   return (
-    <div className="p-4 md:p-6">
+    <div className="p-4 md:p-6 bg-gray-50 dark:bg-background min-h-full">
       <div className="max-w-5xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold mb-2">Welcome, {clientName}</h1>
-          <p className="text-muted-foreground">
-            Access your documents, tasks, and appointments from your secure client portal.
-          </p>
+        <div className="mb-8">
+          <div className="bg-gradient-to-r from-primary/90 to-primary p-6 rounded-lg shadow-md text-white">
+            <h1 className="text-2xl md:text-3xl font-bold mb-2">Welcome, {clientName}</h1>
+            <p className="text-primary-foreground/90 max-w-xl">
+              Access your documents, tasks, and appointments from your secure client portal. Your journey to financial recovery is well underway.
+            </p>
+          </div>
         </div>
         
         <div className="mb-8">
-          <h2 className="text-lg font-semibold mb-4">Quick Access</h2>
+          <h2 className="text-lg font-semibold mb-4 flex items-center">
+            <PieChart className="h-5 w-5 mr-2 text-primary" />
+            Quick Access
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {quickAccessItems.map((item) => (
-              <Card key={item.title} className="hover:shadow-md transition-shadow">
+              <Card key={item.title} className="hover:shadow-md transition-shadow border-t-4 border-t-primary">
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between">
-                    <CardTitle className="text-base">{item.title}</CardTitle>
-                    <item.icon className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-base flex items-center">
+                      <item.icon className="h-5 w-5 mr-2 text-primary" />
+                      {item.title}
+                    </CardTitle>
+                    {item.count > 0 && (
+                      <Badge variant="secondary" className="ml-2">
+                        {item.count}
+                      </Badge>
+                    )}
                   </div>
                   <CardDescription>{item.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Button 
-                    variant="ghost" 
-                    className="w-full justify-start text-primary"
+                    variant="outline"
+                    className="w-full justify-between text-primary group"
                     onClick={() => navigate(item.path)}
                   >
                     Access {item.title}
+                    <ArrowRight className="h-4 w-4 ml-2 transform group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </CardContent>
               </Card>
@@ -75,53 +113,111 @@ export const ClientDashboard = () => {
           </div>
         </div>
         
-        <div className="mb-8">
-          <Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <Card className="shadow-sm">
             <CardHeader>
-              <CardTitle className="text-lg">Your Case Status</CardTitle>
-              <CardDescription>Current status of your case</CardDescription>
+              <CardTitle className="text-lg flex items-center">
+                <CalendarIcon className="h-5 w-5 mr-2 text-primary" />
+                Your Case Status
+              </CardTitle>
+              <CardDescription>Current status of your consumer proposal</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="h-3 w-3 rounded-full bg-green-500"></div>
-                <span className="font-medium">Active - Proposal Approved</span>
-              </div>
-              
               <div className="space-y-4">
-                <div>
-                  <p className="text-sm font-medium">Next Important Date</p>
-                  <p className="text-sm text-muted-foreground">June 15, 2025 - Monthly Payment Due</p>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="h-3 w-3 rounded-full bg-green-500"></div>
+                  <span className="font-medium text-green-700 dark:text-green-500">
+                    Active - Proposal Approved
+                  </span>
                 </div>
                 
-                <div>
-                  <p className="text-sm font-medium">Case Progress</p>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5 mt-1 dark:bg-gray-700">
-                    <div className="bg-primary h-2.5 rounded-full" style={{ width: '45%' }}></div>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Overall Progress</span>
+                    <span className="font-medium">45%</span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">45% Complete</p>
+                  <Progress value={45} className="h-2" />
                 </div>
+                
+                <div className="pt-2 border-t">
+                  <p className="text-sm font-medium mb-1">Next Important Date</p>
+                  <div className="bg-primary/5 p-3 rounded-md flex justify-between items-center">
+                    <div>
+                      <p className="font-semibold">Monthly Payment Due</p>
+                      <p className="text-sm text-muted-foreground">June 15, 2025</p>
+                    </div>
+                    <Badge>$450.00</Badge>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center">
+                <FileTextIcon className="h-5 w-5 mr-2 text-primary" />
+                Upcoming Payments
+              </CardTitle>
+              <CardDescription>Track your payment schedule</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th className="text-left font-medium text-sm px-4 py-3">Date</th>
+                      <th className="text-left font-medium text-sm px-4 py-3">Amount</th>
+                      <th className="text-right font-medium text-sm px-4 py-3">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {upcomingPayments.map((payment, index) => (
+                      <tr key={index} className={index === 0 ? "bg-primary/5" : ""}>
+                        <td className="px-4 py-3 text-sm">{payment.date}</td>
+                        <td className="px-4 py-3 text-sm font-medium">{payment.amount}</td>
+                        <td className="px-4 py-3 text-right">
+                          <Badge variant={payment.status === "Upcoming" ? "outline" : "secondary"}>
+                            {payment.status}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </CardContent>
           </Card>
         </div>
         
         <div>
-          <h2 className="text-lg font-semibold mb-4">Recent Activity</h2>
           <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center">
+                <CheckSquare className="h-5 w-5 mr-2 text-primary" />
+                Recent Activity
+              </CardTitle>
+              <CardDescription>Your latest interactions and updates</CardDescription>
+            </CardHeader>
             <CardContent className="p-0">
               <ul className="divide-y">
                 {[
-                  { title: "Document uploaded", date: "May 2, 2025", status: "Income Statement" },
-                  { title: "Task completed", date: "April 29, 2025", status: "Monthly Reporting" },
-                  { title: "Appointment scheduled", date: "April 25, 2025", status: "Review Meeting" }
+                  { title: "Income Statement Uploaded", date: "May 2, 2025", icon: FileTextIcon, description: "Document reviewed by your trustee" },
+                  { title: "Monthly Reporting Completed", date: "April 29, 2025", icon: CheckSquare, description: "April income and expense form submitted" },
+                  { title: "Review Meeting Scheduled", date: "April 25, 2025", icon: CalendarIcon, description: "Virtual meeting with John Smith" }
                 ].map((activity, index) => (
-                  <li key={index} className="px-4 py-3">
-                    <div className="flex justify-between items-start">
+                  <li key={index} className="px-6 py-4 hover:bg-muted/20 transition-colors">
+                    <div className="flex gap-4">
+                      <div className="mt-0.5">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+                          <activity.icon className="h-4 w-4" />
+                        </span>
+                      </div>
                       <div>
                         <p className="font-medium">{activity.title}</p>
-                        <p className="text-sm text-muted-foreground">{activity.status}</p>
+                        <p className="text-sm text-muted-foreground">{activity.description}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{activity.date}</p>
                       </div>
-                      <span className="text-xs text-muted-foreground">{activity.date}</span>
                     </div>
                   </li>
                 ))}

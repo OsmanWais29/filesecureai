@@ -1,91 +1,119 @@
 
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useLocation, useNavigate } from "react-router-dom";
-import { FileText, Home, FileCheck, Calendar, HelpCircle, Settings } from "lucide-react";
+import { 
+  Home, 
+  FileText, 
+  CheckSquare, 
+  Calendar, 
+  MessageCircle,
+  Settings,
+  User
+} from "lucide-react";
+import { useAuthState } from "@/hooks/useAuthState";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export const ClientSidebar = () => {
   const location = useLocation();
-  const navigate = useNavigate();
+  const { user } = useAuthState();
   
-  // Determine if a menu item is active based on the current path
-  const isActive = (path: string) => {
-    // Handle root path specially
-    if (path === "/client-portal" && location.pathname === "/client-portal") {
-      return true;
-    }
-    // For other paths, check if the current path starts with the menu item path
-    return path !== "/client-portal" && location.pathname.startsWith(path);
-  };
+  // Get client name from user metadata or fallback to email
+  const clientName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || "Client";
+  const clientInitials = clientName
+    .split(' ')
+    .map(name => name[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
 
-  const menuItems = [
-    { 
-      icon: Home, 
-      label: "Dashboard", 
-      path: "/client-portal"
+  const navItems = [
+    {
+      path: "/client-portal",
+      label: "Dashboard",
+      icon: Home
     },
-    { 
-      icon: FileText, 
-      label: "My Documents", 
-      path: "/client-portal/documents"
+    {
+      path: "/client-portal/documents",
+      label: "Documents",
+      icon: FileText
     },
-    { 
-      icon: FileCheck, 
-      label: "Tasks & Requirements", 
-      path: "/client-portal/tasks"
+    {
+      path: "/client-portal/tasks",
+      label: "Tasks",
+      icon: CheckSquare
     },
-    { 
-      icon: Calendar, 
-      label: "Appointments", 
-      path: "/client-portal/appointments" 
+    {
+      path: "/client-portal/appointments",
+      label: "Appointments",
+      icon: Calendar
     },
-    { 
-      icon: HelpCircle, 
-      label: "Support", 
-      path: "/client-portal/support" 
+    {
+      path: "/client-portal/support",
+      label: "Support",
+      icon: MessageCircle
     },
-    { 
-      icon: Settings, 
-      label: "Settings", 
-      path: "/client-portal/settings" 
+    {
+      path: "/client-portal/settings",
+      label: "Settings",
+      icon: Settings
     }
   ];
 
   return (
-    <div className="h-full flex flex-col border-r bg-background overflow-hidden">
-      {/* Navigation items */}
-      <ScrollArea className="flex-1 py-2">
-        <nav className="px-2 space-y-1">
-          {menuItems.map((item) => (
-            <Button
-              key={item.path}
-              variant={isActive(item.path) ? "secondary" : "ghost"}
-              className={cn(
-                "w-full justify-start gap-3 px-3 py-6 h-auto",
-                isActive(item.path) 
-                  ? "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300" 
-                  : "text-gray-700 dark:text-gray-300"
-              )}
-              onClick={() => navigate(item.path)}
-            >
-              <item.icon className="h-5 w-5" />
-              <span className="text-sm font-medium">{item.label}</span>
-            </Button>
-          ))}
-        </nav>
-      </ScrollArea>
-      
-      {/* Status indicator */}
-      <div className="p-4 border-t">
-        <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-3">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="h-2 w-2 rounded-full bg-green-500"></div>
-            <p className="text-sm font-medium">Current Status</p>
+    <aside className="h-full bg-white dark:bg-background border-r flex flex-col">
+      <div className="px-4 py-6 border-b">
+        <div className="flex items-center gap-3 mb-6">
+          <Avatar className="h-12 w-12 border-2 border-primary">
+            <AvatarFallback className="bg-primary/10 text-primary font-medium">
+              {clientInitials}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <h3 className="font-medium text-sm">{clientName}</h3>
+            <p className="text-xs text-muted-foreground">Client Portal</p>
           </div>
-          <p className="text-xs text-muted-foreground">Active - Proposal Approved</p>
         </div>
       </div>
-    </div>
+      
+      <nav className="flex-1 overflow-y-auto p-2">
+        <div className="space-y-1 py-2">
+          {navItems.map((item) => {
+            const isActive = 
+              (item.path === "/client-portal" && location.pathname === "/client-portal") || 
+              (item.path !== "/client-portal" && location.pathname.startsWith(item.path));
+              
+            return (
+              <Link key={item.path} to={item.path}>
+                <Button
+                  variant={isActive ? "secondary" : "ghost"}
+                  className={cn(
+                    "w-full justify-start gap-3 font-normal",
+                    isActive ? "bg-primary/10 text-primary" : ""
+                  )}
+                >
+                  <item.icon className="h-4 w-4" />
+                  {item.label}
+                </Button>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+      
+      <div className="p-4 mt-auto border-t">
+        <div className="rounded-lg bg-muted p-4">
+          <div className="flex items-center gap-4">
+            <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center">
+              <User className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <h4 className="text-sm font-medium">Need assistance?</h4>
+              <p className="text-xs text-muted-foreground">Contact your trustee</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
   );
 };
