@@ -14,14 +14,25 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/lib/supabase";
+import { useAuthState } from "@/hooks/useAuthState";
 
-export const ClientHeader = () => {
+interface ClientHeaderProps {
+  onSignOut?: () => Promise<void>;
+}
+
+export const ClientHeader = ({ onSignOut }: ClientHeaderProps) => {
   const navigate = useNavigate();
+  const { user } = useAuthState();
+  
+  // Get client name from user metadata or fallback to email
+  const clientName = user?.user_metadata?.full_name || user?.email || "Client";
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    navigate("/client-portal");
+    if (onSignOut) {
+      await onSignOut();
+    } else {
+      navigate("/client-portal");
+    }
   };
 
   return (
@@ -53,7 +64,7 @@ export const ClientHeader = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>John Doe</DropdownMenuLabel>
+              <DropdownMenuLabel>{clientName}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut}>
                 <LogOut className="mr-2 h-4 w-4" />

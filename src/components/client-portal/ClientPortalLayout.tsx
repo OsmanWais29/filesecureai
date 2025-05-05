@@ -11,9 +11,10 @@ import { useState } from "react";
 
 interface ClientPortalLayoutProps {
   children: ReactNode;
+  onSignOut?: () => Promise<void>;
 }
 
-export const ClientPortalLayout = ({ children }: ClientPortalLayoutProps) => {
+export const ClientPortalLayout = ({ children, onSignOut }: ClientPortalLayoutProps) => {
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -31,7 +32,7 @@ export const ClientPortalLayout = ({ children }: ClientPortalLayoutProps) => {
         </Button>
       )}
       
-      <ClientHeader />
+      <ClientHeader onSignOut={onSignOut} />
       
       <div className="flex flex-1 h-[calc(100vh-4rem)] overflow-hidden">
         {/* Sidebar - desktop is fixed, mobile is in a sheet */}
