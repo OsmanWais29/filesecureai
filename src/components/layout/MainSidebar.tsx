@@ -1,11 +1,15 @@
+
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { BrainCog, Bell, FileText, Home, MessageCircle, PieChart, Settings, User, Users, FileCheck, Menu, X, FileSearch } from "lucide-react";
+import { 
+  BrainCog, Bell, FileText, Home, MessageCircle, PieChart, Settings, 
+  User, Users, FileCheck, Menu, X, FileSearch, ChevronRight, ChevronLeft 
+} from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useState, useEffect } from "react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
 export const MainSidebar = () => {
@@ -15,6 +19,7 @@ export const MainSidebar = () => {
   const isDarkMode = theme === 'dark';
   const isMobile = useIsMobile();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Close sidebar when route changes on mobile
   useEffect(() => {
@@ -40,7 +45,7 @@ export const MainSidebar = () => {
   const navigationItems = [
     { icon: Home, label: "Home", path: "/" },
     { icon: FileText, label: "Documents", path: "/documents" },
-    { icon: FileSearch, label: "Converter", path: "/converter" }, // Changed Convert icon to FileSearch
+    { icon: FileSearch, label: "Converter", path: "/converter" },
     { icon: MessageCircle, label: "SAFA", path: "/SAFA" },
     { icon: Users, label: "CRM", path: "/crm" },
     { icon: BrainCog, label: "Smart Income Expense", path: "/activity" },
@@ -52,24 +57,37 @@ export const MainSidebar = () => {
   const SidebarContent = () => (
     <>
       {/* App Logo */}
-      <div className="p-4 border-b">
-        <Button
-          variant="ghost"
-          className="w-full justify-start px-2 py-4 hover:bg-transparent"
-          onClick={() => handleNavigation('/')}
-        >
-          <div className="flex items-center gap-2">
-            <img 
-              src="/lovable-uploads/b8620d24-fab6-4068-9af7-3e91ace7b559.png" 
-              alt="Secure Files AI Logo" 
-              className="w-9 h-9"
-            />
-            <span className={cn(
-              "font-bold text-lg",
-              isDarkMode ? "text-white" : "text-black"
-            )}>Secure Files AI</span>
-          </div>
-        </Button>
+      <div className="p-4 border-b flex justify-between items-center">
+        {!isCollapsed && (
+          <Button
+            variant="ghost"
+            className="w-full justify-start px-2 py-4 hover:bg-transparent"
+            onClick={() => handleNavigation('/')}
+          >
+            <div className="flex items-center gap-2">
+              <img 
+                src="/lovable-uploads/b8620d24-fab6-4068-9af7-3e91ace7b559.png" 
+                alt="Secure Files AI Logo" 
+                className="w-9 h-9"
+              />
+              <span className={cn(
+                "font-bold text-lg",
+                isDarkMode ? "text-white" : "text-black"
+              )}>Secure Files AI</span>
+            </div>
+          </Button>
+        )}
+
+        {!isMobile && (
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="rounded-full h-8 w-8 flex-shrink-0"
+          >
+            {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </Button>
+        )}
       </div>
 
       {/* Navigation Links with ScrollArea */}
@@ -90,14 +108,16 @@ export const MainSidebar = () => {
                 "h-5 w-5",
                 isActivePath(item.path) ? "text-accent" : "text-muted-foreground group-hover:text-accent"
               )} />
-              <span className={cn(
-                "text-sm font-medium",
-                isActivePath(item.path) ? 
-                  "text-accent" : 
-                  isDarkMode ? "text-white" : "text-black"
-              )}>
-                {item.label}
-              </span>
+              {!isCollapsed && (
+                <span className={cn(
+                  "text-sm font-medium",
+                  isActivePath(item.path) ? 
+                    "text-accent" : 
+                    isDarkMode ? "text-white" : "text-black"
+                )}>
+                  {item.label}
+                </span>
+              )}
             </Button>
           ))}
         </nav>
@@ -107,26 +127,46 @@ export const MainSidebar = () => {
       <div className="px-3 py-4 border-t">
         <Button 
           variant="ghost"
-          className="w-full justify-start gap-3 px-4 py-6 h-auto hover:bg-accent/10 hover:text-accent"
+          className={cn(
+            "w-full justify-start gap-3 px-4 py-6 h-auto hover:bg-accent/10 hover:text-accent",
+            isActivePath("/settings") && "bg-accent/10 text-accent"
+          )}
           onClick={() => handleNavigation("/settings")}
         >
-          <Settings className="h-5 w-5 text-muted-foreground" />
-          <span className={cn(
-            "text-sm font-medium",
-            isDarkMode ? "text-white" : "text-black"
-          )}>Settings</span>
+          <Settings className={cn(
+            "h-5 w-5", 
+            isActivePath("/settings") ? "text-accent" : "text-muted-foreground"
+          )} />
+          {!isCollapsed && (
+            <span className={cn(
+              "text-sm font-medium",
+              isActivePath("/settings") ? 
+                "text-accent" : 
+                isDarkMode ? "text-white" : "text-black"
+            )}>Settings</span>
+          )}
         </Button>
         
         <Button 
           variant="ghost"
-          className="w-full justify-start gap-3 px-4 py-6 h-auto hover:bg-accent/10 hover:text-accent"
+          className={cn(
+            "w-full justify-start gap-3 px-4 py-6 h-auto hover:bg-accent/10 hover:text-accent",
+            isActivePath("/profile") && "bg-accent/10 text-accent"
+          )}
           onClick={() => handleNavigation("/profile")}
         >
-          <User className="h-5 w-5 text-muted-foreground" />
-          <span className={cn(
-            "text-sm font-medium",
-            isDarkMode ? "text-white" : "text-black"
-          )}>Profile</span>
+          <User className={cn(
+            "h-5 w-5", 
+            isActivePath("/profile") ? "text-accent" : "text-muted-foreground"
+          )} />
+          {!isCollapsed && (
+            <span className={cn(
+              "text-sm font-medium",
+              isActivePath("/profile") ? 
+                "text-accent" : 
+                isDarkMode ? "text-white" : "text-black"
+            )}>Profile</span>
+          )}
         </Button>
       </div>
     </>
@@ -161,8 +201,9 @@ export const MainSidebar = () => {
   // For desktop: use fixed sidebar
   return (
     <aside className={cn(
-      "w-64 h-screen flex flex-col fixed left-0 top-0 z-40 border-r",
-      isDarkMode ? "bg-background" : "bg-white"
+      "h-screen flex flex-col fixed left-0 top-0 z-40 border-r shadow-sm transition-all duration-300",
+      isDarkMode ? "bg-background" : "bg-white",
+      isCollapsed ? "w-16" : "w-64"
     )}>
       <SidebarContent />
     </aside>

@@ -2,6 +2,7 @@
 import { ReactNode } from "react";
 import { MainSidebar } from "@/components/layout/MainSidebar";
 import { MainHeader } from "@/components/header/MainHeader";
+import { Footer } from "@/components/layout/Footer";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface MainLayoutProps {
@@ -9,11 +10,11 @@ interface MainLayoutProps {
   showFooter?: boolean;
 }
 
-export const MainLayout = ({ children }: MainLayoutProps) => {
+export const MainLayout = ({ children, showFooter = true }: MainLayoutProps) => {
   const isMobile = useIsMobile();
 
   return (
-    <div className="min-h-screen h-screen w-full flex overflow-hidden bg-white dark:bg-background">
+    <div className="min-h-screen h-screen w-full flex overflow-hidden bg-gray-50 dark:bg-background">
       <MainSidebar />
       <div className={`flex-1 flex flex-col w-full overflow-hidden ${!isMobile ? 'pl-64' : 'pl-0'}`}>
         <MainHeader />
@@ -22,6 +23,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
             {children}
           </div>
         </main>
+        {showFooter && <Footer compact className="bg-white dark:bg-background" />}
       </div>
     </div>
   );
