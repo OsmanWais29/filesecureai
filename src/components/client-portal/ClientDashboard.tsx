@@ -9,11 +9,15 @@ import { Progress } from "@/components/ui/progress";
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 export const ClientDashboard = () => {
   const { user } = useAuthState();
   const navigate = useNavigate();
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
+  const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
+  const [helpMessage, setHelpMessage] = useState("");
   
   // Get client name from user metadata or fallback to email
   const clientName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || "Client";
@@ -41,20 +45,22 @@ export const ClientDashboard = () => {
   const handleAssistanceRequest = async () => {
     if (!user) return;
     
+    if (!helpMessage.trim()) {
+      toast.error("Please provide details about your request");
+      return;
+    }
+    
     setIsSubmittingRequest(true);
     
     try {
       // Create a notification in the system for staff
       const { error } = await supabase.functions.invoke('handle-notifications', {
         body: {
-          action: 'create',
+          action: 'supportRequest',
           userId: 'admin', // This would target the admin or trustee in a real system
           notification: {
-            title: 'Assistance Request',
-            message: `Client ${clientName} has requested assistance`,
-            type: 'support',
-            priority: 'high',
-            category: 'client_update',
+            message: helpMessage,
+            action_url: "/support",
             metadata: {
               clientId: user.id,
               clientName,
@@ -69,6 +75,9 @@ export const ClientDashboard = () => {
       toast.success("Assistance request sent", {
         description: "A trustee will contact you shortly"
       });
+      
+      setIsHelpDialogOpen(false);
+      setHelpMessage("");
     } catch (error) {
       console.error("Error sending assistance request:", error);
       toast.error("Failed to send request", {
@@ -204,6 +213,40 @@ export const ClientDashboard = () => {
           </Card>
         </div>
       </div>
+      
+      {/* Help Dialog */}
+      <Dialog open={isHelpDialogOpen} onOpenChange={setIsHelpDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Request Assistance</DialogTitle>
+            <DialogDescription>
+              Explain what you need help with and a trustee will respond to your request.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <Textarea
+              placeholder="Please describe what you need help with..."
+              className="min-h-[120px]"
+              value={helpMessage}
+              onChange={(e) => setHelpMessage(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsHelpDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAssistanceRequest} 
+              disabled={isSubmittingRequest || !helpMessage.trim()}
+            >
+              {isSubmittingRequest ? "Sending..." : "Send Request"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

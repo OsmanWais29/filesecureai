@@ -110,7 +110,7 @@ serve(async (req) => {
     }
     
     if (action === 'supportRequest') {
-      // Create a notification for client assistance request
+      // Create a notification for client assistance request with the client's message
       const { data, error } = await supabase
         .from('notifications')
         .insert({
