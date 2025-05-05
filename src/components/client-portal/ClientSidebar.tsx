@@ -3,7 +3,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useLocation, useNavigate } from "react-router-dom";
-import { FileText, Home, FileCheck, Calendar, MessageCircle, HelpCircle } from "lucide-react";
+import { FileText, Home, FileCheck, Calendar, HelpCircle } from "lucide-react";
 
 export const ClientSidebar = () => {
   const location = useLocation();
@@ -39,11 +39,6 @@ export const ClientSidebar = () => {
       icon: Calendar, 
       label: "Appointments", 
       path: "/client-portal/appointments" 
-    },
-    { 
-      icon: MessageCircle, 
-      label: "Messages", 
-      path: "/client-portal/messages" 
     },
     { 
       icon: HelpCircle, 
