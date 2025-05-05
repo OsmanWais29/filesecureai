@@ -27,12 +27,15 @@ const ClientPortal = () => {
 
   // Check if user is authenticated and has correct role
   useEffect(() => {
-    if (user && !isLoading) {
-      const userType = user.user_metadata?.user_type;
-      // Redirect trustees to main app if they try to access client portal
-      if (userType === 'trustee') {
-        toast.error("Trustee accounts cannot access the client portal");
-        navigate('/', { replace: true });
+    if (!isLoading) {
+      if (user) {
+        const userType = user?.user_metadata?.user_type;
+        
+        // Redirect trustees to main app if they try to access client portal
+        if (userType === 'trustee') {
+          toast.error("Trustee accounts cannot access the client portal");
+          navigate('/', { replace: true });
+        }
       }
     }
   }, [user, isLoading, navigate]);

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { DocumentViewer } from "@/components/DocumentViewer";
@@ -34,6 +33,17 @@ const Index = () => {
   const [authError, setAuthError] = useState<Error | null>(null);
   const [isEmailConfirmationPending, setIsEmailConfirmationPending] = useState(false);
   const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
+
+  // Redirect client users to client portal
+  useEffect(() => {
+    if (user && !isLoading) {
+      const userType = user.user_metadata?.user_type;
+      if (userType === 'client') {
+        toast.info("Redirecting to Client Portal");
+        navigate('/client-portal', { replace: true });
+      }
+    }
+  }, [user, isLoading, navigate]);
 
   useEffect(() => {
     if (location.state?.selectedDocument) {
@@ -104,7 +114,6 @@ const Index = () => {
 
   // Handle auth errors
   if (authError) {
-    // Fix the Error to string conversion here
     return <AuthErrorDisplay error={authError instanceof Error ? authError.message : String(authError)} />;
   }
 
