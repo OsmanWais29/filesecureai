@@ -13,6 +13,7 @@ import Documents from "./client-portal/Documents";
 import Tasks from "./client-portal/Tasks";
 import Appointments from "./client-portal/Appointments";
 import Support from "./client-portal/Support";
+import Settings from "./client-portal/Settings";
 import NotFound from "./client-portal/NotFound";
 
 const ClientPortal = () => {
@@ -62,6 +63,7 @@ const ClientPortal = () => {
         <Route path="/tasks" element={<Tasks />} />
         <Route path="/appointments" element={<Appointments />} />
         <Route path="/support" element={<Support />} />
+        <Route path="/settings" element={<Settings />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </ClientPortalLayout>
