@@ -23,6 +23,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 const ticketSchema = z.object({
   subject: z.string().min(5, "Subject must be at least 5 characters"),
@@ -55,7 +56,7 @@ export const NewTicketForm = () => {
       console.log("Submitting ticket:", values);
       
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
       toast.success("Support ticket created successfully");
       navigate("/support");
@@ -166,7 +167,14 @@ export const NewTicketForm = () => {
             Cancel
           </Button>
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Submitting..." : "Create Ticket"}
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Submitting...
+              </>
+            ) : (
+              "Create Ticket"
+            )}
           </Button>
         </div>
       </form>

@@ -3,8 +3,12 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { NewTicketForm } from "@/components/support/NewTicketForm";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Toaster } from "sonner";
 
-export const NewSupportTicket = () => {
+const NewSupportTicket = () => {
+  const navigate = useNavigate();
+  
   return (
     <MainLayout>
       <div className="container py-8">
@@ -12,7 +16,7 @@ export const NewSupportTicket = () => {
           <Button 
             variant="ghost" 
             className="mb-4"
-            onClick={() => window.history.back()}
+            onClick={() => navigate("/support")}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Support
@@ -24,6 +28,7 @@ export const NewSupportTicket = () => {
         </div>
         
         <NewTicketForm />
+        <Toaster position="bottom-right" />
       </div>
     </MainLayout>
   );

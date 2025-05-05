@@ -1,11 +1,12 @@
 
-import React from "react";
-import { X } from "lucide-react";
+import React, { useEffect, useRef } from "react";
+import { X, Send } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Bot, User } from "lucide-react";
+import { toast } from "sonner";
 
 interface SupportChatbotProps {
   onClose: () => void;
@@ -22,6 +23,17 @@ export const SupportChatbot: React.FC<SupportChatbotProps> = ({ onClose }) => {
   ]);
   
   const [input, setInput] = React.useState("");
+  const [isTyping, setIsTyping] = React.useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Auto scroll to bottom when new messages appear
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+  
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
   
   const handleSend = () => {
     if (!input.trim()) return;
@@ -36,18 +48,31 @@ export const SupportChatbot: React.FC<SupportChatbotProps> = ({ onClose }) => {
     
     setMessages([...messages, userMessage]);
     setInput("");
+    setIsTyping(true);
     
     // Simulate AI response
     setTimeout(() => {
+      const responses = [
+        "I'm looking into this for you. Our AI is currently analyzing your question and will provide a detailed answer shortly.",
+        "Great question! Based on your inquiry, I can see you're looking for help with document management. Let me guide you through the process.",
+        "Thank you for asking. SecureFiles AI has several features to help you with this specific issue. First, you'll want to navigate to the Documents section.",
+        "I understand your concern. This is a common question, and I'm happy to help. The solution involves a few simple steps that I can walk you through.",
+        "I'm checking our knowledge base for the most up-to-date information on this topic. One moment please..."
+      ];
+      
+      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+      
       const botMessage = {
         id: messages.length + 2,
-        content: "I'm looking into this for you. Our AI is currently analyzing your question and will provide a detailed answer shortly.",
+        content: randomResponse,
         sender: "bot",
         timestamp: new Date().toISOString(),
       };
       
       setMessages((prev) => [...prev, botMessage]);
-    }, 1000);
+      setIsTyping(false);
+      toast.success("AI Assistant responded to your question");
+    }, 1500);
   };
   
   return (
@@ -118,6 +143,26 @@ export const SupportChatbot: React.FC<SupportChatbotProps> = ({ onClose }) => {
                 </div>
               </div>
             ))}
+            
+            {isTyping && (
+              <div className="flex justify-start">
+                <div className="flex gap-2">
+                  <Avatar className="h-8 w-8 mt-1">
+                    <AvatarFallback>
+                      <Bot className="h-4 w-4" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="bg-muted rounded-lg p-3 flex items-center">
+                    <span className="typing-indicator">
+                      <span className="dot"></span>
+                      <span className="dot"></span>
+                      <span className="dot"></span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
           </div>
         </CardContent>
         
@@ -135,10 +180,46 @@ export const SupportChatbot: React.FC<SupportChatbotProps> = ({ onClose }) => {
               onChange={(e) => setInput(e.target.value)}
               className="flex-1"
             />
-            <Button type="submit">Send</Button>
+            <Button type="submit" disabled={isTyping}>
+              <Send className="h-4 w-4" />
+            </Button>
           </form>
         </CardFooter>
       </Card>
+      
+      <style jsx>{`
+        .typing-indicator {
+          display: flex;
+          align-items: center;
+          column-gap: 4px;
+        }
+        
+        .dot {
+          width: 6px;
+          height: 6px;
+          background-color: currentColor;
+          border-radius: 50%;
+          opacity: 0.6;
+          animation: bounce 1.5s infinite;
+        }
+        
+        .dot:nth-child(2) {
+          animation-delay: 0.2s;
+        }
+        
+        .dot:nth-child(3) {
+          animation-delay: 0.4s;
+        }
+        
+        @keyframes bounce {
+          0%, 60%, 100% {
+            transform: translateY(0);
+          }
+          30% {
+            transform: translateY(-4px);
+          }
+        }
+      `}</style>
     </div>
   );
 };

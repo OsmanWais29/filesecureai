@@ -3,6 +3,7 @@ import { Search, Bot, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useNavigate } from "react-router-dom";
 
 interface SupportHeaderProps {
   searchQuery: string;
@@ -13,6 +14,7 @@ interface SupportHeaderProps {
 export const SupportHeader = ({ searchQuery, setSearchQuery, setShowChatbot }: SupportHeaderProps) => {
   const { theme } = useTheme();
   const isDarkMode = theme === 'dark';
+  const navigate = useNavigate();
 
   return (
     <div className={`border-b sticky top-0 z-10 ${isDarkMode ? 'bg-background' : 'bg-white'}`}>
@@ -33,7 +35,7 @@ export const SupportHeader = ({ searchQuery, setSearchQuery, setShowChatbot }: S
           </div>
           
           <div className="flex items-center gap-2">
-            <Button onClick={() => window.location.href = "/support/new"} variant="outline">
+            <Button onClick={() => navigate("/support/new")} variant="outline">
               <Plus className="h-4 w-4 mr-2" />
               Ask a Question
             </Button>

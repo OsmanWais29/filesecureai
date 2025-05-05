@@ -7,6 +7,7 @@ import { SupportDashboard } from "@/components/support/SupportDashboard";
 import { SupportTicketsList } from "@/components/support/SupportTicketsList";
 import { SupportChatbot } from "@/components/support/SupportChatbot";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Toaster } from "sonner";
 
 const Support = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -54,6 +55,8 @@ const Support = () => {
         {showChatbot && (
           <SupportChatbot onClose={() => setShowChatbot(false)} />
         )}
+        
+        <Toaster position="bottom-right" />
       </div>
     </MainLayout>
   );
