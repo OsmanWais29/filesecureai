@@ -18,11 +18,11 @@ export const SupportHeader = ({ searchQuery, setSearchQuery, setShowChatbot }: S
 
   return (
     <div className={`border-b sticky top-0 z-10 ${isDarkMode ? 'bg-background' : 'bg-white'}`}>
-      <div className="container py-4 max-w-7xl">
+      <div className="py-3 px-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Support Center</h1>
+          <h1 className="text-xl font-bold hidden md:block">Support Center</h1>
           
-          <div className="flex items-center gap-4 flex-1 max-w-xl mx-8">
+          <div className="flex items-center gap-2 flex-1 max-w-3xl mx-auto md:mx-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -35,13 +35,13 @@ export const SupportHeader = ({ searchQuery, setSearchQuery, setShowChatbot }: S
           </div>
           
           <div className="flex items-center gap-2">
-            <Button onClick={() => navigate("/support/new")} variant="outline">
+            <Button onClick={() => navigate("/support/new")} variant="outline" size="sm" className="hidden sm:flex">
               <Plus className="h-4 w-4 mr-2" />
               Ask a Question
             </Button>
-            <Button onClick={() => setShowChatbot(true)}>
-              <Bot className="h-4 w-4 mr-2" />
-              AI Assistant
+            <Button onClick={() => setShowChatbot(true)} size="sm">
+              <Bot className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">AI Assistant</span>
             </Button>
           </div>
         </div>

@@ -76,7 +76,7 @@ export const SupportChatbot: React.FC<SupportChatbotProps> = ({ onClose }) => {
   };
   
   return (
-    <div className="fixed bottom-4 right-4 w-96 z-50">
+    <div className="fixed bottom-4 right-4 w-80 md:w-96 z-50">
       <Card className="shadow-xl border-primary/20">
         <CardHeader className="bg-primary text-white p-3 flex flex-row justify-between items-center">
           <div className="flex items-center gap-2">

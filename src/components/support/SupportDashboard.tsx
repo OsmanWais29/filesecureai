@@ -43,7 +43,7 @@ export const SupportDashboard = ({ selectedCategory, searchQuery }: SupportDashb
   };
 
   return (
-    <div className="container max-w-5xl space-y-6">
+    <div className="px-4 max-w-full space-y-4">
       <section>
         <h2 className="text-xl font-bold mb-4 flex items-center">
           <TrendingUp className="h-5 w-5 mr-2 text-primary" />

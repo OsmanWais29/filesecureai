@@ -29,10 +29,10 @@ const Support = () => {
             setSelectedCategory={setSelectedCategory}
           />
           
-          <div className="flex-1 overflow-auto py-6">
+          <div className="flex-1 overflow-auto py-4">
             <Tabs defaultValue="discussions" className="w-full">
-              <div className="px-6 mb-4">
-                <TabsList className="mb-4">
+              <div className="px-4 mb-2">
+                <TabsList className="mb-2">
                   <TabsTrigger value="discussions">Discussions</TabsTrigger>
                   <TabsTrigger value="tickets">My Tickets</TabsTrigger>
                 </TabsList>
@@ -45,7 +45,7 @@ const Support = () => {
                 />
               </TabsContent>
               
-              <TabsContent value="tickets" className="px-6 mt-0">
+              <TabsContent value="tickets" className="px-4 mt-0">
                 <SupportTicketsList />
               </TabsContent>
             </Tabs>

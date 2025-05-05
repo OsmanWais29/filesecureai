@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { useTheme } from "@/contexts/ThemeContext";
 
 const categories = [
+  { id: "all", label: "All Categories", icon: FileText },
   { id: "general", label: "General Support", icon: FileText },
   { id: "ai", label: "AI Issues", icon: MessageCircle },
   { id: "legal", label: "Legal Assistance", icon: Shield },
@@ -26,51 +27,51 @@ export const SupportCategorySidebar = ({
   const isDarkMode = theme === 'dark';
 
   return (
-    <div className={`w-64 border-r h-full ${isDarkMode ? 'bg-background' : 'bg-white'}`}>
+    <div className={`w-56 border-r h-full ${isDarkMode ? 'bg-background' : 'bg-white'} hidden sm:block flex-shrink-0`}>
       <ScrollArea className="h-full">
-        <div className="p-4 space-y-6">
+        <div className="p-3 space-y-4">
           <div className="space-y-1">
-            <h2 className="text-lg font-semibold mb-2">Categories</h2>
+            <h2 className="text-sm font-semibold mb-1 px-1">Categories</h2>
             {categories.map((category) => (
               <Button
                 key={category.id}
                 variant="ghost"
                 className={cn(
-                  "w-full justify-start gap-3 py-6 h-auto",
+                  "w-full justify-start gap-3 py-2 h-auto",
                   selectedCategory === category.id && "bg-accent/10 text-accent"
                 )}
                 onClick={() => setSelectedCategory(category.id)}
               >
                 <category.icon className="h-4 w-4" />
-                <span>{category.label}</span>
+                <span className="text-sm">{category.label}</span>
               </Button>
             ))}
           </div>
           
           <div className="space-y-1">
-            <h2 className="text-lg font-semibold mb-2">My Tickets</h2>
+            <h2 className="text-sm font-semibold mb-1 px-1">My Tickets</h2>
             <Button
               variant="ghost"
-              className="w-full justify-start gap-3 py-6 h-auto"
+              className="w-full justify-start gap-3 py-2 h-auto"
               onClick={() => window.location.href = "/support/tickets"}
             >
               <Ticket className="h-4 w-4" />
-              <span>Open Tickets</span>
+              <span className="text-sm">Open Tickets</span>
             </Button>
             <Button
               variant="ghost"
-              className="w-full justify-start gap-3 py-6 h-auto"
+              className="w-full justify-start gap-3 py-2 h-auto"
               onClick={() => window.location.href = "/support/tickets?status=resolved"}
             >
               <Ticket className="h-4 w-4" />
-              <span>Resolved Tickets</span>
+              <span className="text-sm">Resolved Tickets</span>
             </Button>
           </div>
           
-          <div className="pt-4 border-t">
-            <h2 className="text-lg font-semibold mb-2">Leaderboard</h2>
-            <Card className="p-3">
-              <h3 className="text-sm font-medium mb-2">Top Contributors</h3>
+          <div className="pt-2 border-t">
+            <h2 className="text-sm font-semibold mb-1 px-1">Leaderboard</h2>
+            <Card className="p-2">
+              <h3 className="text-xs font-medium mb-1">Top Contributors</h3>
               <div className="space-y-2">
                 {[
                   { name: "John Doe", points: 350 },
@@ -78,24 +79,24 @@ export const SupportCategorySidebar = ({
                   { name: "Robert Johnson", points: 220 },
                 ].map((user, index) => (
                   <div key={index} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10">
-                        <Users className="h-3.5 w-3.5 text-primary" />
+                    <div className="flex items-center gap-1">
+                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10">
+                        <Users className="h-3 w-3 text-primary" />
                       </div>
-                      <span className="text-sm">{user.name}</span>
+                      <span className="text-xs">{user.name}</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Award className="h-3.5 w-3.5 text-amber-500" />
+                      <Award className="h-3 w-3 text-amber-500" />
                       <span className="text-xs">{user.points}</span>
                     </div>
                   </div>
                 ))}
               </div>
               
-              <div className="mt-4 pt-2 border-t">
-                <h3 className="text-sm font-medium mb-2">AI Agent Accuracy</h3>
+              <div className="mt-3 pt-1 border-t">
+                <h3 className="text-xs font-medium mb-1">AI Agent Accuracy</h3>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">Overall Score</span>
+                  <span className="text-xs">Overall Score</span>
                   <div className="flex items-center gap-1">
                     <span className="text-xs font-medium text-green-500">95.8%</span>
                   </div>
