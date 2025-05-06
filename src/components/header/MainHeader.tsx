@@ -25,7 +25,6 @@ import { supabase } from "@/lib/supabase";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useIsTablet } from "@/hooks/use-tablet";
 import { useTheme } from "@/contexts/ThemeContext";
-import { cn } from "@/lib/utils";
 
 export const MainHeader = () => {
   const [showNotifications, setShowNotifications] = useState(false);
@@ -37,7 +36,6 @@ export const MainHeader = () => {
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
   const { theme, toggleTheme } = useTheme();
-  const isDark = theme === 'dark';
 
   const handleSignOut = async () => {
     try {
@@ -58,14 +56,14 @@ export const MainHeader = () => {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-white dark:bg-background px-4 sm:px-6 shadow-sm backdrop-blur-sm dark:bg-opacity-80">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-white dark:bg-background px-4 sm:px-6 shadow-sm">
       <div className="w-full flex items-center justify-between">
         {/* Search button that expands on tablet */}
         {isTablet && (
           <Button 
             variant="ghost" 
             size="icon" 
-            className="md:hidden hover:bg-primary/10"
+            className="md:hidden"
             onClick={() => setShowSearch(!showSearch)}
           >
             <Search className="h-5 w-5" />
@@ -78,38 +76,31 @@ export const MainHeader = () => {
           <Input
             type="search"
             placeholder="Search documents, clients, or forms..."
-            className="w-full pl-8 bg-white dark:bg-background border-gray-200 dark:border-gray-800 focus-visible:ring-primary/40"
+            className="w-full pl-8 bg-white dark:bg-background border-gray-200 dark:border-gray-800"
           />
         </div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           {/* Theme Toggle */}
           <Button 
             variant="ghost" 
             size="icon"
             onClick={toggleTheme}
-            className={cn(
-              "rounded-full h-9 w-9 transition-all duration-300", 
-              isDark ? "bg-primary/10 text-primary" : "text-orange-400"
-            )}
-            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            className="rounded-full h-9 w-9"
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
           >
-            <Sun className={cn("h-5 w-5 transition-transform", isDark ? "rotate-0" : "rotate-90")} />
+            <Sun className="h-5 w-5" />
           </Button>
 
           {/* Notifications */}
           <Popover open={showNotifications} onOpenChange={setShowNotifications}>
             <PopoverTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="relative rounded-full p-0 h-9 w-9 hover:bg-primary/10 transition-colors"
-              >
+              <Button variant="ghost" size="icon" className="relative rounded-full p-0 h-9 w-9">
                 <NotificationBell />
                 <span className="sr-only">Notifications</span>
               </Button>
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-[380px] p-0 max-h-[500px] overflow-hidden border-primary/20 shadow-lg">
+            <PopoverContent align="end" className="w-[380px] p-0 max-h-[500px] overflow-hidden">
               <NotificationsList 
                 notifications={notifications} 
                 isLoading={isLoadingNotifications} 
@@ -120,32 +111,23 @@ export const MainHeader = () => {
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Avatar className="cursor-pointer h-9 w-9 bg-primary/10 hover:ring-2 hover:ring-primary/30 transition-all">
+              <Avatar className="cursor-pointer h-9 w-9 bg-primary/10 hover:border-primary/30 transition-colors">
                 <AvatarFallback className="bg-primary/10 text-primary font-medium">JD</AvatarFallback>
               </Avatar>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 border-primary/20 shadow-lg">
+            <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                onClick={() => navigate('/profile')} 
-                className="cursor-pointer hover:bg-primary/5 focus:bg-primary/5"
-              >
+              <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer">
                 <User className="mr-2 h-4 w-4" />
                 Profile
               </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => navigate('/settings')} 
-                className="cursor-pointer hover:bg-primary/5 focus:bg-primary/5"
-              >
+              <DropdownMenuItem onClick={() => navigate('/settings')} className="cursor-pointer">
                 <Bell className="mr-2 h-4 w-4" />
                 Notification Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                onClick={handleSignOut} 
-                className="text-destructive cursor-pointer hover:bg-destructive/5 focus:bg-destructive/5"
-              >
+              <DropdownMenuItem onClick={handleSignOut} className="text-destructive cursor-pointer">
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign out
               </DropdownMenuItem>

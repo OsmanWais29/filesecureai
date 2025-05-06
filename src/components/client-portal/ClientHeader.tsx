@@ -19,7 +19,6 @@ import { useAuthState } from "@/hooks/useAuthState";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 
 interface ClientHeaderProps {
   onSignOut?: () => Promise<void>;
@@ -29,7 +28,6 @@ export const ClientHeader = ({ onSignOut }: ClientHeaderProps) => {
   const navigate = useNavigate();
   const { user } = useAuthState();
   const { theme, setTheme } = useTheme();
-  const isDark = theme === "dark";
   
   // Get client name from user metadata or fallback to email
   const clientName = user?.user_metadata?.full_name || user?.email || "Client";
@@ -49,7 +47,7 @@ export const ClientHeader = ({ onSignOut }: ClientHeaderProps) => {
   };
 
   return (
-    <header className="h-16 border-b bg-white dark:bg-background shadow-sm w-full flex-shrink-0 sticky top-0 z-20 backdrop-blur-sm dark:bg-opacity-80">
+    <header className="h-16 border-b bg-white dark:bg-background shadow-sm w-full flex-shrink-0 sticky top-0 z-20">
       <div className="flex h-full items-center px-4 md:px-6">
         {/* Left side - client portal title */}
         <div className="flex items-center">
@@ -62,26 +60,19 @@ export const ClientHeader = ({ onSignOut }: ClientHeaderProps) => {
         </div>
         
         {/* Right side - notifications and user dropdown */}
-        <div className="flex items-center gap-4 ml-auto">
+        <div className="flex items-center gap-3 ml-auto">
           {/* Theme toggle */}
           <Button 
             variant="ghost" 
             size="icon" 
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className={cn(
-              "transition-all duration-300 rounded-full",
-              isDark ? "bg-primary/10 text-primary" : "text-orange-400"
-            )}
-            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            className="text-muted-foreground"
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
           >
-            <Sun className={cn("h-4 w-4 transition-transform", isDark ? "rotate-0" : "rotate-90")} />
+            <Sun className="h-4 w-4" />
           </Button>
 
-          <Button 
-            variant="outline" 
-            size="icon" 
-            className="relative hover:bg-primary/5 transition-colors"
-          >
+          <Button variant="outline" size="icon" className="relative">
             <BellIcon className="h-4 w-4" />
             <span className="sr-only">Notifications</span>
             <Badge className="absolute -top-1 -right-1 h-4 w-4 flex items-center justify-center p-0 text-[10px]">
@@ -91,12 +82,8 @@ export const ClientHeader = ({ onSignOut }: ClientHeaderProps) => {
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="gap-2 hover:bg-primary/5 transition-colors"
-              >
-                <Avatar className="h-6 w-6 hover:ring-2 hover:ring-primary/30 transition-all">
+              <Button variant="ghost" size="sm" className="gap-2">
+                <Avatar className="h-6 w-6">
                   <AvatarFallback className="bg-primary/10 text-primary text-xs">
                     {clientInitials}
                   </AvatarFallback>
@@ -104,12 +91,12 @@ export const ClientHeader = ({ onSignOut }: ClientHeaderProps) => {
                 <span className="hidden md:inline">{clientName}</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 border-primary/20 shadow-lg">
+            <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem 
                 onClick={() => navigate("/client-portal/settings")}
-                className="cursor-pointer hover:bg-primary/5 focus:bg-primary/5"
+                className="cursor-pointer"
               >
                 <User className="mr-2 h-4 w-4" />
                 Account Settings
@@ -117,7 +104,7 @@ export const ClientHeader = ({ onSignOut }: ClientHeaderProps) => {
               <DropdownMenuSeparator />
               <DropdownMenuItem 
                 onClick={handleSignOut}
-                className="cursor-pointer text-destructive hover:bg-destructive/5 focus:bg-destructive/5"
+                className="cursor-pointer text-destructive focus:text-destructive"
               >
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign out

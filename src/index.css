@@ -71,18 +71,13 @@
 }
 
 @layer components {
-  /* Glass panel and card effects */
   .glass-panel {
-    @apply bg-card/80 backdrop-blur-sm border border-border/50 shadow-lg rounded-lg transition-all duration-300;
-  }
-  
-  .card-hover {
-    @apply transition-all duration-300 hover:shadow-md hover:border-primary/20 hover:translate-y-[-2px];
+    @apply bg-card/80 backdrop-blur-sm border border-border/50 shadow-lg;
   }
   
   .gradient-header {
     background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
-    @apply text-primary-foreground rounded-t-lg;
+    @apply text-primary-foreground;
   }
 
   .gradient-button {
@@ -95,7 +90,7 @@
   }
 
   .sidebar-gradient {
-    @apply bg-gradient-to-b from-background to-card;
+    background: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--card)) 100%);
   }
   
   /* Ensure content is properly offset for sidebar */
@@ -120,7 +115,7 @@
   
   /* Document viewer specific styles */
   .document-viewer-container {
-    @apply h-full rounded-lg overflow-hidden border border-border/50 transition-all shadow-sm hover:shadow-md;
+    @apply h-full rounded-lg overflow-hidden border border-border/50;
   }
   
   /* Enhanced document viewer styles */
@@ -138,7 +133,7 @@
 
   /* Document details enhanced styles */
   .doc-detail-item {
-    @apply flex items-start py-2 border-b border-muted last:border-0 transition-colors hover:bg-muted/20;
+    @apply flex items-start py-2 border-b border-muted last:border-0;
   }
   
   .doc-detail-label {
@@ -151,7 +146,7 @@
   
   /* Document risk and task cards */
   .doc-card {
-    @apply bg-white dark:bg-card/50 rounded-md shadow-sm border border-border/30 p-3 transition-all duration-300 hover:shadow-md hover:border-primary/20;
+    @apply bg-white dark:bg-card/50 rounded-md shadow-sm border border-border/30 p-3 hover:shadow-md transition-shadow;
   }
   
   .doc-card-header {
@@ -168,7 +163,7 @@
 
   /* Better document sidebar readability */
   .sidebar-section {
-    @apply bg-white dark:bg-card/30 rounded-md shadow-sm p-4 mb-4 transition-all hover:shadow-md;
+    @apply bg-white dark:bg-card/30 rounded-md shadow-sm p-4 mb-4;
   }
   
   .sidebar-section-header {
@@ -187,7 +182,7 @@
   }
   
   .document-field-row {
-    @apply flex items-start py-2 border-b border-muted/50 last:border-0 transition-colors hover:bg-muted/10;
+    @apply flex items-start py-2 border-b border-muted/50 last:border-0;
   }
   
   .document-field-label {
@@ -198,19 +193,9 @@
     @apply text-sm text-foreground;
   }
 
-  /* Button and input enhancements */
-  .btn-enhanced {
-    @apply transition-all duration-300 hover:shadow-md active:scale-95;
-  }
-  
-  .input-enhanced {
-    @apply transition-all focus:shadow-md focus:border-primary/30;
-  }
-
   /* Animation classes for smoother transitions */
   .fade-in {
-    @apply transition-opacity duration-300 ease-in-out opacity-0;
-    animation: fadeIn 0.5s forwards;
+    @apply transition-opacity duration-300 ease-in-out;
   }
   
   .hover-scale {
@@ -220,54 +205,10 @@
   .page-transition {
     @apply animate-in fade-in slide-in-from-bottom-5 duration-300;
   }
-  
-  .hover-lift {
-    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-md;
-  }
-}
-
-/* Animation keyframes */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideInRight {
-  from { transform: translateX(-10px); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
 }
 
 /* Dark mode transition */
 html.dark-mode-transition,
 html.dark-mode-transition * {
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, fill 0.3s ease, stroke 0.3s ease;
-}
-
-/* Improved scrollbar for better aesthetics */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background-color: rgba(155, 155, 155, 0.5);
-  border-radius: 20px;
-  border: transparent;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(155, 155, 155, 0.7);
-}
-
-/* Dark mode scrollbar */
-.dark ::-webkit-scrollbar-thumb {
-  background-color: rgba(155, 155, 155, 0.3);
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(155, 155, 155, 0.5);
 }
