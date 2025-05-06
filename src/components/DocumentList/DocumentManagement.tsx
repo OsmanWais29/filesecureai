@@ -30,12 +30,28 @@ export const DocumentManagement: React.FC<DocumentManagementProps> = ({ onDocume
     return () => clearTimeout(resizeTimer);
   }, [isSidebarCollapsed]);
 
-  // Emit a custom event when this sidebar collapses
+  // Emit document sidebar collapse event to update other components
   useEffect(() => {
     const event = new CustomEvent('documentSidebarCollapse', { 
       detail: { collapsed: isSidebarCollapsed } 
     });
     window.dispatchEvent(event);
+
+    // Set CSS variable for document sidebar width
+    document.documentElement.style.setProperty(
+      '--document-sidebar-width',
+      isSidebarCollapsed ? '4rem' : '16rem'
+    );
+    
+    document.documentElement.style.setProperty(
+      '--document-sidebar-collapsed-width',
+      '4rem'
+    );
+    
+    return () => {
+      document.documentElement.style.removeProperty('--document-sidebar-width');
+      document.documentElement.style.removeProperty('--document-sidebar-collapsed-width');
+    };
   }, [isSidebarCollapsed]);
 
   const filteredDocuments = documents.filter(doc => {
@@ -128,7 +144,9 @@ export const DocumentManagement: React.FC<DocumentManagementProps> = ({ onDocume
 
       <main className={cn(
         "flex-1 overflow-y-auto transition-all duration-300",
-        isSidebarCollapsed ? "ml-0" : "ml-0"
+        isSidebarCollapsed 
+          ? "document-content-with-collapsed-sidebar" 
+          : "document-content-with-sidebar"
       )}>
         <div className="p-4 md:p-6 space-y-6">
           <Toolbar

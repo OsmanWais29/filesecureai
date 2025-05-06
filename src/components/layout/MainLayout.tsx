@@ -15,21 +15,30 @@ export const MainLayout = ({ children, showFooter = true }: MainLayoutProps) => 
   const isMobile = useIsMobile();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Listen for sidebar collapse events
+  // Listen for sidebar collapse events from any sidebar component
   useEffect(() => {
     const handleSidebarCollapse = (e: CustomEvent) => {
       setSidebarCollapsed(e.detail.collapsed);
     };
 
-    // Listen for sidebar collapse events
-    window.addEventListener('sidebarCollapse', handleSidebarCollapse as EventListener);
+    // Listen for collapse events from all sidebar types
+    const eventTypes = [
+      'sidebarCollapse',            // Main sidebar
+      'documentSidebarCollapse',    // Document sidebar
+      'clientSidebarCollapse',      // Client sidebar
+      'safaSidebarCollapse'         // SAFA sidebar
+    ];
     
-    // Listen for document sidebar collapse events as well (from DocumentManagement)
-    window.addEventListener('documentSidebarCollapse', handleSidebarCollapse as EventListener);
+    // Add all event listeners
+    eventTypes.forEach(eventType => {
+      window.addEventListener(eventType, handleSidebarCollapse as EventListener);
+    });
     
     return () => {
-      window.removeEventListener('sidebarCollapse', handleSidebarCollapse as EventListener);
-      window.removeEventListener('documentSidebarCollapse', handleSidebarCollapse as EventListener);
+      // Remove all event listeners
+      eventTypes.forEach(eventType => {
+        window.removeEventListener(eventType, handleSidebarCollapse as EventListener);
+      });
     };
   }, []);
 

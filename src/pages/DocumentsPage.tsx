@@ -1,11 +1,9 @@
-
 import { useEffect, useState } from "react";
 import { ClientList } from "@/components/documents/ClientList";
 import { DocumentTree } from "@/components/documents/DocumentTree";
 import { useNavigate } from "react-router-dom";
-import { MainHeader } from "@/components/header/MainHeader";
-import { MainSidebar } from "@/components/layout/MainSidebar";
 import { toast } from "sonner";
+import { MainLayout } from "@/components/layout/MainLayout";
 
 // Define a proper DocumentStatus type to match what DocumentTree expects
 type DocumentStatus = "needs-review" | "complete" | "needs-signature" | undefined;
@@ -282,44 +280,40 @@ const DocumentsPage = () => {
     : CLIENT_DOCUMENTS;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      <MainSidebar />
-      <div className="flex-1 flex flex-col pl-64">
-        <MainHeader />
-        <main className="flex-1 flex overflow-hidden">
-          {/* Left Panel: Client List */}
-          <div className="w-72 flex-shrink-0">
-            <ClientList 
-              clients={DEMO_CLIENTS}
-              selectedClientId={selectedClient}
-              onClientSelect={handleClientSelect}
+    <MainLayout>
+      <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
+        {/* Left Panel: Client List */}
+        <div className="w-72 flex-shrink-0">
+          <ClientList 
+            clients={DEMO_CLIENTS}
+            selectedClientId={selectedClient}
+            onClientSelect={handleClientSelect}
+          />
+        </div>
+        
+        {/* Right Panel: Document Tree */}
+        <div className="flex-1 border-l p-4">
+          <h2 className="text-xl font-semibold mb-4">
+            {selectedClient 
+              ? `${DEMO_CLIENTS.find(c => c.id === selectedClient)?.name}'s Documents` 
+              : "All Documents"}
+          </h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            {selectedClient 
+              ? "Client-specific documents and folders" 
+              : "System-wide view of all document activity. Click a client on the left to view their dedicated page."}
+          </p>
+          
+          <div className="border rounded-lg shadow-sm overflow-hidden">
+            <DocumentTree 
+              rootNodes={filteredDocuments}
+              onNodeSelect={handleNodeSelect}
+              onFileOpen={handleFileOpen}
             />
           </div>
-          
-          {/* Right Panel: Document Tree */}
-          <div className="flex-1 border-l p-4">
-            <h2 className="text-xl font-semibold mb-4">
-              {selectedClient 
-                ? `${DEMO_CLIENTS.find(c => c.id === selectedClient)?.name}'s Documents` 
-                : "All Documents"}
-            </h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              {selectedClient 
-                ? "Client-specific documents and folders" 
-                : "System-wide view of all document activity. Click a client on the left to view their dedicated page."}
-            </p>
-            
-            <div className="border rounded-lg shadow-sm overflow-hidden">
-              <DocumentTree 
-                rootNodes={filteredDocuments}
-                onNodeSelect={handleNodeSelect}
-                onFileOpen={handleFileOpen}
-              />
-            </div>
-          </div>
-        </main>
+        </div>
       </div>
-    </div>
+    </MainLayout>
   );
 };
 
