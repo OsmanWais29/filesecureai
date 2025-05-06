@@ -13,6 +13,7 @@ interface CategorySelectorProps {
   showConversation: boolean;
   isProcessing: boolean;
   onUploadComplete: (documentId: string) => Promise<void>;
+  collapsed?: boolean; // Add the collapsed prop as an optional boolean
 }
 
 export const CategorySelector = ({ 
@@ -21,8 +22,34 @@ export const CategorySelector = ({
   handleStartConsultation, 
   showConversation,
   isProcessing,
-  onUploadComplete
+  onUploadComplete,
+  collapsed = false // Set default to false
 }: CategorySelectorProps) => {
+  // If collapsed, we'll render a simpler version of the component
+  if (collapsed) {
+    return (
+      <div className="space-y-4">
+        <Tabs value={activeModule} onValueChange={(value: any) => setActiveModule(value)} className="w-full">
+          <TabsList className="grid grid-cols-1 gap-2">
+            <TabsTrigger value="document" className="p-2" title="Document Analysis">
+              <FileText className="h-4 w-4" />
+            </TabsTrigger>
+            <TabsTrigger value="legal" className="p-2" title="Legal & Regulatory">
+              <Scale className="h-4 w-4" />
+            </TabsTrigger>
+            <TabsTrigger value="client" className="p-2" title="Client Connect">
+              <Users className="h-4 w-4" />
+            </TabsTrigger>
+            <TabsTrigger value="help" className="p-2" title="Training & Help">
+              <BookOpen className="h-4 w-4" />
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+    );
+  }
+
+  // Regular expanded view
   return (
     <div className="space-y-2">
       <h2 className="text-lg font-semibold">Categories</h2>
