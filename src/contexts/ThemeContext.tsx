@@ -33,21 +33,20 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Apply the theme to the document
     const root = document.documentElement;
     
+    // Add transition class before changing theme
+    root.classList.add('dark-mode-transition');
+    
     if (theme === 'system') {
       // Check system preference
       const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
       if (isDarkMode) {
-        root.classList.add('dark-mode-transition');
         root.setAttribute('data-theme', 'dark');
       } else {
-        root.classList.add('dark-mode-transition');
         root.removeAttribute('data-theme');
       }
     } else if (theme === 'dark') {
-      root.classList.add('dark-mode-transition');
       root.setAttribute('data-theme', 'dark');
     } else {
-      root.classList.add('dark-mode-transition');
       root.removeAttribute('data-theme');
     }
     
@@ -56,7 +55,26 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       root.classList.remove('dark-mode-transition');
     }, 300);
     
-    return () => clearTimeout(transitionTimeout);
+    // Setup listener for system preference changes
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => {
+      if (theme === 'system') {
+        root.classList.add('dark-mode-transition');
+        if (mediaQuery.matches) {
+          root.setAttribute('data-theme', 'dark');
+        } else {
+          root.removeAttribute('data-theme');
+        }
+        setTimeout(() => root.classList.remove('dark-mode-transition'), 300);
+      }
+    };
+    
+    mediaQuery.addEventListener('change', handleChange);
+    
+    return () => {
+      clearTimeout(transitionTimeout);
+      mediaQuery.removeEventListener('change', handleChange);
+    };
   }, [theme]);
 
   const toggleTheme = () => {
