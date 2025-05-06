@@ -16,7 +16,7 @@ export const MainLayout = ({ children, showFooter = true }: MainLayoutProps) => 
   return (
     <div className="min-h-screen h-screen w-full flex overflow-hidden bg-gray-50 dark:bg-background">
       <MainSidebar />
-      <div className={`flex-1 flex flex-col w-full overflow-hidden ${!isMobile ? 'pl-64' : 'pl-0'}`}>
+      <div className={`flex-1 flex flex-col w-full overflow-hidden transition-all duration-300`}>
         <MainHeader />
         <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6 bg-gray-50 dark:bg-background w-full">
           <div className="container mx-auto max-w-full pb-16 sm:pb-20">

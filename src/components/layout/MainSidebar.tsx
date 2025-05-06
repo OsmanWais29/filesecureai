@@ -28,6 +28,16 @@ export const MainSidebar = () => {
     }
   }, [location.pathname, isMobile]);
 
+  // Dispatch resize event when sidebar collapses/expands
+  useEffect(() => {
+    // Small delay to allow transition to complete
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [isCollapsed]);
+
   const isActivePath = (path: string) => {
     if (path === "/") {
       return location.pathname === "/" || location.pathname === "/index";
@@ -84,6 +94,8 @@ export const MainSidebar = () => {
             size="icon" 
             onClick={() => setIsCollapsed(!isCollapsed)}
             className="rounded-full h-8 w-8 flex-shrink-0"
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </Button>
@@ -103,6 +115,7 @@ export const MainSidebar = () => {
                 isActivePath(item.path) && "bg-accent/10 text-accent"
               )}
               onClick={() => handleNavigation(item.path)}
+              title={isCollapsed ? item.label : undefined}
             >
               <item.icon className={cn(
                 "h-5 w-5",
@@ -132,6 +145,7 @@ export const MainSidebar = () => {
             isActivePath("/settings") && "bg-accent/10 text-accent"
           )}
           onClick={() => handleNavigation("/settings")}
+          title={isCollapsed ? "Settings" : undefined}
         >
           <Settings className={cn(
             "h-5 w-5", 
@@ -154,6 +168,7 @@ export const MainSidebar = () => {
             isActivePath("/profile") && "bg-accent/10 text-accent"
           )}
           onClick={() => handleNavigation("/profile")}
+          title={isCollapsed ? "Profile" : undefined}
         >
           <User className={cn(
             "h-5 w-5", 

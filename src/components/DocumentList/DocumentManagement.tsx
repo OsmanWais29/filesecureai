@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDocumentsWithSearch } from "./hooks/useDocumentsWithSearch";
 import { cn } from "@/lib/utils";
 import { Toolbar } from "./components/Toolbar";
@@ -20,6 +19,16 @@ export const DocumentManagement: React.FC<DocumentManagementProps> = ({ onDocume
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [previewDocument, setPreviewDocument] = useState<{ id: string; title: string; storage_path: string } | null>(null);
   const [filterType, setFilterType] = useState<string | null>(null);
+
+  // Update the document grid whenever sidebar state changes
+  useEffect(() => {
+    // Force a small delay to let transitions complete
+    const resizeTimer = setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 300);
+    
+    return () => clearTimeout(resizeTimer);
+  }, [isSidebarCollapsed]);
 
   const filteredDocuments = documents.filter(doc => {
     const matchesSearch = !searchQuery || 
@@ -98,7 +107,7 @@ export const DocumentManagement: React.FC<DocumentManagementProps> = ({ onDocume
   };
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)]">
+    <div className="flex h-[calc(100vh-3.5rem)] transition-all duration-300">
       <Sidebar
         isSidebarCollapsed={isSidebarCollapsed}
         setIsSidebarCollapsed={setIsSidebarCollapsed}
@@ -109,8 +118,8 @@ export const DocumentManagement: React.FC<DocumentManagementProps> = ({ onDocume
         setSelectedFolder={setSelectedFolder}
       />
 
-      <main className="flex-1 overflow-y-auto">
-        <div className="p-6 space-y-6">
+      <main className="flex-1 overflow-y-auto transition-all duration-300">
+        <div className="p-4 md:p-6 space-y-6">
           <Toolbar
             selectedFolder={selectedFolder}
             isGridView={isGridView}
@@ -123,7 +132,7 @@ export const DocumentManagement: React.FC<DocumentManagementProps> = ({ onDocume
             {isLoading ? (
               <div className={cn(
                 "grid gap-4",
-                isGridView ? "md:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"
+                isGridView ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-1"
               )}>
                 {[...Array(6)].map((_, i) => (
                   <div 

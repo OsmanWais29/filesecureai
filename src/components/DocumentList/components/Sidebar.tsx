@@ -4,6 +4,7 @@ import { SearchBar } from "../SearchBar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ChevronLeft, ChevronRight, Filter, Folder, Home, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useState, useEffect } from "react";
 
 interface SidebarProps {
   isSidebarCollapsed: boolean;
@@ -28,9 +29,20 @@ export const Sidebar = ({
   selectedFolder,
   setSelectedFolder
 }: SidebarProps) => {
+  
+  // Trigger resize event when sidebar collapses/expands
+  useEffect(() => {
+    // Small delay to let the transition complete
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [isSidebarCollapsed]);
+
   return (
     <aside className={cn(
-      "border-r bg-background transition-all duration-300 ease-in-out relative",
+      "border-r bg-background transition-all duration-300 ease-in-out relative h-full",
       isSidebarCollapsed ? "w-16" : "w-64"
     )}>
       {/* Home Section */}

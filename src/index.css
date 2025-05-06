@@ -93,15 +93,29 @@
     background: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--card)) 100%);
   }
   
-  /* Ensure content is properly offset for sidebar */
-  .content-with-sidebar {
-    margin-left: 16rem;
-    width: calc(100% - 16rem);
+  /* Responsive content containers */
+  .content-container {
+    @apply transition-all duration-300 w-full;
   }
   
-  /* Fixed footer adjustments */
-  .content-with-footer {
-    padding-bottom: 120px; /* Adjust based on footer height */
+  .content-with-sidebar {
+    @apply pl-64 transition-all duration-300;
+  }
+  
+  .content-with-collapsed-sidebar {
+    @apply pl-16 transition-all duration-300;
+  }
+  
+  /* Improved responsive grid layouts */
+  .responsive-grid {
+    @apply grid gap-4 transition-all duration-300;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+  
+  /* Enhanced document cards */
+  .document-card {
+    @apply rounded-lg border bg-card shadow-sm hover:shadow-md 
+    transition-all duration-200 h-full flex flex-col;
   }
   
   /* Make footer stick to bottom */
