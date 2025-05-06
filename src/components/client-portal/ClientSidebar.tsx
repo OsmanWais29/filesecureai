@@ -10,12 +10,14 @@ import {
   MessageCircle,
   Settings,
   User,
-  HelpCircle
+  HelpCircle,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { useAuthState } from "@/hooks/useAuthState";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,6 +28,7 @@ export const ClientSidebar = () => {
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [helpMessage, setHelpMessage] = useState("");
+  const [isCollapsed, setIsCollapsed] = useState(false);
   
   // Get client name from user metadata or fallback to email
   const clientName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || "Client";
@@ -68,6 +71,30 @@ export const ClientSidebar = () => {
       icon: Settings
     }
   ];
+
+  // Set CSS custom property for sidebar width
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      '--client-sidebar-width', 
+      isCollapsed ? '4rem' : '16rem'
+    );
+
+    // Emit custom event for sidebar collapse
+    const event = new CustomEvent('clientSidebarCollapse', { 
+      detail: { collapsed: isCollapsed } 
+    });
+    window.dispatchEvent(event);
+
+    // Small delay to allow transition to complete
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 300);
+    
+    return () => {
+      clearTimeout(timer);
+      document.documentElement.style.removeProperty('--client-sidebar-width');
+    };
+  }, [isCollapsed]);
 
   const handleAssistanceRequest = async () => {
     if (!user) return;
@@ -116,19 +143,39 @@ export const ClientSidebar = () => {
   };
 
   return (
-    <aside className="h-full bg-white dark:bg-background border-r flex flex-col">
-      <div className="px-4 py-6 border-b">
-        <div className="flex items-center gap-3 mb-6">
-          <Avatar className="h-12 w-12 border-2 border-primary">
+    <aside className={cn(
+      "h-full bg-white dark:bg-background border-r flex flex-col transition-all duration-300",
+      isCollapsed ? "w-16" : "w-64"
+    )}>
+      <div className="px-4 py-6 border-b flex justify-between items-center">
+        {!isCollapsed ? (
+          <div className="flex items-center gap-3">
+            <Avatar className="h-12 w-12 border-2 border-primary">
+              <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                {clientInitials}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h3 className="font-medium text-sm">{clientName}</h3>
+              <p className="text-xs text-muted-foreground">Client Portal</p>
+            </div>
+          </div>
+        ) : (
+          <Avatar className="h-12 w-12 border-2 border-primary mx-auto">
             <AvatarFallback className="bg-primary/10 text-primary font-medium">
               {clientInitials}
             </AvatarFallback>
           </Avatar>
-          <div>
-            <h3 className="font-medium text-sm">{clientName}</h3>
-            <p className="text-xs text-muted-foreground">Client Portal</p>
-          </div>
-        </div>
+        )}
+
+        <Button
+          variant="ghost" 
+          size="icon" 
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="rounded-full h-8 w-8 flex-shrink-0"
+        >
+          {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        </Button>
       </div>
       
       <nav className="flex-1 overflow-y-auto p-2">
@@ -144,11 +191,13 @@ export const ClientSidebar = () => {
                   variant={isActive ? "secondary" : "ghost"}
                   className={cn(
                     "w-full justify-start gap-3 font-normal",
-                    isActive ? "bg-primary/10 text-primary" : ""
+                    isActive ? "bg-primary/10 text-primary" : "",
+                    isCollapsed ? "px-0 justify-center" : ""
                   )}
+                  title={isCollapsed ? item.label : undefined}
                 >
                   <item.icon className="h-4 w-4" />
-                  {item.label}
+                  {!isCollapsed && <span>{item.label}</span>}
                 </Button>
               </Link>
             );
@@ -156,60 +205,62 @@ export const ClientSidebar = () => {
         </div>
       </nav>
       
-      <div className="p-4 mt-auto border-t">
-        <div className="rounded-lg bg-muted p-4">
-          <div className="flex items-center gap-4 mb-3">
-            <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center">
-              <HelpCircle className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <h4 className="text-sm font-medium">Need assistance?</h4>
-              <p className="text-xs text-muted-foreground">Contact your trustee</p>
-            </div>
-          </div>
-          <Button 
-            className="w-full" 
-            size="sm" 
-            onClick={() => setIsHelpDialogOpen(true)}
-          >
-            Request Help
-          </Button>
-          
-          {/* Help Dialog */}
-          <Dialog open={isHelpDialogOpen} onOpenChange={setIsHelpDialogOpen}>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Request Assistance</DialogTitle>
-                <DialogDescription>
-                  Explain what you need help with and a trustee will respond to your request.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <Textarea
-                  placeholder="Please describe what you need help with..."
-                  className="min-h-[120px]"
-                  value={helpMessage}
-                  onChange={(e) => setHelpMessage(e.target.value)}
-                />
+      {!isCollapsed && (
+        <div className="p-4 mt-auto border-t">
+          <div className="rounded-lg bg-muted p-4">
+            <div className="flex items-center gap-4 mb-3">
+              <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center">
+                <HelpCircle className="h-4 w-4 text-primary" />
               </div>
-              <DialogFooter>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setIsHelpDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleAssistanceRequest} 
-                  disabled={isSubmittingRequest || !helpMessage.trim()}
-                >
-                  {isSubmittingRequest ? "Sending..." : "Send Request"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              <div>
+                <h4 className="text-sm font-medium">Need assistance?</h4>
+                <p className="text-xs text-muted-foreground">Contact your trustee</p>
+              </div>
+            </div>
+            <Button 
+              className="w-full" 
+              size="sm" 
+              onClick={() => setIsHelpDialogOpen(true)}
+            >
+              Request Help
+            </Button>
+            
+            {/* Help Dialog */}
+            <Dialog open={isHelpDialogOpen} onOpenChange={setIsHelpDialogOpen}>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Request Assistance</DialogTitle>
+                  <DialogDescription>
+                    Explain what you need help with and a trustee will respond to your request.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <Textarea
+                    placeholder="Please describe what you need help with..."
+                    className="min-h-[120px]"
+                    value={helpMessage}
+                    onChange={(e) => setHelpMessage(e.target.value)}
+                  />
+                </div>
+                <DialogFooter>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsHelpDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleAssistanceRequest} 
+                    disabled={isSubmittingRequest || !helpMessage.trim()}
+                  >
+                    {isSubmittingRequest ? "Sending..." : "Send Request"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
-      </div>
+      )}
     </aside>
   );
 };

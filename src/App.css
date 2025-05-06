@@ -1,4 +1,3 @@
-
 /* Remove width constraints that prevent full-screen functionality */
 #root {
   max-width: 100%;
@@ -82,4 +81,13 @@
   left: 0;
   width: 100%;
   z-index: 50;
+}
+
+:root {
+  --sidebar-width: 16rem;
+  --sidebar-width-collapsed: 4rem;
+  --document-sidebar-width: 16rem;
+  --document-sidebar-width-collapsed: 4rem;
+  --client-sidebar-width: 16rem;
+  --client-sidebar-width-collapsed: 4rem;
 }

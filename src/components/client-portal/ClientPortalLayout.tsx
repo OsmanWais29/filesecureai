@@ -1,5 +1,5 @@
 
-import { ReactNode } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { ClientHeader } from "./ClientHeader";
 import { ClientSidebar } from "./ClientSidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -7,7 +7,6 @@ import { cn } from "@/lib/utils";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
 
 interface ClientPortalLayoutProps {
   children: ReactNode;
@@ -17,6 +16,20 @@ interface ClientPortalLayoutProps {
 export const ClientPortalLayout = ({ children, onSignOut }: ClientPortalLayoutProps) => {
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // Listen for sidebar collapse events from ClientSidebar
+  useEffect(() => {
+    const handleSidebarCollapse = (e: CustomEvent) => {
+      setSidebarCollapsed(e.detail.collapsed);
+    };
+
+    window.addEventListener('clientSidebarCollapse', handleSidebarCollapse as EventListener);
+    
+    return () => {
+      window.removeEventListener('clientSidebarCollapse', handleSidebarCollapse as EventListener);
+    };
+  }, []);
 
   return (
     <div className="flex flex-col h-screen w-full overflow-hidden bg-gray-50 dark:bg-background">
@@ -37,7 +50,10 @@ export const ClientPortalLayout = ({ children, onSignOut }: ClientPortalLayoutPr
       <div className="flex flex-1 h-[calc(100vh-4rem)] overflow-hidden">
         {/* Sidebar - desktop is fixed, mobile is in a sheet */}
         {!isMobile ? (
-          <div className="w-64 flex-shrink-0">
+          <div className={cn(
+            "flex-shrink-0 transition-all duration-300",
+            sidebarCollapsed ? "w-16" : "w-64"
+          )}>
             <ClientSidebar />
           </div>
         ) : (

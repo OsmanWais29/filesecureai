@@ -1,11 +1,10 @@
 
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { MainSidebar } from "@/components/layout/MainSidebar";
 import { MainHeader } from "@/components/header/MainHeader";
 import { Footer } from "@/components/layout/Footer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -22,9 +21,15 @@ export const MainLayout = ({ children, showFooter = true }: MainLayoutProps) => 
       setSidebarCollapsed(e.detail.collapsed);
     };
 
+    // Listen for sidebar collapse events
     window.addEventListener('sidebarCollapse', handleSidebarCollapse as EventListener);
+    
+    // Listen for document sidebar collapse events as well (from DocumentManagement)
+    window.addEventListener('documentSidebarCollapse', handleSidebarCollapse as EventListener);
+    
     return () => {
       window.removeEventListener('sidebarCollapse', handleSidebarCollapse as EventListener);
+      window.removeEventListener('documentSidebarCollapse', handleSidebarCollapse as EventListener);
     };
   }, []);
 
@@ -34,9 +39,8 @@ export const MainLayout = ({ children, showFooter = true }: MainLayoutProps) => 
       <div 
         className={cn(
           "flex-1 flex flex-col w-full overflow-hidden transition-all duration-300",
-          sidebarCollapsed ? "pl-16" : "pl-64"
+          sidebarCollapsed ? "ml-16" : "ml-64"
         )}
-        style={{ width: "calc(100% - var(--sidebar-width, 16rem))" }}
       >
         <MainHeader />
         <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6 bg-gray-50 dark:bg-background w-full">
