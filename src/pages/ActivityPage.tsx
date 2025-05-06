@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { MainHeader } from "@/components/header/MainHeader";
-import { MainSidebar } from "@/components/layout/MainSidebar";
+import { MainLayout } from "@/components/layout/MainLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { IncomeExpenseForm } from "@/components/activity/IncomeExpenseForm";
 import { ActivityDashboard } from "@/components/activity/ActivityDashboard";
@@ -85,102 +84,95 @@ export const ActivityPage = () => {
   }, [location.state, selectedClient]);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      <MainSidebar />
-      <div className="flex-1 flex flex-col pl-64">
-        <MainHeader />
-        <main className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-7xl mx-auto space-y-6">
-            <div className="flex justify-between items-center">
-              <h1 className="text-3xl font-bold">Smart Income & Expense Management</h1>
-            </div>
-            
-            {/* Centered Client Information Card */}
-            <div className="flex justify-center">
-              <Card className="border-none shadow-lg overflow-hidden max-w-3xl w-full">
-                <div className="bg-gradient-to-r from-primary/20 to-primary/5 border-b">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      <UserRound className="h-5 w-5 text-primary" />
-                      <CardTitle>Client Information</CardTitle>
-                    </div>
-                    <CardDescription>Select a client to manage their financial data</CardDescription>
-                  </CardHeader>
+    <MainLayout>
+      <div className="max-w-7xl mx-auto space-y-6 p-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">Smart Income & Expense Management</h1>
+        </div>
+        
+        {/* Centered Client Information Card */}
+        <div className="flex justify-center">
+          <Card className="border-none shadow-lg overflow-hidden max-w-3xl w-full">
+            <div className="bg-gradient-to-r from-primary/20 to-primary/5 border-b">
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <UserRound className="h-5 w-5 text-primary" />
+                  <CardTitle>Client Information</CardTitle>
                 </div>
-
-                <CardContent className="p-6 pt-6">
-                  <div className="space-y-6">
-                    {/* Large Client Selector */}
-                    <div className="bg-card border rounded-lg p-4 shadow-sm">
-                      <label className="text-sm font-medium mb-2 block text-muted-foreground">
-                        Select Client
-                      </label>
-                      <ClientSelector 
-                        selectedClient={selectedClient}
-                        onClientSelect={handleClientSelect}
-                        availableClients={clients}
-                      />
-                    </div>
-                    
-                    {/* Actions Buttons in Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium mb-2 text-muted-foreground">
-                          Create Financial Form
-                        </span>
-                        <IncomeExpenseButton 
-                          onClientCreated={handleClientCreated}
-                          size="default"
-                          className="w-full"
-                        />
-                      </div>
-                      
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium mb-2 text-muted-foreground">
-                          AI Assistance
-                        </span>
-                        <TrusteeCoPliotButton 
-                          clientId={selectedClient?.id}
-                          size="default"
-                          className="w-full"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                <CardDescription>Select a client to manage their financial data</CardDescription>
+              </CardHeader>
             </div>
-            
-            <Tabs 
-              defaultValue="form" 
-              className="space-y-4"
-              value={activeTab}
-              onValueChange={setActiveTab}
-            >
-              <TabsList className="grid grid-cols-3">
-                <TabsTrigger value="form">Income & Expense Form</TabsTrigger>
-                <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-                <TabsTrigger value="predictive">Predictive Analysis</TabsTrigger>
-              </TabsList>
 
-              <TabsContent value="form" className="space-y-4">
-                <IncomeExpenseForm selectedClient={selectedClient} />
-              </TabsContent>
+            <CardContent className="p-6 pt-6">
+              <div className="space-y-6">
+                {/* Large Client Selector */}
+                <div className="bg-card border rounded-lg p-4 shadow-sm">
+                  <label className="text-sm font-medium mb-2 block text-muted-foreground">
+                    Select Client
+                  </label>
+                  <ClientSelector 
+                    selectedClient={selectedClient}
+                    onClientSelect={handleClientSelect}
+                    availableClients={clients}
+                  />
+                </div>
+                
+                {/* Actions Buttons in Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium mb-2 text-muted-foreground">
+                      Create Financial Form
+                    </span>
+                    <IncomeExpenseButton 
+                      onClientCreated={handleClientCreated}
+                      size="default"
+                      className="w-full"
+                    />
+                  </div>
+                  
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium mb-2 text-muted-foreground">
+                      AI Assistance
+                    </span>
+                    <TrusteeCoPliotButton 
+                      clientId={selectedClient?.id}
+                      size="default"
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        
+        <Tabs 
+          defaultValue="form" 
+          className="space-y-4"
+          value={activeTab}
+          onValueChange={setActiveTab}
+        >
+          <TabsList className="grid grid-cols-3">
+            <TabsTrigger value="form">Income & Expense Form</TabsTrigger>
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="predictive">Predictive Analysis</TabsTrigger>
+          </TabsList>
 
-              <TabsContent value="dashboard">
-                <ActivityDashboard selectedClient={selectedClient} />
-              </TabsContent>
+          <TabsContent value="form" className="space-y-4">
+            <IncomeExpenseForm selectedClient={selectedClient} />
+          </TabsContent>
 
-              <TabsContent value="predictive">
-                <PredictiveAnalysis selectedClient={selectedClient} />
-              </TabsContent>
-            </Tabs>
-          </div>
-        </main>
+          <TabsContent value="dashboard">
+            <ActivityDashboard selectedClient={selectedClient} />
+          </TabsContent>
+
+          <TabsContent value="predictive">
+            <PredictiveAnalysis selectedClient={selectedClient} />
+          </TabsContent>
+        </Tabs>
       </div>
-    </div>
+    </MainLayout>
   );
 };
 
-// Add default export
 export default ActivityPage;

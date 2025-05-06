@@ -1,6 +1,6 @@
 
-import { MainHeader } from "@/components/header/MainHeader";
-import { MainSidebar } from "@/components/layout/MainSidebar";
+import { useState } from "react";
+import { MainLayout } from "@/components/layout/MainLayout";
 import { ClientIntakeDialog } from "@/components/crm/intake-dialog/ClientIntakeDialog";
 import { ClientDashboard } from "@/components/crm/ClientDashboard";
 import { useClientIntake } from "@/components/crm/hooks/useClientIntake";
@@ -22,17 +22,13 @@ export const CRMPage = () => {
   } = useClientIntake();
 
   return (
-    <div className="min-h-screen flex">
-      <MainSidebar />
-      <div className="flex-1 flex flex-col ml-64">
-        <MainHeader />
-        <div className="container mx-auto p-6 space-y-8">
-          {/* CRM Header with Add New Client button */}
-          <CRMHeader openClientDialog={openClientDialog} />
-          
-          {/* Client Dashboard with improved navigation */}
-          <ClientDashboard />
-        </div>
+    <MainLayout>
+      <div className="container mx-auto p-6 space-y-8">
+        {/* CRM Header with Add New Client button */}
+        <CRMHeader openClientDialog={openClientDialog} />
+        
+        {/* Client Dashboard with improved navigation */}
+        <ClientDashboard />
       </div>
 
       {/* Enhanced AI-Powered Client Intake Dialog */}
@@ -48,7 +44,7 @@ export const CRMPage = () => {
         handleSelectChange={handleSelectChange}
         handleEmploymentTypeChange={handleEmploymentTypeChange}
       />
-    </div>
+    </MainLayout>
   );
 };
 

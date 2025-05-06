@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useDocumentsWithSearch } from "./hooks/useDocumentsWithSearch";
 import { cn } from "@/lib/utils";
@@ -54,6 +55,7 @@ export const DocumentManagement: React.FC<DocumentManagementProps> = ({ onDocume
     };
   }, [isSidebarCollapsed]);
 
+  // Filter documents based on search, folder, and type
   const filteredDocuments = documents.filter(doc => {
     const matchesSearch = !searchQuery || 
       (doc.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -69,6 +71,7 @@ export const DocumentManagement: React.FC<DocumentManagementProps> = ({ onDocume
     return matchesSearch && matchesFolder && matchesType;
   });
 
+  // Group documents by client
   const groupedByClient = filteredDocuments.reduce((acc, doc) => {
     let clientName = 'Uncategorized';
     
