@@ -27,6 +27,12 @@
     --input: 197 15% 85%;
     --ring: 197 100% 21%;
     --radius: 0.75rem;
+    
+    /* Sidebar dimensions */
+    --sidebar-width: 16rem;
+    --sidebar-collapsed-width: 4rem;
+    --document-sidebar-width: 16rem;
+    --document-sidebar-collapsed-width: 4rem;
   }
 
   [data-theme="dark"] {
@@ -99,11 +105,27 @@
   }
   
   .content-with-sidebar {
-    @apply pl-64 transition-all duration-300;
+    @apply transition-all duration-300;
+    margin-left: var(--sidebar-width, 16rem);
+    width: calc(100% - var(--sidebar-width, 16rem));
   }
   
   .content-with-collapsed-sidebar {
-    @apply pl-16 transition-all duration-300;
+    @apply transition-all duration-300;
+    margin-left: var(--sidebar-collapsed-width, 4rem);
+    width: calc(100% - var(--sidebar-collapsed-width, 4rem));
+  }
+  
+  .document-content-with-sidebar {
+    @apply transition-all duration-300;
+    margin-left: var(--document-sidebar-width, 16rem);
+    width: calc(100% - var(--document-sidebar-width, 16rem));
+  }
+  
+  .document-content-with-collapsed-sidebar {
+    @apply transition-all duration-300;
+    margin-left: var(--document-sidebar-collapsed-width, 4rem);
+    width: calc(100% - var(--document-sidebar-collapsed-width, 4rem));
   }
   
   /* Improved responsive grid layouts */

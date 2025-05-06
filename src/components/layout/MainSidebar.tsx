@@ -28,14 +28,32 @@ export const MainSidebar = () => {
     }
   }, [location.pathname, isMobile]);
 
-  // Dispatch resize event when sidebar collapses/expands
+  // Emit custom event when sidebar collapses/expands
   useEffect(() => {
+    // Create and dispatch a custom event for sidebar collapse
+    const customEvent = new CustomEvent('sidebarCollapse', { 
+      detail: { collapsed: isCollapsed } 
+    });
+    window.dispatchEvent(customEvent);
+
     // Small delay to allow transition to complete
     const timer = setTimeout(() => {
       window.dispatchEvent(new Event('resize'));
     }, 300);
     
     return () => clearTimeout(timer);
+  }, [isCollapsed]);
+
+  // Set CSS custom property for sidebar width
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      '--sidebar-width', 
+      isCollapsed ? '4rem' : '16rem'
+    );
+
+    return () => {
+      document.documentElement.style.removeProperty('--sidebar-width');
+    };
   }, [isCollapsed]);
 
   const isActivePath = (path: string) => {

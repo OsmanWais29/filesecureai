@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useDocumentsWithSearch } from "./hooks/useDocumentsWithSearch";
 import { cn } from "@/lib/utils";
@@ -28,6 +29,14 @@ export const DocumentManagement: React.FC<DocumentManagementProps> = ({ onDocume
     }, 300);
     
     return () => clearTimeout(resizeTimer);
+  }, [isSidebarCollapsed]);
+
+  // Emit a custom event when this sidebar collapses
+  useEffect(() => {
+    const event = new CustomEvent('documentSidebarToggle', { 
+      detail: { collapsed: isSidebarCollapsed } 
+    });
+    window.dispatchEvent(event);
   }, [isSidebarCollapsed]);
 
   const filteredDocuments = documents.filter(doc => {
@@ -118,7 +127,10 @@ export const DocumentManagement: React.FC<DocumentManagementProps> = ({ onDocume
         setSelectedFolder={setSelectedFolder}
       />
 
-      <main className="flex-1 overflow-y-auto transition-all duration-300">
+      <main className={cn(
+        "flex-1 overflow-y-auto transition-all duration-300",
+        isSidebarCollapsed ? "ml-16" : "ml-0"
+      )}>
         <div className="p-4 md:p-6 space-y-6">
           <Toolbar
             selectedFolder={selectedFolder}

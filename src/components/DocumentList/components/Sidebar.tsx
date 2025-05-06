@@ -35,9 +35,27 @@ export const Sidebar = ({
     // Small delay to let the transition complete
     const timer = setTimeout(() => {
       window.dispatchEvent(new Event('resize'));
+      
+      // Dispatch a custom event for parent components to listen to
+      const event = new CustomEvent('documentSidebarCollapse', {
+        detail: { collapsed: isSidebarCollapsed }
+      });
+      window.dispatchEvent(event);
     }, 300);
     
     return () => clearTimeout(timer);
+  }, [isSidebarCollapsed]);
+
+  // Set CSS custom property for document sidebar width
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      '--document-sidebar-width', 
+      isSidebarCollapsed ? '4rem' : '16rem'
+    );
+
+    return () => {
+      document.documentElement.style.removeProperty('--document-sidebar-width');
+    };
   }, [isSidebarCollapsed]);
 
   return (
