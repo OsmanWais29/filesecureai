@@ -1,4 +1,3 @@
-
 import { Routes, Route } from "react-router-dom";
 import NotFound from "./pages/NotFound";
 import ClientPortal from "./pages/ClientPortal";
@@ -43,7 +42,8 @@ function App() {
       <Route path="/profile" element={<ProfilePage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/support" element={<Support />} />
-      <Route path="/support/new" element={<NewSupportTicket />} /> {/* Add route for new support ticket */}
+      <Route path="/support/new" element={<NewSupportTicket />} />
+      <Route path="/support/post/:postId" element={<SupportPostDetail />} />
       <Route path="/meetings" element={<MeetingsPage />} />
       <Route path="/SAFA" element={<ConBrandingPage />} />
 
