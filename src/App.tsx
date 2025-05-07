@@ -1,3 +1,4 @@
+
 import { Routes, Route } from "react-router-dom";
 import NotFound from "./pages/NotFound";
 import ClientPortal from "./pages/ClientPortal";
@@ -15,6 +16,7 @@ import EFilingPage from "./pages/trustee/EFilingPage";
 import ProfilePage from "./pages/trustee/ProfilePage";
 import Support from "./pages/Support"; 
 import NewSupportTicket from "./pages/NewSupportTicket"; // Add import for new support ticket page
+import SupportPostDetail from "./pages/SupportPostDetail"; // Import the SupportPostDetail component
 import SettingsPage from "./pages/trustee/SettingsPage";
 import NotificationsPage from "./pages/trustee/NotificationsPage";
 import ConBrandingPage from "./pages/trustee/ConBrandingPage";
