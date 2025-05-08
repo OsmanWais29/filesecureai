@@ -22,7 +22,7 @@ const SupportPostDetail = () => {
     // In a real app, fetch the post from an API
     // For now, use mock data
     if (postId) {
-      const foundPost = mockSupportData.find(p => p.id.toString() === postId);
+      const foundPost = mockSupportData.topics.find(p => p.id.toString() === postId);
       setPost(foundPost || null);
       setReplies(foundPost?.replies || []);
     }
