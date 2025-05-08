@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Lock, AlertTriangle, Mail, UserPlus } from 'lucide-react';
@@ -17,6 +18,7 @@ interface ClientPortalFormProps {
 }
 
 export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }: ClientPortalFormProps) => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -77,13 +79,21 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
       } else {
         try {
           // Explicitly set userType to client when signing in through client portal
-          await authService.signIn(email, password, 'client');
+          const { user } = await authService.signIn(email, password, 'client');
           toast({
             title: "Success",
             description: "Successfully signed in!",
           });
           
-          // Redirect happens automatically due to auth state change
+          // Redirect to client portal after successful authentication
+          if (user?.user_metadata?.user_type === 'client') {
+            navigate('/client/portal', { replace: true });
+          } else {
+            // If not client, sign out and show error
+            await authService.signOut();
+            setError("This account doesn't have client access.");
+          }
+          
         } catch (signInError: any) {
           if (signInError.message.includes('Email not confirmed')) {
             // Handle the email confirmation error specifically

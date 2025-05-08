@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Sidebar } from "@/components/SAFA/components/Sidebar";
+import { Sidebar } from "@/components/ui/sidebar";
 
 interface SAFASidebarProps {
   isCollapsed: boolean;

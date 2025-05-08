@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Lock, AlertTriangle, Mail, UserPlus } from 'lucide-react';
@@ -17,6 +18,7 @@ interface AuthFormProps {
 }
 
 export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFormProps) => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -76,11 +78,20 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
         }
       } else {
         try {
-          await authService.signIn(email, password, 'trustee'); // Add user type for role-based validation
+          const { user } = await authService.signIn(email, password, 'trustee'); // Add user type for role-based validation
           toast({
             title: "Success",
             description: "Successfully signed in!",
           });
+          
+          // Redirect based on user role
+          if (user?.user_metadata?.user_type === 'trustee') {
+            navigate('/trustee/dashboard', { replace: true });
+          } else {
+            // If not trustee, sign out and show error
+            await authService.signOut();
+            setError("This account doesn't have trustee access.");
+          }
         } catch (signInError: any) {
           if (signInError.message.includes('Email not confirmed')) {
             // Handle the email confirmation error specifically
@@ -103,6 +114,8 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
         setError('This email is already registered. Try signing in instead.');
       } else if (error.message.includes('Password should be')) {
         setError('Password should be at least 6 characters long');
+      } else if (error.message.includes('Invalid account type')) {
+        setError('This account cannot access the Trustee Portal. Please use a trustee account.');
       } else {
         setError(error.message);
       }
