@@ -1,15 +1,15 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Lock, AlertTriangle, Mail, UserPlus } from 'lucide-react';
+import { Lock, AlertTriangle, Mail, UserPlus, ArrowRight, Check } from 'lucide-react';
 import { SignUpFields } from './SignUpFields';
 import { AuthFields } from './AuthFields';
 import { validateAuthForm } from './authValidation';
 import { authService } from './authService';
 import { useRateLimiting } from './hooks/useRateLimiting';
 import { Button } from "@/components/ui/button";
-import { AuthMode } from '../Auth';
 
 interface ClientPortalFormProps {
   onConfirmationSent: (email: string) => void;
@@ -128,13 +128,13 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
   };
 
   return (
-    <div className="w-full max-w-md mx-auto space-y-8 rounded-xl border bg-card/95 p-8 shadow-lg backdrop-blur-sm">
+    <div className="w-full max-w-md mx-auto space-y-6 rounded-xl border border-blue-100 bg-white/90 p-8 shadow-lg backdrop-blur-sm">
       <div className="text-center space-y-2">
         <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
-          {isSignUp ? 'Create Your Client Account' : 'Client Login'}
+          {isSignUp ? 'Create Your Client Account' : 'Welcome Back'}
         </h1>
         <p className="text-sm text-muted-foreground">
-          {isSignUp ? 'Sign up to access the Client Portal' : 'Sign in to continue to Client Portal'}
+          {isSignUp ? 'Sign up to access the Client Portal' : 'Sign in to continue to your Client Portal'}
         </p>
       </div>
 
@@ -168,7 +168,7 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
         <Button
           type="submit"
           disabled={loading || isRateLimited}
-          className="w-full flex items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full flex items-center justify-center gap-2 rounded-md bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2 text-white hover:from-blue-700 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {loading ? (
             <>
@@ -178,11 +178,11 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
           ) : isSignUp ? (
             <>
               <UserPlus className="h-4 w-4" />
-              <span>Sign Up</span>
+              <span>Create Account</span>
             </>
           ) : (
             <>
-              <Lock className="h-4 w-4" />
+              <ArrowRight className="h-4 w-4" />
               <span>Sign In</span>
             </>
           )}
@@ -197,16 +197,16 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
 
       <div className="relative my-4">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-muted"></div>
+          <div className="w-full border-t border-blue-100/70"></div>
         </div>
         <div className="relative flex justify-center text-xs">
-          <span className="bg-card px-2 text-muted-foreground">
+          <span className="bg-white px-2 text-muted-foreground">
             {isSignUp ? 'Already have an account?' : "Don't have an account?"}
           </span>
         </div>
       </div>
 
-      <div className="text-center space-y-3">
+      <div className="text-center space-y-4">
         <Button
           onClick={() => {
             setIsSignUp(!isSignUp);
@@ -215,14 +215,15 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
           variant="ghost"
           className="text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors"
         >
-          {isSignUp ? 'Sign in instead' : "Create an account"}
+          <Check className="h-3 w-3 mr-1" />
+          {isSignUp ? 'Sign in instead' : "Create a new account"}
         </Button>
         
         <div className="pt-2">
           <Button
             onClick={onSwitchToTrusteePortal}
             variant="outline"
-            className="w-full text-sm"
+            className="w-full text-sm border-blue-200 hover:bg-blue-50"
           >
             Switch to Trustee Portal
           </Button>
