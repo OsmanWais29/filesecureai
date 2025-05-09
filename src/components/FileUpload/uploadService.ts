@@ -21,7 +21,7 @@ export const handleDocumentUpload = async (
       
       if (result.errors.length > 0) {
         console.warn(`PDF processing completed with ${result.errors.length} errors`);
-        console.warn('Pages with errors:', result.errors.map(e => e.pageNum).join(', '));
+        console.warn('Pages with errors:', result.errors.join(', '));
       }
       
       console.log(`Successfully processed ${result.successfulPages} of ${result.totalPages} pages`);

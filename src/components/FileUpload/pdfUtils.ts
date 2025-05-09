@@ -6,14 +6,14 @@ import logger from '@/utils/logger';
 // Configure PDF.js worker
 GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
 
-interface ExtractTextResult {
+export interface ExtractTextResult {
   text: string;
   successfulPages: number;
   totalPages: number;
   errors: string[];
 }
 
-export async function extractTextFromPdf(pdfData: ArrayBuffer): Promise<string> {
+export async function extractTextFromPdf(pdfData: ArrayBuffer): Promise<ExtractTextResult> {
   if (!pdfData || pdfData.byteLength === 0) {
     throw new Error('Invalid PDF data received');
   }
@@ -26,7 +26,7 @@ export async function extractTextFromPdf(pdfData: ArrayBuffer): Promise<string> 
     const numPages = pdf.numPages;
     let extractedText = '';
     let successfulPages = 0;
-    const errors = [];
+    const errors: string[] = [];
 
     // Process each page
     for (let i = 1; i <= numPages; i++) {
@@ -58,7 +58,12 @@ export async function extractTextFromPdf(pdfData: ArrayBuffer): Promise<string> 
 
     logger.info(`PDF extraction completed: ${successfulPages}/${numPages} pages processed successfully`);
     
-    return extractedText;
+    return {
+      text: extractedText,
+      successfulPages,
+      totalPages: numPages,
+      errors
+    };
   } catch (error: any) {
     logger.error(`PDF extraction failed: ${error.message}`);
     throw error;

@@ -1,61 +1,57 @@
 
-import React, { useState } from 'react';
+import { useState } from "react";
+import { FolderIcon as FolderIconLucide, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type FolderVariant = 'default' | 'client' | 'form' | 'financials' | 'archive';
+// Define the allowed folder variants
+export type FolderVariant = 'client' | 'archive' | 'form' | 'default' | 'uncategorized';
 
 interface FolderIconProps {
   variant?: FolderVariant;
-  className?: string;
+  isActive?: boolean;
 }
 
-export const FolderIcon: React.FC<FolderIconProps> = ({ 
-  variant = 'default',
-  className
-}) => {
+export const FolderIcon = ({ variant = 'default', isActive = false }: FolderIconProps) => {
   const [isHovered, setIsHovered] = useState(false);
   
-  const getGradientClass = () => {
+  const getGradient = () => {
     switch (variant) {
       case 'client':
-        return 'from-blue-600 to-blue-400';
+        return 'from-blue-500 to-blue-600';
       case 'form':
-        return 'from-green-500 to-green-300';
-      case 'financials':
-        return 'from-yellow-500 to-yellow-300';
+        return 'from-green-500 to-green-600';
       case 'archive':
-        return 'from-gray-500 to-gray-300';
+        return 'from-gray-500 to-gray-600';
+      case 'uncategorized':
+        return 'from-amber-500 to-amber-600';
       default:
-        return 'from-blue-500 to-blue-300';
+        return 'from-blue-500 to-blue-600';
     }
   };
 
   return (
     <div 
-      data-testid="folder-icon"
-      className={cn(
-        "relative w-14 h-12 rounded-md bg-gradient-to-br", 
-        getGradientClass(),
-        className
-      )}
+      className="relative"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      data-testid="folder-icon"
     >
-      {/* Folder top */}
-      <div className="absolute top-0 left-0 right-0 h-2 bg-white/20 rounded-t-md" />
+      <div className={cn(
+        "w-12 h-10 rounded-md bg-gradient-to-br flex items-center justify-center",
+        getGradient(),
+        isActive && "ring-2 ring-primary"
+      )}>
+        <FolderIconLucide className="h-5 w-5 text-white" />
+      </div>
       
-      {/* Hover effect */}
       {isHovered && (
         <div 
+          className="absolute inset-0 bg-black bg-opacity-20 rounded-md flex items-center justify-center"
           data-testid="hover-indicator"
-          className="absolute inset-0 bg-white/10 rounded-md animate-pulse"
-        />
+        >
+          <ChevronRight className="h-5 w-5 text-white" />
+        </div>
       )}
-      
-      {/* Optional: folder details */}
-      <div className="absolute bottom-0 left-0 right-0 p-1 text-[8px] text-white font-medium text-center truncate">
-        {variant !== 'default' ? variant.charAt(0).toUpperCase() + variant.slice(1) : 'Folder'}
-      </div>
     </div>
   );
 };

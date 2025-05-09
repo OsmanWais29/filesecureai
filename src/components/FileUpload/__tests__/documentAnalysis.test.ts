@@ -67,9 +67,9 @@ describe('Document Analysis', () => {
       const mockArrayBuffer = new ArrayBuffer(8);
       const result = await extractTextFromPdf(mockArrayBuffer);
       
-      expect(result).toContain('Form 47 Consumer Proposal');
-      expect(result).toContain('Client Name: John Doe');
-      expect(result).toContain('Estate Number: 12345');
+      expect(result.text).toContain('Form 47 Consumer Proposal');
+      expect(result.text).toContain('Client Name: John Doe');
+      expect(result.text).toContain('Estate Number: 12345');
       testScore += pointsPerTest;
     } catch (error) {
       console.error('Test failed:', error);

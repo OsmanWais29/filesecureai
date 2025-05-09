@@ -1,11 +1,10 @@
 
-import { render } from '@testing-library/react';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import DocumentsPage from '../DocumentsPage';
 import { supabase } from '@/lib/supabase';
 import { vi } from 'vitest';
-import { screen, fireEvent, waitFor } from '../../setupTests';
+import { render, screen, fireEvent, waitFor } from '../../setupTests';
 
 // Mock supabase
 vi.mock('@/lib/supabase', () => ({
@@ -34,26 +33,27 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
-const renderWithRouter = (component: React.ReactElement) => {
-  return render(
-    <BrowserRouter>
-      {component}
-    </BrowserRouter>
-  );
-};
-
+// No need for renderWithRouter function since we're importing render from setupTests
 describe('DocumentsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('renders the document upload area', () => {
-    renderWithRouter(<DocumentsPage />);
+    render(
+      <BrowserRouter>
+        <DocumentsPage />
+      </BrowserRouter>
+    );
     expect(screen.getByText(/Drag and drop your documents here/i)).toBeInTheDocument();
   });
 
   it('handles file upload when clicking browse button', async () => {
-    renderWithRouter(<DocumentsPage />);
+    render(
+      <BrowserRouter>
+        <DocumentsPage />
+      </BrowserRouter>
+    );
     const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
     const input = screen.getByLabelText(/browse files/i);
 
