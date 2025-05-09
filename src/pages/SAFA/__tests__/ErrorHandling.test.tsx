@@ -1,6 +1,6 @@
 
 import { describe, test, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { ConBrandingPage } from '@/pages/ConBrandingPage';
 import { 
   mockErrorResponse, 
@@ -10,6 +10,7 @@ import {
   simulateChat,
   verifyToastNotification
 } from './utils/testHelpers';
+import { screen, fireEvent } from '../../../setupTests';
 
 describe('SAFA Error Handling', () => {
   // Test 3.1: Network Error Handling

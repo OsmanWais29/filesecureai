@@ -1,71 +1,61 @@
 
+import React, { useState } from 'react';
 import { cn } from "@/lib/utils";
-import { Folder, FolderOpen } from "lucide-react";
-import { useState } from "react";
+
+type FolderVariant = 'default' | 'client' | 'form' | 'financials' | 'archive';
 
 interface FolderIconProps {
-  color?: string;
-  isActive?: boolean;
+  variant?: FolderVariant;
   className?: string;
-  variant?: "client" | "form" | "archive" | "uncategorized";
-  isOpen?: boolean;
 }
 
-export const FolderIcon = ({ 
-  color, 
-  isActive, 
-  className,
-  variant = "client",
-  isOpen = false
-}: FolderIconProps) => {
+export const FolderIcon: React.FC<FolderIconProps> = ({ 
+  variant = 'default',
+  className
+}) => {
   const [isHovered, setIsHovered] = useState(false);
-
-  const getVariantStyles = () => {
+  
+  const getGradientClass = () => {
     switch (variant) {
-      case "client":
-        return "from-blue-500 to-blue-600 text-blue-50";
-      case "form":
-        return "from-green-500 to-green-600 text-green-50";
-      case "archive":
-        return "from-gray-500 to-gray-600 text-gray-50";
-      case "uncategorized":
-        return "from-yellow-500 to-yellow-600 text-yellow-50";
+      case 'client':
+        return 'from-blue-600 to-blue-400';
+      case 'form':
+        return 'from-green-500 to-green-300';
+      case 'financials':
+        return 'from-yellow-500 to-yellow-300';
+      case 'archive':
+        return 'from-gray-500 to-gray-300';
       default:
-        return "from-primary to-primary/80 text-primary-foreground";
+        return 'from-blue-500 to-blue-300';
     }
   };
 
-  const Icon = isOpen ? FolderOpen : Folder;
-
   return (
-    <div
+    <div 
       data-testid="folder-icon"
       className={cn(
-        "relative p-3 rounded-xl transition-all duration-200",
-        "bg-gradient-to-br shadow-lg",
-        "hover:shadow-xl hover:scale-105",
-        isActive && "scale-105 ring-2 ring-primary/20",
-        getVariantStyles(),
+        "relative w-14 h-12 rounded-md bg-gradient-to-br", 
+        getGradientClass(),
         className
       )}
-      style={color ? {
-        background: `linear-gradient(135deg, ${color}, ${color}dd)`,
-      } : undefined}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <Icon 
-        className={cn(
-          "h-6 w-6 transition-transform duration-200",
-          isHovered && "transform rotate-2"
-        )} 
-      />
+      {/* Folder top */}
+      <div className="absolute top-0 left-0 right-0 h-2 bg-white/20 rounded-t-md" />
+      
+      {/* Hover effect */}
       {isHovered && (
         <div 
           data-testid="hover-indicator"
-          className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-accent animate-pulse" 
+          className="absolute inset-0 bg-white/10 rounded-md animate-pulse"
         />
       )}
+      
+      {/* Optional: folder details */}
+      <div className="absolute bottom-0 left-0 right-0 p-1 text-[8px] text-white font-medium text-center truncate">
+        {variant !== 'default' ? variant.charAt(0).toUpperCase() + variant.slice(1) : 'Folder'}
+      </div>
     </div>
   );
 };

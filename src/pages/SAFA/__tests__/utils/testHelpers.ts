@@ -1,6 +1,7 @@
 
 import { vi } from 'vitest';
 import { User, Session } from '@supabase/supabase-js';
+import { fireEvent } from '../../../../setupTests';
 
 export const waitForAsync = () => new Promise(resolve => setTimeout(resolve, 0));
 
@@ -81,5 +82,4 @@ export const createMockFile = vi.fn(() => {
 });
 
 // Add missing imports needed by the helper functions
-import { fireEvent } from '@testing-library/react';
 import { expect } from 'vitest';

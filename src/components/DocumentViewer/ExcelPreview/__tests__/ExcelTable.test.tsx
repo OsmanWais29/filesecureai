@@ -1,8 +1,9 @@
 
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { ExcelTable } from '../components/ExcelTable';
 import { ExcelData } from '../types';
+import { screen, fireEvent, waitFor } from '../../../../setupTests';
 
 // Sample data for testing
 const mockExcelData: ExcelData = {
@@ -133,4 +134,3 @@ describe('ExcelTable Component', () => {
     expect(rowsAfterClear.length).toBe(5);
   });
 });
-

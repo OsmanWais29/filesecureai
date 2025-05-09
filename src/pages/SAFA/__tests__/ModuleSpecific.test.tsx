@@ -1,9 +1,10 @@
 
 import { describe, test, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { ConBrandingPage } from '@/pages/ConBrandingPage';
 import { supabase } from '@/lib/supabase';
 import { createMockFile, logTestResult, waitForAsync } from './utils/testHelpers';
+import { screen, fireEvent } from '../../../setupTests';
 
 describe('SAFA Module-Specific Functionality', () => {
   // Test 2.1: Document Upload and Metadata Extraction

@@ -1,9 +1,10 @@
 
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { DocumentList } from '../../documents/DocumentList';
 import { BrowserRouter } from 'react-router-dom';
 import { vi } from 'vitest';
+import { screen, fireEvent } from '../../../setupTests';
 import type { Document } from '../types';
 
 const mockDocuments: Document[] = [

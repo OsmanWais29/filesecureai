@@ -1,8 +1,8 @@
-
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import DocumentPreview from '@/components/DocumentViewer/DocumentPreview';
+import { screen, fireEvent } from '../../../setupTests';
 
 // Mock the necessary hooks and components
 vi.mock('@/components/DocumentViewer/DocumentPreview/hooks/usePreviewState', () => ({

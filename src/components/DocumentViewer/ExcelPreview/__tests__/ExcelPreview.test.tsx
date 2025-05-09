@@ -1,7 +1,8 @@
 
-import { render, screen, waitFor } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ExcelPreview } from '../index';
+import { screen, waitFor } from '../../../../setupTests';
 
 // Mock the required imports
 vi.mock('@/lib/supabase', () => ({
@@ -115,4 +116,3 @@ describe('ExcelPreview Component', () => {
     expect(screen.getByText(/failed to load excel file/i)).toBeInTheDocument();
   });
 });
-
