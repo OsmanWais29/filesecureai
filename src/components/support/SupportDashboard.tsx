@@ -8,6 +8,7 @@ import { mockSupportData } from "./mockSupportData";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface SupportDashboardProps {
   selectedCategory: string;
@@ -18,6 +19,7 @@ export const SupportDashboard = ({ selectedCategory, searchQuery }: SupportDashb
   const { theme } = useTheme();
   const isDarkMode = theme === 'dark';
   const [displayCount, setDisplayCount] = useState(5);
+  const navigate = useNavigate();
 
   // Filter topics based on category and search query
   const filteredTopics = mockSupportData.topics.filter(topic => 
@@ -38,8 +40,8 @@ export const SupportDashboard = ({ selectedCategory, searchQuery }: SupportDashb
   };
 
   const handleViewThread = (topicId: string) => {
-    // In a real app, this would navigate to the thread view
-    toast.success(`Viewing thread: ${topicId}`);
+    // Navigate to the thread view
+    navigate(`/support/${topicId}`);
   };
 
   return (
@@ -73,13 +75,13 @@ export const SupportDashboard = ({ selectedCategory, searchQuery }: SupportDashb
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
                     <Avatar className="h-6 w-6">
-                      <AvatarImage src={topic.author.avatar} alt={topic.author.name} />
+                      <AvatarImage src={topic.authorAvatar} alt={topic.authorName} />
                       <AvatarFallback>
                         <User className="h-3 w-3" />
                       </AvatarFallback>
                     </Avatar>
                     <span className="text-xs text-muted-foreground">
-                      Posted by {topic.author.name} • {topic.timestamp}
+                      Posted by {topic.authorName} • {topic.timestamp}
                     </span>
                   </div>
                   <Button 
