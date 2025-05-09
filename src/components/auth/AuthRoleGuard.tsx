@@ -27,15 +27,23 @@ export const AuthRoleGuard = ({
         if (userRole !== requiredRole) {
           console.log(`Role mismatch: User is ${userRole}, but route requires ${requiredRole}`);
           toast.error(`Unauthorized access. This area is for ${requiredRole}s only.`);
-          navigate(redirectPath, { replace: true });
+          
+          // Redirect to the appropriate portal based on user's actual role
+          if (userRole === 'trustee') {
+            navigate('/crm', { replace: true });
+          } else if (userRole === 'client') {
+            navigate('/client-portal', { replace: true });
+          } else {
+            // If role is unknown, redirect to login path provided
+            navigate(redirectPath, { replace: true });
+          }
         } else {
           console.log(`Role verified: User is ${userRole}, matching required role ${requiredRole}`);
         }
       } else {
-        // Not authenticated
-        console.log("User not authenticated, redirecting to login");
-        const loginPath = requiredRole === 'trustee' ? '/' : '/client-portal';
-        navigate(loginPath, { replace: true });
+        // Not authenticated, redirect to the correct login page
+        console.log(`User not authenticated, redirecting to ${redirectPath}`);
+        navigate(redirectPath, { replace: true });
       }
     }
   }, [user, loading, requiredRole, redirectPath, navigate]);

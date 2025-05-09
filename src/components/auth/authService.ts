@@ -12,6 +12,8 @@ interface SignUpData {
 
 export const authService = {
   async signUp({ email, password, fullName, userId, avatarUrl, userType = 'trustee' }: SignUpData) {
+    console.log(`Initiating signup for ${email} as ${userType}`);
+    
     // First, sign up the user
     const { error: signUpError, data } = await supabase.auth.signUp({
       email,
@@ -23,7 +25,7 @@ export const authService = {
           avatar_url: avatarUrl,
           user_type: userType,
         },
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: `${window.location.origin}${userType === 'trustee' ? '/login' : '/client-login'}`,
       }
     });
     
@@ -50,6 +52,8 @@ export const authService = {
   },
 
   async signIn(email: string, password: string, userType: 'trustee' | 'client' = 'trustee') {
+    console.log(`Attempting signin for ${email} as ${userType}`);
+    
     const { error, data } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -57,16 +61,23 @@ export const authService = {
     
     if (error) throw error;
     
+    console.log("Sign in successful, checking user type...");
+    console.log("User type from metadata:", data.user?.user_metadata?.user_type);
+    
     // Verify user type matches to prevent clients accessing trustee portal and vice versa
     if (data.user?.user_metadata?.user_type && data.user.user_metadata.user_type !== userType) {
+      console.log(`User type mismatch: expected ${userType}, got ${data.user.user_metadata.user_type}`);
       await supabase.auth.signOut();
       throw new Error(`Invalid account type. Please use the ${userType === 'trustee' ? 'Trustee' : 'Client'} Portal.`);
     }
     
+    console.log(`User type verified as ${userType}`);
     return data;
   },
 
   async signOut() {
+    console.log("Signing out user...");
+    
     // Clean up local storage and session storage
     try {
       localStorage.removeItem('supabase.auth.token');
@@ -79,9 +90,7 @@ export const authService = {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
     
-    // Force a full page reload to ensure all auth state is completely cleared
-    window.location.href = '/';
-    
+    console.log("Sign out successful");
     return true;
   }
 };
