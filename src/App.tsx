@@ -35,12 +35,12 @@ function App() {
       <Route path="/login" element={<Index />} />
 
       {/* Trustee-only routes - protected with role guard */}
-      <Route path="/trustee/dashboard" element={
+      <Route path="/crm" element={
         <AuthRoleGuard requiredRole="trustee" redirectPath="/client-portal">
           <CRMPage />
         </AuthRoleGuard>
       } />
-      <Route path="/crm" element={
+      <Route path="/trustee/dashboard" element={
         <AuthRoleGuard requiredRole="trustee" redirectPath="/client-portal">
           <CRMPage />
         </AuthRoleGuard>
@@ -110,7 +110,7 @@ function App() {
           <NewSupportTicket />
         </AuthRoleGuard>
       } />
-      <Route path="/support/post/:postId" element={
+      <Route path="/support/:postId" element={
         <AuthRoleGuard requiredRole="trustee" redirectPath="/client-portal">
           <SupportPostDetail />
         </AuthRoleGuard>

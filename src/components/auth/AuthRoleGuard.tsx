@@ -20,17 +20,23 @@ export const AuthRoleGuard = ({
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && user) {
-      const userRole = user.user_metadata?.user_type;
-      
-      if (userRole !== requiredRole) {
-        toast.error(`Unauthorized access. This area is for ${requiredRole}s only.`);
-        navigate(redirectPath, { replace: true });
+    if (!loading) {
+      if (user) {
+        const userRole = user.user_metadata?.user_type;
+        
+        if (userRole !== requiredRole) {
+          console.log(`Role mismatch: User is ${userRole}, but route requires ${requiredRole}`);
+          toast.error(`Unauthorized access. This area is for ${requiredRole}s only.`);
+          navigate(redirectPath, { replace: true });
+        } else {
+          console.log(`Role verified: User is ${userRole}, matching required role ${requiredRole}`);
+        }
+      } else {
+        // Not authenticated
+        console.log("User not authenticated, redirecting to login");
+        const loginPath = requiredRole === 'trustee' ? '/' : '/client-portal';
+        navigate(loginPath, { replace: true });
       }
-    } else if (!loading && !user) {
-      // Not authenticated
-      const loginPath = requiredRole === 'trustee' ? '/' : '/client-portal';
-      navigate(loginPath, { replace: true });
     }
   }, [user, loading, requiredRole, redirectPath, navigate]);
 

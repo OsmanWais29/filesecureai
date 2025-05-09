@@ -34,13 +34,20 @@ const Index = () => {
   const [isEmailConfirmationPending, setIsEmailConfirmationPending] = useState(false);
   const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
 
-  // Redirect client users to client portal
+  // Redirect users based on role
   useEffect(() => {
     if (user && !isLoading) {
       const userType = user.user_metadata?.user_type;
+      
+      // Redirect client users to client portal
       if (userType === 'client') {
         toast.info("Redirecting to Client Portal");
         navigate('/client-portal', { replace: true });
+      } 
+      // Redirect trustee users to trustee dashboard
+      else if (userType === 'trustee') {
+        toast.info("Redirecting to Trustee Dashboard");
+        navigate('/crm', { replace: true });
       }
     }
   }, [user, isLoading, navigate]);

@@ -34,9 +34,14 @@ export function useAuthState() {
 
   // Handle initial session loading
   useEffect(() => {
+    console.log("Initializing auth state listener...");
+    
     // Set up auth state listener FIRST 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, newSession) => {
+        console.log("Auth state changed:", _event);
+        console.log("User role:", newSession?.user?.user_metadata?.user_type);
+        
         setSession(newSession);
         setUser(newSession?.user ?? null);
       }
@@ -44,6 +49,11 @@ export function useAuthState() {
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      console.log("Retrieved current session:", currentSession ? "Exists" : "None");
+      if (currentSession?.user) {
+        console.log("User role from session:", currentSession.user.user_metadata?.user_type);
+      }
+      
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       setLoading(false);
@@ -64,10 +74,12 @@ export function useAuthState() {
    */
   const signOut = useCallback(async () => {
     try {
+      console.log("Signing out user...");
       await supabase.auth.signOut();
       setUser(null);
       setSession(null);
       toast.success('Signed out successfully');
+      console.log("Sign out successful");
     } catch (error) {
       console.error('Sign out error:', error);
       toast.error('Failed to sign out');

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
@@ -87,7 +86,9 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
           
           // Redirect to client portal after successful authentication
           if (user?.user_metadata?.user_type === 'client') {
-            navigate('/client/portal', { replace: true });
+            // Ensure we're using the correct route for client portal
+            navigate('/client-portal', { replace: true });
+            console.log("Redirecting client to /client-portal");
           } else {
             // If not client, sign out and show error
             await authService.signOut();

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
@@ -86,7 +85,9 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
           
           // Redirect based on user role
           if (user?.user_metadata?.user_type === 'trustee') {
-            navigate('/trustee/dashboard', { replace: true });
+            // Fix: Use /crm instead of /trustee/dashboard for trustee redirect
+            navigate('/crm', { replace: true });
+            console.log("Redirecting trustee to /crm");
           } else {
             // If not trustee, sign out and show error
             await authService.signOut();
