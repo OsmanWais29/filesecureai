@@ -6,8 +6,8 @@ import * as testingLibrary from '@testing-library/react';
 import { cleanup } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
 
-// Import directly to fix TypeScript errors
-import { screen, fireEvent, waitFor, within } from '@testing-library/react';
+// Import the specific utilities we need
+import { screen, fireEvent, waitFor, within, render } from '@testing-library/react';
 
 // Re-export testing library components to ensure they're available in tests
 export { 
@@ -16,7 +16,7 @@ export {
   waitFor, 
   within,
   render
-} from '@testing-library/react';
+};
 
 expect.extend(matchers);
 
