@@ -7,7 +7,7 @@ import { ConfirmationSentScreen } from '@/components/auth/ConfirmationSentScreen
 import { useAuthState } from '@/hooks/useAuthState';
 import { useState } from 'react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { InfoIcon } from 'lucide-react';
+import { InfoIcon, FileText, Calendar, MessageSquare, Lock } from 'lucide-react';
 
 const ClientLogin = () => {
   const [confirmationSent, setConfirmationSent] = useState(false);
@@ -57,7 +57,7 @@ const ClientLogin = () => {
               <Alert variant="default" className="bg-blue-50 border-blue-200">
                 <InfoIcon className="h-4 w-4 text-blue-500" />
                 <AlertDescription className="text-blue-700 text-sm">
-                  Keep track of your case progress, access important documents, and communicate securely with your trustee.
+                  Securely access your documents and communicate with your trustee in one place.
                 </AlertDescription>
               </Alert>
               <ClientPortalForm 
@@ -74,41 +74,33 @@ const ClientLogin = () => {
               Client Portal Access
             </h1>
             <p className="text-xl text-white/90">
-              Access your documents securely, communicate with your trustee, and track your case progress.
+              Your secure gateway to tracking your case progress and communicating with your trustee.
             </p>
             <div className="hidden md:block">
               <ul className="space-y-4">
                 <li className="flex items-center gap-3">
                   <div className="bg-white/20 p-2 rounded-full">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
+                    <FileText className="h-5 w-5" />
                   </div>
                   <span className="text-lg">View and download important documents</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="bg-white/20 p-2 rounded-full">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
+                    <Calendar className="h-5 w-5" />
                   </div>
                   <span className="text-lg">Schedule and manage appointments</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="bg-white/20 p-2 rounded-full">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
+                    <MessageSquare className="h-5 w-5" />
                   </div>
-                  <span className="text-lg">Track your case progress in real-time</span>
+                  <span className="text-lg">Communicate securely with your trustee</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="bg-white/20 p-2 rounded-full">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
+                    <Lock className="h-5 w-5" />
                   </div>
-                  <span className="text-lg">Communicate securely with your trustee</span>
+                  <span className="text-lg">Access your case details securely anytime</span>
                 </li>
               </ul>
             </div>

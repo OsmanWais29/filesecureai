@@ -30,6 +30,11 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
   const [occupation, setOccupation] = useState('');
   const [income, setIncome] = useState('');
   const [preferredContact, setPreferredContact] = useState('email');
+  // New fields
+  const [estateNumber, setEstateNumber] = useState('');
+  const [fileNumber, setFileNumber] = useState('');
+  const [location, setLocation] = useState('');
+  
   const [activeTab, setActiveTab] = useState<string>("signin");
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -45,7 +50,7 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
       password,
       isSignUp,
       fullName,
-      userId
+      ...(isSignUp && { estateNumber }) // Adding validation for estateNumber when signing up
     });
     
     if (!validation.isValid) {
@@ -77,7 +82,10 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
             address,
             occupation,
             income,
-            preferred_contact: preferredContact
+            preferred_contact: preferredContact,
+            estate_number: estateNumber,
+            file_number: fileNumber,
+            location: location
           }
         });
 
@@ -218,6 +226,12 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
               setIncome={setIncome}
               preferredContact={preferredContact}
               setPreferredContact={setPreferredContact}
+              estateNumber={estateNumber}
+              setEstateNumber={setEstateNumber}
+              fileNumber={fileNumber}
+              setFileNumber={setFileNumber}
+              location={location}
+              setLocation={setLocation}
             />
           </TabsContent>
           
