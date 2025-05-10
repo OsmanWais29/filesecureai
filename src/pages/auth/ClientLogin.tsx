@@ -53,7 +53,6 @@ const ClientLogin = () => {
             />
           ) : (
             <div className="space-y-4">
-              {/* Removed the overlapping alert that was here */}
               <ClientPortalForm 
                 onConfirmationSent={handleConfirmationSent}
                 onSwitchToTrusteePortal={handleSwitchToTrusteePortal}

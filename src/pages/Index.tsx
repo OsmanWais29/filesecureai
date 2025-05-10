@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { DocumentViewer } from "@/components/DocumentViewer";
@@ -46,17 +45,21 @@ const Index = () => {
         if (userType === 'client') {
           console.log("Redirecting client to Client Portal");
           navigate('/client-portal', { replace: true });
+          return null;
         } 
         // Redirect trustee users to trustee dashboard
         else if (userType === 'trustee') {
           console.log("Redirecting trustee to Trustee Dashboard");
           navigate('/crm', { replace: true });
+          return null;
         }
       } else {
         // If no user, redirect to client login as default
         navigate('/client-login', { replace: true });
+        return null;
       }
     }
+    return undefined;
   }, [user, isLoading, navigate]);
 
   // Handle document selection from state
@@ -176,12 +179,11 @@ const Index = () => {
             {session ? (
               <RecentlyAccessedPage />
             ) : (
-              // Fix: This section was causing the error TS2322 and TS1345
+              // This component ensures proper handling of null/undefined returns
               <div className="hidden">
-                {/* Use a JSX expression that returns ReactNode instead of void */}
                 {(() => {
                   navigate('/client-login', { replace: true });
-                  return null; // Return null (ReactNode) instead of void
+                  return null;
                 })()}
               </div>
             )}
