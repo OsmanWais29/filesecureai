@@ -7,7 +7,7 @@ import { ConfirmationSentScreen } from '@/components/auth/ConfirmationSentScreen
 import { useAuthState } from '@/hooks/useAuthState';
 import { useState } from 'react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { InfoIcon, FileText, Calendar, MessageSquare, Lock } from 'lucide-react';
+import { InfoIcon, FileText, Calendar, MessageSquare, Lock, ShieldCheck } from 'lucide-react';
 
 const ClientLogin = () => {
   const [confirmationSent, setConfirmationSent] = useState(false);
@@ -45,7 +45,7 @@ const ClientLogin = () => {
 
   return (
     <AuthLayout isClientPortal={true}>
-      <div className="flex flex-col md:flex-row items-center justify-center gap-8 w-full">
+      <div className="flex flex-col md:flex-row items-center justify-center gap-8 w-full max-w-7xl mx-auto">
         <div className="w-full md:w-1/2 lg:w-1/3 order-2 md:order-1">
           {confirmationSent ? (
             <ConfirmationSentScreen 
@@ -98,7 +98,7 @@ const ClientLogin = () => {
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="bg-white/20 p-2 rounded-full">
-                    <Lock className="h-5 w-5" />
+                    <ShieldCheck className="h-5 w-5" />
                   </div>
                   <span className="text-lg">Access your case details securely anytime</span>
                 </li>

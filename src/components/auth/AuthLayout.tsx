@@ -12,7 +12,7 @@ export const AuthLayout = ({ children, isClientPortal = false }: AuthLayoutProps
   const isClient = location.pathname === '/client-portal' || isClientPortal;
   
   const bgGradient = isClient 
-    ? "from-blue-700 via-blue-600 to-blue-500" 
+    ? "from-blue-800 via-blue-700 to-blue-600" 
     : "from-background to-secondary/30";
 
   return (
@@ -33,7 +33,7 @@ export const AuthLayout = ({ children, isClientPortal = false }: AuthLayoutProps
             className="h-10 sm:h-12 md:h-16"
           />
           {isClient && (
-            <div className="bg-white text-blue-700 text-xs px-2 py-1 rounded font-bold">
+            <div className="bg-white text-blue-700 text-xs px-2 py-1 rounded font-bold shadow-sm">
               CLIENT PORTAL
             </div>
           )}
