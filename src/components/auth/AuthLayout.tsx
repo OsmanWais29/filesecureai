@@ -34,7 +34,7 @@ export const AuthLayout = ({ children, isClientPortal = false }: AuthLayoutProps
             className={`h-10 sm:h-12 md:h-16 ${isClient ? "filter brightness-0 invert" : ""}`}
           />
           {isClient && (
-            <div className="bg-white text-blue-700 text-xs px-2 py-1 rounded font-bold shadow-sm mt-2">
+            <div className="mt-2 bg-white text-blue-700 text-xs sm:text-sm px-3 py-1.5 rounded-md font-bold shadow-md">
               CLIENT PORTAL
             </div>
           )}
