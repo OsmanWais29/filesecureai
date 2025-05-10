@@ -11,12 +11,13 @@ export const AuthLayout = ({ children, isClientPortal = false }: AuthLayoutProps
   const location = useLocation();
   const isClient = location.pathname === '/client-portal' || isClientPortal;
   
+  // Updated gradient colors to better blend with the logo
   const bgGradient = isClient 
-    ? "from-blue-800 via-blue-700 to-blue-600" 
+    ? "from-blue-900 via-blue-800 to-blue-700" 
     : "from-background to-secondary/30";
 
   return (
-    <div className={`flex min-h-screen items-center justify-center bg-gradient-to-br ${bgGradient} p-4`}>
+    <div className={`flex flex-col min-h-screen bg-gradient-to-br ${bgGradient}`}>
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-10" 
         style={{
@@ -39,11 +40,12 @@ export const AuthLayout = ({ children, isClientPortal = false }: AuthLayoutProps
           )}
         </div>
       </div>
-      <div className="container relative z-20 max-w-[1200px] px-4">
+      
+      <div className="container flex-grow relative z-20 max-w-[1200px] px-4 py-16">
         {children}
       </div>
       
-      <div className="absolute bottom-4 left-0 right-0 text-center text-white/70 text-xs">
+      <div className="w-full py-4 text-center text-white/70 text-xs z-10">
         <p>&copy; {new Date().getFullYear()} SecureFiles AI. All rights reserved.</p>
       </div>
     </div>
