@@ -34,9 +34,9 @@ export const AuthRoleGuard = ({
   requiredRole, 
   redirectPath 
 }: AuthRoleGuardProps) => {
-  const { user, loading } = useAuthState();
+  const { user, loading, subdomain } = useAuthState();
   const navigate = useNavigate();
-  const [subdomain, setSubdomain] = useState<string | null>(null);
+  const [isValidating, setIsValidating] = useState(true);
 
   // Detect subdomain on mount
   useEffect(() => {
@@ -45,6 +45,8 @@ export const AuthRoleGuard = ({
 
   useEffect(() => {
     if (!loading) {
+      setIsValidating(true);
+      
       if (user) {
         const userRole = user.user_metadata?.user_type;
         
@@ -99,6 +101,7 @@ export const AuthRoleGuard = ({
           }
         } else {
           console.log(`Role verified: User is ${userRole}, matching required role ${requiredRole}`);
+          setIsValidating(false);
         }
       } else {
         // Not authenticated, redirect to the correct login page based on subdomain
@@ -108,7 +111,7 @@ export const AuthRoleGuard = ({
     }
   }, [user, loading, requiredRole, redirectPath, navigate, subdomain]);
 
-  if (loading) {
+  if (loading || isValidating) {
     return (
       <div className="h-screen w-full flex items-center justify-center">
         <LoadingSpinner />

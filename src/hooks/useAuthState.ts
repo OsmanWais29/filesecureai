@@ -25,12 +25,39 @@ export async function refreshSession(): Promise<boolean> {
 }
 
 /**
+ * Helper function to detect subdomain
+ */
+export function getSubdomain(): string | null {
+  const hostname = window.location.hostname;
+  
+  // For localhost testing
+  if (hostname === 'localhost') {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('subdomain');
+  }
+  
+  // For actual domain with subdomains
+  const hostParts = hostname.split('.');
+  if (hostParts.length > 2) {
+    return hostParts[0];
+  }
+  
+  return null;
+}
+
+/**
  * Hook for managing authentication state
  */
 export function useAuthState() {
   const [user, setUser] = useState(null);
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [subdomain, setSubdomain] = useState<string | null>(null);
+
+  // Detect subdomain on mount
+  useEffect(() => {
+    setSubdomain(getSubdomain());
+  }, []);
 
   // Handle initial session loading
   useEffect(() => {
@@ -40,7 +67,17 @@ export function useAuthState() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, newSession) => {
         console.log("Auth state changed:", _event);
-        console.log("User role:", newSession?.user?.user_metadata?.user_type);
+        if (newSession?.user) {
+          console.log("User role:", newSession.user.user_metadata?.user_type);
+
+          // Check if user type matches subdomain
+          const userType = newSession.user.user_metadata?.user_type;
+          if (subdomain === 'client' && userType !== 'client') {
+            console.warn("User type mismatch: Trustee account on client subdomain");
+          } else if (subdomain !== 'client' && userType !== 'trustee') {
+            console.warn("User type mismatch: Client account on trustee subdomain");
+          }
+        }
         
         setSession(newSession);
         setUser(newSession?.user ?? null);
@@ -60,7 +97,7 @@ export function useAuthState() {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [subdomain]);
 
   /**
    * Refresh the session explicitly
@@ -80,17 +117,25 @@ export function useAuthState() {
       setSession(null);
       toast.success('Signed out successfully');
       console.log("Sign out successful");
+
+      // Redirect to the correct login page based on subdomain after signout
+      if (subdomain === 'client') {
+        window.location.href = '/login';
+      } else {
+        window.location.href = '/login';
+      }
     } catch (error) {
       console.error('Sign out error:', error);
       toast.error('Failed to sign out');
     }
-  }, []);
+  }, [subdomain]);
 
   return {
     user,
     session,
     loading,
     refreshSession: refreshSessionCallback,
-    signOut
+    signOut,
+    subdomain
   };
 }

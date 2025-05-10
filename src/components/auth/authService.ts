@@ -55,7 +55,7 @@ export const authService = {
       password,
       options: {
         data: userData,
-        emailRedirectTo: `${window.location.origin}${userType === 'trustee' ? '/login' : '/login'}`,
+        emailRedirectTo: `${window.location.origin}/login`,
       }
     });
     
@@ -63,25 +63,32 @@ export const authService = {
 
     // Only create profile if we have a user
     if (data?.user) {
-      // Create profile for the user even though they haven't confirmed email yet
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .upsert({
-          id: data.user.id,
-          full_name: fullName,
-          user_id: userId,
-          avatar_url: avatarUrl,
-          email: email,
-          user_type: userType,
-          // Add additional profile data if present in metadata
-          phone: metadata?.phone,
-          address: metadata?.address,
-          occupation: metadata?.occupation,
-          income: metadata?.income,
-          preferred_contact: metadata?.preferred_contact
-        });
+      try {
+        // Create profile for the user even though they haven't confirmed email yet
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: data.user.id,
+            full_name: fullName,
+            user_id: userId,
+            avatar_url: avatarUrl,
+            email: email,
+            user_type: userType,
+            // Add additional profile data if present in metadata
+            phone: metadata?.phone,
+            address: metadata?.address,
+            occupation: metadata?.occupation,
+            income: metadata?.income,
+            preferred_contact: metadata?.preferred_contact
+          });
 
-      if (profileError) throw profileError;
+        if (profileError) {
+          console.error("Profile creation error:", profileError);
+        }
+      } catch (profileError) {
+        console.error("Failed to create profile:", profileError);
+        // We don't throw here to ensure signup still completes
+      }
     }
 
     return data;
@@ -104,13 +111,14 @@ export const authService = {
     if (error) throw error;
     
     console.log("Sign in successful, checking user type...");
-    console.log("User type from metadata:", data.user?.user_metadata?.user_type);
+    const userMetadataType = data.user?.user_metadata?.user_type;
+    console.log("User type from metadata:", userMetadataType);
     
     // Verify user type matches to prevent clients accessing trustee portal and vice versa
-    if (data.user?.user_metadata?.user_type && data.user.user_metadata.user_type !== userType) {
-      console.log(`User type mismatch: expected ${userType}, got ${data.user.user_metadata.user_type}`);
+    if (userMetadataType && userMetadataType !== userType) {
+      console.log(`User type mismatch: expected ${userType}, got ${userMetadataType}`);
       await supabase.auth.signOut();
-      throw new Error(`Invalid account type. Please use the ${userType === 'trustee' ? 'Trustee' : 'Client'} Portal.`);
+      throw new Error(`This account cannot access the ${userType === 'trustee' ? 'Trustee' : 'Client'} Portal. Please use the correct portal for your account type.`);
     }
     
     console.log(`User type verified as ${userType}`);
@@ -133,6 +141,15 @@ export const authService = {
     if (error) throw error;
     
     console.log("Sign out successful");
+    
+    // Redirect based on subdomain
+    const subdomain = getSubdomain();
+    if (subdomain === 'client') {
+      window.location.href = '/login';
+    } else {
+      window.location.href = '/login';
+    }
+    
     return true;
   }
 };

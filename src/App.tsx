@@ -6,6 +6,7 @@ import { AuthRoleGuard } from "./components/auth/AuthRoleGuard";
 import TrusteeLogin from "./pages/auth/TrusteeLogin";
 import ClientLogin from "./pages/auth/ClientLogin";
 import { useEffect, useState } from "react";
+import { useAuthState } from "@/hooks/useAuthState";
 
 // Import from the trustee folder
 import Index from "./pages/trustee/Index";
@@ -30,40 +31,15 @@ import SAFAPage from "./pages/SAFA/SAFAPage";
 
 import "./App.css";
 
-// Helper function to detect subdomain
-const getSubdomain = (): string | null => {
-  const hostParts = window.location.hostname.split('.');
-  
-  // For localhost testing
-  if (hostParts.includes('localhost')) {
-    // Check if a subdomain is being simulated with localhost:3000?subdomain=client
-    const urlParams = new URLSearchParams(window.location.search);
-    const subdomain = urlParams.get('subdomain');
-    return subdomain;
-  }
-  
-  // For actual domain with subdomains
-  if (hostParts.length > 2) {
-    return hostParts[0];
-  }
-  
-  return null;
-};
-
 function App() {
-  const [subdomain, setSubdomain] = useState<string | null>(null);
+  const { subdomain } = useAuthState();
   
-  useEffect(() => {
-    // Set the subdomain on initial load and when URL changes
-    setSubdomain(getSubdomain());
-  }, []);
-
   // If subdomain is 'client', show client routes
   if (subdomain === 'client') {
     return (
       <Routes>
         {/* Client routes */}
-        <Route path="/" element={<ClientLogin />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<ClientLogin />} />
         
         {/* Client portal routes - use the ClientPortal layout with role guard */}
@@ -72,6 +48,11 @@ function App() {
             <ClientPortal />
           </AuthRoleGuard>
         } />
+        
+        {/* Redirect any attempt to access trustee routes */}
+        <Route path="/crm" element={<Navigate to="/login" replace />} />
+        <Route path="/trustee/*" element={<Navigate to="/login" replace />} />
+        <Route path="/documents" element={<Navigate to="/login" replace />} />
         
         {/* 404 catch-all route */}
         <Route path="*" element={<NotFound />} />
@@ -83,13 +64,14 @@ function App() {
   return (
     <Routes>
       {/* Root route now redirects to appropriate login */}
-      <Route path="/" element={<TrusteeLogin />} />
+      <Route path="/" element={<Navigate to="/login" replace />} />
       
       {/* Separate login routes for trustee */}
       <Route path="/login" element={<TrusteeLogin />} />
       
       {/* Redirect client login attempts on trustee subdomain */}
-      <Route path="/client-login" element={<Navigate to="/" replace />} />
+      <Route path="/client-login" element={<Navigate to="/login" replace />} />
+      <Route path="/portal/*" element={<Navigate to="/login" replace />} />
 
       {/* Trustee-only routes - protected with role guard */}
       <Route path="/crm" element={

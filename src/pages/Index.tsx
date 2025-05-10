@@ -22,6 +22,7 @@ const Index = () => {
   const [documentTitle, setDocumentTitle] = useState<string | null>(null);
   const [isForm47, setIsForm47] = useState<boolean>(false);
   const [loadFailed, setLoadFailed] = useState<boolean>(false);
+  const [subdomain, setSubdomain] = useState<string | null>(null);
   
   const location = useLocation();
   const navigate = useNavigate();
@@ -33,34 +34,91 @@ const Index = () => {
   const [isEmailConfirmationPending, setIsEmailConfirmationPending] = useState(false);
   const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
 
-  // Redirect users based on role or to client login by default
+  // Detect subdomain for routing
   useEffect(() => {
-    // If loading is complete and we don't have a user, redirect to client login
+    const hostname = window.location.hostname;
+    const isLocalhost = hostname === 'localhost';
+    
+    if (isLocalhost) {
+      const urlParams = new URLSearchParams(window.location.search);
+      setSubdomain(urlParams.get('subdomain'));
+    } else {
+      const hostParts = hostname.split('.');
+      if (hostParts.length > 2) {
+        setSubdomain(hostParts[0]);
+      }
+    }
+  }, []);
+
+  // Redirect users based on role or to appropriate login page
+  useEffect(() => {
     if (!isLoading) {
+      // If user is authenticated
       if (user) {
         const userType = user.user_metadata?.user_type;
         console.log("User authenticated, type:", userType);
         
-        // Redirect client users to client portal
+        // User is authenticated as client
         if (userType === 'client') {
-          console.log("Redirecting client to Client Portal");
-          navigate('/client-portal', { replace: true });
-          return null;
+          // If on client subdomain, go to portal
+          if (subdomain === 'client') {
+            navigate('/portal', { replace: true });
+          } 
+          // If on trustee subdomain with client account, redirect to client subdomain
+          else {
+            console.log("Client account detected on trustee subdomain, redirecting");
+            const hostname = window.location.hostname;
+            if (hostname === 'localhost') {
+              window.location.href = window.location.origin + '?subdomain=client';
+            } else {
+              const hostParts = hostname.split('.');
+              if (hostParts.length > 2) {
+                hostParts[0] = 'client';
+                window.location.href = `https://${hostParts.join('.')}`;
+              } else {
+                window.location.href = `https://client.${hostname}`;
+              }
+            }
+          }
+          return;
         } 
-        // Redirect trustee users to trustee dashboard
+        // User is authenticated as trustee
         else if (userType === 'trustee') {
-          console.log("Redirecting trustee to Trustee Dashboard");
-          navigate('/crm', { replace: true });
-          return null;
+          // If on trustee subdomain, go to dashboard
+          if (subdomain !== 'client') {
+            navigate('/crm', { replace: true });
+          }
+          // If on client subdomain with trustee account, redirect to trustee subdomain
+          else {
+            console.log("Trustee account detected on client subdomain, redirecting");
+            const hostname = window.location.hostname;
+            if (hostname === 'localhost') {
+              window.location.href = window.location.origin + '?subdomain=trustee';
+            } else {
+              const hostParts = hostname.split('.');
+              if (hostParts.length > 2) {
+                hostParts[0] = 'trustee';
+                window.location.href = `https://${hostParts.join('.')}`;
+              } else {
+                window.location.href = `https://trustee.${hostname}`;
+              }
+            }
+          }
+          return;
         }
-      } else {
-        // If no user, redirect to client login as default
-        navigate('/client-login', { replace: true });
-        return null;
+      } 
+      // User is not authenticated
+      else {
+        // Redirect to the appropriate login page based on subdomain
+        if (subdomain === 'client') {
+          navigate('/login', { replace: true });
+        } else {
+          navigate('/login', { replace: true });
+        }
+        return;
       }
     }
-    return undefined;
-  }, [user, isLoading, navigate]);
+  }, [user, isLoading, navigate, subdomain]);
 
   // Handle document selection from state
   useEffect(() => {
@@ -179,10 +237,14 @@ const Index = () => {
             {session ? (
               <RecentlyAccessedPage />
             ) : (
-              // This component ensures proper handling of null/undefined returns
               <div className="hidden">
                 {(() => {
-                  navigate('/client-login', { replace: true });
+                  // Dynamic redirect based on subdomain
+                  if (subdomain === 'client') {
+                    navigate('/login', { replace: true });
+                  } else {
+                    navigate('/login', { replace: true });
+                  }
                   return null;
                 })()}
               </div>
