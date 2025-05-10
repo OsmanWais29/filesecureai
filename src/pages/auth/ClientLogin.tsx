@@ -44,7 +44,7 @@ const ClientLogin = () => {
 
   return (
     <AuthLayout isClientPortal={true}>
-      <div className="flex flex-col md:flex-row items-center justify-center gap-8 w-full max-w-7xl mx-auto">
+      <div className="flex flex-col md:flex-row items-center justify-center gap-8 w-full max-w-7xl mx-auto mt-8 md:mt-12">
         <div className="w-full md:w-1/2 lg:w-1/3 order-2 md:order-1">
           {confirmationSent ? (
             <ConfirmationSentScreen 
