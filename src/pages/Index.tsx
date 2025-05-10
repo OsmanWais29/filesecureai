@@ -176,9 +176,13 @@ const Index = () => {
             {session ? (
               <RecentlyAccessedPage />
             ) : (
-              // Redirect to login (this should not be visible anymore due to the redirect)
+              // Fix: This section was causing the error TS2322 and TS1345
               <div className="hidden">
-                {navigate('/client-login', { replace: true })}
+                {/* Use a JSX expression that returns ReactNode instead of void */}
+                {(() => {
+                  navigate('/client-login', { replace: true });
+                  return null; // Return null (ReactNode) instead of void
+                })()}
               </div>
             )}
           </MainLayout>
