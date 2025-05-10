@@ -1,4 +1,3 @@
-
 import { Routes, Route } from "react-router-dom";
 import NotFound from "./pages/NotFound";
 import ClientPortal from "./pages/ClientPortal";
@@ -32,8 +31,8 @@ import "./App.css";
 function App() {
   return (
     <Routes>
-      {/* Public routes - accessible without authentication */}
-      <Route path="/" element={<Index />} />
+      {/* Root route now redirects straight to client login by default */}
+      <Route path="/" element={<ClientLogin />} />
       
       {/* Separate login routes for trustee and client */}
       <Route path="/login" element={<TrusteeLogin />} />

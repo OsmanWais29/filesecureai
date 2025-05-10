@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { DocumentViewer } from "@/components/DocumentViewer";
@@ -19,7 +18,7 @@ import { useIsTablet } from "@/hooks/use-tablet";
 
 const Index = () => {
   const [selectedDocument, setSelectedDocument] = useState<string | null>(null);
-  const [documentKey, setDocumentKey] = useState<number>(0); // Key for forcing re-render
+  const [documentKey, setDocumentKey] = useState<number>(0);
   const [documentTitle, setDocumentTitle] = useState<string | null>(null);
   const [isForm47, setIsForm47] = useState<boolean>(false);
   const [loadFailed, setLoadFailed] = useState<boolean>(false);
@@ -34,25 +33,32 @@ const Index = () => {
   const [isEmailConfirmationPending, setIsEmailConfirmationPending] = useState(false);
   const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
 
-  // Redirect users based on role
+  // Redirect users based on role or to client login by default
   useEffect(() => {
-    if (user && !isLoading) {
-      const userType = user.user_metadata?.user_type;
-      console.log("User authenticated, type:", userType);
-      
-      // Redirect client users to client portal
-      if (userType === 'client') {
-        console.log("Redirecting client to Client Portal");
-        navigate('/client-portal', { replace: true });
-      } 
-      // Redirect trustee users to trustee dashboard
-      else if (userType === 'trustee') {
-        console.log("Redirecting trustee to Trustee Dashboard");
-        navigate('/crm', { replace: true });
+    // If loading is complete and we don't have a user, redirect to client login
+    if (!isLoading) {
+      if (user) {
+        const userType = user.user_metadata?.user_type;
+        console.log("User authenticated, type:", userType);
+        
+        // Redirect client users to client portal
+        if (userType === 'client') {
+          console.log("Redirecting client to Client Portal");
+          navigate('/client-portal', { replace: true });
+        } 
+        // Redirect trustee users to trustee dashboard
+        else if (userType === 'trustee') {
+          console.log("Redirecting trustee to Trustee Dashboard");
+          navigate('/crm', { replace: true });
+        }
+      } else {
+        // If no user, redirect to client login as default
+        navigate('/client-login', { replace: true });
       }
     }
   }, [user, isLoading, navigate]);
 
+  // Handle document selection from state
   useEffect(() => {
     if (location.state?.selectedDocument) {
       console.log("Setting selected document from location state:", location.state.selectedDocument);
