@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { User, UserSquare, Phone, Home, Briefcase, CreditCard, FileText, MapPin } from "lucide-react";
 import { useState } from 'react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ClientSignUpFieldsProps {
   fullName: string;
@@ -24,7 +25,7 @@ interface ClientSignUpFieldsProps {
   setIncome: (value: string) => void;
   preferredContact: string;
   setPreferredContact: (value: string) => void;
-  // New fields
+  // Estate information fields
   estateNumber: string;
   setEstateNumber: (value: string) => void;
   fileNumber: string;
@@ -32,6 +33,24 @@ interface ClientSignUpFieldsProps {
   location: string;
   setLocation: (value: string) => void;
 }
+
+// OSB Division offices for the dropdown
+const OSB_DIVISION_OFFICES = [
+  { value: "toronto", label: "Toronto (31)", code: "31" },
+  { value: "vancouver", label: "Vancouver (21)", code: "21" },
+  { value: "winnipeg", label: "Winnipeg (41)", code: "41" },
+  { value: "montreal", label: "Montreal (11)", code: "11" },
+  { value: "halifax", label: "Halifax (51)", code: "51" },
+  { value: "calgary", label: "Calgary (22)", code: "22" },
+  { value: "edmonton", label: "Edmonton (23)", code: "23" },
+  { value: "ottawa", label: "Ottawa (32)", code: "32" },
+  { value: "hamilton", label: "Hamilton (33)", code: "33" },
+  { value: "london", label: "London (34)", code: "34" },
+  { value: "regina", label: "Regina (42)", code: "42" },
+  { value: "saskatoon", label: "Saskatoon (43)", code: "43" },
+  { value: "quebec", label: "Quebec (12)", code: "12" },
+  { value: "other", label: "Other", code: "" },
+];
 
 export const ClientSignUpFields = ({
   fullName,
@@ -74,8 +93,8 @@ export const ClientSignUpFields = ({
         }
         break;
       case 'estateNumber':
-        if (!value.trim()) {
-          newErrors.estateNumber = 'Estate number is required';
+        if (value.trim() && !/^\d{2}-\d{5}$/.test(value.trim())) {
+          newErrors.estateNumber = 'Estate number format should be ##-##### (e.g., 31-12345)';
         } else {
           delete newErrors.estateNumber;
         }
@@ -92,6 +111,40 @@ export const ClientSignUpFields = ({
     }
     
     setErrors(newErrors);
+  };
+
+  // Format the estate number as user types to enforce ##-##### pattern
+  const handleEstateNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/[^\d-]/g, '');
+    
+    // Ensure we have the hyphen in the right place
+    if (value.length >= 2 && !value.includes('-')) {
+      value = `${value.substring(0, 2)}-${value.substring(2)}`;
+    }
+    
+    // Limit to ##-##### format (max 8 chars including hyphen)
+    if (value.length > 8) {
+      value = value.substring(0, 8);
+    }
+    
+    setEstateNumber(value);
+    validateField('estateNumber', value);
+  };
+
+  // Update estate number prefix based on selected office
+  const handleOfficeChange = (officeValue: string) => {
+    setLocation(officeValue);
+    
+    // Find the selected office
+    const selectedOffice = OSB_DIVISION_OFFICES.find(office => office.value === officeValue);
+    
+    if (selectedOffice && selectedOffice.code) {
+      // Update the estate number prefix while preserving any existing number
+      const currentParts = estateNumber.split('-');
+      const currentNumber = currentParts.length > 1 ? currentParts[1] : '';
+      
+      setEstateNumber(`${selectedOffice.code}-${currentNumber}`);
+    }
   };
 
   return (
@@ -139,37 +192,60 @@ export const ClientSignUpFields = ({
         </div>
       </div>
       
-      {/* Estate Information */}
-      <div className="p-4 border border-blue-100 rounded-md bg-blue-50/50">
-        <h3 className="text-sm font-medium text-blue-700 mb-3">Estate Information</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Estate Information - highlighted as primary section */}
+      <div className="p-4 border border-blue-200 rounded-md bg-blue-50/70 shadow-sm">
+        <h3 className="text-sm font-medium text-blue-700 mb-3">Estate and Case Details</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="estateNumber" className="text-sm font-medium flex items-center gap-1.5 text-blue-700">
-              <FileText className="h-3.5 w-3.5" />
-              Estate Number <span className="text-red-500">*</span>
-            </Label>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="estateNumber" className="text-sm font-medium text-blue-700 flex items-center">
+                <FileText className="h-3.5 w-3.5 mr-1.5" />
+                Estate Number 
+              </Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-blue-200 bg-blue-100 text-xs font-semibold text-blue-700">?</span>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs text-xs">
+                    <p>Provided by your trustee; a 7-digit unique number starting with a two-digit Division Office code (e.g., 31 for Toronto).</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <Input
               id="estateNumber"
               type="text"
               value={estateNumber}
-              onChange={(e) => {
-                setEstateNumber(e.target.value);
-                validateField('estateNumber', e.target.value);
-              }}
-              placeholder="e.g., EST-12345"
+              onChange={handleEstateNumberChange}
+              placeholder="e.g., 31-12345"
               className="w-full rounded-md border border-blue-200 bg-background/50 px-3 py-2 text-sm"
-              required
             />
             {errors.estateNumber && (
               <p className="text-xs text-red-500 mt-1">{errors.estateNumber}</p>
             )}
+            <p className="text-xs text-muted-foreground mt-1">
+              Format: ##-##### (Division code-Estate number)
+            </p>
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="fileNumber" className="text-sm font-medium flex items-center gap-1.5 text-blue-700">
-              <FileText className="h-3.5 w-3.5" />
-              File Number
-            </Label>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="fileNumber" className="text-sm font-medium text-blue-700 flex items-center">
+                <FileText className="h-3.5 w-3.5 mr-1.5" />
+                File Number
+              </Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-blue-200 bg-blue-100 text-xs font-semibold text-blue-700">?</span>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs text-xs">
+                    <p>The internal file number given by your trustee, used for quick referencing your case.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <Input
               id="fileNumber"
               type="text"
@@ -179,21 +255,43 @@ export const ClientSignUpFields = ({
               className="w-full rounded-md border border-blue-200 bg-background/50 px-3 py-2 text-sm"
             />
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="location" className="text-sm font-medium flex items-center gap-1.5 text-blue-700">
-              <MapPin className="h-3.5 w-3.5" />
-              Location
+        </div>
+        
+        <div className="mt-4">
+          <div className="flex items-center gap-1.5">
+            <Label htmlFor="location" className="text-sm font-medium text-blue-700 flex items-center">
+              <MapPin className="h-3.5 w-3.5 mr-1.5" />
+              Trustee Office Location
             </Label>
-            <Input
-              id="location"
-              type="text"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="e.g., Toronto"
-              className="w-full rounded-md border border-blue-200 bg-background/50 px-3 py-2 text-sm"
-            />
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-blue-200 bg-blue-100 text-xs font-semibold text-blue-700">?</span>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs text-xs">
+                  <p>Select the OSB division office handling your case. This helps validate your Estate Number.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
+          <Select 
+            value={location} 
+            onValueChange={handleOfficeChange}
+          >
+            <SelectTrigger className="w-full border-blue-200 mt-2">
+              <SelectValue placeholder="Select trustee office location" />
+            </SelectTrigger>
+            <SelectContent>
+              {OSB_DIVISION_OFFICES.map((office) => (
+                <SelectItem key={office.value} value={office.value}>
+                  {office.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground mt-1">
+            Optional but recommended - helps validate your Estate Number
+          </p>
         </div>
       </div>
       
