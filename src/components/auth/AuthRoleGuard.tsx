@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthState } from '@/hooks/useAuthState';
@@ -34,9 +35,10 @@ export const AuthRoleGuard = ({
   requiredRole, 
   redirectPath 
 }: AuthRoleGuardProps) => {
-  const { user, loading, subdomain } = useAuthState();
+  const { user, loading } = useAuthState();
   const navigate = useNavigate();
   const [isValidating, setIsValidating] = useState(true);
+  const [subdomain, setSubdomain] = useState<string | null>(null);
 
   // Detect subdomain on mount
   useEffect(() => {
