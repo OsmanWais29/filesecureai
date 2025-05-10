@@ -31,7 +31,7 @@ export const AuthLayout = ({ children, isClientPortal = false }: AuthLayoutProps
           <img 
             src="/lovable-uploads/01eb992b-a293-4ef9-a5ff-fa81da6a95ed.png" 
             alt="SecureFiles AI" 
-            className="h-10 sm:h-12 md:h-16"
+            className={`h-10 sm:h-12 md:h-16 ${isClient ? "filter brightness-0 invert" : ""}`}
           />
           {isClient && (
             <div className="bg-white text-blue-700 text-xs px-2 py-1 rounded font-bold shadow-sm">
