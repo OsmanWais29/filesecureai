@@ -6,8 +6,7 @@ import { ClientPortalForm } from '@/components/auth/ClientPortalForm';
 import { ConfirmationSentScreen } from '@/components/auth/ConfirmationSentScreen';
 import { useAuthState } from '@/hooks/useAuthState';
 import { useState } from 'react';
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { InfoIcon, FileText, Calendar, MessageSquare, ShieldCheck, Lock } from 'lucide-react';
+import { FileText, Calendar, MessageSquare, ShieldCheck } from 'lucide-react';
 
 const ClientLogin = () => {
   const [confirmationSent, setConfirmationSent] = useState(false);
@@ -54,12 +53,7 @@ const ClientLogin = () => {
             />
           ) : (
             <div className="space-y-4">
-              <Alert variant="default" className="bg-blue-100/80 border-blue-300">
-                <ShieldCheck className="h-4 w-4 text-blue-600" />
-                <AlertDescription className="text-blue-800 text-sm">
-                  Securely access your documents and communicate with your trustee in one place.
-                </AlertDescription>
-              </Alert>
+              {/* Removed the Alert component that was overlapping with the logo */}
               <ClientPortalForm 
                 onConfirmationSent={handleConfirmationSent}
                 onSwitchToTrusteePortal={handleSwitchToTrusteePortal}

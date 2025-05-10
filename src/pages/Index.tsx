@@ -177,8 +177,9 @@ const Index = () => {
               <RecentlyAccessedPage />
             ) : (
               // Redirect to login (this should not be visible anymore due to the redirect)
-              <div className="hidden">
-                {navigate('/client-login', { replace: true })}
+              <div>
+                {/* Fix the TypeScript error by returning null inside a fragment */}
+                {navigate('/client-login', { replace: true }) && null}
               </div>
             )}
           </MainLayout>
