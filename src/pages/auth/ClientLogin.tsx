@@ -6,6 +6,8 @@ import { ClientPortalForm } from '@/components/auth/ClientPortalForm';
 import { ConfirmationSentScreen } from '@/components/auth/ConfirmationSentScreen';
 import { useAuthState } from '@/hooks/useAuthState';
 import { useState } from 'react';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { InfoIcon } from 'lucide-react';
 
 const ClientLogin = () => {
   const [confirmationSent, setConfirmationSent] = useState(false);
@@ -51,10 +53,18 @@ const ClientLogin = () => {
               onBackToSignIn={handleBackToSignIn}
             />
           ) : (
-            <ClientPortalForm 
-              onConfirmationSent={handleConfirmationSent}
-              onSwitchToTrusteePortal={handleSwitchToTrusteePortal}
-            />
+            <div className="space-y-4">
+              <Alert variant="default" className="bg-blue-50 border-blue-200">
+                <InfoIcon className="h-4 w-4 text-blue-500" />
+                <AlertDescription className="text-blue-700 text-sm">
+                  Keep track of your case progress, access important documents, and communicate securely with your trustee.
+                </AlertDescription>
+              </Alert>
+              <ClientPortalForm 
+                onConfirmationSent={handleConfirmationSent}
+                onSwitchToTrusteePortal={handleSwitchToTrusteePortal}
+              />
+            </div>
           )}
         </div>
         
@@ -67,38 +77,38 @@ const ClientLogin = () => {
               Access your documents securely, communicate with your trustee, and track your case progress.
             </p>
             <div className="hidden md:block">
-              <ul className="space-y-2">
-                <li className="flex items-center gap-2">
-                  <div className="bg-white/20 p-1 rounded-full">
+              <ul className="space-y-4">
+                <li className="flex items-center gap-3">
+                  <div className="bg-white/20 p-2 rounded-full">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                   </div>
-                  <span>View and download important documents</span>
+                  <span className="text-lg">View and download important documents</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <div className="bg-white/20 p-1 rounded-full">
+                <li className="flex items-center gap-3">
+                  <div className="bg-white/20 p-2 rounded-full">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                   </div>
-                  <span>Schedule and manage appointments</span>
+                  <span className="text-lg">Schedule and manage appointments</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <div className="bg-white/20 p-1 rounded-full">
+                <li className="flex items-center gap-3">
+                  <div className="bg-white/20 p-2 rounded-full">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                   </div>
-                  <span>Track your case progress in real-time</span>
+                  <span className="text-lg">Track your case progress in real-time</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <div className="bg-white/20 p-1 rounded-full">
+                <li className="flex items-center gap-3">
+                  <div className="bg-white/20 p-2 rounded-full">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                   </div>
-                  <span>Communicate securely with your trustee</span>
+                  <span className="text-lg">Communicate securely with your trustee</span>
                 </li>
               </ul>
             </div>

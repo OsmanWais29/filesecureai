@@ -4,12 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Lock, AlertTriangle, Mail, UserPlus, ArrowRight, Check } from 'lucide-react';
-import { SignUpFields } from './SignUpFields';
+import { ClientSignUpFields } from './ClientSignUpFields';
 import { AuthFields } from './AuthFields';
 import { validateAuthForm } from './authValidation';
 import { authService } from './authService';
 import { useRateLimiting } from './hooks/useRateLimiting';
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ClientPortalFormProps {
   onConfirmationSent: (email: string) => void;
@@ -24,13 +25,20 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
   const [fullName, setFullName] = useState('');
   const [userId, setUserId] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [occupation, setOccupation] = useState('');
+  const [income, setIncome] = useState('');
+  const [preferredContact, setPreferredContact] = useState('email');
+  const [activeTab, setActiveTab] = useState<string>("signin");
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const { attempts, isRateLimited, timeLeft, recordAttempt, resetAttempts } = useRateLimiting();
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const isSignUp = activeTab === "signup";
     
     const validation = validateAuthForm({
       email,
@@ -62,7 +70,15 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
           fullName,
           userId,
           avatarUrl,
-          userType: 'client', // Explicitly set userType to client for the client portal
+          userType: 'client', // Explicitly set userType to client
+          // Add additional user metadata for the enhanced fields
+          metadata: {
+            phone,
+            address,
+            occupation,
+            income,
+            preferred_contact: preferredContact
+          }
         });
 
         if (user?.identities?.length === 0) {
@@ -88,7 +104,6 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
           if (user?.user_metadata?.user_type === 'client') {
             // Ensure we're using the correct route for client portal
             navigate('/client-portal', { replace: true });
-            console.log("Redirecting client to /client-portal");
           } else {
             // If not client, sign out and show error
             await authService.signOut();
@@ -128,13 +143,13 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
   };
 
   return (
-    <div className="w-full max-w-md mx-auto space-y-6 rounded-xl border border-blue-100 bg-white/90 p-8 shadow-lg backdrop-blur-sm">
+    <div className="w-full max-w-md mx-auto space-y-6 rounded-xl border border-blue-100 bg-white/95 p-6 md:p-8 shadow-lg backdrop-blur-sm">
       <div className="text-center space-y-2">
-        <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
-          {isSignUp ? 'Create Your Client Account' : 'Welcome Back'}
+        <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text text-transparent">
+          {activeTab === "signup" ? 'Create Your Client Account' : 'Welcome Back'}
         </h1>
         <p className="text-sm text-muted-foreground">
-          {isSignUp ? 'Sign up to access the Client Portal' : 'Sign in to continue to your Client Portal'}
+          {activeTab === "signup" ? 'Sign up to access your dedicated Client Portal' : 'Sign in to continue to your Client Portal'}
         </p>
       </div>
 
@@ -145,89 +160,106 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
         </Alert>
       )}
 
-      <form onSubmit={handleAuth} className="space-y-5">
-        {isSignUp && (
-          <SignUpFields
-            fullName={fullName}
-            setFullName={setFullName}
-            userId={userId}
-            setUserId={setUserId}
-            avatarUrl={avatarUrl}
-            setAvatarUrl={setAvatarUrl}
-          />
-        )}
-
-        <AuthFields
-          email={email}
-          setEmail={setEmail}
-          password={password}
-          setPassword={setPassword}
-          isDisabled={loading}
-        />
-
-        <Button
-          type="submit"
-          disabled={loading || isRateLimited}
-          className="w-full flex items-center justify-center gap-2 rounded-md bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2 text-white hover:from-blue-700 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {loading ? (
-            <>
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-              <span>Processing...</span>
-            </>
-          ) : isSignUp ? (
-            <>
-              <UserPlus className="h-4 w-4" />
-              <span>Create Account</span>
-            </>
-          ) : (
-            <>
-              <ArrowRight className="h-4 w-4" />
-              <span>Sign In</span>
-            </>
-          )}
-        </Button>
-
-        {attempts > 0 && attempts < 5 && (
-          <p className="text-xs text-destructive text-center">
-            {5 - attempts} attempts remaining before temporary lockout
-          </p>
-        )}
-      </form>
-
-      <div className="relative my-4">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-blue-100/70"></div>
-        </div>
-        <div className="relative flex justify-center text-xs">
-          <span className="bg-white px-2 text-muted-foreground">
-            {isSignUp ? 'Already have an account?' : "Don't have an account?"}
-          </span>
-        </div>
-      </div>
-
-      <div className="text-center space-y-4">
-        <Button
-          onClick={() => {
-            setIsSignUp(!isSignUp);
-            setError(null);
-          }}
-          variant="ghost"
-          className="text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors"
-        >
-          <Check className="h-3 w-3 mr-1" />
-          {isSignUp ? 'Sign in instead' : "Create a new account"}
-        </Button>
+      <Tabs 
+        value={activeTab} 
+        onValueChange={setActiveTab}
+        className="w-full"
+      >
+        <TabsList className="grid w-full grid-cols-2 mb-8">
+          <TabsTrigger value="signin">Sign In</TabsTrigger>
+          <TabsTrigger value="signup">Sign Up</TabsTrigger>
+        </TabsList>
         
-        <div className="pt-2">
+        <form onSubmit={handleAuth} className="space-y-5">
+          <TabsContent value="signin">
+            <AuthFields
+              email={email}
+              setEmail={setEmail}
+              password={password}
+              setPassword={setPassword}
+              isDisabled={loading}
+            />
+          </TabsContent>
+          
+          <TabsContent value="signup" className="space-y-6">
+            <AuthFields
+              email={email}
+              setEmail={setEmail}
+              password={password}
+              setPassword={setPassword}
+              isDisabled={loading}
+            />
+            
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-blue-100"></div>
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-white px-2 text-muted-foreground">
+                  Client Information
+                </span>
+              </div>
+            </div>
+            
+            <ClientSignUpFields
+              fullName={fullName}
+              setFullName={setFullName}
+              userId={userId}
+              setUserId={setUserId}
+              avatarUrl={avatarUrl}
+              setAvatarUrl={setAvatarUrl}
+              phone={phone}
+              setPhone={setPhone}
+              address={address}
+              setAddress={setAddress}
+              occupation={occupation}
+              setOccupation={setOccupation}
+              income={income}
+              setIncome={setIncome}
+              preferredContact={preferredContact}
+              setPreferredContact={setPreferredContact}
+            />
+          </TabsContent>
+          
           <Button
-            onClick={onSwitchToTrusteePortal}
-            variant="outline"
-            className="w-full text-sm border-blue-200 hover:bg-blue-50"
+            type="submit"
+            disabled={loading || isRateLimited}
+            className="w-full flex items-center justify-center gap-2 rounded-md bg-gradient-to-r from-blue-700 to-blue-500 px-4 py-3 text-white hover:from-blue-800 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            Switch to Trustee Portal
+            {loading ? (
+              <>
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                <span>Processing...</span>
+              </>
+            ) : activeTab === "signup" ? (
+              <>
+                <UserPlus className="h-4 w-4" />
+                <span>Create Account</span>
+              </>
+            ) : (
+              <>
+                <ArrowRight className="h-4 w-4" />
+                <span>Sign In</span>
+              </>
+            )}
           </Button>
-        </div>
+        </form>
+      </Tabs>
+
+      {attempts > 0 && attempts < 5 && (
+        <p className="text-xs text-destructive text-center">
+          {5 - attempts} attempts remaining before temporary lockout
+        </p>
+      )}
+
+      <div className="text-center space-y-4 pt-2">
+        <Button
+          onClick={onSwitchToTrusteePortal}
+          variant="outline"
+          className="w-full text-sm border-blue-200 hover:bg-blue-50"
+        >
+          Switch to Trustee Portal
+        </Button>
       </div>
     </div>
   );

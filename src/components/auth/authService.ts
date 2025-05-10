@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 
 interface SignUpData {
@@ -8,23 +7,28 @@ interface SignUpData {
   userId: string;
   avatarUrl: string | null;
   userType?: 'trustee' | 'client';
+  metadata?: Record<string, any>;
 }
 
 export const authService = {
-  async signUp({ email, password, fullName, userId, avatarUrl, userType = 'trustee' }: SignUpData) {
+  async signUp({ email, password, fullName, userId, avatarUrl, userType = 'trustee', metadata = {} }: SignUpData) {
     console.log(`Initiating signup for ${email} as ${userType}`);
+    
+    // Combine all metadata fields
+    const userData = {
+      full_name: fullName,
+      user_id: userId,
+      avatar_url: avatarUrl,
+      user_type: userType,
+      ...metadata
+    };
     
     // First, sign up the user
     const { error: signUpError, data } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: {
-          full_name: fullName,
-          user_id: userId,
-          avatar_url: avatarUrl,
-          user_type: userType,
-        },
+        data: userData,
         emailRedirectTo: `${window.location.origin}${userType === 'trustee' ? '/login' : '/client-login'}`,
       }
     });
@@ -43,6 +47,12 @@ export const authService = {
           avatar_url: avatarUrl,
           email: email,
           user_type: userType,
+          // Add additional profile data if present in metadata
+          phone: metadata?.phone,
+          address: metadata?.address,
+          occupation: metadata?.occupation,
+          income: metadata?.income,
+          preferred_contact: metadata?.preferred_contact
         });
 
       if (profileError) throw profileError;

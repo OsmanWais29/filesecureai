@@ -8,8 +8,8 @@ import { afterEach, vi } from 'vitest';
 
 // Import the utilities from specific locations
 import { render } from '@testing-library/react';
-// These functions are exported from @testing-library/dom
-import { screen, fireEvent, waitFor, within } from '@testing-library/dom';
+// Import DOM testing utilities directly from React Testing Library
+import { screen, fireEvent, waitFor, within } from '@testing-library/react/pure';
 
 // Re-export testing library components to ensure they're available in tests
 export { 
