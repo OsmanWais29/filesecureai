@@ -27,7 +27,7 @@ export const AuthLayout = ({ children, isClientPortal = false }: AuthLayoutProps
         }}
       ></div>
       <div className="absolute top-4 left-4 sm:top-6 sm:left-6 md:top-8 md:left-8 z-10">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
           <img 
             src="/lovable-uploads/01eb992b-a293-4ef9-a5ff-fa81da6a95ed.png" 
             alt="SecureFiles AI" 
