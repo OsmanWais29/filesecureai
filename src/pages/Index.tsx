@@ -1,5 +1,6 @@
+
 import { useState, useEffect, useCallback } from "react";
-import { useLocation, useNavigate, Link } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { DocumentViewer } from "@/components/DocumentViewer";
 import { RecentlyAccessedPage } from "@/pages/RecentlyAccessedPage";
 import { showPerformanceToast } from "@/utils/performance";
@@ -141,7 +142,7 @@ const Index = () => {
     );
   }
 
-  // Show main app content for authenticated and non-authenticated users
+  // Show document viewer or redirect
   return (
     <div className={`min-h-screen bg-background flex flex-col ${selectedDocument ? '' : 'h-screen'}`}>
       {selectedDocument ? (
@@ -172,29 +173,13 @@ const Index = () => {
       ) : (
         <div className="flex flex-col min-h-screen">
           <MainLayout>
-            {!session ? (
-              <div className="w-full max-w-7xl mx-auto px-4 py-12 text-center">
-                <h1 className="text-4xl font-bold mb-6">Welcome to SecureFiles AI</h1>
-                <p className="mb-8 text-lg text-muted-foreground">
-                  Please select which portal you would like to access:
-                </p>
-                
-                <div className="flex flex-col sm:flex-row justify-center gap-6">
-                  <Link to="/login">
-                    <Button size="lg" className="w-full sm:w-auto min-w-[160px]">
-                      Trustee Portal
-                    </Button>
-                  </Link>
-                  
-                  <Link to="/client-login">
-                    <Button size="lg" variant="outline" className="w-full sm:w-auto min-w-[160px]">
-                      Client Portal
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            ) : (
+            {session ? (
               <RecentlyAccessedPage />
+            ) : (
+              // Redirect to login (this should not be visible anymore due to the redirect)
+              <div className="hidden">
+                {navigate('/client-login', { replace: true })}
+              </div>
             )}
           </MainLayout>
           <Footer compact className="mt-auto w-full" />
