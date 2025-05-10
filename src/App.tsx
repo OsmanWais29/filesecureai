@@ -1,10 +1,11 @@
 
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import NotFound from "./pages/NotFound";
 import ClientPortal from "./pages/ClientPortal";
 import { AuthRoleGuard } from "./components/auth/AuthRoleGuard";
 import TrusteeLogin from "./pages/auth/TrusteeLogin";
 import ClientLogin from "./pages/auth/ClientLogin";
+import { useEffect, useState } from "react";
 
 // Import from the trustee folder
 import Index from "./pages/trustee/Index";
@@ -29,15 +30,66 @@ import SAFAPage from "./pages/SAFA/SAFAPage";
 
 import "./App.css";
 
+// Helper function to detect subdomain
+const getSubdomain = (): string | null => {
+  const hostParts = window.location.hostname.split('.');
+  
+  // For localhost testing
+  if (hostParts.includes('localhost')) {
+    // Check if a subdomain is being simulated with localhost:3000?subdomain=client
+    const urlParams = new URLSearchParams(window.location.search);
+    const subdomain = urlParams.get('subdomain');
+    return subdomain;
+  }
+  
+  // For actual domain with subdomains
+  if (hostParts.length > 2) {
+    return hostParts[0];
+  }
+  
+  return null;
+};
+
 function App() {
+  const [subdomain, setSubdomain] = useState<string | null>(null);
+  
+  useEffect(() => {
+    // Set the subdomain on initial load and when URL changes
+    setSubdomain(getSubdomain());
+  }, []);
+
+  // If subdomain is 'client', show client routes
+  if (subdomain === 'client') {
+    return (
+      <Routes>
+        {/* Client routes */}
+        <Route path="/" element={<ClientLogin />} />
+        <Route path="/login" element={<ClientLogin />} />
+        
+        {/* Client portal routes - use the ClientPortal layout with role guard */}
+        <Route path="/portal/*" element={
+          <AuthRoleGuard requiredRole="client" redirectPath="/login">
+            <ClientPortal />
+          </AuthRoleGuard>
+        } />
+        
+        {/* 404 catch-all route */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    );
+  }
+  
+  // If subdomain is 'trustee' or null, show trustee routes (default)
   return (
     <Routes>
-      {/* Root route now redirects straight to client login by default */}
-      <Route path="/" element={<ClientLogin />} />
+      {/* Root route now redirects to appropriate login */}
+      <Route path="/" element={<TrusteeLogin />} />
       
-      {/* Separate login routes for trustee and client */}
+      {/* Separate login routes for trustee */}
       <Route path="/login" element={<TrusteeLogin />} />
-      <Route path="/client-login" element={<ClientLogin />} />
+      
+      {/* Redirect client login attempts on trustee subdomain */}
+      <Route path="/client-login" element={<Navigate to="/" replace />} />
 
       {/* Trustee-only routes - protected with role guard */}
       <Route path="/crm" element={
@@ -128,19 +180,6 @@ function App() {
       <Route path="/SAFA" element={
         <AuthRoleGuard requiredRole="trustee" redirectPath="/login">
           <SAFAPage />
-        </AuthRoleGuard>
-      } />
-
-      {/* Client portal routes - use the ClientPortal layout with role guard */}
-      <Route path="/client-portal/*" element={
-        <AuthRoleGuard requiredRole="client" redirectPath="/client-login">
-          <ClientPortal />
-        </AuthRoleGuard>
-      } />
-      
-      <Route path="/client/portal/*" element={
-        <AuthRoleGuard requiredRole="client" redirectPath="/client-login">
-          <ClientPortal />
         </AuthRoleGuard>
       } />
 

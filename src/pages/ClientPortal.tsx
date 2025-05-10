@@ -19,11 +19,28 @@ import NotFound from "./client-portal/NotFound";
 
 const ClientPortal = () => {
   const [error, setError] = useState<Error | null>(null);
+  const [isClientSubdomain, setIsClientSubdomain] = useState(false);
   
   const location = useLocation();
   const navigate = useNavigate();
   
   const { user, session, loading: isLoading, signOut } = useAuthState();
+
+  // Check if we're on the client subdomain
+  useEffect(() => {
+    const hostname = window.location.hostname;
+    const isLocalhost = hostname === 'localhost';
+    
+    // For localhost testing
+    if (isLocalhost) {
+      const urlParams = new URLSearchParams(window.location.search);
+      setIsClientSubdomain(urlParams.get('subdomain') === 'client');
+    } else {
+      // For actual domain with subdomains
+      const hostParts = hostname.split('.');
+      setIsClientSubdomain(hostParts.length > 2 && hostParts[0] === 'client');
+    }
+  }, []);
 
   // Check if user is authenticated and has correct role
   useEffect(() => {
@@ -32,19 +49,29 @@ const ClientPortal = () => {
         const userType = user?.user_metadata?.user_type;
         
         // Redirect trustees to main app if they try to access client portal
-        if (userType === 'trustee') {
+        if (userType === 'trustee' && isClientSubdomain) {
           toast.error("Trustee accounts cannot access the client portal");
-          navigate('/', { replace: true });
+          // Redirect to trustee subdomain
+          const hostname = window.location.hostname;
+          if (hostname === 'localhost') {
+            window.location.href = window.location.origin + '?subdomain=trustee';
+          } else {
+            const hostParts = hostname.split('.');
+            if (hostParts.length > 2) {
+              hostParts[0] = 'trustee';
+              window.location.href = `https://${hostParts.join('.')}`;
+            }
+          }
         }
       }
     }
-  }, [user, isLoading, navigate]);
+  }, [user, isLoading, navigate, isClientSubdomain]);
 
   // Handler for signing out
   const handleSignOut = async () => {
     try {
       await signOut();
-      navigate('/client-portal', { replace: true });
+      navigate('/', { replace: true });
     } catch (error) {
       console.error("Error signing out:", error);
       setError(error instanceof Error ? error : new Error("Failed to sign out"));

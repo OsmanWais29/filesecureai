@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 
 interface SignUpData {
@@ -10,8 +11,33 @@ interface SignUpData {
   metadata?: Record<string, any>;
 }
 
+// Helper function to detect subdomain
+const getSubdomain = (): string | null => {
+  const hostParts = window.location.hostname.split('.');
+  
+  // For localhost testing
+  if (hostParts.includes('localhost')) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const subdomain = urlParams.get('subdomain');
+    return subdomain;
+  }
+  
+  // For actual domain with subdomains
+  if (hostParts.length > 2) {
+    return hostParts[0];
+  }
+  
+  return null;
+};
+
 export const authService = {
-  async signUp({ email, password, fullName, userId, avatarUrl, userType = 'trustee', metadata = {} }: SignUpData) {
+  async signUp({ email, password, fullName, userId, avatarUrl, userType, metadata = {} }: SignUpData) {
+    // If userType isn't explicitly provided, infer it from the subdomain
+    if (!userType) {
+      const subdomain = getSubdomain();
+      userType = subdomain === 'client' ? 'client' : 'trustee';
+    }
+    
     console.log(`Initiating signup for ${email} as ${userType}`);
     
     // Combine all metadata fields
@@ -29,7 +55,7 @@ export const authService = {
       password,
       options: {
         data: userData,
-        emailRedirectTo: `${window.location.origin}${userType === 'trustee' ? '/login' : '/client-login'}`,
+        emailRedirectTo: `${window.location.origin}${userType === 'trustee' ? '/login' : '/login'}`,
       }
     });
     
@@ -61,7 +87,13 @@ export const authService = {
     return data;
   },
 
-  async signIn(email: string, password: string, userType: 'trustee' | 'client' = 'trustee') {
+  async signIn(email: string, password: string, userType?: 'trustee' | 'client') {
+    // If userType isn't explicitly provided, infer it from the subdomain
+    if (!userType) {
+      const subdomain = getSubdomain();
+      userType = subdomain === 'client' ? 'client' : 'trustee';
+    }
+    
     console.log(`Attempting signin for ${email} as ${userType}`);
     
     const { error, data } = await supabase.auth.signInWithPassword({

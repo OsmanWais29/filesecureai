@@ -13,21 +13,39 @@ const ClientLogin = () => {
   const [confirmationEmail, setConfirmationEmail] = useState('');
   const navigate = useNavigate();
   const { user, loading } = useAuthState();
+  const [isClientSubdomain, setIsClientSubdomain] = useState(false);
+
+  // Check if we're on the client subdomain
+  useEffect(() => {
+    const hostname = window.location.hostname;
+    const isLocalhost = hostname === 'localhost';
+    
+    // For localhost testing
+    if (isLocalhost) {
+      const urlParams = new URLSearchParams(window.location.search);
+      setIsClientSubdomain(urlParams.get('subdomain') === 'client');
+    } else {
+      // For actual domain with subdomains
+      const hostParts = hostname.split('.');
+      setIsClientSubdomain(hostParts.length > 2 && hostParts[0] === 'client');
+    }
+  }, []);
 
   // Redirect if user is already authenticated as a client
   useEffect(() => {
     if (!loading && user) {
       const userType = user.user_metadata?.user_type;
+      
       if (userType === 'client') {
         console.log('User already authenticated as client, redirecting to client portal');
-        navigate('/client-portal', { replace: true });
-      } else if (userType === 'trustee') {
-        // If user is a trustee, redirect to trustee portal
-        console.log('User is a trustee, redirecting to trustee portal');
-        navigate('/crm', { replace: true });
+        navigate('/portal', { replace: true });
+      } else if (userType === 'trustee' && isClientSubdomain) {
+        // If user is a trustee on client subdomain, sign them out
+        console.log('Trustee account detected on client subdomain');
+        navigate('/', { replace: true });
       }
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, isClientSubdomain]);
 
   const handleConfirmationSent = (email: string) => {
     setConfirmationEmail(email);
@@ -39,7 +57,21 @@ const ClientLogin = () => {
   };
 
   const handleSwitchToTrusteePortal = () => {
-    navigate('/login');
+    // Redirect to trustee subdomain
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost') {
+      // For localhost testing
+      window.location.href = window.location.origin + '?subdomain=trustee';
+    } else {
+      // For actual domain
+      const hostParts = hostname.split('.');
+      if (hostParts.length > 2) {
+        hostParts[0] = 'trustee';
+        window.location.href = `https://${hostParts.join('.')}`;
+      } else {
+        window.location.href = `https://trustee.${hostname}`;
+      }
+    }
   };
 
   return (
