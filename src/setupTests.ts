@@ -6,12 +6,8 @@ import * as testingLibrary from '@testing-library/react';
 import { cleanup } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
 
-// Get the specific utilities we need from the imported module
-const { render } = testingLibrary;
-const screen = testingLibrary.screen;
-const fireEvent = testingLibrary.fireEvent;
-const waitFor = testingLibrary.waitFor;
-const within = testingLibrary.within;
+// Directly import the specific utilities we need
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 
 // Re-export testing library components to ensure they're available in tests
 export { 
