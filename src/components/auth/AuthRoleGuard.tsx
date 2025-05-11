@@ -42,7 +42,8 @@ export const AuthRoleGuard = ({
 
   // Detect subdomain on mount
   useEffect(() => {
-    setSubdomain(getSubdomain());
+    const detectedSubdomain = getSubdomain();
+    setSubdomain(detectedSubdomain);
   }, []);
 
   useEffect(() => {

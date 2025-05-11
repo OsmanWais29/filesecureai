@@ -30,6 +30,25 @@ const getSubdomain = (): string | null => {
   return null;
 };
 
+// Helper function to validate trustee email domains
+const isTrusteeEmail = (email: string): boolean => {
+  // List of allowed domains for trustees
+  // This is a simplified example - in production, you might want to 
+  // fetch this list from a database or configuration
+  const allowedDomains = [
+    'trustee.com',
+    'securefilesai.com',
+    'example.com',
+    'gmail.com', // For testing purposes
+    'hotmail.com', // For testing purposes
+    'yahoo.com', // For testing purposes
+    'outlook.com' // For testing purposes
+  ];
+  
+  const emailDomain = email.split('@')[1]?.toLowerCase();
+  return allowedDomains.includes(emailDomain);
+};
+
 export const authService = {
   async signUp({ email, password, fullName, userId, avatarUrl, userType, metadata = {} }: SignUpData) {
     // If userType isn't explicitly provided, infer it from the subdomain
@@ -39,6 +58,11 @@ export const authService = {
     }
     
     console.log(`Initiating signup for ${email} as ${userType}`);
+    
+    // Validate email domain for trustees
+    if (userType === 'trustee' && !isTrusteeEmail(email)) {
+      throw new Error("This email domain is not authorized for trustee accounts. Please use an approved email address.");
+    }
     
     // Combine all metadata fields
     const userData = {
@@ -119,6 +143,13 @@ export const authService = {
       console.log(`User type mismatch: expected ${userType}, got ${userMetadataType}`);
       await supabase.auth.signOut();
       throw new Error(`This account cannot access the ${userType === 'trustee' ? 'Trustee' : 'Client'} Portal. Please use the correct portal for your account type.`);
+    }
+    
+    // For trustee logins, verify email domain is allowed
+    if (userType === 'trustee' && !isTrusteeEmail(email)) {
+      console.log(`Email domain not authorized for trustee: ${email}`);
+      await supabase.auth.signOut();
+      throw new Error("This email is not authorized to access the Trustee Portal.");
     }
     
     console.log(`User type verified as ${userType}`);
