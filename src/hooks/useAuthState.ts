@@ -68,7 +68,9 @@ export function useAuthState() {
       (event, newSession) => {
         console.log("Auth state changed:", event);
         if (newSession?.user) {
-          console.log("User role:", newSession.user.user_metadata?.user_type);
+          console.log("User authenticated:", newSession.user.id);
+          console.log("User metadata:", newSession.user.user_metadata);
+          console.log("User type:", newSession.user.user_metadata?.user_type);
 
           // Check if user type matches subdomain
           const userType = newSession.user.user_metadata?.user_type;
@@ -88,6 +90,8 @@ export function useAuthState() {
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       console.log("Retrieved current session:", currentSession ? "Exists" : "None");
       if (currentSession?.user) {
+        console.log("User ID from session:", currentSession.user.id);
+        console.log("User metadata from session:", currentSession.user.user_metadata);
         console.log("User role from session:", currentSession.user.user_metadata?.user_type);
       }
       

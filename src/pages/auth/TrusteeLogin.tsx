@@ -43,8 +43,15 @@ const TrusteeLogin = () => {
       const userType = user.user_metadata?.user_type;
       console.log('User authenticated as:', userType, 'on', isTrusteeSubdomain ? 'trustee' : 'client', 'subdomain');
       
+      // Added debug logging for user data
+      console.log('User data:', {
+        id: user.id,
+        email: user.email,
+        metadata: user.user_metadata
+      });
+      
       if (userType === 'trustee' && isTrusteeSubdomain) {
-        console.log('User already authenticated as trustee, redirecting to CRM');
+        console.log('User already authenticated as trustee, redirecting to CRM dashboard');
         navigate('/crm', { replace: true });
       } else if (userType === 'client' && isTrusteeSubdomain) {
         // If user is a client on trustee subdomain, redirect them

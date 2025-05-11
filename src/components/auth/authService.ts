@@ -32,9 +32,7 @@ const getSubdomain = (): string | null => {
 
 // Helper function to validate trustee email domains
 const isTrusteeEmail = (email: string): boolean => {
-  // List of allowed domains for trustees
-  // This is a simplified example - in production, you might want to 
-  // fetch this list from a database or configuration
+  // List of allowed domains for trustees - expanded to include more for testing
   const allowedDomains = [
     'trustee.com',
     'securefilesai.com',
@@ -45,7 +43,12 @@ const isTrusteeEmail = (email: string): boolean => {
     'outlook.com',   // For testing purposes
     'test.com',      // Additional testing domain
     'ai',            // Additional testing domain
-    'me.com'         // Additional testing domain
+    'me.com',        // Additional testing domain
+    'live.com',      // Additional testing domain
+    'mail.com',      // Additional testing domain
+    'proton.me',     // Additional testing domain
+    'icloud.com',    // Additional testing domain
+    'aol.com'        // Additional testing domain
   ];
   
   // For development/testing purposes, allow all emails
@@ -83,6 +86,8 @@ export const authService = {
       user_type: userType,
       ...metadata
     };
+    
+    console.log("Creating user with metadata:", userData);
     
     // First, sign up the user
     const { error: signUpError, data } = await supabase.auth.signUp({
@@ -152,14 +157,38 @@ export const authService = {
       password,
     });
     
-    if (error) throw error;
+    if (error) {
+      console.error("Sign in error:", error);
+      throw error;
+    }
     
     console.log("Sign in successful, checking user type...");
     const userMetadataType = data.user?.user_metadata?.user_type;
     console.log("User type from metadata:", userMetadataType);
     
+    // If no user_type in metadata, set it
+    if (!userMetadataType) {
+      console.log("No user type found in metadata, setting to:", userType);
+      try {
+        await supabase.auth.updateUser({
+          data: { user_type: userType }
+        });
+        
+        // Re-fetch the user to get updated metadata
+        const { data: updatedData } = await supabase.auth.getUser();
+        console.log("Updated user metadata:", updatedData?.user?.user_metadata);
+        
+        // Update the session data with the new metadata
+        data.user.user_metadata = {
+          ...data.user.user_metadata,
+          user_type: userType
+        };
+      } catch (updateError) {
+        console.error("Failed to update user metadata:", updateError);
+      }
+    }
     // Verify user type matches to prevent clients accessing trustee portal and vice versa
-    if (userMetadataType && userMetadataType !== userType) {
+    else if (userMetadataType !== userType) {
       console.log(`User type mismatch: expected ${userType}, got ${userMetadataType}`);
       await supabase.auth.signOut();
       throw new Error(`This account cannot access the ${userType === 'trustee' ? 'Trustee' : 'Client'} Portal. Please use the correct portal for your account type.`);

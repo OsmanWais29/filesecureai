@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { DocumentViewer } from "@/components/DocumentViewer";
@@ -34,6 +35,21 @@ const Index = () => {
   const [isEmailConfirmationPending, setIsEmailConfirmationPending] = useState(false);
   const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
 
+  // Debug logging for authentication state
+  useEffect(() => {
+    if (!isLoading) {
+      if (user) {
+        console.log("Index: User is authenticated", {
+          id: user.id,
+          email: user.email,
+          userType: user.user_metadata?.user_type
+        });
+      } else {
+        console.log("Index: User is not authenticated");
+      }
+    }
+  }, [user, isLoading]);
+
   // Detect subdomain for routing
   useEffect(() => {
     const hostname = window.location.hostname;
@@ -41,11 +57,14 @@ const Index = () => {
     
     if (isLocalhost) {
       const urlParams = new URLSearchParams(window.location.search);
-      setSubdomain(urlParams.get('subdomain'));
+      const detectedSubdomain = urlParams.get('subdomain');
+      setSubdomain(detectedSubdomain);
+      console.log("Index: Detected subdomain from URL params:", detectedSubdomain);
     } else {
       const hostParts = hostname.split('.');
       if (hostParts.length > 2) {
         setSubdomain(hostParts[0]);
+        console.log("Index: Detected subdomain from hostname:", hostParts[0]);
       }
     }
   }, []);
@@ -56,17 +75,18 @@ const Index = () => {
       // If user is authenticated
       if (user) {
         const userType = user.user_metadata?.user_type;
-        console.log("User authenticated, type:", userType);
+        console.log("Index: User authenticated, type:", userType);
         
         // User is authenticated as client
         if (userType === 'client') {
           // If on client subdomain, go to portal
           if (subdomain === 'client') {
+            console.log("Index: Client on client subdomain, going to client portal");
             navigate('/portal', { replace: true });
           } 
           // If on trustee subdomain with client account, redirect to client subdomain
           else {
-            console.log("Client account detected on trustee subdomain, redirecting");
+            console.log("Index: Client account detected on trustee subdomain, redirecting to client subdomain");
             const hostname = window.location.hostname;
             if (hostname === 'localhost') {
               window.location.href = window.location.origin + '?subdomain=client';
@@ -86,12 +106,12 @@ const Index = () => {
         else if (userType === 'trustee') {
           // If on trustee subdomain, go to dashboard
           if (subdomain !== 'client') {
-            console.log("Redirecting authenticated trustee to CRM dashboard");
+            console.log("Index: Trustee on trustee subdomain, redirecting to CRM dashboard");
             navigate('/crm', { replace: true });
           }
           // If on client subdomain with trustee account, redirect to trustee subdomain
           else {
-            console.log("Trustee account detected on client subdomain, redirecting");
+            console.log("Index: Trustee account detected on client subdomain, redirecting to trustee subdomain");
             const hostname = window.location.hostname;
             if (hostname === 'localhost') {
               window.location.href = window.location.origin + '?subdomain=trustee';
@@ -106,11 +126,16 @@ const Index = () => {
             }
           }
           return;
+        } else {
+          console.log("Index: User type not set, redirecting to login for proper setup:", userType);
+          navigate('/login', { replace: true });
+          return;
         }
       } 
       // User is not authenticated
       else {
         // Redirect to the appropriate login page based on subdomain
+        console.log("Index: User not authenticated, redirecting to login");
         if (subdomain === 'client') {
           navigate('/login', { replace: true });
         } else {
@@ -241,6 +266,7 @@ const Index = () => {
               <div className="hidden">
                 {(() => {
                   // Dynamic redirect based on subdomain
+                  console.log("Index: Redirecting to login due to missing session");
                   if (subdomain === 'client') {
                     navigate('/login', { replace: true });
                   } else {

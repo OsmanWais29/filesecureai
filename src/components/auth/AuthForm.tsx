@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -77,7 +77,13 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
         }
       } else {
         try {
+          console.log(`Attempting to sign in as trustee with email: ${email}`);
           const { user } = await authService.signIn(email, password, 'trustee');
+          
+          // Debug logging
+          console.log("Sign in successful, user data:", user);
+          console.log("User metadata:", user?.user_metadata);
+          console.log("User type:", user?.user_metadata?.user_type);
           
           toast({
             title: "Success",
@@ -86,14 +92,16 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
           
           // Redirect based on user role
           if (user?.user_metadata?.user_type === 'trustee') {
-            console.log("Login successful, redirecting to CRM dashboard");
+            console.log("Trustee authentication successful, redirecting to CRM dashboard");
             navigate('/crm', { replace: true });
           } else {
             // If not trustee, sign out and show error
+            console.error("User is not a trustee:", user?.user_metadata?.user_type);
             await authService.signOut();
             setError("This account doesn't have trustee access.");
           }
         } catch (signInError: any) {
+          console.error("Sign in error:", signInError);
           if (signInError.message.includes('Email not confirmed')) {
             // Handle the email confirmation error specifically
             setError("Please check your email and confirm your account before signing in.");

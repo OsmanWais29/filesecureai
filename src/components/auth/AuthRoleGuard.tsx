@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthState } from '@/hooks/useAuthState';
@@ -10,25 +9,6 @@ interface AuthRoleGuardProps {
   requiredRole: 'trustee' | 'client';
   redirectPath: string;
 }
-
-// Helper function to detect subdomain
-const getSubdomain = (): string | null => {
-  const hostParts = window.location.hostname.split('.');
-  
-  // For localhost testing
-  if (hostParts.includes('localhost')) {
-    const urlParams = new URLSearchParams(window.location.search);
-    const subdomain = urlParams.get('subdomain');
-    return subdomain;
-  }
-  
-  // For actual domain with subdomains
-  if (hostParts.length > 2) {
-    return hostParts[0];
-  }
-  
-  return null;
-};
 
 export const AuthRoleGuard = ({ 
   children, 
@@ -42,8 +22,25 @@ export const AuthRoleGuard = ({
 
   // Detect subdomain on mount
   useEffect(() => {
-    const detectedSubdomain = getSubdomain();
-    setSubdomain(detectedSubdomain);
+    const hostname = window.location.hostname;
+    
+    // For localhost testing
+    if (hostname === 'localhost') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const subdomain = urlParams.get('subdomain');
+      setSubdomain(subdomain);
+      console.log("Detected subdomain on localhost:", subdomain);
+    }
+    // For actual domain with subdomains
+    else {
+      const hostParts = hostname.split('.');
+      if (hostParts.length > 2) {
+        setSubdomain(hostParts[0]);
+        console.log("Detected subdomain:", hostParts[0]);
+      } else {
+        console.log("No subdomain detected");
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -53,6 +50,11 @@ export const AuthRoleGuard = ({
       if (user) {
         const userRole = user.user_metadata?.user_type;
         console.log(`Checking user role: ${userRole} against required role: ${requiredRole}`);
+        console.log("Full user data:", {
+          id: user.id,
+          email: user.email,
+          metadata: user.user_metadata
+        });
         
         // Check if user role matches the required role
         if (userRole !== requiredRole) {
@@ -63,6 +65,7 @@ export const AuthRoleGuard = ({
           if (userRole === 'trustee') {
             // If user is trustee but on client subdomain, redirect to trustee subdomain
             if (subdomain === 'client') {
+              console.log("Redirecting trustee from client subdomain to trustee subdomain");
               const hostname = window.location.hostname;
               if (hostname === 'localhost') {
                 window.location.href = window.location.origin + '?subdomain=trustee';
@@ -77,10 +80,12 @@ export const AuthRoleGuard = ({
               }
             }
             // Otherwise, just redirect to trustee dashboard
+            console.log("Redirecting trustee to CRM dashboard");
             navigate('/crm', { replace: true });
           } else if (userRole === 'client') {
             // If user is client but on trustee subdomain, redirect to client subdomain
             if (subdomain !== 'client') {
+              console.log("Redirecting client from trustee subdomain to client subdomain");
               const hostname = window.location.hostname;
               if (hostname === 'localhost') {
                 window.location.href = window.location.origin + '?subdomain=client';
@@ -98,9 +103,11 @@ export const AuthRoleGuard = ({
               }
             }
             // Otherwise, just redirect to client portal
+            console.log("Redirecting client to client portal");
             navigate('/portal', { replace: true });
           } else {
             // If role is unknown, redirect to login path provided
+            console.log("User role unknown, redirecting to login");
             navigate(redirectPath, { replace: true });
           }
         } else {
