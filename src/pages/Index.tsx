@@ -86,6 +86,7 @@ const Index = () => {
         else if (userType === 'trustee') {
           // If on trustee subdomain, go to dashboard
           if (subdomain !== 'client') {
+            console.log("Redirecting authenticated trustee to CRM dashboard");
             navigate('/crm', { replace: true });
           }
           // If on client subdomain with trustee account, redirect to trustee subdomain

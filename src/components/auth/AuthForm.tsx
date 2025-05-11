@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
@@ -9,7 +10,6 @@ import { validateAuthForm } from './authValidation';
 import { authService } from './authService';
 import { useRateLimiting } from './hooks/useRateLimiting';
 import { Button } from "@/components/ui/button";
-import { AuthMode } from '../Auth';
 
 interface AuthFormProps {
   onConfirmationSent: (email: string) => void;
@@ -77,7 +77,8 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
         }
       } else {
         try {
-          const { user } = await authService.signIn(email, password, 'trustee'); // Add user type for role-based validation
+          const { user } = await authService.signIn(email, password, 'trustee');
+          
           toast({
             title: "Success",
             description: "Successfully signed in!",
@@ -85,9 +86,8 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
           
           // Redirect based on user role
           if (user?.user_metadata?.user_type === 'trustee') {
-            // Fix: Use /crm instead of /trustee/dashboard for trustee redirect
+            console.log("Login successful, redirecting to CRM dashboard");
             navigate('/crm', { replace: true });
-            console.log("Redirecting trustee to /crm");
           } else {
             // If not trustee, sign out and show error
             await authService.signOut();
