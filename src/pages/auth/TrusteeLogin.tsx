@@ -1,11 +1,10 @@
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { ConfirmationSentScreen } from '@/components/auth/ConfirmationSentScreen';
 import { useAuthState } from '@/hooks/useAuthState';
-import { useState } from 'react';
 import { toast } from 'sonner';
 
 const TrusteeLogin = () => {
@@ -42,6 +41,7 @@ const TrusteeLogin = () => {
   useEffect(() => {
     if (!loading && user) {
       const userType = user.user_metadata?.user_type;
+      console.log('User authenticated as:', userType, 'on', isTrusteeSubdomain ? 'trustee' : 'client', 'subdomain');
       
       if (userType === 'trustee' && isTrusteeSubdomain) {
         console.log('User already authenticated as trustee, redirecting to CRM');

@@ -65,8 +65,8 @@ export function useAuthState() {
     
     // Set up auth state listener FIRST 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, newSession) => {
-        console.log("Auth state changed:", _event);
+      (event, newSession) => {
+        console.log("Auth state changed:", event);
         if (newSession?.user) {
           console.log("User role:", newSession.user.user_metadata?.user_type);
 

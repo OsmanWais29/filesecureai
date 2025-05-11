@@ -5,8 +5,8 @@ import ClientPortal from "./pages/ClientPortal";
 import { AuthRoleGuard } from "./components/auth/AuthRoleGuard";
 import TrusteeLogin from "./pages/auth/TrusteeLogin";
 import ClientLogin from "./pages/auth/ClientLogin";
-import { useEffect, useState } from "react";
-import { useAuthState } from "@/hooks/useAuthState";
+import { useEffect } from "react";
+import { useAuthState, getSubdomain } from "@/hooks/useAuthState";
 
 // Import from the trustee folder
 import Index from "./pages/trustee/Index";

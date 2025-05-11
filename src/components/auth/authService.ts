@@ -39,13 +39,24 @@ const isTrusteeEmail = (email: string): boolean => {
     'trustee.com',
     'securefilesai.com',
     'example.com',
-    'gmail.com', // For testing purposes
-    'hotmail.com', // For testing purposes
-    'yahoo.com', // For testing purposes
-    'outlook.com' // For testing purposes
+    'gmail.com',     // For testing purposes
+    'hotmail.com',   // For testing purposes
+    'yahoo.com',     // For testing purposes
+    'outlook.com',   // For testing purposes
+    'test.com',      // Additional testing domain
+    'ai',            // Additional testing domain
+    'me.com'         // Additional testing domain
   ];
   
+  // For development/testing purposes, allow all emails
+  if (window.location.hostname === 'localhost') {
+    console.log("Development environment detected, allowing all email domains");
+    return true;
+  }
+  
   const emailDomain = email.split('@')[1]?.toLowerCase();
+  console.log("Checking email domain:", emailDomain);
+  
   return allowedDomains.includes(emailDomain);
 };
 
@@ -127,6 +138,15 @@ export const authService = {
     
     console.log(`Attempting signin for ${email} as ${userType}`);
     
+    // For localhost/testing, bypass email domain validation
+    if (window.location.hostname !== 'localhost') {
+      // For trustee logins, verify email domain is allowed
+      if (userType === 'trustee' && !isTrusteeEmail(email)) {
+        console.log(`Email domain not authorized for trustee: ${email}`);
+        throw new Error("This email is not authorized to access the Trustee Portal. Please use an approved email address.");
+      }
+    }
+    
     const { error, data } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -143,13 +163,6 @@ export const authService = {
       console.log(`User type mismatch: expected ${userType}, got ${userMetadataType}`);
       await supabase.auth.signOut();
       throw new Error(`This account cannot access the ${userType === 'trustee' ? 'Trustee' : 'Client'} Portal. Please use the correct portal for your account type.`);
-    }
-    
-    // For trustee logins, verify email domain is allowed
-    if (userType === 'trustee' && !isTrusteeEmail(email)) {
-      console.log(`Email domain not authorized for trustee: ${email}`);
-      await supabase.auth.signOut();
-      throw new Error("This email is not authorized to access the Trustee Portal.");
     }
     
     console.log(`User type verified as ${userType}`);

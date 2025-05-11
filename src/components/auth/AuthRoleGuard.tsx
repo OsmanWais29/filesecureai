@@ -52,6 +52,7 @@ export const AuthRoleGuard = ({
       
       if (user) {
         const userRole = user.user_metadata?.user_type;
+        console.log(`Checking user role: ${userRole} against required role: ${requiredRole}`);
         
         // Check if user role matches the required role
         if (userRole !== requiredRole) {
