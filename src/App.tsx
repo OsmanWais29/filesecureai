@@ -34,8 +34,13 @@ import "./App.css";
 function App() {
   const { subdomain } = useAuthState();
   
+  useEffect(() => {
+    console.log("App: Current subdomain detected:", subdomain);
+  }, [subdomain]);
+  
   // If subdomain is 'client', show client routes
   if (subdomain === 'client') {
+    console.log("App: Rendering client routes for client subdomain");
     return (
       <Routes>
         {/* Client routes */}
@@ -43,6 +48,13 @@ function App() {
         <Route path="/login" element={<ClientLogin />} />
         
         {/* Client portal routes - use the ClientPortal layout with role guard */}
+        <Route path="/client-portal/*" element={
+          <AuthRoleGuard requiredRole="client" redirectPath="/login">
+            <ClientPortal />
+          </AuthRoleGuard>
+        } />
+        
+        {/* Alternative path for the portal */}
         <Route path="/portal/*" element={
           <AuthRoleGuard requiredRole="client" redirectPath="/login">
             <ClientPortal />
@@ -61,6 +73,7 @@ function App() {
   }
   
   // If subdomain is 'trustee' or null, show trustee routes (default)
+  console.log("App: Rendering trustee routes for trustee subdomain");
   return (
     <Routes>
       {/* Root route now redirects to appropriate login */}
@@ -71,6 +84,7 @@ function App() {
       
       {/* Redirect client login attempts on trustee subdomain */}
       <Route path="/client-login" element={<Navigate to="/login" replace />} />
+      <Route path="/client-portal/*" element={<Navigate to="/login" replace />} />
       <Route path="/portal/*" element={<Navigate to="/login" replace />} />
 
       {/* Trustee-only routes - protected with role guard */}

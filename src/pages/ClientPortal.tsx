@@ -34,22 +34,30 @@ const ClientPortal = () => {
     // For localhost testing
     if (isLocalhost) {
       const urlParams = new URLSearchParams(window.location.search);
-      setIsClientSubdomain(urlParams.get('subdomain') === 'client');
+      const subdomain = urlParams.get('subdomain');
+      const isClient = subdomain === 'client';
+      setIsClientSubdomain(isClient);
+      console.log("ClientPortal: On localhost with subdomain:", subdomain, "isClient:", isClient);
     } else {
       // For actual domain with subdomains
       const hostParts = hostname.split('.');
-      setIsClientSubdomain(hostParts.length > 2 && hostParts[0] === 'client');
+      const isClient = hostParts.length > 2 && hostParts[0] === 'client';
+      setIsClientSubdomain(isClient);
+      console.log("ClientPortal: On production with hostname:", hostname, "isClient:", isClient);
     }
   }, []);
 
   // Check if user is authenticated and has correct role
   useEffect(() => {
     if (!isLoading) {
+      console.log("ClientPortal: Auth state loaded, user:", user?.id, "role:", user?.user_metadata?.user_type);
+      
       if (user) {
         const userType = user?.user_metadata?.user_type;
         
         // Redirect trustees to main app if they try to access client portal
         if (userType === 'trustee' && isClientSubdomain) {
+          console.log("ClientPortal: Trustee account detected but on client subdomain");
           toast.error("Trustee accounts cannot access the client portal");
           // Redirect to trustee subdomain
           const hostname = window.location.hostname;
@@ -62,7 +70,13 @@ const ClientPortal = () => {
               window.location.href = `https://${hostParts.join('.')}`;
             }
           }
+        } else if (userType === 'client') {
+          console.log("ClientPortal: Authenticated as client, accessing client portal");
+        } else {
+          console.log("ClientPortal: User has unknown role:", userType);
         }
+      } else {
+        console.log("ClientPortal: No authenticated user");
       }
     }
   }, [user, isLoading, navigate, isClientSubdomain]);
@@ -70,6 +84,7 @@ const ClientPortal = () => {
   // Handler for signing out
   const handleSignOut = async () => {
     try {
+      console.log("ClientPortal: Signing out user");
       await signOut();
       navigate('/', { replace: true });
     } catch (error) {
@@ -94,10 +109,19 @@ const ClientPortal = () => {
 
   // If not authenticated, show client portal auth component
   if (!session) {
+    console.log("ClientPortal: No session, showing Auth component");
+    return <Auth isClientPortal={true} />;
+  }
+
+  // Check if user has client role
+  if (user?.user_metadata?.user_type !== 'client') {
+    console.log("ClientPortal: User doesn't have client role:", user?.user_metadata?.user_type);
+    toast.error("Access denied. This portal is for clients only.");
     return <Auth isClientPortal={true} />;
   }
 
   // Show client portal dashboard for authenticated clients
+  console.log("ClientPortal: Rendering client portal layout");
   return (
     <ClientPortalLayout onSignOut={handleSignOut}>
       <Routes>

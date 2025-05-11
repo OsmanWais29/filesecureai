@@ -75,14 +75,14 @@ const Index = () => {
       // If user is authenticated
       if (user) {
         const userType = user.user_metadata?.user_type;
-        console.log("Index: User authenticated, type:", userType);
+        console.log("Index: User authenticated, type:", userType, "on subdomain:", subdomain);
         
         // User is authenticated as client
         if (userType === 'client') {
           // If on client subdomain, go to portal
           if (subdomain === 'client') {
             console.log("Index: Client on client subdomain, going to client portal");
-            navigate('/portal', { replace: true });
+            navigate('/client-portal', { replace: true });
           } 
           // If on trustee subdomain with client account, redirect to client subdomain
           else {
