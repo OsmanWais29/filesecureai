@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { DocumentViewer } from "@/components/DocumentViewer";
@@ -145,11 +144,7 @@ const Index = () => {
         // Redirect to the appropriate login page based on subdomain
         console.log("Index: User not authenticated, redirecting to login");
         setRedirecting(true);
-        if (subdomain === 'client') {
-          navigate('/login', { replace: true });
-        } else {
-          navigate('/login', { replace: true });
-        }
+        navigate('/login', { replace: true });
         return;
       }
     }
