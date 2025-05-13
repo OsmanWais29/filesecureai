@@ -101,8 +101,14 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
         }
       } else {
         try {
+          console.log("ClientPortalForm: Attempting to sign in as client with email:", email);
           // Explicitly set userType to client when signing in through client portal
           const { user } = await authService.signIn(email, password, 'client');
+          
+          console.log("ClientPortalForm: Sign in successful, user data:", user);
+          console.log("ClientPortalForm: User metadata:", user?.user_metadata);
+          console.log("ClientPortalForm: User type:", user?.user_metadata?.user_type);
+          
           toast({
             title: "Success",
             description: "Successfully signed in!",
@@ -110,15 +116,22 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
           
           // Redirect to client portal after successful authentication
           if (user?.user_metadata?.user_type === 'client') {
-            // Ensure we're using the correct route for client portal
-            navigate('/client-portal', { replace: true });
+            console.log("ClientPortalForm: Client authentication successful, redirecting to client portal");
+            
+            // Add slight delay to ensure state updates
+            setTimeout(() => {
+              // Ensure we're using the correct route for client portal
+              navigate('/client-portal', { replace: true });
+            }, 100);
           } else {
             // If not client, sign out and show error
+            console.error("ClientPortalForm: User is not a client:", user?.user_metadata?.user_type);
             await authService.signOut();
             setError("This account doesn't have client access.");
           }
           
         } catch (signInError: any) {
+          console.error("ClientPortalForm: Sign in error:", signInError);
           if (signInError.message.includes('Email not confirmed')) {
             // Handle the email confirmation error specifically
             setError("Please check your email and confirm your account before signing in.");
@@ -131,7 +144,7 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
       // Reset attempts on successful auth
       resetAttempts();
     } catch (error: any) {
-      console.error('Auth error:', error);
+      console.error('ClientPortalForm: Auth error:', error);
       recordAttempt();
 
       if (error.message.includes('Invalid login credentials')) {

@@ -19,7 +19,7 @@ import ActivityPage from "./pages/trustee/ActivityPage";
 import AnalyticsPage from "./pages/trustee/AnalyticsPage";
 import EFilingPage from "./pages/trustee/EFilingPage";
 import ProfilePage from "./pages/trustee/ProfilePage";
-import Support from "./pages/Support"; 
+import Support from "./pages/trustee/Support"; 
 import NewSupportTicket from "./pages/NewSupportTicket";
 import SupportPostDetail from "./pages/SupportPostDetail";
 import SettingsPage from "./pages/trustee/SettingsPage";
@@ -32,11 +32,15 @@ import SAFAPage from "./pages/SAFA/SAFAPage";
 import "./App.css";
 
 function App() {
-  const { subdomain } = useAuthState();
+  const { subdomain, user, loading } = useAuthState();
   
   useEffect(() => {
     console.log("App: Current subdomain detected:", subdomain);
-  }, [subdomain]);
+    if (user) {
+      console.log("App: User authenticated:", user.id);
+      console.log("App: User role:", user.user_metadata?.user_type);
+    }
+  }, [subdomain, user]);
   
   // If subdomain is 'client', show client routes
   if (subdomain === 'client') {

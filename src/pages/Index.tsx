@@ -24,20 +24,21 @@ const Index = () => {
   const [isForm47, setIsForm47] = useState<boolean>(false);
   const [loadFailed, setLoadFailed] = useState<boolean>(false);
   const [subdomain, setSubdomain] = useState<string | null>(null);
+  const [redirecting, setRedirecting] = useState<boolean>(false);
   
   const location = useLocation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
   
-  const { user, session, loading: isLoading, signOut: handleSignOut } = useAuthState();
+  const { user, session, loading: isLoading, initialized, signOut: handleSignOut } = useAuthState();
   const [authError, setAuthError] = useState<Error | null>(null);
   const [isEmailConfirmationPending, setIsEmailConfirmationPending] = useState(false);
   const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
 
   // Debug logging for authentication state
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && initialized) {
       if (user) {
         console.log("Index: User is authenticated", {
           id: user.id,
@@ -48,7 +49,7 @@ const Index = () => {
         console.log("Index: User is not authenticated");
       }
     }
-  }, [user, isLoading]);
+  }, [user, isLoading, initialized]);
 
   // Detect subdomain for routing
   useEffect(() => {
@@ -71,7 +72,7 @@ const Index = () => {
 
   // Redirect users based on role or to appropriate login page
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && initialized) {
       // If user is authenticated
       if (user) {
         const userType = user.user_metadata?.user_type;
@@ -82,11 +83,14 @@ const Index = () => {
           // If on client subdomain, go to portal
           if (subdomain === 'client') {
             console.log("Index: Client on client subdomain, going to client portal");
+            setRedirecting(true);
             navigate('/client-portal', { replace: true });
           } 
           // If on trustee subdomain with client account, redirect to client subdomain
           else {
             console.log("Index: Client account detected on trustee subdomain, redirecting to client subdomain");
+            setRedirecting(true);
+            
             const hostname = window.location.hostname;
             if (hostname === 'localhost') {
               window.location.href = window.location.origin + '?subdomain=client';
@@ -107,11 +111,14 @@ const Index = () => {
           // If on trustee subdomain, go to dashboard
           if (subdomain !== 'client') {
             console.log("Index: Trustee on trustee subdomain, redirecting to CRM dashboard");
+            setRedirecting(true);
             navigate('/crm', { replace: true });
           }
           // If on client subdomain with trustee account, redirect to trustee subdomain
           else {
             console.log("Index: Trustee account detected on client subdomain, redirecting to trustee subdomain");
+            setRedirecting(true);
+            
             const hostname = window.location.hostname;
             if (hostname === 'localhost') {
               window.location.href = window.location.origin + '?subdomain=trustee';
@@ -128,6 +135,7 @@ const Index = () => {
           return;
         } else {
           console.log("Index: User type not set, redirecting to login for proper setup:", userType);
+          setRedirecting(true);
           navigate('/login', { replace: true });
           return;
         }
@@ -136,6 +144,7 @@ const Index = () => {
       else {
         // Redirect to the appropriate login page based on subdomain
         console.log("Index: User not authenticated, redirecting to login");
+        setRedirecting(true);
         if (subdomain === 'client') {
           navigate('/login', { replace: true });
         } else {
@@ -144,7 +153,7 @@ const Index = () => {
         return;
       }
     }
-  }, [user, isLoading, navigate, subdomain]);
+  }, [user, isLoading, navigate, subdomain, initialized]);
 
   // Handle document selection from state
   useEffect(() => {
@@ -209,9 +218,16 @@ const Index = () => {
     }
   }, [selectedDocument]);
 
-  // Show loading spinner while auth state is being determined
-  if (isLoading) {
-    return <LoadingSpinner />;
+  // Show loading spinner while auth state is being determined or redirecting
+  if (isLoading || redirecting) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center">
+        <LoadingSpinner />
+        <p className="ml-2 text-muted-foreground">
+          {redirecting ? 'Redirecting...' : 'Loading...'}
+        </p>
+      </div>
+    );
   }
 
   // Handle auth errors
@@ -263,15 +279,21 @@ const Index = () => {
             {session ? (
               <RecentlyAccessedPage />
             ) : (
-              <div className="hidden">
+              <div className="flex h-screen w-full items-center justify-center">
+                <LoadingSpinner />
+                <p className="ml-2 text-muted-foreground">
+                  Redirecting to login...
+                </p>
                 {(() => {
                   // Dynamic redirect based on subdomain
                   console.log("Index: Redirecting to login due to missing session");
-                  if (subdomain === 'client') {
-                    navigate('/login', { replace: true });
-                  } else {
-                    navigate('/login', { replace: true });
-                  }
+                  setTimeout(() => {
+                    if (subdomain === 'client') {
+                      navigate('/login', { replace: true });
+                    } else {
+                      navigate('/login', { replace: true });
+                    }
+                  }, 500);
                   return null;
                 })()}
               </div>

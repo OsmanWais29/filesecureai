@@ -53,6 +53,7 @@ export function useAuthState() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [subdomain, setSubdomain] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false);
 
   // Detect subdomain on mount
   useEffect(() => {
@@ -62,6 +63,8 @@ export function useAuthState() {
   // Handle initial session loading
   useEffect(() => {
     console.log("Initializing auth state listener...");
+    
+    let isMounted = true;
     
     // Set up auth state listener FIRST 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -81,8 +84,10 @@ export function useAuthState() {
           }
         }
         
-        setSession(newSession);
-        setUser(newSession?.user ?? null);
+        if (isMounted) {
+          setSession(newSession);
+          setUser(newSession?.user ?? null);
+        }
       }
     );
 
@@ -95,12 +100,18 @@ export function useAuthState() {
         console.log("User role from session:", currentSession.user.user_metadata?.user_type);
       }
       
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
-      setLoading(false);
+      if (isMounted) {
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        setLoading(false);
+        setInitialized(true);
+      }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, [subdomain]);
 
   /**
@@ -138,6 +149,7 @@ export function useAuthState() {
     user,
     session,
     loading,
+    initialized,
     refreshSession: refreshSessionCallback,
     signOut,
     subdomain

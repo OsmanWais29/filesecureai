@@ -6,13 +6,15 @@ import { AuthForm } from '@/components/auth/AuthForm';
 import { ConfirmationSentScreen } from '@/components/auth/ConfirmationSentScreen';
 import { useAuthState } from '@/hooks/useAuthState';
 import { toast } from 'sonner';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 const TrusteeLogin = () => {
   const [confirmationSent, setConfirmationSent] = useState(false);
   const [confirmationEmail, setConfirmationEmail] = useState('');
   const navigate = useNavigate();
-  const { user, loading, subdomain } = useAuthState();
+  const { user, loading, initialized, subdomain } = useAuthState();
   const [isTrusteeSubdomain, setIsTrusteeSubdomain] = useState(true); // Default to true
+  const [redirecting, setRedirecting] = useState(false);
 
   // Check if we're on the trustee subdomain
   useEffect(() => {
@@ -22,6 +24,7 @@ const TrusteeLogin = () => {
     if (isClientSubdomain) {
       // If we're on client subdomain but accessing trustee login, redirect
       toast.error("Please use the client portal for client login");
+      setRedirecting(true);
       const hostname = window.location.hostname;
       if (hostname === 'localhost') {
         window.location.href = window.location.origin + '?subdomain=client';
@@ -39,24 +42,26 @@ const TrusteeLogin = () => {
 
   // Redirect if user is already authenticated as a trustee
   useEffect(() => {
-    if (!loading && user) {
+    if (!loading && initialized && user) {
       const userType = user.user_metadata?.user_type;
-      console.log('User authenticated as:', userType, 'on', isTrusteeSubdomain ? 'trustee' : 'client', 'subdomain');
+      console.log('TrusteeLogin: User authenticated as:', userType, 'on', isTrusteeSubdomain ? 'trustee' : 'client', 'subdomain');
       
       // Added debug logging for user data
-      console.log('User data:', {
+      console.log('TrusteeLogin: User data:', {
         id: user.id,
         email: user.email,
         metadata: user.user_metadata
       });
       
       if (userType === 'trustee' && isTrusteeSubdomain) {
-        console.log('User already authenticated as trustee, redirecting to CRM dashboard');
+        console.log('TrusteeLogin: User already authenticated as trustee, redirecting to CRM dashboard');
+        setRedirecting(true);
         navigate('/crm', { replace: true });
       } else if (userType === 'client' && isTrusteeSubdomain) {
         // If user is a client on trustee subdomain, redirect them
-        console.log('Client account detected on trustee subdomain');
+        console.log('TrusteeLogin: Client account detected on trustee subdomain');
         toast.error("Please use the client portal for client accounts");
+        setRedirecting(true);
         
         const hostname = window.location.hostname;
         if (hostname === 'localhost') {
@@ -72,7 +77,7 @@ const TrusteeLogin = () => {
         }
       }
     }
-  }, [user, loading, navigate, isTrusteeSubdomain]);
+  }, [user, loading, navigate, isTrusteeSubdomain, initialized]);
 
   const handleConfirmationSent = (email: string) => {
     setConfirmationEmail(email);
@@ -85,6 +90,7 @@ const TrusteeLogin = () => {
 
   const handleSwitchToClientPortal = () => {
     // Redirect to client subdomain
+    setRedirecting(true);
     const hostname = window.location.hostname;
     if (hostname === 'localhost') {
       // For localhost testing
@@ -100,6 +106,18 @@ const TrusteeLogin = () => {
       }
     }
   };
+
+  // Show loading state while checking authentication
+  if (loading || redirecting) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center">
+        <LoadingSpinner />
+        <p className="ml-2 text-muted-foreground">
+          {redirecting ? 'Redirecting...' : 'Loading...'}
+        </p>
+      </div>
+    );
+  }
 
   // If not on trustee subdomain, show minimal content that will redirect
   if (!isTrusteeSubdomain) {

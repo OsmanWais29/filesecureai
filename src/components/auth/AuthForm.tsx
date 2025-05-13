@@ -77,13 +77,13 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
         }
       } else {
         try {
-          console.log(`Attempting to sign in as trustee with email: ${email}`);
+          console.log(`AuthForm: Attempting to sign in as trustee with email: ${email}`);
           const { user } = await authService.signIn(email, password, 'trustee');
           
           // Debug logging
-          console.log("Sign in successful, user data:", user);
-          console.log("User metadata:", user?.user_metadata);
-          console.log("User type:", user?.user_metadata?.user_type);
+          console.log("AuthForm: Sign in successful, user data:", user);
+          console.log("AuthForm: User metadata:", user?.user_metadata);
+          console.log("AuthForm: User type:", user?.user_metadata?.user_type);
           
           toast({
             title: "Success",
@@ -92,16 +92,20 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
           
           // Redirect based on user role
           if (user?.user_metadata?.user_type === 'trustee') {
-            console.log("Trustee authentication successful, redirecting to CRM dashboard");
-            navigate('/crm', { replace: true });
+            console.log("AuthForm: Trustee authentication successful, redirecting to CRM dashboard");
+            
+            // Add slight delay to ensure state updates
+            setTimeout(() => {
+              navigate('/crm', { replace: true });
+            }, 100);
           } else {
             // If not trustee, sign out and show error
-            console.error("User is not a trustee:", user?.user_metadata?.user_type);
+            console.error("AuthForm: User is not a trustee:", user?.user_metadata?.user_type);
             await authService.signOut();
             setError("This account doesn't have trustee access.");
           }
         } catch (signInError: any) {
-          console.error("Sign in error:", signInError);
+          console.error("AuthForm: Sign in error:", signInError);
           if (signInError.message.includes('Email not confirmed')) {
             // Handle the email confirmation error specifically
             setError("Please check your email and confirm your account before signing in.");
@@ -114,7 +118,7 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
       // Reset attempts on successful auth
       resetAttempts();
     } catch (error: any) {
-      console.error('Auth error:', error);
+      console.error('AuthForm: Auth error:', error);
       recordAttempt();
 
       if (error.message.includes('Invalid login credentials')) {
