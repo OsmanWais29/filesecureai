@@ -46,14 +46,15 @@ export const ClientAssistantPanel = ({
     setIsLoading(true);
     try {
       // Initialize conversation in database
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('conversations')
         .insert([{ 
           type: 'client_connect',
           status: 'active',
           created_at: new Date().toISOString(),
           metadata: { client_id: selectedClient.id }
-        }]);
+        }])
+        .select();
 
       if (error) throw error;
       
@@ -62,6 +63,11 @@ export const ClientAssistantPanel = ({
         .from('clients')
         .update({ last_interaction: new Date().toISOString() })
         .eq('id', selectedClient.id);
+
+      // If the conversation was created successfully, load it
+      if (data && data.length > 0) {
+        await loadConversationHistory(data[0].id, "client");
+      }
 
       setShowConversation(true);
       onStartConversation();
@@ -105,6 +111,11 @@ export const ClientAssistantPanel = ({
 
       if (conversationsResponse.error) throw conversationsResponse.error;
       if (interactionsResponse.error) throw interactionsResponse.error;
+
+      // If conversations were found, load the most recent one
+      if (conversationsResponse.data && conversationsResponse.data.length > 0) {
+        await loadConversationHistory(conversationsResponse.data[0].id, "client");
+      }
 
       onViewHistory();
     } catch (error) {

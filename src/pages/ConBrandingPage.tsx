@@ -18,7 +18,8 @@ export const ConBrandingPage = () => {
   const {
     categoryMessages,
     isProcessing,
-    handleSendMessage
+    handleSendMessage,
+    loadConversationHistory
   } = useConversations(activeModule);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -47,6 +48,11 @@ export const ConBrandingPage = () => {
         title: "Conversation History",
         description: `Found ${data.length} previous conversations for ${activeModule} module.`,
       });
+
+      // Load the first conversation if available
+      if (data && data.length > 0) {
+        await loadConversationHistory(data[0].id, activeModule);
+      }
 
       setShowChat(true);
     } catch (error) {

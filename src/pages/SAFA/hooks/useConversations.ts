@@ -63,6 +63,38 @@ export const useConversations = (initialActiveModule: string) => {
     loadSavedMessages();
   }, []);
 
+  // Function to load conversation history from the database
+  const loadConversationHistory = async (conversationId: string, moduleType: string = initialActiveModule) => {
+    try {
+      const { data, error } = await supabase
+        .from('conversations')
+        .select('*')
+        .eq('id', conversationId)
+        .single();
+
+      if (error) throw error;
+      
+      if (data && data.messages && Array.isArray(data.messages)) {
+        // Update the specific module's messages with the conversation history
+        setCategoryMessages(prev => ({
+          ...prev,
+          [moduleType]: data.messages
+        }));
+        return data.messages;
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('Error loading conversation history:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load conversation history."
+      });
+      return [];
+    }
+  };
+
   // Function to handle sending a message
   const handleSendMessage = async (content: string, moduleOverride?: string) => {
     if (!content.trim() || isProcessing) return;
@@ -125,5 +157,6 @@ export const useConversations = (initialActiveModule: string) => {
     categoryMessages,
     handleSendMessage,
     isProcessing,
+    loadConversationHistory
   };
 };
