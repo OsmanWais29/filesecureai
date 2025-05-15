@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Send } from "lucide-react";
 
 interface ChatInputProps {
@@ -21,20 +21,20 @@ export const ChatInput = ({
   return (
     <div className="border-t p-4">
       <div className="flex gap-2">
-        <Input
+        <Textarea
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
           onKeyDown={handleKeyPress}
           placeholder="Type your message..."
+          className="flex-1 min-h-[80px] focus:outline-none focus:ring-1 focus:ring-primary"
           disabled={isProcessing}
-          className="flex-1"
         />
-        <Button 
-          size="icon"
+        <Button
           onClick={handleSendMessage}
-          disabled={isProcessing}
+          disabled={!inputMessage.trim() || isProcessing}
+          className="self-end"
         >
-          <Send className="h-4 w-4" />
+          {isProcessing ? "Sending..." : <Send className="h-4 w-4" />}
         </Button>
       </div>
     </div>

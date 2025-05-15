@@ -1,4 +1,5 @@
 
+import { useEffect, useRef } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 import { ChatMessage as ChatMessageType } from "../types";
@@ -22,6 +23,16 @@ export const ConversationView = ({
   handleKeyPress,
   isProcessing
 }: ConversationViewProps) => {
+  // Reference to scroll to bottom of messages
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to bottom of messages when messages change
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
   return (
     <div className="flex flex-col h-full">
       <ScrollArea className="flex-1 p-4">
@@ -34,6 +45,7 @@ export const ConversationView = ({
               <p className="text-sm text-muted-foreground">AI is thinking...</p>
             </Card>
           )}
+          <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
       <ChatInput 

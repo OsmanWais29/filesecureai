@@ -4,5 +4,14 @@ export interface ChatMessage {
   content: string;
   type: 'user' | 'assistant';
   timestamp: Date;
-  module?: 'document' | 'legal' | 'help' | 'client';
+  module: string;
+}
+
+export interface Client {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  status: string;
+  last_interaction?: string;
 }

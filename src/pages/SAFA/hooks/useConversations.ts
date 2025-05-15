@@ -53,7 +53,12 @@ export const useConversations = (initialActiveModule: string) => {
         const key = `${module}_messages`;
         const saved = localStorage.getItem(key);
         if (saved) {
-          savedMessages[module] = JSON.parse(saved);
+          try {
+            savedMessages[module] = JSON.parse(saved);
+          } catch (e) {
+            console.error(`Error parsing saved messages for ${module}:`, e);
+            // If there's an error parsing, use the initial messages
+          }
         }
       });
       
@@ -113,7 +118,7 @@ export const useConversations = (initialActiveModule: string) => {
     // Update messages with user input
     const updatedMessages = {
       ...categoryMessages,
-      [module]: [...categoryMessages[module], newUserMessage]
+      [module]: [...(categoryMessages[module] || []), newUserMessage]
     };
     
     setCategoryMessages(updatedMessages);
@@ -132,13 +137,17 @@ export const useConversations = (initialActiveModule: string) => {
         
         const finalMessages = {
           ...updatedMessages,
-          [module]: [...updatedMessages[module], assistantMessage]
+          [module]: [...(updatedMessages[module] || []), assistantMessage]
         };
         
         setCategoryMessages(finalMessages);
         
         // Save to localStorage
-        localStorage.setItem(`${module}_messages`, JSON.stringify(finalMessages[module]));
+        try {
+          localStorage.setItem(`${module}_messages`, JSON.stringify(finalMessages[module]));
+        } catch (e) {
+          console.error(`Error saving messages to localStorage for ${module}:`, e);
+        }
         
         setIsProcessing(false);
       }, 1000);

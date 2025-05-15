@@ -52,7 +52,8 @@ export const ClientAssistantPanel = ({
           type: 'client_connect',
           status: 'active',
           created_at: new Date().toISOString(),
-          metadata: { client_id: selectedClient.id }
+          metadata: { client_id: selectedClient.id },
+          messages: categoryMessages.client || [] // Save initial messages
         }])
         .select();
 
@@ -118,6 +119,7 @@ export const ClientAssistantPanel = ({
       }
 
       onViewHistory();
+      setShowConversation(true);
     } catch (error) {
       console.error('Error fetching history:', error);
       toast({
