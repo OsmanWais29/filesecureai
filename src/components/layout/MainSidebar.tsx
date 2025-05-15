@@ -55,6 +55,19 @@ export const MainSidebar = () => {
     };
   }, [isCollapsed]);
 
+  // Navigation item definitions with updated SAFA path
+  const navigationItems = [
+    { icon: Home, label: "Home", path: "/" },
+    { icon: FileText, label: "Documents", path: "/documents" },
+    { icon: FileSearch, label: "Converter", path: "/converter" },
+    { icon: MessageCircle, label: "SAFA", path: "/SAFA" },
+    { icon: Users, label: "CRM", path: "/crm" },
+    { icon: BrainCog, label: "Smart Income Expense", path: "/activity" },
+    { icon: FileCheck, label: "Audit Trail", path: "/e-filing" },
+    { icon: PieChart, label: "Analytics", path: "/analytics" },
+    { icon: Bell, label: "Notifications", path: "/notifications" },
+  ];
+
   const isActivePath = (path: string) => {
     if (path === "/") {
       return location.pathname === "/" || location.pathname === "/index";
@@ -68,18 +81,6 @@ export const MainSidebar = () => {
       setIsSidebarOpen(false);
     }
   };
-
-  const navigationItems = [
-    { icon: Home, label: "Home", path: "/" },
-    { icon: FileText, label: "Documents", path: "/documents" },
-    { icon: FileSearch, label: "Converter", path: "/converter" },
-    { icon: MessageCircle, label: "SAFA", path: "/SAFA" },
-    { icon: Users, label: "CRM", path: "/crm" },
-    { icon: BrainCog, label: "Smart Income Expense", path: "/activity" },
-    { icon: FileCheck, label: "Audit Trail", path: "/e-filing" },
-    { icon: PieChart, label: "Analytics", path: "/analytics" },
-    { icon: Bell, label: "Notifications", path: "/notifications" },
-  ];
 
   const SidebarContent = () => (
     <>

@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { MenuIcon, User } from "lucide-react";
+import { MenuIcon, User, Settings, Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuthState } from "@/hooks/useAuthState";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -23,12 +23,26 @@ const SAFAHeader: React.FC<SAFAHeaderProps> = ({ toggleSidebar }) => {
   return (
     <header className="bg-background border-b px-4 py-3 flex items-center justify-between">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={toggleSidebar} className="md:hidden">
+        <Button variant="ghost" size="icon" onClick={toggleSidebar}>
           <MenuIcon className="h-5 w-5" />
         </Button>
         <h1 className="text-lg font-semibold">SecureFiles AI Assistant</h1>
       </div>
       <div className="flex items-center gap-2">
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={() => navigate('/notifications')}
+        >
+          <Bell className="h-5 w-5" />
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={() => navigate('/settings')}
+        >
+          <Settings className="h-5 w-5" />
+        </Button>
         <Button 
           variant="ghost" 
           size="icon" 

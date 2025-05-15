@@ -27,7 +27,7 @@ const Index = () => {
   return (
     <div className="h-screen w-full flex items-center justify-center">
       <LoadingSpinner />
-      <p className="ml-2 text-muted-foreground">Redirecting...</p>
+      <p className="ml-2 text-muted-foreground">Redirecting to your dashboard...</p>
     </div>
   );
 };

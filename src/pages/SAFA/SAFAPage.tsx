@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import SAFAHeader from "./components/SAFAHeader";
 import SAFASidebar from "./components/Sidebar/SAFASidebar";
@@ -12,16 +12,31 @@ const SAFAPage = () => {
     setSidebarCollapsed(!sidebarCollapsed);
   };
 
+  // Emit custom event when sidebar collapses/expands
+  useEffect(() => {
+    // Create and dispatch a custom event for sidebar collapse
+    const customEvent = new CustomEvent('safaSidebarCollapse', { 
+      detail: { collapsed: sidebarCollapsed } 
+    });
+    window.dispatchEvent(customEvent);
+
+    // Small delay to allow transition to complete
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [sidebarCollapsed]);
+
   return (
     <MainLayout>
       <div className="flex h-full flex-col">
         <SAFAHeader toggleSidebar={toggleSidebar} />
         <div className="flex flex-1 overflow-hidden">
-          {/* Simplified sidebar usage */}
-          <div className={`${sidebarCollapsed ? 'w-0 md:w-16' : 'w-64'} transition-all duration-300 border-r`}>
-            <SAFASidebar isCollapsed={sidebarCollapsed} onToggle={toggleSidebar} />
+          <SAFASidebar isCollapsed={sidebarCollapsed} onToggle={toggleSidebar} />
+          <div className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-0'}`}>
+            <SAFAContent />
           </div>
-          <SAFAContent />
         </div>
       </div>
     </MainLayout>

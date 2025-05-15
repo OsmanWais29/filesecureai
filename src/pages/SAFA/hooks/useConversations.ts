@@ -1,12 +1,13 @@
 
-import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
-import { useToast } from "@/hooks/use-toast";
-import { ChatMessage } from "../types";
+import { useState, useEffect } from 'react';
+import { ChatMessage } from '../types';
+import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '@/lib/supabase';
+import { useAuthState } from '@/hooks/useAuthState';
+import { useToast } from '@/hooks/use-toast';
 
-type ModuleType = "document" | "legal" | "help" | "client";
-
-const INITIAL_MESSAGES: Record<ModuleType, ChatMessage[]> = {
+// Define initial messages for each module
+const INITIAL_MESSAGES: Record<string, ChatMessage[]> = {
   document: [{
     id: '1',
     content: "Welcome to Document Management. I can help you analyze, organize, and manage your documents. How can I assist you today?",
@@ -30,84 +31,85 @@ const INITIAL_MESSAGES: Record<ModuleType, ChatMessage[]> = {
   }],
   client: [{
     id: '1',
-    content: "Welcome to AI Client Assistant and enhanced multimodal chatbot with voice, text, and sentiment analysis capabilities. Seamlessly integrates with CRM for real-time client updates and engagement tracking",
+    content: "Welcome to AI Client Assistant. How can I help you connect with and understand your clients better today?",
     type: 'assistant',
     timestamp: new Date(),
     module: 'client'
   }]
 };
 
-export const useConversations = (activeModule: ModuleType) => {
-  const [categoryMessages, setCategoryMessages] = useState<Record<ModuleType, ChatMessage[]>>(INITIAL_MESSAGES);
-  const [isProcessing, setIsProcessing] = useState(false);
+export const useConversations = (initialActiveModule: string) => {
+  const [categoryMessages, setCategoryMessages] = useState<Record<string, ChatMessage[]>>(INITIAL_MESSAGES);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const { user } = useAuthState();
   const { toast } = useToast();
 
-  const loadConversationHistory = async (module: ModuleType) => {
-    try {
-      const { data, error } = await supabase
-        .from('conversations')
-        .select('*')
-        .eq('module', module)
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (error) throw error;
-
-      if (data && data.length > 0 && data[0].messages) {
-        setCategoryMessages(prev => ({
-          ...prev,
-          [module]: data[0].messages
-        }));
-      }
-    } catch (error) {
-      console.error('Error loading conversation history:', error);
-    }
-  };
-
-  const handleSendMessage = async (inputMessage: string) => {
-    if (!inputMessage.trim() || isProcessing) return;
-
-    setIsProcessing(true);
-
-    const newMessage: ChatMessage = {
-      id: Date.now().toString(),
-      content: inputMessage,
-      type: 'user',
-      timestamp: new Date(),
-      module: activeModule
-    };
-
-    const updatedMessages = [...categoryMessages[activeModule], newMessage];
-    setCategoryMessages(prev => ({
-      ...prev,
-      [activeModule]: updatedMessages
-    }));
-
-    try {
-      const response = await supabase.functions.invoke('process-ai-request', {
-        body: {
-          message: inputMessage,
-          module: activeModule,
-          documentId: null
+  // Load conversations from localStorage or database on component mount
+  useEffect(() => {
+    const loadSavedMessages = () => {
+      const savedMessages: Record<string, ChatMessage[]> = {...INITIAL_MESSAGES};
+      
+      Object.keys(INITIAL_MESSAGES).forEach(module => {
+        const key = `${module}_messages`;
+        const saved = localStorage.getItem(key);
+        if (saved) {
+          savedMessages[module] = JSON.parse(saved);
         }
       });
+      
+      setCategoryMessages(savedMessages);
+    };
+    
+    loadSavedMessages();
+  }, []);
 
-      const assistantMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        content: response.data.response || "I understand. How can I assist you further?",
-        type: 'assistant',
-        timestamp: new Date(),
-        module: activeModule
-      };
-
-      const finalMessages = [...updatedMessages, assistantMessage];
-      setCategoryMessages(prev => ({
-        ...prev,
-        [activeModule]: finalMessages
-      }));
-
-      // Store messages in local storage instead of database for now
-      localStorage.setItem(`${activeModule}_messages`, JSON.stringify(finalMessages));
+  // Function to handle sending a message
+  const handleSendMessage = async (content: string, moduleOverride?: string) => {
+    if (!content.trim() || isProcessing) return;
+    
+    const module = moduleOverride || initialActiveModule;
+    setIsProcessing(true);
+    
+    const newUserMessage: ChatMessage = {
+      id: uuidv4(),
+      content: content,
+      type: 'user',
+      timestamp: new Date(),
+      module: module
+    };
+    
+    // Update messages with user input
+    const updatedMessages = {
+      ...categoryMessages,
+      [module]: [...categoryMessages[module], newUserMessage]
+    };
+    
+    setCategoryMessages(updatedMessages);
+    
+    try {
+      // In a real app, you would call an AI service here
+      // This is a placeholder for the actual API call
+      setTimeout(() => {
+        const assistantMessage: ChatMessage = {
+          id: uuidv4(),
+          content: `I understand your query about "${content}". As this is a demo version, I can provide basic assistance. In the full version, I would give a detailed response based on the ${module} module.`,
+          type: 'assistant',
+          timestamp: new Date(),
+          module: module
+        };
+        
+        const finalMessages = {
+          ...updatedMessages,
+          [module]: [...updatedMessages[module], assistantMessage]
+        };
+        
+        setCategoryMessages(finalMessages);
+        
+        // Save to localStorage
+        localStorage.setItem(`${module}_messages`, JSON.stringify(finalMessages[module]));
+        
+        setIsProcessing(false);
+      }, 1000);
     } catch (error) {
       console.error('Error processing message:', error);
       toast({
@@ -115,28 +117,13 @@ export const useConversations = (activeModule: ModuleType) => {
         title: "Error",
         description: "Failed to process your request. Please try again."
       });
-    } finally {
       setIsProcessing(false);
     }
   };
 
-  useEffect(() => {
-    // Load messages from localStorage on module change
-    const savedMessages = localStorage.getItem(`${activeModule}_messages`);
-    if (savedMessages) {
-      setCategoryMessages(prev => ({
-        ...prev,
-        [activeModule]: JSON.parse(savedMessages)
-      }));
-    } else {
-      loadConversationHistory(activeModule);
-    }
-  }, [activeModule]);
-
   return {
     categoryMessages,
-    isProcessing,
     handleSendMessage,
-    loadConversationHistory
+    isProcessing,
   };
 };
