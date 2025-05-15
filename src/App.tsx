@@ -1,4 +1,3 @@
-
 import { Routes, Route, Navigate } from "react-router-dom";
 import NotFound from "./pages/NotFound";
 import ClientPortal from "./pages/ClientPortal";
@@ -76,12 +75,12 @@ function App() {
     );
   }
   
-  // If subdomain is 'trustee' or null, show trustee routes (default)
+  // For trustee routes:
   console.log("App: Rendering trustee routes for trustee subdomain");
   return (
     <Routes>
-      {/* Root route now redirects to appropriate login */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      {/* Root route now redirects to login if not authenticated, home if authenticated */}
+      <Route path="/" element={<Index />} />
       
       {/* Separate login routes for trustee */}
       <Route path="/login" element={<TrusteeLogin />} />
