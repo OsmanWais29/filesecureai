@@ -1,86 +1,94 @@
 
 import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+
+interface FilterProps {
+  showHighPriority: boolean;
+  showMediumPriority: boolean;
+  showRegularMeetings: boolean;
+  showSelfBooked: boolean;
+}
 
 interface FilterDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  filters: {
-    showHighPriority: boolean;
-    showMediumPriority: boolean;
-    showRegularMeetings: boolean;
-    showSelfBooked: boolean;
-  };
-  setFilters: React.Dispatch<React.SetStateAction<{
-    showHighPriority: boolean;
-    showMediumPriority: boolean;
-    showRegularMeetings: boolean;
-    showSelfBooked: boolean;
-  }>>;
+  filters: FilterProps;
+  setFilters: React.Dispatch<React.SetStateAction<FilterProps>>;
 }
 
-export const FilterDialog: React.FC<FilterDialogProps> = ({
+export function FilterDialog({
   open,
   onOpenChange,
   filters,
   setFilters
-}) => {
-  const handleFilterChange = (key: keyof typeof filters) => {
+}: FilterDialogProps) {
+  const handleFilterChange = (key: keyof FilterProps) => {
     setFilters(prev => ({
       ...prev,
       [key]: !prev[key]
     }));
   };
-  
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>
           <DialogTitle>Filter Appointments</DialogTitle>
         </DialogHeader>
-        
-        <div className="grid gap-4 py-4">
-          <div className="flex items-center space-x-2">
-            <Checkbox 
-              id="highPriority" 
+        <div className="py-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="high-priority" className="flex-1">
+              High priority appointments
+            </Label>
+            <Switch
+              id="high-priority"
               checked={filters.showHighPriority}
               onCheckedChange={() => handleFilterChange('showHighPriority')}
             />
-            <Label htmlFor="highPriority">High Priority</Label>
           </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox 
-              id="mediumPriority" 
+          
+          <div className="flex items-center justify-between">
+            <Label htmlFor="medium-priority" className="flex-1">
+              Medium priority appointments
+            </Label>
+            <Switch
+              id="medium-priority"
               checked={filters.showMediumPriority}
               onCheckedChange={() => handleFilterChange('showMediumPriority')}
             />
-            <Label htmlFor="mediumPriority">Medium Priority</Label>
           </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox 
-              id="regularMeetings" 
+          
+          <div className="flex items-center justify-between">
+            <Label htmlFor="regular-meetings" className="flex-1">
+              Regular meetings
+            </Label>
+            <Switch
+              id="regular-meetings"
               checked={filters.showRegularMeetings}
               onCheckedChange={() => handleFilterChange('showRegularMeetings')}
             />
-            <Label htmlFor="regularMeetings">Regular Meetings</Label>
           </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox 
-              id="selfBooked" 
+          
+          <div className="flex items-center justify-between">
+            <Label htmlFor="self-booked" className="flex-1">
+              Self-booked appointments
+            </Label>
+            <Switch
+              id="self-booked"
               checked={filters.showSelfBooked}
               onCheckedChange={() => handleFilterChange('showSelfBooked')}
             />
-            <Label htmlFor="selfBooked">Self-booked Meetings</Label>
           </div>
         </div>
-        
         <DialogFooter>
-          <Button onClick={() => onOpenChange(false)}>Apply Filters</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
-};
+}

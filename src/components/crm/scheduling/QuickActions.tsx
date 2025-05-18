@@ -1,26 +1,41 @@
 
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { 
-  CalendarIcon,
-  Clock3,
-  BellRing
+  UserPlus, 
+  CalendarPlus, 
+  ListPlus, 
+  Mail, 
+  Phone
 } from "lucide-react";
 
-export const QuickActions = () => {
+export function QuickActions() {
   return (
-    <div className="flex flex-col gap-2">
-      <Button className="w-full justify-start gap-2" size="sm">
-        <CalendarIcon className="h-4 w-4" />
-        Schedule a New Meeting
+    <div className="grid grid-cols-2 gap-2">
+      <Button variant="outline" className="flex flex-col h-auto py-4 gap-2">
+        <UserPlus className="h-5 w-5 text-blue-500" />
+        <span className="text-xs">Add Client</span>
       </Button>
-      <Button variant="outline" className="w-full justify-start gap-2" size="sm">
-        <Clock3 className="h-4 w-4" />
-        Find Earliest Available Slot
+      
+      <Button variant="outline" className="flex flex-col h-auto py-4 gap-2">
+        <CalendarPlus className="h-5 w-5 text-green-500" />
+        <span className="text-xs">Schedule</span>
       </Button>
-      <Button variant="outline" className="w-full justify-start gap-2" size="sm">
-        <BellRing className="h-4 w-4" />
-        Send Appointment Reminders
+      
+      <Button variant="outline" className="flex flex-col h-auto py-4 gap-2">
+        <ListPlus className="h-5 w-5 text-amber-500" />
+        <span className="text-xs">New Task</span>
+      </Button>
+      
+      <Button variant="outline" className="flex flex-col h-auto py-4 gap-2">
+        <Mail className="h-5 w-5 text-purple-500" />
+        <span className="text-xs">Send Email</span>
+      </Button>
+      
+      <Button variant="outline" className="flex flex-col h-auto py-4 gap-2 col-span-2">
+        <Phone className="h-5 w-5 text-red-500" />
+        <span className="text-xs">Log Call</span>
       </Button>
     </div>
   );
-};
+}

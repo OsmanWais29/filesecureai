@@ -1,7 +1,8 @@
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import React from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
-// Staff availability type
 export interface StaffAvailabilityItem {
   id: string;
   name: string;
@@ -18,37 +19,49 @@ interface StaffAvailabilityProps {
   staffList: StaffAvailabilityItem[];
 }
 
-export const StaffAvailability = ({ staffList }: StaffAvailabilityProps) => {
+export function StaffAvailability({ staffList }: StaffAvailabilityProps) {
   return (
-    <div className="space-y-3">
-      {staffList.map((staff) => (
-        <div key={staff.id} className="border rounded-md p-3">
-          <div className="flex items-center gap-2 mb-2">
-            <Avatar className="h-7 w-7">
-              <AvatarImage src={staff.avatar} alt={staff.name} />
-              <AvatarFallback className={staff.color + " text-white"}>
-                {staff.name.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <div className="font-medium text-sm">{staff.name}</div>
-              <div className="text-xs text-gray-500">{staff.role}</div>
-            </div>
-          </div>
-          <div className="space-y-1 mt-2">
-            {staff.schedule.map((day, index) => (
-              <div key={index} className="flex justify-between items-center text-xs">
-                <span className="font-medium">{day.day}:</span>
-                <span className="text-gray-500">
-                  {day.busy.length > 0 ? 
-                    `Busy: ${day.busy.join(', ')}` : 
-                    'Fully Available'}
-                </span>
+    <div className="space-y-4">
+      {staffList.map((staff) => {
+        // Find today's schedule
+        const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+        const todaySchedule = staff.schedule.find((s) => s.day === today) || {
+          day: today,
+          busy: [],
+        };
+
+        return (
+          <Card key={staff.id}>
+            <CardContent className="p-3">
+              <div className="flex items-center gap-3">
+                <Avatar className={staff.color}>
+                  <AvatarImage src={staff.avatar} alt={staff.name} />
+                  <AvatarFallback>{staff.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <h4 className="font-medium text-sm">{staff.name}</h4>
+                  <p className="text-xs text-muted-foreground">{staff.role}</p>
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
-      ))}
+
+              <div className="mt-2">
+                <h5 className="text-xs font-medium mb-1">Today's Schedule</h5>
+                {todaySchedule.busy.length > 0 ? (
+                  <div className="text-xs space-y-1">
+                    {todaySchedule.busy.map((time, i) => (
+                      <div key={i} className="bg-gray-100 p-1 rounded">
+                        Busy: {time}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-xs text-muted-foreground">Available all day</div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
-};
+}

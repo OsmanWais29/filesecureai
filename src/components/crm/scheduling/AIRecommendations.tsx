@@ -1,17 +1,12 @@
 
-import { 
-  Alert, 
-  AlertTitle, 
-  AlertDescription 
-} from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import React from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-// AI suggestions type
 export interface AISuggestion {
   id: string;
   message: string;
-  priority: 'high' | 'medium' | 'low';
+  priority: "high" | "medium" | "low";
   actionable: boolean;
 }
 
@@ -19,45 +14,29 @@ interface AIRecommendationsProps {
   suggestions: AISuggestion[];
 }
 
-export const AIRecommendations = ({ suggestions }: AIRecommendationsProps) => {
+export function AIRecommendations({ suggestions }: AIRecommendationsProps) {
+  const priorityBgColors = {
+    high: "border-l-4 border-red-500 bg-red-50",
+    medium: "border-l-4 border-amber-500 bg-amber-50",
+    low: "border-l-4 border-green-500 bg-green-50",
+  };
+
   return (
-    <div className="space-y-3">
-      {suggestions.map((suggestion) => (
-        <Alert 
-          key={suggestion.id} 
-          className={
-            suggestion.priority === 'high' 
-              ? 'border-red-300 bg-red-50' 
-              : suggestion.priority === 'medium' 
-                ? 'border-amber-300 bg-amber-50' 
-                : 'border-blue-300 bg-blue-50'
-          }
-        >
-          <AlertTitle className="flex items-center gap-2 text-sm">
-            {suggestion.priority === 'high' ? (
-              <AlertCircle className="h-4 w-4 text-red-500" />
-            ) : suggestion.priority === 'medium' ? (
-              <AlertCircle className="h-4 w-4 text-amber-500" /> 
-            ) : (
-              <AlertCircle className="h-4 w-4 text-blue-500" />
-            )}
-            {suggestion.priority === 'high' 
-              ? 'Urgent Action Needed' 
-              : suggestion.priority === 'medium' 
-                ? 'Recommended Action' 
-                : 'Insight'
-            }
-          </AlertTitle>
-          <AlertDescription className="text-sm mt-1">
-            {suggestion.message}
-            {suggestion.actionable && (
-              <div className="mt-2">
-                <Button size="sm" variant="outline" className="text-xs">Take Action</Button>
-              </div>
-            )}
-          </AlertDescription>
-        </Alert>
-      ))}
+    <div className="space-y-4">
+      {suggestions.length === 0 ? (
+        <p className="text-center text-muted-foreground">No recommendations available</p>
+      ) : (
+        suggestions.map((suggestion) => (
+          <Card key={suggestion.id} className={`${priorityBgColors[suggestion.priority]}`}>
+            <CardContent className="p-3">
+              <p className="text-sm mb-2">{suggestion.message}</p>
+              {suggestion.actionable && (
+                <Button variant="outline" size="sm" className="mt-1">Take Action</Button>
+              )}
+            </CardContent>
+          </Card>
+        ))
+      )}
     </div>
   );
-};
+}
