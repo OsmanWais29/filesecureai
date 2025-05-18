@@ -1,92 +1,97 @@
-import { supabase } from "@/lib/supabase";
-import { v4 as uuidv4 } from 'uuid';
 
-export const createClientFolder = async (documentId: string, document: any): Promise<string | null> => {
+import { supabase } from '@/lib/supabase';
+
+export const createClientFolder = async (documentId: string, document: any) => {
+  if (!documentId || !document) {
+    console.log('Missing document ID or document data for folder creation');
+    return;
+  }
+
   try {
-    if (!document || !document.metadata || typeof document.metadata !== 'object') {
-      console.warn('Document or document metadata is missing.');
-      return null;
-    }
-
-    // Safe access with type checking
-    const isProcessingComplete = document.metadata && 
-      typeof document.metadata === 'object' && 
-      'processing_complete' in document.metadata && 
-      document.metadata.processing_complete === true;
-    
-    if (!isProcessingComplete) {
-      console.log('Document processing is not complete, skipping folder creation.');
-      return null;
-    }
-
-    const clientName = document.metadata.client_name as string;
+    const clientName = getClientName(document);
     if (!clientName) {
-      console.warn('Client name is missing from document metadata.');
-      return null;
+      console.log('No client name available for folder creation');
+      return;
     }
 
-    // Check if a folder with the client name already exists
+    // Check if client folder already exists
     const { data: existingFolders, error: folderError } = await supabase
       .from('documents')
       .select('id')
       .eq('title', clientName)
       .eq('is_folder', true)
-      .eq('folder_type', 'client');
+      .limit(1);
 
     if (folderError) {
       console.error('Error checking for existing client folder:', folderError);
-      return null;
+      return;
     }
 
-    let folderId: string;
-    if (existingFolders && existingFolders.length > 0) {
-      // Use the existing folder's ID
-      folderId = existingFolders[0].id;
-      console.log(`Client folder "${clientName}" already exists with ID: ${folderId}`);
-    } else {
-      // Create a new folder for the client
-      const newFolderId = uuidv4();
-      const { error: insertError } = await supabase
+    let clientFolderId;
+
+    if (!existingFolders || existingFolders.length === 0) {
+      // Create new client folder
+      const { data: newFolder, error: createError } = await supabase
         .from('documents')
         .insert([
           {
-            id: newFolderId,
             title: clientName,
             is_folder: true,
-            folder_type: 'client',
-            storage_path: '',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            size: 0,
-            metadata: { client_name: clientName }
+            folder_type: 'client'
           }
-        ]);
+        ])
+        .select('id')
+        .single();
 
-      if (insertError) {
-        console.error('Error creating client folder:', insertError);
-        return null;
+      if (createError) {
+        console.error('Error creating client folder:', createError);
+        return;
       }
 
-      folderId = newFolderId;
-      console.log(`Client folder "${clientName}" created with ID: ${folderId}`);
+      clientFolderId = newFolder.id;
+    } else {
+      clientFolderId = existingFolders[0].id;
     }
 
-    // Update the document to reference the client folder
-    const { error: updateError } = await supabase
+    // Update document to be under client folder
+    await supabase
       .from('documents')
-      .update({ parent_folder_id: folderId })
+      .update({
+        parent_folder_id: clientFolderId
+      })
       .eq('id', documentId);
 
-    if (updateError) {
-      console.error('Error updating document with folder ID:', updateError);
-      return null;
-    }
-
-    console.log(`Document "${documentId}" updated to reference folder "${clientName}" (${folderId})`);
-    return folderId;
-
+    return clientFolderId;
   } catch (error) {
-    console.error('Error creating client folder:', error);
-    return null;
+    console.error('Error organizing folder:', error);
   }
 };
+
+const getClientName = (document: any): string | null => {
+  if (!document) return null;
+  
+  try {
+    // Try to extract client name from metadata or document title
+    if (document.metadata?.client_name) {
+      return document.metadata.client_name;
+    }
+    
+    if (document.title) {
+      const titleParts = document.title.split('-');
+      if (titleParts.length > 1) {
+        return titleParts[0].trim();
+      }
+      
+      // If client name can't be determined, use "Uncategorized"
+      return 'Uncategorized';
+    }
+    
+    return 'Uncategorized';
+  } catch (error) {
+    console.error('Error extracting client name:', error);
+    return 'Uncategorized';
+  }
+};
+
+// Export the functions to use them in other files
+export { getClientName };

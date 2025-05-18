@@ -9,7 +9,7 @@ export interface DocumentDetails {
   analysis?: AnalysisResult[];
   comments?: Comment[];
   tasks?: Task[];
-  deadlines?: Deadline[];
+  deadlines?: Deadline[];  // Add deadlines property
   versions?: Version[];
   metadata?: Record<string, any>;
 }
@@ -58,6 +58,8 @@ export interface Task {
   document_id?: string;
   created_at?: string;
   updated_at?: string;
+  regulation?: string;  // Add regulation property
+  solution?: string;    // Add solution property
 }
 
 export interface Deadline {

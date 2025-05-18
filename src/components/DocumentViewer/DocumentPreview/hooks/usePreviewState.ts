@@ -3,17 +3,17 @@ import { useToast } from "@/hooks/use-toast";
 import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import { useFileChecker } from "./useFileChecker";
 import { useDocumentAI } from "./useDocumentAI";
-import { useDocumentDetails } from "./../hooks/useDocumentDetails";
-import { useDocumentRealtime } from "./../hooks/useDocumentRealtime";
+import { useDocumentDetails } from "./useDocumentDetails";
+import { useDocumentRealtime } from "./useDocumentRealtime";
 import { startTiming, endTiming } from "@/utils/performanceMonitor";
 import { supabase } from "@/lib/supabase";
-import { DocumentRecord } from "../types";
+import { DocumentRecord } from "./types";
 
 export const usePreviewState = (documentId: string, storagePath: string) => {
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [fileExists, setFileExists] = useState(false);
   const [isExcelFile, setIsExcelFile] = useState(false);
-	const [fileType, setFileType] = useState<string | null>(null);
+  const [fileType, setFileType] = useState<string | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [session, setSession] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -247,7 +247,7 @@ export const usePreviewState = (documentId: string, storagePath: string) => {
     fileUrl,
     fileExists,
     isExcelFile,
-		fileType,
+    fileType,
     previewError,
     setPreviewError,
     analyzing,
