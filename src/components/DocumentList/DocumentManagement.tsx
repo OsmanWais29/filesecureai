@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useDocumentsWithSearch } from "./hooks/useDocumentsWithSearch";
 import { cn } from "@/lib/utils";
 import { Toolbar } from "./components/Toolbar";
@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { UncategorizedDocuments } from "./components/UncategorizedDocuments";
 import { DocumentGrid } from "./components/DocumentGrid";
 import PreviewDialog from "./components/PreviewDialog";
+import { Document } from "./types";
 
 interface DocumentManagementProps {
   onDocumentSelect?: (id: string) => void;
@@ -56,54 +57,61 @@ export const DocumentManagement: React.FC<DocumentManagementProps> = ({ onDocume
   }, [isSidebarCollapsed]);
 
   // Filter documents based on search, folder, and type
-  const filteredDocuments = documents.filter(doc => {
-    const matchesSearch = !searchQuery || 
-      (doc.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      doc.metadata?.client_name?.toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    const matchesFolder = !selectedFolder ? true : 
-      selectedFolder === 'Uncategorized' 
-        ? !doc.parent_folder_id && !doc.metadata?.client_name
-        : doc.metadata?.client_name === selectedFolder || doc.parent_folder_id === selectedFolder;
-    
-    const matchesType = !filterType || doc.type === filterType;
+  const filteredDocuments = useMemo(() => {
+    return documents.filter(doc => {
+      const matchesSearch = !searchQuery || 
+        (doc.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        (doc.metadata && doc.metadata.client_name?.toLowerCase().includes(searchQuery.toLowerCase())));
+      
+      const matchesFolder = !selectedFolder ? true : 
+        selectedFolder === 'Uncategorized' 
+          ? !doc.parent_folder_id && (!doc.metadata || !doc.metadata.client_name)
+          : (doc.metadata && doc.metadata.client_name === selectedFolder) || doc.parent_folder_id === selectedFolder;
+      
+      const matchesType = !filterType || doc.type === filterType;
 
-    return matchesSearch && matchesFolder && matchesType;
-  });
+      return matchesSearch && matchesFolder && matchesType;
+    });
+  }, [documents, searchQuery, selectedFolder, filterType]);
 
   // Group documents by client
-  const groupedByClient = filteredDocuments.reduce((acc, doc) => {
-    let clientName = 'Uncategorized';
-    
-    if (doc.metadata?.client_name) {
-      clientName = doc.metadata.client_name;
-    } else if (doc.parent_folder_id) {
-      const parentDoc = documents.find(d => d.id === doc.parent_folder_id);
-      if (parentDoc?.metadata?.client_name) {
-        clientName = parentDoc.metadata.client_name;
+  const groupedByClient = useMemo(() => {
+    return filteredDocuments.reduce((acc, doc) => {
+      let clientName = 'Uncategorized';
+      
+      if (doc.metadata && doc.metadata.client_name) {
+        clientName = doc.metadata.client_name;
+      } else if (doc.parent_folder_id) {
+        const parentDoc = documents.find(d => d.id === doc.parent_folder_id);
+        if (parentDoc && parentDoc.metadata && parentDoc.metadata.client_name) {
+          clientName = parentDoc.metadata.client_name;
+        }
       }
-    }
 
-    if (!acc[clientName]) {
-      acc[clientName] = {
-        documents: [],
-        lastUpdated: null as Date | null,
-        types: new Set<string>()
-      };
-    }
-    
-    acc[clientName].documents.push(doc);
-    acc[clientName].types.add(doc.type || 'Other');
-    const updatedAt = new Date(doc.updated_at);
-    if (!acc[clientName].lastUpdated || updatedAt > acc[clientName].lastUpdated) {
-      acc[clientName].lastUpdated = updatedAt;
-    }
-    return acc;
-  }, {} as Record<string, { 
-    documents: typeof documents, 
-    lastUpdated: Date | null,
-    types: Set<string>
-  }>);
+      if (!acc[clientName]) {
+        acc[clientName] = {
+          documents: [],
+          lastUpdated: null as Date | null,
+          types: new Set<string>()
+        };
+      }
+      
+      acc[clientName].documents.push(doc);
+      acc[clientName].types.add(doc.type || 'Other');
+      
+      // Use optional chaining and nullish coalescing to handle optional properties
+      const updatedAt = doc.updated_at ? new Date(doc.updated_at) : new Date();
+      if (!acc[clientName].lastUpdated || updatedAt > acc[clientName].lastUpdated!) {
+        acc[clientName].lastUpdated = updatedAt;
+      }
+      
+      return acc;
+    }, {} as Record<string, { 
+      documents: Document[], 
+      lastUpdated: Date | null,
+      types: Set<string>
+    }>);
+  }, [filteredDocuments, documents]);
 
   const handleDocumentClick = (document: { id: string; title: string; storage_path: string }) => {
     setPreviewDocument(document);
@@ -112,8 +120,9 @@ export const DocumentManagement: React.FC<DocumentManagementProps> = ({ onDocume
   const renderContent = () => {
     if (selectedFolder === 'Uncategorized') {
       const uncategorizedDocs = filteredDocuments.filter(
-        doc => !doc.parent_folder_id && !doc.metadata?.client_name
+        doc => !doc.parent_folder_id && (!doc.metadata || !doc.metadata.client_name)
       );
+      
       return (
         <UncategorizedDocuments 
           documents={uncategorizedDocs}

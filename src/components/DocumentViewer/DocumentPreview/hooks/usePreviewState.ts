@@ -1,210 +1,253 @@
-
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { useNetworkStatus } from "@/hooks/useNetworkStatus";
+import { useFileChecker } from "./useFileChecker";
+import { useDocumentAI } from "./useDocumentAI";
+import { useDocumentDetails } from "./../hooks/useDocumentDetails";
+import { useDocumentRealtime } from "./../hooks/useDocumentRealtime";
+import { startTiming, endTiming } from "@/utils/performanceMonitor";
 import { supabase } from "@/lib/supabase";
-import { useDocumentAnalysis } from "../hooks/useDocumentAnalysis";
-import { useFilePreview } from "./usePreviewState/useFilePreview";
-import { useAnalysisInitialization } from "./usePreviewState/useAnalysisInitialization";
-import { toast } from "sonner";
-import { refreshSession } from "@/hooks/useAuthState";
-import { checkAndRefreshToken } from "@/utils/jwtMonitoring";
+import { DocumentRecord } from "../types";
 
-const usePreviewState = (
-  storagePath: string,
-  documentId: string = "",
-  title: string = "Document Preview",
-  onAnalysisComplete?: () => void,
-  bypassAnalysis: boolean = false
-) => {
-  const [session, setSession] = useState<any>(null);
-  const [previewError, setPreviewError] = useState<string | null>(null);
-  const [fileExists, setFileExists] = useState(false);
+export const usePreviewState = (documentId: string, storagePath: string) => {
   const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const [fileExists, setFileExists] = useState(false);
   const [isExcelFile, setIsExcelFile] = useState(false);
-  const [loadRetries, setLoadRetries] = useState(0);
+	const [fileType, setFileType] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [session, setSession] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [attemptCount, setAttemptCount] = useState(0);
   const [hasFallbackToDirectUrl, setHasFallbackToDirectUrl] = useState(false);
-  const [fileType, setFileType] = useState<string | null>(null);
+  const [forceReload, setForceReload] = useState(0);
   const [errorDetails, setErrorDetails] = useState<any>(null);
+  const attemptCountRef = useRef(0);
+  const maxAttempts = 3;
+  const { toast } = useToast();
+  const { isOnline } = useNetworkStatus();
+  const [isAnalysisStuck, setIsAnalysisStuck] = useState({ stuck: false, minutesStuck: 0 });
+  const [useDirectLink, setUseDirectLink] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(100);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
+  // Document AI analysis states
   const {
     analyzing,
     error,
     analysisStep,
     progress,
+    handleAnalyzeDocument,
+    handleAnalysisRetry,
     processingStage,
-    handleAnalyzeDocument
-  } = useDocumentAnalysis(storagePath, onAnalysisComplete);
+    documentRecord,
+    fetchDocumentDetails,
+    updateProcessingStep,
+    checkProcessingError,
+    getProcessingSteps
+  } = useDocumentAI(documentId, storagePath);
 
-  const { 
-    checkFile, 
-    networkStatus, 
-    attemptCount,
-    hasFileLoadStarted,
-    resetRetries,
-    forceRefresh: filePreviewRefresh,  // Renamed to avoid collision
-    diagnostics
-  } = useFilePreview({
-    storagePath,
-    setFileExists,
-    setFileUrl,
-    setIsExcelFile, 
-    setPreviewError,
-    setFileType
-  });
+  // File checking utilities
+  const { checkFile, handleFileCheckError } = useFileChecker();
 
-  useEffect(() => {
+  // Realtime document updates
+  useDocumentRealtime(documentId, fetchDocumentDetails);
+
+  // Zoom functions
+  const onZoomIn = () => setZoomLevel(prev => Math.min(prev + 10, 200));
+  const onZoomOut = () => setZoomLevel(prev => Math.max(prev - 10, 20));
+
+  // Force refresh function
+  const forceRefresh = async () => {
+    setForceReload(prev => prev + 1);
+  };
+
+  // Open in new tab function
+  const onOpenInNewTab = () => {
     if (fileUrl) {
-      setIsLoading(false);
+      window.open(fileUrl, '_blank');
+    } else {
+      toast({
+        title: "Error",
+        description: "No document URL available to open.",
+        variant: "destructive"
+      });
     }
+  };
+
+  // Download function
+  const onDownload = () => {
+    if (fileUrl) {
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.download = documentId || 'document';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      toast({
+        title: "Error",
+        description: "No document URL available to download.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Print function
+  const onPrint = () => {
+    if (iframeRef.current) {
+      iframeRef.current.contentWindow?.print();
+    } else {
+      toast({
+        title: "Error",
+        description: "Cannot print the document. Please ensure it's properly loaded.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Network status
+  const networkStatus = isOnline ? "online" : "offline";
+
+  // File extension checker
+  const isFileType = (url: string | null, type: string): boolean => {
+    if (!url) return false;
+    const lowerUrl = url.toLowerCase();
+    return lowerUrl.endsWith(`.${type}`);
+  };
+
+  // Check if the file is a PDF
+  const isPdfFile = useCallback(() => isFileType(fileUrl, "pdf"), [fileUrl]);
+
+  // Check if the file is a DOC
+  const isDocFile = useCallback(() => isFileType(fileUrl, "doc") || isFileType(fileUrl, "docx"), [fileUrl]);
+
+  // Check if the file is an image
+  const isImageFile = useCallback(() => {
+    return isFileType(fileUrl, "png") || isFileType(fileUrl, "jpg") || isFileType(fileUrl, "jpeg") || isFileType(fileUrl, "gif");
   }, [fileUrl]);
 
+  // Check if the file is an excel file
   useEffect(() => {
-    console.log(`Network status: ${networkStatus}, attempt count: ${attemptCount}`);
-    
-    setErrorDetails(diagnostics);
-  }, [networkStatus, attemptCount, diagnostics]);
+    setIsExcelFile(isFileType(storagePath, "xlsx") || isFileType(storagePath, "xls"));
+  }, [storagePath]);
 
-  useEffect(() => {
-    if (previewError && loadRetries < 2 && !hasFallbackToDirectUrl) {
-      console.log("Preview error detected, retrying with fallback strategies");
-      
-      setLoadRetries(prev => prev + 1);
-      
-      if (loadRetries === 1) {
-        setHasFallbackToDirectUrl(true);
-        console.log("Falling back to direct URL mode");
-        
-        checkAndRefreshToken().then(() => {
-          console.log("Token refreshed, retrying direct URL");
-          setTimeout(() => checkFile(), 1000);
-        }).catch(err => {
-          console.error("Failed to refresh token during fallback:", err);
-          setTimeout(() => checkFile(), 1000);
-        });
-      }
-    }
-  }, [previewError, loadRetries, hasFallbackToDirectUrl, checkFile]);
-
-  useAnalysisInitialization({
-    storagePath,
-    fileExists,
-    isExcelFile,
-    analyzing,
-    error,
-    setSession,
-    handleAnalyzeDocument,
-    setPreviewError,
-    onAnalysisComplete,
-    bypassAnalysis
-  });
-
-  const [isAnalysisStuck, setIsAnalysisStuck] = useState<{
-    stuck: boolean;
-    minutesStuck: number;
-  }>({
-    stuck: false,
-    minutesStuck: 0
-  });
-
-  useEffect(() => {
-    if (!documentId) return;
-    
-    const checkStuckAnalysis = async () => {
-      try {
-        const { data } = await supabase
-          .from('documents')
-          .select('ai_processing_status, updated_at, metadata')
-          .eq('id', documentId)
-          .maybeSingle();
-          
-        if (data && data.ai_processing_status === 'processing') {
-          const lastUpdateTime = new Date(data.updated_at);
-          const minutesSinceUpdate = Math.floor((Date.now() - lastUpdateTime.getTime()) / (1000 * 60));
-          
-          if (minutesSinceUpdate > 10) {
-            setPreviewError(`Analysis appears to be stuck (running for ${minutesSinceUpdate} minutes)`);
-            
-            setIsAnalysisStuck({
-              stuck: true,
-              minutesStuck: minutesSinceUpdate
-            });
-          }
-        }
-      } catch (error) {
-        console.error("Error checking document status:", error);
-      }
-    };
-    
-    checkStuckAnalysis();
-    const intervalId = setInterval(checkStuckAnalysis, 5 * 60 * 1000);
-    
-    return () => clearInterval(intervalId);
-  }, [documentId]);
-
-  const handleFullRecovery = useCallback(async (): Promise<void> => {
+  // Load the file URL
+  const loadFileUrl = useCallback(async () => {
     setIsLoading(true);
-    setPreviewError("Performing full recovery...");
-    
+    setPreviewError(null);
+    attemptCountRef.current += 1;
+    setAttemptCount(attemptCountRef.current);
+
     try {
-      const sessionRefreshed = await refreshSession();
-      
-      if (!sessionRefreshed) {
-        throw new Error("Failed to refresh authentication session");
+      startTiming(`file-load-${documentId}`);
+      const { data } = await supabase.storage.from('documents').getPublicUrl(storagePath);
+      const publicUrl = data.publicUrl;
+
+      if (!publicUrl) {
+        throw new Error("Could not retrieve public URL");
       }
-      
-      setPreviewError(null);
-      setFileExists(false);
-      setLoadRetries(0);
-      resetRetries();
-      
-      setHasFallbackToDirectUrl(false);
-      
-      setIsAnalysisStuck({
-        stuck: false,
-        minutesStuck: 0
-      });
-      
-      toast.success("Authentication refreshed, retrying document load...");
-      await checkFile();
-      
-    } catch (error) {
-      console.error("Recovery failed:", error);
-      setPreviewError("Recovery failed. Please try again later.");
+
+      setFileUrl(publicUrl);
+      setFileType(storagePath.split('.').pop() || null);
+      endTiming(`file-load-${documentId}`);
+    } catch (err: any) {
+      console.error("Error getting public URL:", err);
+      handleFileCheckError(err, fileUrl);
+      setPreviewError(err.message || "Failed to load document");
+      setErrorDetails(err);
+      endTiming(`file-load-${documentId}`);
+    } finally {
       setIsLoading(false);
     }
-  }, [resetRetries, checkFile]);
+  }, [storagePath, documentId, handleFileCheckError, fileUrl]);
 
-  // Implement our own forceRefresh function that returns a Promise
-  const forceRefresh = useCallback(async (): Promise<void> => {
-    await checkFile();
-    return Promise.resolve();
-  }, [checkFile]);
-
-  const handleAnalysisRetry = () => {
-    setIsAnalysisStuck({
-      stuck: false,
-      minutesStuck: 0
-    });
-    
-    setHasFallbackToDirectUrl(false);
-    
+  // Retry logic
+  const handleFullRecovery = useCallback(async () => {
+    setIsRetrying(true);
     setPreviewError(null);
-    setFileExists(false);
-    setLoadRetries(0);
-    resetRetries();
+    attemptCountRef.current = 0;
+    setAttemptCount(attemptCountRef.current);
+
+    try {
+      await loadFileUrl();
+      await checkFile(storagePath);
+    } catch (error) {
+      console.error("Full recovery failed:", error);
+      setPreviewError("Full recovery failed. Please try again.");
+    } finally {
+      setIsRetrying(false);
+    }
+  }, [loadFileUrl, checkFile, storagePath]);
+
+  // Check if analysis is stuck
+  const checkAnalysisStuck = useCallback(() => {
+    if (!isAnalyzing || !analysisStep || !documentRecord) return { stuck: false, minutesStuck: 0 };
     
-    refreshSession().then(() => {
-      checkFile();
-    }).catch(err => {
-      console.error("Failed to refresh token during retry:", err);
-      checkFile();
-    });
-  };
+    let lastUpdateTime = new Date();
+    if (documentRecord.updated_at) {
+      // Safely handle the unknown type
+      if (typeof documentRecord.updated_at === 'string' || documentRecord.updated_at instanceof Date) {
+        lastUpdateTime = new Date(documentRecord.updated_at);
+      }
+    }
+    
+    const currentTime = new Date();
+    const diffInMinutes = (currentTime.getTime() - lastUpdateTime.getTime()) / (1000 * 60);
+    const stuck = diffInMinutes > 5;
+    
+    return {
+      stuck,
+      minutesStuck: Math.floor(diffInMinutes)
+    };
+  }, [isAnalyzing, analysisStep, documentRecord]);
+
+  // Initial file check
+  useEffect(() => {
+    if (!storagePath) return;
+
+    const performInitialCheck = async () => {
+      setIsLoading(true);
+      setPreviewError(null);
+      attemptCountRef.current = 0;
+      setAttemptCount(attemptCountRef.current);
+
+      try {
+        startTiming(`initial-check-${documentId}`);
+        await checkFile(storagePath);
+        await loadFileUrl();
+        setHasFallbackToDirectUrl(false);
+        endTiming(`initial-check-${documentId}`);
+      } catch (checkError: any) {
+        console.error("Initial check failed:", checkError);
+        handleFileCheckError(checkError, fileUrl);
+        setPreviewError(checkError.message || "Failed to load document");
+        setErrorDetails(checkError);
+        setHasFallbackToDirectUrl(true);
+        endTiming(`initial-check-${documentId}`);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    performInitialCheck();
+  }, [storagePath, documentId, handleFileCheckError, loadFileUrl, fileUrl, checkFile]);
+
+  // Check for stuck analysis
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      const stuckInfo = checkAnalysisStuck();
+      setIsAnalysisStuck(stuckInfo);
+    }, 60000); // Check every minute
+
+    return () => clearInterval(intervalId);
+  }, [checkAnalysisStuck]);
 
   return {
     fileUrl,
     fileExists,
     isExcelFile,
+		fileType,
     previewError,
     setPreviewError,
     analyzing,
@@ -224,9 +267,23 @@ const usePreviewState = (
     attemptCount,
     fileType,
     handleFullRecovery,
-    forceRefresh,  // Return our own implementation, not the imported one
-    errorDetails
+    forceRefresh,
+    errorDetails,
+    isPdfFile,
+    isDocFile,
+    isImageFile,
+    useDirectLink,
+    setUseDirectLink,
+    zoomLevel,
+    setZoomLevel,
+    onZoomIn,
+    onZoomOut,
+    onOpenInNewTab,
+    onDownload,
+    onPrint,
+    iframeRef,
+    forceReload,
+    isRetrying,
+    fetchDocumentDetails
   };
 };
-
-export default usePreviewState;

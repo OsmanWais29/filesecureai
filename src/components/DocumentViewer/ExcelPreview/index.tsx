@@ -1,151 +1,123 @@
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileSpreadsheet, RefreshCw } from "lucide-react";
-import { ExcelTable } from "./components/ExcelTable";
-import { ExcelHeaderActions } from "./components/ExcelHeaderActions";
-import { ExcelErrorDisplay } from "./components/ExcelErrorDisplay";
-import { ExcelLoadingSkeleton } from "./components/ExcelLoadingSkeleton";
-import { useExcelPreview } from "./hooks/useExcelPreview";
-import { ExcelPreviewProps } from "./types";
-import { Badge } from "@/components/ui/badge";
-import { useEffect } from "react";
-import { supabase } from "@/lib/supabase";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { organizeDocumentIntoFolders } from "@/utils/documents/folder-utils";
+import { AlertCircle, Download, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
+import { ExcelPreviewProps } from "./types";
+import { getExcelDataFromMetadata, getClientNameFromMetadata } from "./services/cacheService";
+import { createClientFolder } from "./services/folderOrganizationService";
+import { ExcelTable } from "./ExcelTable";
+import { ExcelHeaderActions } from "./ExcelHeaderActions";
+import { ExcelErrorDisplay } from "./ExcelErrorDisplay";
 
-export const ExcelPreview: React.FC<ExcelPreviewProps> = ({ 
-  storagePath,
-  title
-}) => {
-  const { 
-    data, 
-    loading, 
-    error, 
-    publicUrl, 
-    loadingProgress,
-    clientName,
-    handleRefresh 
-  } = useExcelPreview(storagePath);
+const ExcelPreview: React.FC<ExcelPreviewProps> = ({ storagePath, title }) => {
+  const [excelData, setExcelData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [publicUrl, setPublicUrl] = useState('');
+  const [documentId, setDocumentId] = useState('');
 
-  // Auto-organize Excel file when client name is detected
   useEffect(() => {
-    if (clientName && storagePath) {
-      const organizeFile = async () => {
-        try {
-          // Get document ID from storage path
-          const documentId = storagePath.split('/').pop()?.split('.')[0];
-          if (!documentId) return;
-          
-          // Get user ID
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user) return;
-          
-          // Check if document is already organized
-          const { data: doc } = await supabase
-            .from('documents')
-            .select('metadata')
-            .eq('id', documentId)
-            .single();
-            
-          if (doc?.metadata?.processing_complete) return;
-          
-          console.log(`Organizing Excel file for client: ${clientName}`);
-          
-          // Organize the document
-          await organizeDocumentIntoFolders(
-            documentId,
-            user.id,
-            clientName,
-            "Excel"
-          );
-          
-          // Create notification about Excel file processing
-          await supabase.functions.invoke('handle-notifications', {
-            body: {
-              action: 'create',
-              userId: user.id,
-              notification: {
-                title: 'Financial Data Processed',
-                message: `Excel data for client "${clientName}" has been processed`,
-                type: 'info',
-                category: 'file_activity',
-                priority: 'normal',
-                action_url: `/documents/${documentId}`,
-                metadata: {
-                  documentId,
-                  clientName,
-                  documentType: 'excel',
-                  processedAt: new Date().toISOString()
-                }
-              }
-            }
-          });
-          
-        } catch (err) {
-          console.error("Error organizing Excel file:", err);
-        }
-      };
-      
-      organizeFile();
+    const parts = storagePath.split('/');
+    const filename = parts.pop();
+    const id = filename?.split('.')[0];
+    if (id) {
+      setDocumentId(id);
     }
-  }, [clientName, storagePath]);
+  }, [storagePath]);
+
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const cachedData = {
+        excel_data: null,
+        document: null,
+        client_name: null,
+      };
+
+      // Check if processing is complete with safe type checking
+      const isProcessingComplete = 
+        cachedData.document?.metadata && 
+        typeof cachedData.document.metadata === 'object' && 
+        'processing_complete' in cachedData.document.metadata && 
+        cachedData.document.metadata.processing_complete === true;
+
+      if (!isProcessingComplete) {
+        // Create client folder if processing is not complete
+        await createClientFolder(documentId, cachedData.document);
+      }
+
+      // Extract Excel data from metadata
+      const excelData = getExcelDataFromMetadata(cachedData.document);
+      if (excelData) {
+        setExcelData(excelData);
+      } else {
+        setError("Excel data not found in document metadata.");
+      }
+
+      // Extract client name from metadata
+      const clientName = getClientNameFromMetadata(cachedData.document);
+      if (clientName) {
+        // Set client name if found
+      }
+
+      // Set public URL
+      setPublicUrl(storagePath);
+    } catch (error) {
+      setError("Failed to load Excel data.");
+      console.error("Error fetching Excel data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (documentId) {
+      fetchData();
+    }
+  }, [documentId]);
+
+  const handleRefresh = () => {
+    fetchData();
+    toast("Refreshing Excel data...");
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mb-4"></div>
+          <p className="text-muted-foreground">Loading spreadsheet...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <ExcelErrorDisplay
+        error={error}
+        onRefresh={handleRefresh}
+        publicUrl={publicUrl}
+      />
+    );
+  }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div className="flex flex-col">
-          <CardTitle className="flex items-center gap-2">
-            <FileSpreadsheet className="h-5 w-5" />
-            {title ? title : 'Financial Data'}
-          </CardTitle>
-          {clientName && (
-            <div className="mt-1">
-              <Badge variant="outline" className="text-xs">
-                Client: {clientName}
-              </Badge>
-            </div>
-          )}
+    <div className="flex flex-col h-full">
+      <ExcelHeaderActions
+        title={title}
+        onRefresh={handleRefresh}
+        publicUrl={publicUrl}
+      />
+      {excelData && (
+        <div className="flex-grow overflow-auto">
+          <ExcelTable data={excelData} enableSorting enableFiltering />
         </div>
-        
-        <ExcelHeaderActions 
-          title={title} 
-          onRefresh={handleRefresh}
-          publicUrl={publicUrl}
-        />
-      </CardHeader>
-      
-      <CardContent>
-        {loading ? (
-          <div className="space-y-4">
-            <ExcelLoadingSkeleton progress={loadingProgress} />
-            {loadingProgress > 40 && loadingProgress < 90 && (
-              <div className="text-center text-sm text-muted-foreground">
-                <p>Extracting data and detecting client information...</p>
-              </div>
-            )}
-            {loadingProgress === 0 && (
-              <div className="flex justify-center mt-4">
-                <Button variant="outline" size="sm" onClick={handleRefresh}>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Reload
-                </Button>
-              </div>
-            )}
-          </div>
-        ) : error ? (
-          <ExcelErrorDisplay 
-            error={error} 
-            onRefresh={handleRefresh}
-            publicUrl={publicUrl}
-          />
-        ) : data ? (
-          <ExcelTable data={data} />
-        ) : (
-          <div className="p-8 text-center text-muted-foreground">
-            No data available
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      )}
+    </div>
   );
 };
+
+export default ExcelPreview;

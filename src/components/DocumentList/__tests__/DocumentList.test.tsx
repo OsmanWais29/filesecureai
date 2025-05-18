@@ -1,4 +1,3 @@
-
 import { render } from '@testing-library/react';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { DocumentList } from '../../documents/DocumentList';
@@ -10,12 +9,11 @@ import type { Document } from '../types';
 const mockDocuments: Document[] = [
   {
     id: '1',
-    title: 'Test Document',
-    type: 'pdf', // This is required
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    size: 1024, // This is required
-    storage_path: 'test/path' // This is required
+    title: 'Document 1',
+    created_at: '2023-01-01',
+    size: 1024,
+    type: 'PDF',
+    updated_at: '2023-01-01'
   }
 ];
 
@@ -38,7 +36,7 @@ describe('DocumentList', () => {
       </BrowserRouter>
     );
 
-    expect(screen.getByText('Test Document')).toBeInTheDocument();
+    expect(screen.getByText('Document 1')).toBeInTheDocument();
   });
 
   it('displays file size in correct format', () => {

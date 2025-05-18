@@ -1,5 +1,5 @@
 
-import { Document, DocumentNode } from "../types";
+import { Document } from "../types";
 
 export const determineFileType = (filename: string) => {
   const ext = filename.split('.').pop()?.toLowerCase();
@@ -22,9 +22,16 @@ export const determineFileType = (filename: string) => {
   }
 };
 
-export const organizeDocumentsIntoTree = (docs: Document[]): DocumentNode[] => {
+export interface DocumentTree {
+  [key: string]: {
+    folder: Document;
+    documents: Document[];
+  }
+}
+
+export const organizeDocumentsIntoTree = (docs: Document[]): Document[] => {
   // First, group by client (from metadata or folder structure)
-  const clientGroups = docs.reduce((acc, doc) => {
+  const clientGroups: DocumentTree = docs.reduce((acc, doc) => {
     if (doc.is_folder && doc.folder_type === 'client') {
       // This is a client folder
       if (!acc[doc.title || '']) {
@@ -57,8 +64,7 @@ export const organizeDocumentsIntoTree = (docs: Document[]): DocumentNode[] => {
             folder_type: 'uncategorized',
             storage_path: '',
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            size: 0 // Added required size property
+            size: 0
           },
           documents: []
         };
@@ -66,17 +72,20 @@ export const organizeDocumentsIntoTree = (docs: Document[]): DocumentNode[] => {
       acc['Uncategorized'].documents.push(doc);
     }
     return acc;
-  }, {} as Record<string, { folder: Document, documents: Document[] }>);
+  }, {} as DocumentTree);
 
-  // Convert to tree structure
-  return Object.entries(clientGroups).map(([clientName, { folder, documents }]) => ({
-    id: folder.id,
-    title: clientName,
-    type: 'client',
-    children: documents.map(doc => ({
-      id: doc.id,
-      title: doc.title || 'Untitled',
-      type: doc.type || 'document'
-    }))
-  }));
+  // Now convert to a tree structure
+  const result: Document[] = [];
+
+  // Add client folders first
+  Object.values(clientGroups).forEach(({ folder, documents }) => {
+    result.push(folder);
+    
+    // Add documents under each client
+    documents.forEach(doc => {
+      result.push(doc);
+    });
+  });
+
+  return result;
 };

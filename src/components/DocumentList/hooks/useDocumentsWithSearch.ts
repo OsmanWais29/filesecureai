@@ -24,7 +24,9 @@ export function useDocumentsWithSearch() {
     return documents.filter(doc => {
       const title = doc.title?.toLowerCase() || '';
       const type = doc.type?.toLowerCase() || '';
-      const clientName = typeof doc.metadata === 'object' && doc.metadata?.client_name?.toLowerCase();
+      const clientName = doc.metadata && typeof doc.metadata === 'object' && 
+                         doc.metadata.client_name ? 
+                         doc.metadata.client_name.toLowerCase() : '';
       
       const searchLower = debouncedSearchQuery.toLowerCase();
       
