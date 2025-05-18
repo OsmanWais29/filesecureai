@@ -54,10 +54,14 @@ export function useAuthState() {
   const [loading, setLoading] = useState(true);
   const [subdomain, setSubdomain] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
+  const [isClient, setIsClient] = useState<boolean | null>(null);
+  const [isTrustee, setIsTrustee] = useState<boolean | null>(null);
 
   // Detect subdomain on mount
   useEffect(() => {
-    setSubdomain(getSubdomain());
+    const detected = getSubdomain();
+    setSubdomain(detected);
+    setIsClient(detected === 'client');
   }, []);
 
   // Handle initial session loading
@@ -73,20 +77,23 @@ export function useAuthState() {
         if (newSession?.user) {
           console.log("User authenticated:", newSession.user.id);
           console.log("User metadata:", newSession.user.user_metadata);
-          console.log("User type:", newSession.user.user_metadata?.user_type);
-
-          // Check if user type matches subdomain
+          
           const userType = newSession.user.user_metadata?.user_type;
-          if (subdomain === 'client' && userType !== 'client') {
-            console.warn("User type mismatch: Trustee account on client subdomain");
-          } else if (subdomain !== 'client' && userType !== 'trustee') {
-            console.warn("User type mismatch: Client account on trustee subdomain");
+          console.log("User type:", userType);
+
+          if (isMounted) {
+            setSession(newSession);
+            setUser(newSession.user);
+            setIsTrustee(userType === 'trustee');
+            setIsClient(userType === 'client');
           }
-        }
-        
-        if (isMounted) {
-          setSession(newSession);
-          setUser(newSession?.user ?? null);
+        } else {
+          if (isMounted) {
+            setSession(null);
+            setUser(null);
+            setIsTrustee(false);
+            setIsClient(false);
+          }
         }
       }
     );
@@ -94,15 +101,23 @@ export function useAuthState() {
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       console.log("Retrieved current session:", currentSession ? "Exists" : "None");
+      
       if (currentSession?.user) {
         console.log("User ID from session:", currentSession.user.id);
         console.log("User metadata from session:", currentSession.user.user_metadata);
-        console.log("User role from session:", currentSession.user.user_metadata?.user_type);
+        
+        const userType = currentSession.user.user_metadata?.user_type;
+        console.log("User role from session:", userType);
+
+        if (isMounted) {
+          setSession(currentSession);
+          setUser(currentSession.user);
+          setIsTrustee(userType === 'trustee');
+          setIsClient(userType === 'client');
+        }
       }
       
       if (isMounted) {
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
         setLoading(false);
         setInitialized(true);
       }
@@ -130,6 +145,8 @@ export function useAuthState() {
       await supabase.auth.signOut();
       setUser(null);
       setSession(null);
+      setIsClient(false);
+      setIsTrustee(false);
       toast.success('Signed out successfully');
       console.log("Sign out successful");
 
@@ -152,6 +169,8 @@ export function useAuthState() {
     initialized,
     refreshSession: refreshSessionCallback,
     signOut,
-    subdomain
+    subdomain,
+    isClient,
+    isTrustee
   };
 }

@@ -1,3 +1,4 @@
+
 import { Routes, Route, Navigate } from "react-router-dom";
 import NotFound from "./pages/NotFound";
 import ClientPortal from "./pages/ClientPortal";
@@ -5,7 +6,7 @@ import { AuthRoleGuard } from "./components/auth/AuthRoleGuard";
 import TrusteeLogin from "./pages/auth/TrusteeLogin";
 import ClientLogin from "./pages/auth/ClientLogin";
 import { useEffect } from "react";
-import { useAuthState, getSubdomain } from "@/hooks/useAuthState";
+import { useAuthState } from "@/hooks/useAuthState";
 
 // Import from the trustee folder
 import Index from "./pages/trustee/Index";
@@ -30,24 +31,55 @@ import SAFAPage from "./pages/SAFA/SAFAPage";
 
 import "./App.css";
 
+// Improved home page resolver that respects authentication status
+function HomePageResolver() {
+  const { user, loading, isClient, isTrustee } = useAuthState();
+  
+  if (loading) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
+
+  // User is authenticated
+  if (user) {
+    // If client, redirect to client portal
+    if (isClient) {
+      return <Navigate to="/portal" replace />;
+    }
+    
+    // If trustee, redirect to CRM
+    if (isTrustee) {
+      return <Navigate to="/crm" replace />;
+    }
+    
+    // If user role is not recognized, go to login
+    return <Navigate to="/login" replace />;
+  }
+  
+  // Not authenticated, go to login
+  return <Navigate to="/login" replace />;
+}
+
 function App() {
-  const { subdomain, user, loading } = useAuthState();
+  const { subdomain, isClient } = useAuthState();
   
   useEffect(() => {
     console.log("App: Current subdomain detected:", subdomain);
-    if (user) {
-      console.log("App: User authenticated:", user.id);
-      console.log("App: User role:", user.user_metadata?.user_type);
-    }
-  }, [subdomain, user]);
+    console.log("Is client subdomain:", isClient);
+  }, [subdomain, isClient]);
   
   // If subdomain is 'client', show client routes
-  if (subdomain === 'client') {
+  if (isClient) {
     console.log("App: Rendering client routes for client subdomain");
     return (
       <Routes>
-        {/* Client routes */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        {/* Root route - redirects based on auth status */}
+        <Route path="/" element={<HomePageResolver />} />
+        
+        {/* Client login route */}
         <Route path="/login" element={<ClientLogin />} />
         
         {/* Client portal routes - use the ClientPortal layout with role guard */}
@@ -79,8 +111,8 @@ function App() {
   console.log("App: Rendering trustee routes for trustee subdomain");
   return (
     <Routes>
-      {/* Root route now redirects to login if not authenticated, home if authenticated */}
-      <Route path="/" element={<Index />} />
+      {/* Root route - redirects based on auth status */}
+      <Route path="/" element={<HomePageResolver />} />
       
       {/* Separate login routes for trustee */}
       <Route path="/login" element={<TrusteeLogin />} />
