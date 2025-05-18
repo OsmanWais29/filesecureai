@@ -65,48 +65,5 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
-// Utility to check and refresh token if needed before storage operations
-export const ensureFreshToken = async (): Promise<boolean> => {
-  try {
-    // Get current session
-    const { data } = await supabase.auth.getSession();
-    const session = data?.session;
-    
-    if (!session) {
-      console.warn("No session found, authentication required");
-      return false;
-    }
-    
-    // Decode token to check expiration
-    const token = session.access_token;
-    const parts = token.split('.');
-    
-    if (parts.length !== 3) {
-      console.warn("Malformed JWT token");
-      return false;
-    }
-    
-    const payload = JSON.parse(atob(parts[1]));
-    const expiry = new Date(payload.exp * 1000);
-    const now = new Date();
-    const minutesLeft = (expiry.getTime() - now.getTime()) / 60000;
-    
-    // If token expires in less than 5 minutes, refresh it
-    if (minutesLeft < 5) {
-      console.log(`Token expires soon (${minutesLeft.toFixed(1)} minutes), refreshing...`);
-      const { data: refreshData, error } = await supabase.auth.refreshSession();
-      
-      if (error) {
-        console.error("Failed to refresh token:", error);
-        return false;
-      }
-      
-      console.log("Token refreshed successfully");
-    }
-    
-    return true;
-  } catch (error) {
-    console.error("Error checking/refreshing token:", error);
-    return false;
-  }
-};
+// Export the function from our consolidated tokenManager
+export { ensureValidToken } from '@/utils/jwt/tokenManager';

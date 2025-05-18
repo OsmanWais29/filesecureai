@@ -1,27 +1,13 @@
-
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { startTokenMonitoring, stopTokenMonitoring, refreshToken } from '@/utils/jwt/tokenManager';
 
 /**
  * Stand-alone function to refresh session that can be imported elsewhere
  */
 export async function refreshSession(): Promise<boolean> {
-  try {
-    console.log('Explicitly refreshing auth session...');
-    const { data, error } = await supabase.auth.refreshSession();
-    
-    if (error || !data.session) {
-      console.error('Session refresh failed:', error || 'No session returned');
-      return false;
-    }
-    
-    console.log('Session refreshed successfully');
-    return true;
-  } catch (error) {
-    console.error('Error during session refresh:', error);
-    return false;
-  }
+  return refreshToken();
 }
 
 /**
@@ -120,12 +106,18 @@ export function useAuthState() {
       if (isMounted) {
         setLoading(false);
         setInitialized(true);
+        
+        // Start token monitoring when we have a session
+        if (currentSession) {
+          startTokenMonitoring();
+        }
       }
     });
 
     return () => {
       isMounted = false;
       subscription.unsubscribe();
+      stopTokenMonitoring();
     };
   }, [subdomain]);
 

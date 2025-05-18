@@ -5,8 +5,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { uploadFile } from "@/utils/storage";
 import { useState } from "react";
-import { verifyJwtToken } from "@/utils/jwtDiagnostics";
 import { UploadDiagnostics } from "@/components/storage/UploadDiagnostics";
+import { withFreshToken } from "@/utils/jwt/tokenManager";
 
 export const DocumentUpload = () => {
   const { toast } = useToast();
@@ -20,84 +20,80 @@ export const DocumentUpload = () => {
     setIsUploading(true);
 
     try {
-      // Check JWT token validity before upload
-      const tokenStatus = await verifyJwtToken();
-      if (!tokenStatus.isValid) {
-        console.warn(`JWT issue detected before upload: ${tokenStatus.reason}`);
-        // Continue anyway - our enhanced uploadFile will handle token issues
-      }
-      
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${crypto.randomUUID()}.${fileExt}`;
-      
-      console.log(`Starting upload of file: ${file.name} to path: ${filePath}`);
-      
-      // Use our enhanced upload utility with diagnostics enabled
-      const result = await uploadFile(
-        file, 
-        'secure_documents', 
-        filePath,
-        { diagnostics: true }
-      );
-      
-      if (!result || 'error' in result) {
-        throw new Error(result?.error || 'Unknown upload error');
-      }
+      // Use withFreshToken to ensure we have a valid token during the entire upload process
+      await withFreshToken(async () => {
+        const fileExt = file.name.split('.').pop();
+        const filePath = `${crypto.randomUUID()}.${fileExt}`;
+        
+        console.log(`Starting upload of file: ${file.name} to path: ${filePath}`);
+        
+        // Use our enhanced upload utility with diagnostics enabled
+        const result = await uploadFile(
+          file, 
+          'secure_documents', 
+          filePath,
+          { diagnostics: true }
+        );
+        
+        if (!result || 'error' in result) {
+          throw new Error(result?.error || 'Unknown upload error');
+        }
 
-      console.log('File uploaded successfully, getting current user');
-      
-      // Get current user
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError) {
-        console.error('Error getting user:', userError);
-        throw userError;
-      }
+        console.log('File uploaded successfully, getting current user');
+        
+        // Get current user
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError) {
+          console.error('Error getting user:', userError);
+          throw userError;
+        }
 
-      console.log('Creating document record in database');
-      
-      const { data: documentData, error: dbError } = await supabase
-        .from('documents')
-        .insert({
-          title: file.name,
-          file_path: filePath,
-          status: 'pending',
-          user_id: user?.id
-        })
-        .select()
-        .single();
+        console.log('Creating document record in database');
+        
+        const { data: documentData, error: dbError } = await supabase
+          .from('documents')
+          .insert({
+            title: file.name,
+            file_path: filePath,
+            status: 'pending',
+            user_id: user?.id
+          })
+          .select()
+          .single();
 
-      if (dbError) {
-        console.error('Error inserting document record:', dbError);
-        throw dbError;
-      }
+        if (dbError) {
+          console.error('Error inserting document record:', dbError);
+          throw dbError;
+        }
 
-      console.log('Creating notification for document upload');
-      
-      // Create notification for document upload
-      await supabase.functions.invoke('handle-notifications', {
-        body: {
-          action: 'create',
-          userId: user?.id,
-          notification: {
-            title: 'Document Uploaded',
-            message: `"${file.name}" has been uploaded successfully`,
-            type: 'info',
-            category: 'file_activity',
-            priority: 'normal',
-            action_url: `/documents/${documentData.id}`,
-            metadata: {
-              documentId: documentData.id,
-              fileName: file.name,
-              fileSize: file.size,
-              uploadedAt: new Date().toISOString()
+        console.log('Creating notification for document upload');
+        
+        // Create notification for document upload
+        await supabase.functions.invoke('handle-notifications', {
+          body: {
+            action: 'create',
+            userId: user?.id,
+            notification: {
+              title: 'Document Uploaded',
+              message: `"${file.name}" has been uploaded successfully`,
+              type: 'info',
+              category: 'file_activity',
+              priority: 'normal',
+              action_url: `/documents/${documentData.id}`,
+              metadata: {
+                documentId: documentData.id,
+                fileName: file.name,
+                fileSize: file.size,
+                uploadedAt: new Date().toISOString()
+              }
             }
           }
-        }
-      });
+        });
 
-      toast({
-        title: "Success",
-        description: "Document uploaded successfully"
+        toast({
+          title: "Success",
+          description: "Document uploaded successfully"
+        });
       });
     } catch (error) {
       console.error('Error uploading document:', error);

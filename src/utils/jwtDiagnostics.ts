@@ -1,15 +1,8 @@
 
-// This file now serves as a barrel to re-export logic from focused modules
+// This file now serves as a barrel to re-export logic from our consolidated token manager
 
-export * from "./jwtVerifier";             // JWT verification & re-authentication utilities
+export * from "@/utils/jwt/tokenManager";
 export * from "./storageDiagnostics";      // Storage permissions & upload diagnostics
 export * from "./browserDiagnostics";      // Browser storage diagnostics
 export * from "./jwtDiagnosticsTypes";     // Shared type definitions
 export * from "./reliableUpload";
-// Explicitly rename the import to avoid conflicts
-export { 
-  checkAndRefreshToken,
-  startJwtMonitoring,
-  stopJwtMonitoring,
-  verifyJwtToken as monitoringVerifyJwt
-} from "./jwtMonitoring";
