@@ -6,6 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CrmAnalytics } from "@/components/analytics/crm/CrmAnalytics";
 import { Plus, Users, Clock, ListChecks, User } from "lucide-react";
+import { ClientStats } from "@/components/crm/page/ClientStats";
+import { CRMHeader } from "@/components/crm/page/CRMHeader";
+import { CRMTabs } from "@/components/crm/page/CRMTabs";
 
 // Mock data for clients
 const CLIENTS = [
@@ -59,228 +62,178 @@ const formatDate = (dateString: string) => {
 
 export default function CRMPage() {
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [clientDialogOpen, setClientDialogOpen] = useState(false);
+
+  const openClientDialog = () => {
+    setClientDialogOpen(true);
+  };
 
   return (
     <MainLayout>
       <div className="container py-6">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Client Relationship Management</h1>
-            <p className="text-muted-foreground">Manage your clients and track interactions</p>
-          </div>
-          <Button size="sm">
-            <Plus className="mr-2 h-4 w-4" /> Add Client
-          </Button>
-        </div>
+        <CRMHeader openClientDialog={openClientDialog} />
+        
+        <ClientStats />
 
-        <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="clients">Clients</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="tasks">Tasks</TabsTrigger>
-          </TabsList>
+        <div className="mt-6">
+          <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+              <TabsTrigger value="clients">Clients</TabsTrigger>
+              <TabsTrigger value="analytics">Analytics</TabsTrigger>
+              <TabsTrigger value="tasks">Tasks</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="dashboard" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{CLIENTS.length}</div>
-                  <p className="text-xs text-muted-foreground">
-                    +2 from last month
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Active Clients</CardTitle>
-                  <User className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {CLIENTS.filter(c => c.status === "Active").length}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    +1 from last month
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Recent Activities</CardTitle>
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{RECENT_ACTIVITIES.length}</div>
-                  <p className="text-xs text-muted-foreground">
-                    +8 from last week
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Pending Tasks</CardTitle>
-                  <ListChecks className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">7</div>
-                  <p className="text-xs text-muted-foreground">
-                    -2 from yesterday
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-            
-            <div className="grid gap-4 md:grid-cols-2">
-              <Card className="col-span-1">
-                <CardHeader>
-                  <CardTitle>Recent Activities</CardTitle>
-                  <CardDescription>Latest client interactions</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {RECENT_ACTIVITIES.map(activity => (
-                      <div key={activity.id} className="flex items-center justify-between border-b pb-2">
-                        <div>
-                          <p className="font-medium">{activity.client}</p>
-                          <p className="text-sm text-muted-foreground">{activity.activity}</p>
+            <TabsContent value="dashboard" className="space-y-4">
+              <CRMTabs />
+              
+              <div className="grid gap-4 md:grid-cols-2">
+                <Card className="col-span-1">
+                  <CardHeader>
+                    <CardTitle>Recent Activities</CardTitle>
+                    <CardDescription>Latest client interactions</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {RECENT_ACTIVITIES.map(activity => (
+                        <div key={activity.id} className="flex items-center justify-between border-b pb-2">
+                          <div>
+                            <p className="font-medium">{activity.client}</p>
+                            <p className="text-sm text-muted-foreground">{activity.activity}</p>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {formatDate(activity.date)}
+                          </div>
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          {formatDate(activity.date)}
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card className="col-span-1">
+                  <CardHeader>
+                    <CardTitle>Client Status</CardTitle>
+                    <CardDescription>Active vs inactive clients</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-center">
+                        <div className="w-full space-y-1">
+                          <div className="flex justify-between text-sm">
+                            <span>Active</span>
+                            <span className="font-medium">
+                              {CLIENTS.filter(c => c.status === "Active").length}/{CLIENTS.length}
+                            </span>
+                          </div>
+                          <div className="h-2 rounded bg-muted">
+                            <div 
+                              className="h-2 rounded bg-primary" 
+                              style={{ width: `${(CLIENTS.filter(c => c.status === "Active").length / CLIENTS.length) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-full space-y-1">
+                          <div className="flex justify-between text-sm">
+                            <span>Pending</span>
+                            <span className="font-medium">
+                              {CLIENTS.filter(c => c.status === "Pending").length}/{CLIENTS.length}
+                            </span>
+                          </div>
+                          <div className="h-2 rounded bg-muted">
+                            <div 
+                              className="h-2 rounded bg-yellow-500" 
+                              style={{ width: `${(CLIENTS.filter(c => c.status === "Pending").length / CLIENTS.length) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-full space-y-1">
+                          <div className="flex justify-between text-sm">
+                            <span>Inactive</span>
+                            <span className="font-medium">
+                              {CLIENTS.filter(c => c.status === "Inactive").length}/{CLIENTS.length}
+                            </span>
+                          </div>
+                          <div className="h-2 rounded bg-muted">
+                            <div 
+                              className="h-2 rounded bg-gray-500" 
+                              style={{ width: `${(CLIENTS.filter(c => c.status === "Inactive").length / CLIENTS.length) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="clients" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Client Directory</CardTitle>
+                  <CardDescription>Manage and view client information</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-md border">
+                    <div className="grid grid-cols-6 border-b px-4 py-3 font-medium">
+                      <div className="col-span-2">Name/Company</div>
+                      <div className="col-span-1">Status</div>
+                      <div className="col-span-2">Contact</div>
+                      <div className="col-span-1">Last Activity</div>
+                    </div>
+                    {CLIENTS.map(client => (
+                      <div key={client.id} className="grid grid-cols-6 border-b px-4 py-3 hover:bg-muted/50">
+                        <div className="col-span-2">
+                          <p className="font-medium">{client.name}</p>
+                          <p className="text-sm text-muted-foreground">{client.company}</p>
+                        </div>
+                        <div className="col-span-1">
+                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold 
+                            ${client.status === 'Active' ? 'bg-green-100 text-green-800' : 
+                             client.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 
+                             'bg-gray-100 text-gray-800'}`}
+                          >
+                            {client.status}
+                          </span>
+                        </div>
+                        <div className="col-span-2">
+                          <p className="text-sm">{client.email}</p>
+                          <p className="text-sm text-muted-foreground">{client.phone}</p>
+                        </div>
+                        <div className="col-span-1 text-sm text-muted-foreground">
+                          {formatDate(client.lastContact)}
                         </div>
                       </div>
                     ))}
                   </div>
                 </CardContent>
               </Card>
-              
-              <Card className="col-span-1">
+            </TabsContent>
+
+            <TabsContent value="analytics" className="space-y-4">
+              <CrmAnalytics />
+            </TabsContent>
+
+            <TabsContent value="tasks" className="space-y-4">
+              <Card>
                 <CardHeader>
-                  <CardTitle>Client Status</CardTitle>
-                  <CardDescription>Active vs inactive clients</CardDescription>
+                  <CardTitle>Task Management</CardTitle>
+                  <CardDescription>Organize and track client-related tasks</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center">
-                      <div className="w-full space-y-1">
-                        <div className="flex justify-between text-sm">
-                          <span>Active</span>
-                          <span className="font-medium">
-                            {CLIENTS.filter(c => c.status === "Active").length}/{CLIENTS.length}
-                          </span>
-                        </div>
-                        <div className="h-2 rounded bg-muted">
-                          <div 
-                            className="h-2 rounded bg-primary" 
-                            style={{ width: `${(CLIENTS.filter(c => c.status === "Active").length / CLIENTS.length) * 100}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      <div className="w-full space-y-1">
-                        <div className="flex justify-between text-sm">
-                          <span>Pending</span>
-                          <span className="font-medium">
-                            {CLIENTS.filter(c => c.status === "Pending").length}/{CLIENTS.length}
-                          </span>
-                        </div>
-                        <div className="h-2 rounded bg-muted">
-                          <div 
-                            className="h-2 rounded bg-yellow-500" 
-                            style={{ width: `${(CLIENTS.filter(c => c.status === "Pending").length / CLIENTS.length) * 100}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      <div className="w-full space-y-1">
-                        <div className="flex justify-between text-sm">
-                          <span>Inactive</span>
-                          <span className="font-medium">
-                            {CLIENTS.filter(c => c.status === "Inactive").length}/{CLIENTS.length}
-                          </span>
-                        </div>
-                        <div className="h-2 rounded bg-muted">
-                          <div 
-                            className="h-2 rounded bg-gray-500" 
-                            style={{ width: `${(CLIENTS.filter(c => c.status === "Inactive").length / CLIENTS.length) * 100}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>Task management features coming soon</p>
+                    <Button variant="outline" className="mt-4">Create New Task</Button>
                   </div>
                 </CardContent>
               </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="clients" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Client Directory</CardTitle>
-                <CardDescription>Manage and view client information</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="rounded-md border">
-                  <div className="grid grid-cols-6 border-b px-4 py-3 font-medium">
-                    <div className="col-span-2">Name/Company</div>
-                    <div className="col-span-1">Status</div>
-                    <div className="col-span-2">Contact</div>
-                    <div className="col-span-1">Last Activity</div>
-                  </div>
-                  {CLIENTS.map(client => (
-                    <div key={client.id} className="grid grid-cols-6 border-b px-4 py-3 hover:bg-muted/50">
-                      <div className="col-span-2">
-                        <p className="font-medium">{client.name}</p>
-                        <p className="text-sm text-muted-foreground">{client.company}</p>
-                      </div>
-                      <div className="col-span-1">
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold 
-                          ${client.status === 'Active' ? 'bg-green-100 text-green-800' : 
-                           client.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 
-                           'bg-gray-100 text-gray-800'}`}
-                        >
-                          {client.status}
-                        </span>
-                      </div>
-                      <div className="col-span-2">
-                        <p className="text-sm">{client.email}</p>
-                        <p className="text-sm text-muted-foreground">{client.phone}</p>
-                      </div>
-                      <div className="col-span-1 text-sm text-muted-foreground">
-                        {formatDate(client.lastContact)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="analytics" className="space-y-4">
-            <CrmAnalytics />
-          </TabsContent>
-
-          <TabsContent value="tasks" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Task Management</CardTitle>
-                <CardDescription>Organize and track client-related tasks</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>Task management features coming soon</p>
-                  <Button variant="outline" className="mt-4">Create New Task</Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </MainLayout>
   );
