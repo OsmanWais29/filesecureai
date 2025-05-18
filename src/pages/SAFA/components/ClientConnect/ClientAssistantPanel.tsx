@@ -10,11 +10,15 @@ import { Users, MessageSquare, User, ArrowRight } from 'lucide-react';
 interface ClientAssistantPanelProps {
   activeClient?: string;
   onSelectClient?: (clientId: string) => void;
+  onStartConversation?: () => void;
+  onViewHistory?: () => Promise<void>;
 }
 
 export const ClientAssistantPanel = ({
   activeClient,
-  onSelectClient
+  onSelectClient,
+  onStartConversation,
+  onViewHistory
 }: ClientAssistantPanelProps) => {
   const { categoryMessages, handleSendMessage, isProcessing, loadConversationHistory } = useConversations("client");
   const [inputMessage, setInputMessage] = useState("");
@@ -82,6 +86,26 @@ export const ClientAssistantPanel = ({
               </div>
             </Card>
           ))}
+        </div>
+
+        <div className="mt-6 flex flex-col space-y-3">
+          <Button 
+            variant="default" 
+            className="w-full" 
+            onClick={onStartConversation}
+          >
+            <MessageSquare className="mr-2 h-4 w-4" />
+            Start New Conversation
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            className="w-full"
+            onClick={onViewHistory}
+          >
+            <MessageSquare className="mr-2 h-4 w-4" />
+            View Conversation History
+          </Button>
         </div>
       </div>
     );
