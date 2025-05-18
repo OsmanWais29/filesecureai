@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Mic, Send, Sparkles } from "lucide-react";
@@ -10,7 +10,7 @@ interface ChatPanelProps {
   className?: string;
 }
 
-export const ChatPanel: React.FC<ChatPanelProps> = ({ className }) => {
+export const ChatPanel: React.FC<ChatPanelProps> = memo(({ className }) => {
   const {
     isRecording,
     message,
@@ -29,6 +29,19 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ className }) => {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [chatMessages]);
+
+  // Handle message input change
+  const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setMessage(e.target.value);
+  };
+
+  // Handle key press in textarea
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
 
   return (
     <div className={cn("flex-1 flex flex-col overflow-hidden", className)}>
@@ -94,15 +107,10 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ className }) => {
         </Button>
         <Textarea
           value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={handleMessageChange}
           placeholder="Type your message..."
           className="flex-1 min-h-[40px] max-h-[120px] resize-none"
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              handleSendMessage();
-            }
-          }}
+          onKeyDown={handleKeyDown}
         />
         <Button 
           type="button" 
@@ -119,4 +127,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ className }) => {
       </div>
     </div>
   );
-};
+});
+
+ChatPanel.displayName = "ChatPanel";

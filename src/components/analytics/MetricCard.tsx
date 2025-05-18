@@ -2,6 +2,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { memo } from "react";
 
 interface MetricCardProps {
   title: string;
@@ -11,7 +12,7 @@ interface MetricCardProps {
   trend?: "up" | "down" | "neutral";
 }
 
-export const MetricCard = ({ title, value, description, icon: Icon, trend }: MetricCardProps) => {
+export const MetricCard = memo(({ title, value, description, icon: Icon, trend }: MetricCardProps) => {
   return (
     <Card className="border border-border/40 shadow-sm hover:shadow transition-shadow duration-200">
       <CardContent className="p-6">
@@ -42,4 +43,6 @@ export const MetricCard = ({ title, value, description, icon: Icon, trend }: Met
       </CardContent>
     </Card>
   );
-};
+});
+
+MetricCard.displayName = "MetricCard";

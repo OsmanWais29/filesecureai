@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { memo } from "react";
 import { ViewModeField } from "./ViewModeField";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { HelpCircle } from "lucide-react";
@@ -7,7 +7,7 @@ import { HelpCircle } from "lucide-react";
 interface ViewModeFormFieldProps {
   id: string;
   name: string;
-  label: React.ReactNode; // This remains React.ReactNode
+  label: React.ReactNode;
   value: string | number;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   isEditable: boolean;
@@ -20,7 +20,7 @@ interface ViewModeFormFieldProps {
   className?: string;
 }
 
-export const ViewModeFormField = ({
+export const ViewModeFormField = memo(({
   id,
   name,
   label,
@@ -73,4 +73,6 @@ export const ViewModeFormField = ({
       />
     </div>
   );
-};
+});
+
+ViewModeFormField.displayName = "ViewModeFormField";

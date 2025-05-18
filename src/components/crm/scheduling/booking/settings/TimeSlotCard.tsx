@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { memo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Clock } from "lucide-react";
@@ -16,7 +16,7 @@ interface TimeSlotCardProps {
   addTimeSlot: (time: string) => void;
 }
 
-export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
+export const TimeSlotCard: React.FC<TimeSlotCardProps> = memo(({
   availableTimeSlots,
   toggleTimeSlot,
   handleSyncCalendar,
@@ -72,4 +72,6 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
       </CardContent>
     </Card>
   );
-};
+});
+
+TimeSlotCard.displayName = "TimeSlotCard";

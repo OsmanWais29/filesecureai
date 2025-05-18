@@ -1,5 +1,5 @@
 
-import { useRef, useState } from "react";
+import { useRef, useState, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 interface ViewModeFieldProps {
   id: string;
   name: string;
-  label: React.ReactNode; // Changed from string to ReactNode
+  label: React.ReactNode;
   value: string | number;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   isEditable: boolean;
@@ -38,7 +38,7 @@ export const ViewModeField = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Initialize local value when toggling edit mode
-  const handleToggleEdit = () => {
+  const handleToggleEdit = useCallback(() => {
     setLocalValue(value?.toString() || "");
     onToggleEdit();
     // Focus the input after a short delay to ensure it's rendered
@@ -49,15 +49,15 @@ export const ViewModeField = ({
         inputRef.current?.focus();
       }
     }, 50);
-  };
+  }, [value, onToggleEdit, isMultiline]);
 
   // Handle local changes
-  const handleLocalChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleLocalChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setLocalValue(e.target.value);
-  };
+  }, []);
 
   // Save changes
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     const syntheticEvent = {
       target: {
         name,
@@ -66,20 +66,20 @@ export const ViewModeField = ({
     } as React.ChangeEvent<HTMLInputElement>;
     onChange(syntheticEvent);
     onToggleEdit();
-  };
+  }, [localValue, name, onChange, onToggleEdit]);
 
   // Cancel edit
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setLocalValue(value?.toString() || "");
     onToggleEdit();
-  };
+  }, [value, onToggleEdit]);
 
   // Handle double-click to edit
-  const handleDoubleClick = () => {
+  const handleDoubleClick = useCallback(() => {
     if (!isEditable) {
       handleToggleEdit();
     }
-  };
+  }, [isEditable, handleToggleEdit]);
 
   return (
     <div className="grid gap-2">

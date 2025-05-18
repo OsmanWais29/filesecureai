@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { memo } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Clock } from "lucide-react";
 import { TimeSlot } from "../types";
@@ -9,7 +9,7 @@ interface TimeSlotItemProps {
   onToggle: (id: string) => void;
 }
 
-export const TimeSlotItem: React.FC<TimeSlotItemProps> = ({ slot, onToggle }) => {
+export const TimeSlotItem: React.FC<TimeSlotItemProps> = memo(({ slot, onToggle }) => {
   return (
     <div 
       className={`flex items-center justify-between p-3 border rounded-md ${
@@ -28,4 +28,6 @@ export const TimeSlotItem: React.FC<TimeSlotItemProps> = ({ slot, onToggle }) =>
       />
     </div>
   );
-};
+});
+
+TimeSlotItem.displayName = "TimeSlotItem";

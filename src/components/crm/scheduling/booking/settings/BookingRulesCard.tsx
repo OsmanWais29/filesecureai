@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { memo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -19,7 +19,7 @@ interface BookingRulesCardProps {
   setAiRecommendations: (value: boolean) => void;
 }
 
-export const BookingRulesCard: React.FC<BookingRulesCardProps> = ({
+export const BookingRulesCard: React.FC<BookingRulesCardProps> = memo(({
   bookingWindow,
   setBookingWindow,
   minNotice,
@@ -129,4 +129,6 @@ export const BookingRulesCard: React.FC<BookingRulesCardProps> = ({
       </CardContent>
     </Card>
   );
-};
+});
+
+BookingRulesCard.displayName = "BookingRulesCard";

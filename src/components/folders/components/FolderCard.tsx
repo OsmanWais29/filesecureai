@@ -3,7 +3,7 @@ import { Document } from "@/components/DocumentList/types";
 import { ChevronDown, ChevronRight, Folder } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FolderDocumentList } from "./FolderDocumentList";
-import { useState } from "react";
+import { useState, memo, useCallback } from "react";
 
 interface FolderCardProps {
   folder: Document;
@@ -20,7 +20,7 @@ interface FolderCardProps {
   onOpenDocument?: (documentId: string) => void;
 }
 
-export const FolderCard = ({
+export const FolderCard = memo(({
   folder,
   isExpanded,
   isSelected,
@@ -35,8 +35,27 @@ export const FolderCard = ({
   onOpenDocument
 }: FolderCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
+  
+  // Memoize filtered documents to prevent unnecessary computation
   const folderDocuments = documents.filter(doc => !doc.is_folder && doc.parent_folder_id === folder.id);
   const hasDocuments = folderDocuments.length > 0;
+
+  // Memoize handlers to prevent recreation on each render
+  const handleMouseEnter = useCallback(() => setIsHovered(true), []);
+  const handleMouseLeave = useCallback(() => setIsHovered(false), []);
+  const handleSelect = useCallback(() => onFolderSelect(folder.id), [folder.id, onFolderSelect]);
+  const handleDoubleClick = useCallback(() => onFolderDoubleClick(folder.id), [folder.id, onFolderDoubleClick]);
+  const handleDrop = useCallback((e: React.DragEvent) => onDrop(e, folder.id), [folder.id, onDrop]);
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') onFolderSelect(folder.id);
+    if (e.key === 'Space') onFolderDoubleClick(folder.id);
+  }, [folder.id, onFolderSelect, onFolderDoubleClick]);
+
+  // Memoize the chevron click handler to prevent propagation
+  const handleChevronClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    onFolderDoubleClick(folder.id);
+  }, [folder.id, onFolderDoubleClick]);
 
   return (
     <div
@@ -48,20 +67,17 @@ export const FolderCard = ({
         isHovered && "bg-accent/10",
         isPartOfMergeGroup && "border-2 border-amber-500 bg-amber-50/30 dark:bg-amber-900/10"
       )}
-      onClick={() => onFolderSelect(folder.id)}
-      onDoubleClick={() => onFolderDoubleClick(folder.id)}
+      onClick={handleSelect}
+      onDoubleClick={handleDoubleClick}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
-      onDrop={(e) => onDrop(e, folder.id)}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onDrop={handleDrop}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       role="button"
       aria-expanded={isExpanded}
       tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') onFolderSelect(folder.id);
-        if (e.key === 'Space') onFolderDoubleClick(folder.id);
-      }}
+      onKeyDown={handleKeyDown}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center">
@@ -86,10 +102,7 @@ export const FolderCard = ({
         {hasDocuments && (
           <button 
             className="p-1 rounded-full hover:bg-primary/10"
-            onClick={(e) => {
-              e.stopPropagation();
-              onFolderDoubleClick(folder.id);
-            }}
+            onClick={handleChevronClick}
             aria-label={isExpanded ? "Collapse folder" : "Expand folder"}
           >
             {isExpanded ? (
@@ -111,4 +124,6 @@ export const FolderCard = ({
       )}
     </div>
   );
-};
+});
+
+FolderCard.displayName = "FolderCard";

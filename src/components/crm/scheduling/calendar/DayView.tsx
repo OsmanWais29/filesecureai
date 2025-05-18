@@ -1,6 +1,7 @@
 
 import { isSameDay } from "date-fns";
 import { Appointment } from "../AppointmentsList";
+import { memo, useMemo } from "react";
 
 interface DayViewProps {
   selectedDate: Date;
@@ -8,11 +9,20 @@ interface DayViewProps {
   getAppointmentColorClass: (appointment: Appointment) => string;
 }
 
-export const DayView = ({ 
+export const DayView = memo(({ 
   selectedDate, 
   appointments,
   getAppointmentColorClass
 }: DayViewProps) => {
+  // Generate hours for the day (8am to 7pm)
+  const hourSlots = useMemo(() => Array.from({ length: 12 }, (_, i) => i + 8), []);
+  
+  // Filter appointments for the selected date
+  const appointmentsForDay = useMemo(() => 
+    appointments.filter(apt => isSameDay(apt.date, selectedDate)),
+    [appointments, selectedDate]
+  );
+
   return (
     <div className="border rounded-md p-4">
       <div className="text-center mb-2 font-medium">
@@ -23,10 +33,10 @@ export const DayView = ({
         })}
       </div>
       <div className="space-y-2 max-h-[400px] overflow-y-auto">
-        {Array.from({ length: 12 }, (_, i) => i + 8).map((hour) => {
+        {hourSlots.map((hour) => {
           const timeString = `${hour}:00`;
-          const appointmentsAtTime = appointments.filter(apt => 
-            isSameDay(apt.date, selectedDate) && apt.time.startsWith(`${hour}:`)
+          const appointmentsAtTime = appointmentsForDay.filter(apt => 
+            apt.time.startsWith(`${hour}:`)
           );
           
           return (
@@ -52,4 +62,6 @@ export const DayView = ({
       </div>
     </div>
   );
-};
+});
+
+DayView.displayName = "DayView";

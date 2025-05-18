@@ -7,6 +7,7 @@ import {
   isSameDay
 } from "date-fns";
 import { Appointment } from "../AppointmentsList";
+import { memo } from "react";
 
 interface WeekViewProps {
   selectedDate: Date;
@@ -15,7 +16,7 @@ interface WeekViewProps {
   getAppointmentColorClass: (appointment: Appointment) => string;
 }
 
-export const WeekView = ({ 
+export const WeekView = memo(({ 
   selectedDate, 
   setSelectedDate, 
   appointments,
@@ -34,10 +35,12 @@ export const WeekView = ({
     );
   };
 
+  const weekDays = getWeekDays();
+
   return (
     <div className="border rounded-md overflow-hidden">
       <div className="grid grid-cols-7 border-b">
-        {getWeekDays().map((day, i) => (
+        {weekDays.map((day, i) => (
           <div 
             key={i} 
             className={`text-center py-2 font-medium ${
@@ -52,7 +55,7 @@ export const WeekView = ({
         ))}
       </div>
       <div className="grid grid-cols-7 divide-x h-[350px] overflow-y-auto">
-        {getWeekDays().map((day, i) => {
+        {weekDays.map((day, i) => {
           const dayAppointments = getAppointmentsForDate(day);
           
           return (
@@ -82,4 +85,6 @@ export const WeekView = ({
       </div>
     </div>
   );
-};
+});
+
+WeekView.displayName = "WeekView";

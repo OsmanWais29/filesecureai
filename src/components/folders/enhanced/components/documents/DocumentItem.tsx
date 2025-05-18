@@ -7,7 +7,7 @@ import {
   ContextMenuTrigger 
 } from "@/components/ui/context-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useState } from "react";
+import { useState, useCallback, memo } from "react";
 import { StatusIndicator } from "./StatusIndicator";
 import { DocumentActions } from "./DocumentActions";
 import { DocumentContextMenu } from "./DocumentContextMenu";
@@ -21,7 +21,7 @@ interface DocumentItemProps {
   handleDragStart: (id: string, type: 'folder' | 'document') => void;
 }
 
-export const DocumentItem = ({
+export const DocumentItem = memo(({
   document,
   indentation,
   onSelect,
@@ -32,7 +32,8 @@ export const DocumentItem = ({
   const [newName, setNewName] = useState(document.title);
   const needsAttention = documentNeedsAttention(document);
 
-  const handleRename = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  // Memoize handlers to prevent recreations on each render
+  const handleRename = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       // In a real app, you would call an API to update the document title
       console.log(`Renamed document ${document.id} to ${newName}`);
@@ -40,13 +41,36 @@ export const DocumentItem = ({
     } else if (e.key === 'Escape') {
       setIsEditing(false);
     }
-  };
+  }, [document.id, newName]);
 
-  const handleDoubleClick = () => {
+  const handleDoubleClick = useCallback(() => {
     if (isDocumentLocked(document)) return;
     setIsEditing(true);
     setNewName(document.title);
-  };
+  }, [document, document.title]);
+
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewName(e.target.value);
+  }, []);
+
+  const handleBlur = useCallback(() => {
+    setIsEditing(false);
+  }, []);
+
+  const handleClick = useCallback(() => {
+    onSelect(document.id);
+  }, [document.id, onSelect]);
+
+  const handleStartDrag = useCallback(() => {
+    handleDragStart(document.id, 'document');
+  }, [document.id, handleDragStart]);
+
+  // Memoize element rendering based on document state
+  const documentIcon = isForm47or76(document) ? (
+    <FileText className="h-4 w-4 text-primary mr-2" />
+  ) : (
+    <File className="h-4 w-4 text-muted-foreground mr-2" />
+  );
 
   return (
     <ContextMenu>
@@ -57,25 +81,21 @@ export const DocumentItem = ({
             "group transition-colors duration-200",
             needsAttention ? "bg-orange-50" : ""
           )}
-          onClick={() => onSelect(document.id)}
-          onDoubleClick={() => handleDoubleClick()}
+          onClick={handleClick}
+          onDoubleClick={handleDoubleClick}
           draggable
-          onDragStart={() => handleDragStart(document.id, 'document')}
+          onDragStart={handleStartDrag}
         >
           {indentation}
-          {isForm47or76(document) ? (
-            <FileText className="h-4 w-4 text-primary mr-2" />
-          ) : (
-            <File className="h-4 w-4 text-muted-foreground mr-2" />
-          )}
+          {documentIcon}
           
           {isEditing ? (
             <input
               type="text"
               value={newName}
-              onChange={(e) => setNewName(e.target.value)}
+              onChange={handleChange}
               onKeyDown={handleRename}
-              onBlur={() => setIsEditing(false)}
+              onBlur={handleBlur}
               autoFocus
               className="text-sm px-1 py-0.5 border border-primary rounded flex-1 outline-none"
             />
@@ -115,4 +135,6 @@ export const DocumentItem = ({
       />
     </ContextMenu>
   );
-};
+});
+
+DocumentItem.displayName = "DocumentItem";

@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
@@ -57,7 +57,7 @@ export function useAuthState() {
   const [isClient, setIsClient] = useState<boolean | null>(null);
   const [isTrustee, setIsTrustee] = useState<boolean | null>(null);
 
-  // Detect subdomain on mount
+  // Detect subdomain on mount - memoized to avoid recreating on each render
   useEffect(() => {
     const detected = getSubdomain();
     setSubdomain(detected);
@@ -130,14 +130,14 @@ export function useAuthState() {
   }, [subdomain]);
 
   /**
-   * Refresh the session explicitly
+   * Refresh the session explicitly - memoized with useCallback
    */
   const refreshSessionCallback = useCallback(async (): Promise<boolean> => {
     return refreshSession();
   }, []);
 
   /**
-   * Sign out the user
+   * Sign out the user - memoized with useCallback
    */
   const signOut = useCallback(async () => {
     try {
@@ -162,7 +162,8 @@ export function useAuthState() {
     }
   }, [subdomain]);
 
-  return {
+  // Memoize the return value to prevent unnecessary rerenders
+  return useMemo(() => ({
     user,
     session,
     loading,
@@ -172,5 +173,15 @@ export function useAuthState() {
     subdomain,
     isClient,
     isTrustee
-  };
+  }), [
+    user, 
+    session, 
+    loading, 
+    initialized, 
+    refreshSessionCallback,
+    signOut,
+    subdomain,
+    isClient,
+    isTrustee
+  ]);
 }
