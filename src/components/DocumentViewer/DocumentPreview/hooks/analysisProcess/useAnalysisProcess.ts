@@ -31,8 +31,8 @@ export const useAnalysisProcess = (props: AnalysisProcessProps) => {
         return;
       }
 
-      const documentId = documents[0].id;
-      const documentTitle = documents[0].title;
+      const documentId = String(documents[0].id);
+      const documentTitle = String(documents[0].title || '');
       const documentMetadata = documents[0].metadata || {};
 
       // Begin the analysis process
@@ -97,7 +97,9 @@ export const useAnalysisProcess = (props: AnalysisProcessProps) => {
             documentId,
             module: "document-analysis",
             title: documentTitle,
-            formType: documentMetadata.formType
+            formType: documentMetadata && typeof documentMetadata === 'object' && 'formType' in documentMetadata
+              ? String(documentMetadata.formType)
+              : undefined
           }
         });
 

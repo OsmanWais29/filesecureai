@@ -84,7 +84,11 @@ export const useDocumentAnalysis = (storagePath: string, onAnalysisComplete?: ()
             if (document && 
                (document.ai_processing_status === 'pending' || 
                 document.ai_processing_status === 'failed' ||
-                document.metadata?.processing_steps_completed?.length < 8)) {
+                (document.metadata && 
+                 typeof document.metadata === 'object' && 
+                 'processing_steps_completed' in document.metadata &&
+                 Array.isArray(document.metadata.processing_steps_completed) &&
+                 document.metadata.processing_steps_completed.length < 8))) {
               console.log('Document needs analysis, current status:', document.ai_processing_status);
               handleAnalyzeDocument(data.session);
             }

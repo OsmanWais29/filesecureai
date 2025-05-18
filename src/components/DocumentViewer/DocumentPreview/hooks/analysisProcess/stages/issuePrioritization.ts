@@ -1,4 +1,3 @@
-
 import { supabase } from "@/lib/supabase";
 import { DocumentRecord } from "../../types";
 import { updateAnalysisStatus } from "../documentStatusUpdates";
@@ -34,29 +33,35 @@ export const issuePrioritization = async (
       .eq('document_id', documentRecord.id)
       .maybeSingle();
       
-    const risks = analysisData?.content?.risks || [];
+    // Handle content safely
+    const content = analysisData?.content || {};
+    const risks = (content && typeof content === 'object' && 'risks' in content) 
+      ? (Array.isArray(content.risks) ? content.risks : []) 
+      : [];
     
     // Create tasks based on high priority risks
-    const highPriorityRisks = risks.filter(risk => risk.severity === 'high');
+    const highPriorityRisks = risks.filter(risk => risk && typeof risk === 'object' && risk.severity === 'high');
     
     if (highPriorityRisks.length > 0) {
       // Get current user
       const { data: userData } = await supabase.auth.getUser();
       
       for (const risk of highPriorityRisks) {
-        await supabase
-          .from('tasks')
-          .insert({
-            title: risk.description,
-            description: `${risk.impact || 'High impact risk'} - ${risk.requiredAction || 'Action required'}`,
-            document_id: documentRecord.id,
-            created_by: userData.user?.id,
-            severity: risk.severity,
-            regulation: risk.regulation || '',
-            solution: risk.solution || '',
-            due_date: risk.deadline ? calculateDueDate(risk.deadline) : null,
-            status: 'pending'
-          });
+        if (risk && typeof risk === 'object') {
+          await supabase
+            .from('tasks')
+            .insert({
+              title: risk.description || 'Risk identified',
+              description: `${risk.impact || 'High impact risk'} - ${risk.requiredAction || 'Action required'}`,
+              document_id: documentRecord.id,
+              created_by: userData?.user?.id,
+              severity: risk.severity || 'high',
+              regulation: risk.regulation || '',
+              solution: risk.solution || '',
+              due_date: risk.deadline ? calculateDueDate(risk.deadline) : null,
+              status: 'pending'
+            });
+        }
       }
       
       console.log(`Created ${highPriorityRisks.length} tasks from high priority risks`);
@@ -64,26 +69,30 @@ export const issuePrioritization = async (
     
     // For Form 47, also create tasks for medium priority risks
     if (isForm47) {
-      const mediumPriorityRisks = risks.filter(risk => risk.severity === 'medium');
+      const mediumPriorityRisks = risks.filter(risk => 
+        risk && typeof risk === 'object' && risk.severity === 'medium'
+      );
       
       if (mediumPriorityRisks.length > 0) {
         // Get current user
         const { data: userData } = await supabase.auth.getUser();
         
         for (const risk of mediumPriorityRisks) {
-          await supabase
-            .from('tasks')
-            .insert({
-              title: risk.description,
-              description: `${risk.impact || 'Medium impact risk'} - ${risk.requiredAction || 'Action required'}`,
-              document_id: documentRecord.id,
-              created_by: userData.user?.id,
-              severity: risk.severity,
-              regulation: risk.regulation || '',
-              solution: risk.solution || '',
-              due_date: risk.deadline ? calculateDueDate(risk.deadline) : null,
-              status: 'pending'
-            });
+          if (risk && typeof risk === 'object') {
+            await supabase
+              .from('tasks')
+              .insert({
+                title: risk.description || 'Risk identified',
+                description: `${risk.impact || 'Medium impact risk'} - ${risk.requiredAction || 'Action required'}`,
+                document_id: documentRecord.id,
+                created_by: userData?.user?.id,
+                severity: risk.severity || 'medium',
+                regulation: risk.regulation || '',
+                solution: risk.solution || '',
+                due_date: risk.deadline ? calculateDueDate(risk.deadline) : null,
+                status: 'pending'
+              });
+          }
         }
         
         console.log(`Created ${mediumPriorityRisks.length} tasks from medium priority risks for Form 47`);
@@ -96,7 +105,7 @@ export const issuePrioritization = async (
           await supabase.functions.invoke('handle-notifications', {
             body: {
               action: 'create',
-              userId: userData.user?.id,
+              userId: userData?.user?.id,
               notification: {
                 title: 'Consumer Proposal Deadline',
                 message: `Form 47 for ${documentRecord.metadata?.clientName || 'client'} must be submitted by ${documentRecord.metadata?.submissionDeadline}`,

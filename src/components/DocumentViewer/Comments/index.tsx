@@ -34,12 +34,21 @@ export const Comments: React.FC<CommentsProps> = ({
           .eq('id', user.id)
           .single();
 
-        setUserProfile(profile || {
-          id: user.id,
-          email: user.email || '',
-          avatar_url: null,
-          full_name: user.email?.split('@')[0] || 'User'
-        });
+        if (profile) {
+          setUserProfile({
+            id: String(profile.id),
+            email: String(profile.email || ''),
+            avatar_url: profile.avatar_url,
+            full_name: String(profile.full_name || user.email?.split('@')[0] || 'User')
+          });
+        } else {
+          setUserProfile({
+            id: String(user.id),
+            email: String(user.email || ''),
+            avatar_url: null,
+            full_name: String(user.email?.split('@')[0] || 'User')
+          });
+        }
       }
 
       // Get comments for this document
@@ -54,11 +63,22 @@ export const Comments: React.FC<CommentsProps> = ({
         return;
       }
 
-      setComments(commentsData as Comment[]);
+      // Type the comment data properly
+      const typedComments: Comment[] = commentsData?.map(item => ({
+        id: String(item.id),
+        content: String(item.content || ''),
+        created_at: String(item.created_at),
+        user_id: String(item.user_id),
+        document_id: String(item.document_id),
+        parent_id: item.parent_id ? String(item.parent_id) : undefined,
+        mentions: Array.isArray(item.mentions) ? item.mentions.map(String) : undefined,
+        is_resolved: Boolean(item.is_resolved)
+      })) || [];
+
+      setComments(typedComments);
     };
 
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [documentId]);
 
   // Handle comment submission
@@ -84,9 +104,21 @@ export const Comments: React.FC<CommentsProps> = ({
         
       if (error) throw error;
       
-      // Add the new comment to the list
-      const addedComment = data[0] as Comment;
-      setComments(prevComments => [...prevComments, addedComment]);
+      // Add the new comment to the list with proper typing
+      if (data && data[0]) {
+        const addedComment: Comment = {
+          id: String(data[0].id),
+          content: String(data[0].content || ''),
+          created_at: String(data[0].created_at),
+          user_id: String(data[0].user_id),
+          document_id: String(data[0].document_id),
+          parent_id: data[0].parent_id ? String(data[0].parent_id) : undefined,
+          mentions: Array.isArray(data[0].mentions) ? data[0].mentions.map(String) : undefined,
+          is_resolved: Boolean(data[0].is_resolved)
+        };
+        
+        setComments(prevComments => [...prevComments, addedComment]);
+      }
       
       if (onCommentAdded) {
         onCommentAdded();

@@ -20,48 +20,5 @@ export interface Profile {
 export interface CommentsProps {
   documentId: string;
   comments?: Comment[];
-  onCommentAdded: () => void;
-}
-
-export interface CommentItemProps {
-  comment: Comment;
-  allComments?: Comment[];
-  currentUser: any;
-  userProfile: Profile;
-  onReply: (parentId: string) => void;
-  onEdit: (id: string, content: string) => Promise<void>;
-  onDelete: (id: string) => Promise<void>;
-  onResolve: (id: string, resolved: boolean) => Promise<void>;
-  isSubmitting: boolean;
-}
-
-export interface CommentInputProps {
-  currentUser: any;
-  userProfile: Profile | undefined;
-  onSubmit: (content: string, parentId?: string, mentions?: string[]) => Promise<void>;
-  isSubmitting: boolean;
-  parentId?: string;
-  onCancel?: () => void;
-  placeholder?: string;
-  initialValue?: string;
-}
-
-export interface MentionData {
-  id: string;
-  display: string;
-  avatar?: string;
-}
-
-export interface ThreadedCommentProps {
-  comment: Comment;
-  allComments?: Comment[];
-  replies?: Comment[];
-  currentUser: any;
-  userProfile: Profile;
-  onReply: (parentId: string) => void;
-  onEdit: (id: string, content: string) => Promise<void>;
-  onDelete: (id: string) => Promise<void>;
-  onResolve: (id: string, resolved: boolean) => Promise<void>;
-  isSubmitting: boolean;
-  onSubmit?: (content: string, parentId?: string, mentions?: string[]) => Promise<void>;
+  onCommentAdded?: () => void;
 }

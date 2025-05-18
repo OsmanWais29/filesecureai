@@ -6,16 +6,11 @@ import { supabase } from "@/lib/supabase";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useToast } from "@/hooks/use-toast";
+import { SearchResult } from "./types";
 
 interface SearchBarProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
-}
-
-interface SearchResult {
-  id: string;
-  title: string;
-  type: string;
 }
 
 export const SearchBar: React.FC<SearchBarProps> = ({ searchQuery, onSearchChange }) => {
@@ -46,7 +41,14 @@ export const SearchBar: React.FC<SearchBarProps> = ({ searchQuery, onSearchChang
 
         if (error) throw error;
 
-        setResults(data || []);
+        // Apply proper type casting to ensure the data is correctly typed
+        const typedResults: SearchResult[] = data?.map(item => ({
+          id: String(item.id),
+          title: String(item.title),
+          type: String(item.type || '')
+        })) || [];
+
+        setResults(typedResults);
         setIsOpen(true);
       } catch (error) {
         console.error('Search error:', error);

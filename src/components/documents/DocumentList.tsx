@@ -6,7 +6,7 @@ import { Document } from "@/components/DocumentList/types";
 
 interface DocumentListProps {
   documents: Document[];
-  isLoading: boolean; // Added isLoading prop to match test usage
+  isLoading: boolean; 
   onDocumentDoubleClick: (documentId: string) => void;
 }
 
@@ -23,7 +23,7 @@ export const DocumentList = ({ documents, isLoading, onDocumentDoubleClick }: Do
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {documents.map((doc: Document) => (
+      {documents.map((doc) => (
         <Card 
           key={doc.id} 
           className="hover:shadow-lg transition-shadow cursor-pointer"
@@ -39,7 +39,7 @@ export const DocumentList = ({ documents, isLoading, onDocumentDoubleClick }: Do
                   {new Date(doc.created_at).toLocaleDateString()}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {(doc.size / 1024 / 1024).toFixed(2)} MB
+                  {doc.size && (doc.size / 1024 / 1024).toFixed(2)} MB
                 </p>
               </div>
               <Button 

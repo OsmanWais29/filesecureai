@@ -47,23 +47,32 @@ export const documentIngestion = async (
     if (documentByTitle) {
       console.log('Found document by title match:', documentByTitle);
       
+      // Create properly typed document record
+      const typedDocument: DocumentRecord = {
+        id: String(documentByTitle.id),
+        title: String(documentByTitle.title || ''),
+        metadata: documentByTitle.metadata || {},
+        ai_processing_status: documentByTitle.ai_processing_status ? String(documentByTitle.ai_processing_status) : undefined,
+        storage_path: documentByTitle.storage_path ? String(documentByTitle.storage_path) : undefined
+      };
+      
       // Update storage_path if it's missing
-      if (!documentByTitle.storage_path) {
+      if (!typedDocument.storage_path) {
         const { error: updateError } = await supabase
           .from('documents')
           .update({ storage_path: storagePath })
-          .eq('id', documentByTitle.id);
+          .eq('id', typedDocument.id);
           
         if (updateError) {
           console.error('Error updating storage path:', updateError);
         } else {
-          console.log('Updated storage_path for document:', documentByTitle.id);
-          documentByTitle.storage_path = storagePath;
+          console.log('Updated storage_path for document:', typedDocument.id);
+          typedDocument.storage_path = storagePath;
         }
       }
       
-      await updateAnalysisStatus(documentByTitle, 'document_ingestion', 'analysis_started');
-      return documentByTitle;
+      await updateAnalysisStatus(typedDocument, 'document_ingestion', 'analysis_started');
+      return typedDocument;
     }
     
     throw new Error('Document record not found in database');
@@ -71,23 +80,32 @@ export const documentIngestion = async (
   
   console.log('Document record found:', documentRecord);
   
+  // Create properly typed document record
+  const typedDocumentRecord: DocumentRecord = {
+    id: String(documentRecord.id),
+    title: String(documentRecord.title || ''),
+    metadata: documentRecord.metadata || {},
+    ai_processing_status: documentRecord.ai_processing_status ? String(documentRecord.ai_processing_status) : undefined,
+    storage_path: documentRecord.storage_path ? String(documentRecord.storage_path) : undefined
+  };
+  
   // Ensure storage_path is set
-  if (!documentRecord.storage_path) {
+  if (!typedDocumentRecord.storage_path) {
     console.log('Document missing storage_path, updating...');
     const { error: updateError } = await supabase
       .from('documents')
       .update({ storage_path: storagePath })
-      .eq('id', documentRecord.id);
+      .eq('id', typedDocumentRecord.id);
       
     if (updateError) {
       console.error('Error updating storage path:', updateError);
     } else {
-      documentRecord.storage_path = storagePath;
+      typedDocumentRecord.storage_path = storagePath;
     }
   }
   
   // Update document status to processing
-  await updateAnalysisStatus(documentRecord, 'document_ingestion', 'analysis_started');
+  await updateAnalysisStatus(typedDocumentRecord, 'document_ingestion', 'analysis_started');
   
-  return documentRecord;
+  return typedDocumentRecord;
 };

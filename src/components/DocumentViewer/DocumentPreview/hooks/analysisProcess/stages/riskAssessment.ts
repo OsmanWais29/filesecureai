@@ -1,4 +1,3 @@
-
 import { supabase } from "@/lib/supabase";
 import { DocumentRecord } from "../../types";
 import { updateAnalysisStatus } from "../documentStatusUpdates";
@@ -107,12 +106,14 @@ export const riskAssessment = async (
       if (existingAnalysis) {
         // Add Form 76 risks to existing risks
         const existingContent = existingAnalysis.content || {};
-        const existingRisks = existingContent.risks || [];
+        const existingRisks = Array.isArray(existingContent.risks) ? existingContent.risks : [];
         
         const updatedContent = {
-          ...existingContent,
+          ...(typeof existingContent === 'object' ? existingContent : {}),
           extracted_info: {
-            ...(existingContent.extracted_info || {}),
+            ...(existingContent && typeof existingContent === 'object' && 
+               existingContent.extracted_info && typeof existingContent.extracted_info === 'object' 
+               ? existingContent.extracted_info : {}),
             formType: 'form-76',
             formNumber: '76'
           },
@@ -133,7 +134,7 @@ export const riskAssessment = async (
           .from('document_analysis')
           .insert({
             document_id: documentRecord.id,
-            user_id: userData.user?.id,
+            user_id: userData?.user?.id,
             content: {
               extracted_info: {
                 formType: 'form-76',
@@ -280,26 +281,48 @@ export const riskAssessment = async (
       // Update or create analysis with Form 31 risks and extracted info
       if (existingAnalysis) {
         const existingContent = existingAnalysis.content || {};
-        const existingExtractedInfo = existingContent.extracted_info || {};
-        const existingRisks = existingContent.risks || [];
+        const existingExtractedInfo = existingContent && typeof existingContent === 'object' && existingContent.extracted_info 
+          ? existingContent.extracted_info 
+          : {};
+        const existingRisks = existingContent && typeof existingContent === 'object' && Array.isArray(existingContent.risks) 
+          ? existingContent.risks 
+          : [];
         
         const updatedContent = {
-          ...existingContent,
+          ...(typeof existingContent === 'object' ? existingContent : {}),
           extracted_info: {
-            ...existingExtractedInfo,
+            ...(typeof existingExtractedInfo === 'object' ? existingExtractedInfo : {}),
             formType: 'form-31',
             formNumber: '31',
             type: 'proof-of-claim',
-            claimantName: existingExtractedInfo.claimantName || extractedClaimInfo.creditorName || '',
-            creditorName: existingExtractedInfo.creditorName || extractedClaimInfo.creditorName || '',
-            claimAmount: existingExtractedInfo.claimAmount || extractedClaimInfo.claimAmount || '',
-            claimType: existingExtractedInfo.claimType || extractedClaimInfo.claimType || '',
-            securityDetails: existingExtractedInfo.securityDetails || extractedClaimInfo.securityDetails || '',
-            debtorName: existingExtractedInfo.debtorName || extractedClaimInfo.debtorName || existingExtractedInfo.clientName || '',
-            dateSigned: existingExtractedInfo.dateSigned || extractedClaimInfo.filingDate || '',
-            filingDate: existingExtractedInfo.filingDate || extractedClaimInfo.filingDate || '',
+            claimantName: typeof existingExtractedInfo === 'object' && existingExtractedInfo.claimantName 
+              ? String(existingExtractedInfo.claimantName) 
+              : extractedClaimInfo.creditorName || '',
+            creditorName: typeof existingExtractedInfo === 'object' && existingExtractedInfo.creditorName 
+              ? String(existingExtractedInfo.creditorName) 
+              : extractedClaimInfo.creditorName || '',
+            claimAmount: typeof existingExtractedInfo === 'object' && existingExtractedInfo.claimAmount 
+              ? existingExtractedInfo.claimAmount 
+              : extractedClaimInfo.claimAmount || '',
+            claimType: typeof existingExtractedInfo === 'object' && existingExtractedInfo.claimType 
+              ? existingExtractedInfo.claimType 
+              : extractedClaimInfo.claimType || '',
+            securityDetails: typeof existingExtractedInfo === 'object' && existingExtractedInfo.securityDetails 
+              ? existingExtractedInfo.securityDetails 
+              : extractedClaimInfo.securityDetails || '',
+            debtorName: typeof existingExtractedInfo === 'object' && existingExtractedInfo.debtorName 
+              ? String(existingExtractedInfo.debtorName) 
+              : extractedClaimInfo.debtorName || existingExtractedInfo.clientName || '',
+            dateSigned: typeof existingExtractedInfo === 'object' && existingExtractedInfo.dateSigned 
+              ? existingExtractedInfo.dateSigned 
+              : extractedClaimInfo.filingDate || '',
+            filingDate: typeof existingExtractedInfo === 'object' && existingExtractedInfo.filingDate 
+              ? existingExtractedInfo.filingDate 
+              : extractedClaimInfo.filingDate || '',
             summary: "Form 31 - Proof of Claim against debtor/bankrupt",
-            documentStatus: existingExtractedInfo.documentStatus || 'Pending Review'
+            documentStatus: typeof existingExtractedInfo === 'object' && existingExtractedInfo.documentStatus 
+              ? existingExtractedInfo.documentStatus 
+              : 'Pending Review'
           },
           risks: [...existingRisks, ...form31Risks]
         };
@@ -318,7 +341,7 @@ export const riskAssessment = async (
           .from('document_analysis')
           .insert({
             document_id: documentRecord.id,
-            user_id: userData.user?.id,
+            user_id: userData?.user?.id,
             content: {
               extracted_info: {
                 formType: 'form-31',
