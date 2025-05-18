@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthLayout } from '@/components/auth/AuthLayout';
@@ -144,7 +143,7 @@ const ClientLogin = () => {
   if (loading || redirecting) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center">
-        <LoadingSpinner size="lg" />
+        <LoadingSpinner size="large" />
         <p className="mt-4 text-muted-foreground">
           {redirecting ? 'Redirecting...' : 'Loading...'}
         </p>

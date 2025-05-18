@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { startTokenMonitoring, stopTokenMonitoring, refreshToken } from '@/utils/jwt/tokenManager';
+import { logAuthEvent, recordSessionEvent } from '@/utils/debugMode';
 
 /**
  * Stand-alone function to refresh session that can be imported elsewhere
@@ -20,15 +21,19 @@ export function getSubdomain(): string | null {
   // For localhost testing
   if (hostname === 'localhost') {
     const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('subdomain');
+    const subdomain = urlParams.get('subdomain');
+    logAuthEvent(`Detected subdomain from URL params: ${subdomain}`);
+    return subdomain;
   }
   
   // For actual domain with subdomains
   const hostParts = hostname.split('.');
   if (hostParts.length > 2) {
+    logAuthEvent(`Detected subdomain from hostname: ${hostParts[0]}`);
     return hostParts[0];
   }
   
+  logAuthEvent('No subdomain detected');
   return null;
 }
 
@@ -45,32 +50,45 @@ export function useAuthState() {
   const [isTrustee, setIsTrustee] = useState<boolean | null>(null);
   const [redirectInProgress, setRedirectInProgress] = useState(false);
 
+  // Record when hook is initialized
+  useEffect(() => {
+    recordSessionEvent('auth_state_hook_mounted');
+    return () => {
+      recordSessionEvent('auth_state_hook_unmounted');
+    };
+  }, []);
+
   // Detect subdomain on mount - memoized to avoid recreating on each render
   useEffect(() => {
     const detected = getSubdomain();
-    console.log("useAuthState: Detected subdomain:", detected);
+    logAuthEvent(`useAuthState: Detected subdomain: ${detected || 'none'}`);
     setSubdomain(detected);
     setIsClient(detected === 'client');
+    
+    recordSessionEvent(`subdomain_detected_${detected || 'none'}`);
   }, []);
 
   // Handle initial session loading
   useEffect(() => {
-    console.log("useAuthState: Initializing auth state listener...");
+    logAuthEvent("useAuthState: Initializing auth state listener");
+    recordSessionEvent('auth_initialization_started');
     
     let isMounted = true;
     let authChangeUnsubscribe: () => void | null = null;
     
     const initializeAuth = async () => {
       try {
-        // Set up auth state listener FIRST 
+        // Set up auth state listener FIRST to avoid missing events
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           (event, newSession) => {
-            console.log("useAuthState: Auth state changed:", event);
+            logAuthEvent(`useAuthState: Auth state changed: ${event}`);
+            recordSessionEvent(`auth_state_change_${event}`);
+            
             if (newSession?.user) {
-              console.log("useAuthState: User authenticated:", newSession.user.id);
+              logAuthEvent(`useAuthState: User authenticated: ${newSession.user.id}`);
               
               const userType = newSession.user.user_metadata?.user_type;
-              console.log("useAuthState: User type:", userType);
+              logAuthEvent(`useAuthState: User type: ${userType}`);
 
               if (isMounted) {
                 setSession(newSession);
@@ -95,13 +113,14 @@ export function useAuthState() {
         setTimeout(async () => {
           try {
             const { data: { session: currentSession } } = await supabase.auth.getSession();
-            console.log("useAuthState: Retrieved current session:", currentSession ? "Exists" : "None");
+            logAuthEvent(`useAuthState: Retrieved current session: ${currentSession ? "Exists" : "None"}`);
+            recordSessionEvent(`auth_session_retrieved_${currentSession ? "exists" : "none"}`);
             
             if (currentSession?.user && isMounted) {
-              console.log("useAuthState: User ID from session:", currentSession.user.id);
+              logAuthEvent(`useAuthState: User ID from session: ${currentSession.user.id}`);
               
               const userType = currentSession.user.user_metadata?.user_type;
-              console.log("useAuthState: User type from session:", userType);
+              logAuthEvent(`useAuthState: User type from session: ${userType}`);
 
               setSession(currentSession);
               setUser(currentSession.user);
@@ -110,23 +129,30 @@ export function useAuthState() {
               
               // Start token monitoring when we have a session
               startTokenMonitoring();
+              recordSessionEvent('token_monitoring_started');
             }
             
             if (isMounted) {
               setLoading(false);
               setInitialized(true);
+              recordSessionEvent('auth_initialization_completed');
             }
           } catch (error) {
-            console.error("useAuthState: Error retrieving session:", error);
+            logAuthEvent(`useAuthState: Error retrieving session: ${error instanceof Error ? error.message : String(error)}`);
+            recordSessionEvent('auth_session_retrieval_error');
+            
             if (isMounted) {
               setLoading(false);
               setInitialized(true);
+              recordSessionEvent('auth_initialization_completed');
             }
           }
-        }, 100); 
+        }, 150); // Increased delay to ensure proper initialization
 
       } catch (error) {
-        console.error("useAuthState: Error during initialization:", error);
+        logAuthEvent(`useAuthState: Error during initialization: ${error instanceof Error ? error.message : String(error)}`);
+        recordSessionEvent('auth_initialization_error');
+        
         if (isMounted) {
           setLoading(false);
           setInitialized(true);
@@ -140,13 +166,15 @@ export function useAuthState() {
       isMounted = false;
       if (authChangeUnsubscribe) authChangeUnsubscribe();
       stopTokenMonitoring();
+      recordSessionEvent('auth_cleanup_completed');
     };
-  }, [subdomain]);
+  }, []);  // Removed subdomain dependency to prevent reinitialization
 
   /**
    * Refresh the session explicitly - memoized with useCallback
    */
   const refreshSessionCallback = useCallback(async (): Promise<boolean> => {
+    recordSessionEvent('manual_session_refresh_requested');
     return refreshSession();
   }, []);
 
@@ -155,13 +183,15 @@ export function useAuthState() {
    */
   const signOut = useCallback(async () => {
     if (redirectInProgress) {
+      logAuthEvent("useAuthState: Sign out prevented due to redirect in progress");
       return; // Prevent multiple sign-out attempts
     }
     
     setRedirectInProgress(true);
+    recordSessionEvent('signout_started');
     
     try {
-      console.log("useAuthState: Signing out user...");
+      logAuthEvent("useAuthState: Signing out user...");
       await supabase.auth.signOut();
       setUser(null);
       setSession(null);
@@ -170,19 +200,21 @@ export function useAuthState() {
       stopTokenMonitoring();
       
       toast.success('Signed out successfully');
-      console.log("useAuthState: Sign out successful");
+      logAuthEvent("useAuthState: Sign out successful");
+      recordSessionEvent('signout_successful');
 
       // Redirect to the correct login page based on subdomain after signout
       setTimeout(() => {
         const currentSubdomain = getSubdomain();
-        if (currentSubdomain === 'client') {
-          window.location.href = '/login';
-        } else {
-          window.location.href = '/login';
-        }
-      }, 100);
+        logAuthEvent(`useAuthState: Redirecting after signout with subdomain: ${currentSubdomain}`);
+        recordSessionEvent(`redirect_after_signout_${currentSubdomain || 'none'}`);
+        
+        // Always go to login page
+        window.location.href = '/login';
+      }, 150); // Increased delay for more reliable redirect
     } catch (error) {
-      console.error('useAuthState: Sign out error:', error);
+      logAuthEvent(`useAuthState: Sign out error: ${error instanceof Error ? error.message : String(error)}`);
+      recordSessionEvent('signout_error');
       toast.error('Failed to sign out');
       setRedirectInProgress(false);
     }

@@ -1,9 +1,10 @@
-
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useAuthState } from "@/hooks/useAuthState";
 import { AuthRoleGuard } from "./components/auth/AuthRoleGuard";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { recordSessionEvent, logRoutingEvent } from "@/utils/debugMode";
+import { authDebug } from "@/utils/authDebug";
 
 // Auth Pages
 import TrusteeLogin from "./pages/auth/TrusteeLogin";
@@ -38,17 +39,23 @@ import "./App.css";
 
 // Improved home page resolver that respects authentication status
 function HomePageResolver() {
-  const { user, loading, isClient, isTrustee, redirectInProgress } = useAuthState();
+  const { user, loading, isClient, isTrustee, redirectInProgress, subdomain } = useAuthState();
   
   useEffect(() => {
-    console.log("HomePageResolver: Initialized with user:", !!user, "isClient:", isClient, "isTrustee:", isTrustee);
-  }, [user, isClient, isTrustee]);
+    logRoutingEvent(`HomePageResolver: Initialized with user: ${!!user}, isClient: ${isClient}, isTrustee: ${isTrustee}, subdomain: ${subdomain}`);
+    recordSessionEvent('home_page_resolver_initialized');
+    
+    // Diagnostics to check auth state
+    authDebug.checkAuthState().then(state => {
+      logRoutingEvent(`HomePageResolver diagnostics: ${JSON.stringify(state)}`);
+    });
+  }, [user, isClient, isTrustee, subdomain]);
   
   // Prevent multiple renders/redirects while checking auth
   if (loading || redirectInProgress) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center">
-        <LoadingSpinner size="lg" />
+        <LoadingSpinner size="large" />
         <p className="mt-4 text-muted-foreground">
           {redirectInProgress ? "Redirecting..." : "Loading authentication state..."}
         </p>
@@ -60,22 +67,26 @@ function HomePageResolver() {
   if (user) {
     // If client, redirect to client portal
     if (isClient) {
-      console.log("HomePageResolver: User is client, redirecting to /portal");
+      logRoutingEvent("HomePageResolver: User is client, redirecting to /portal");
+      recordSessionEvent('home_resolver_redirect_client_to_portal');
       return <Navigate to="/portal" replace />;
     }
     
     // If trustee, redirect to CRM
     if (isTrustee) {
-      console.log("HomePageResolver: User is trustee, redirecting to /crm");
+      logRoutingEvent("HomePageResolver: User is trustee, redirecting to /crm");
+      recordSessionEvent('home_resolver_redirect_trustee_to_crm');
       return <Navigate to="/crm" replace />;
     }
     
-    console.log("HomePageResolver: User role not recognized:", user.user_metadata?.user_type);
+    logRoutingEvent(`HomePageResolver: User role not recognized: ${user.user_metadata?.user_type}`);
+    recordSessionEvent('home_resolver_unrecognized_role');
     // If user role is not recognized, go to login
     return <Navigate to="/login" replace />;
   }
   
-  console.log("HomePageResolver: No authenticated user, redirecting to /login");
+  logRoutingEvent("HomePageResolver: No authenticated user, redirecting to /login");
+  recordSessionEvent('home_resolver_redirect_to_login');
   // Not authenticated, go to login
   return <Navigate to="/login" replace />;
 }
@@ -84,15 +95,21 @@ function App() {
   const { subdomain, isClient, loading } = useAuthState();
   
   useEffect(() => {
-    console.log("App: Current subdomain detected:", subdomain);
-    console.log("App: Is client subdomain:", isClient);
+    logRoutingEvent(`App: Current subdomain detected: ${subdomain}`);
+    logRoutingEvent(`App: Is client subdomain: ${isClient}`);
+    recordSessionEvent(`app_rendered_with_subdomain_${subdomain || 'none'}`);
   }, [subdomain, isClient]);
+
+  useEffect(() => {
+    // Auto-check auth state on mount
+    authDebug.checkAuthState();
+  }, []);
 
   // Show loading state while determining subdomain
   if (loading && subdomain === null) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center">
-        <LoadingSpinner size="lg" />
+        <LoadingSpinner size="large" />
         <p className="mt-4 text-muted-foreground">Detecting application context...</p>
       </div>
     );
@@ -100,7 +117,8 @@ function App() {
   
   // If subdomain is 'client', show client routes
   if (isClient) {
-    console.log("App: Rendering client routes for client subdomain");
+    logRoutingEvent("App: Rendering client routes for client subdomain");
+    recordSessionEvent('app_rendering_client_routes');
     return (
       <Routes>
         {/* Root route - redirects based on auth status */}
@@ -135,7 +153,8 @@ function App() {
   }
   
   // For trustee routes:
-  console.log("App: Rendering trustee routes for trustee subdomain");
+  logRoutingEvent("App: Rendering trustee routes for trustee subdomain");
+  recordSessionEvent('app_rendering_trustee_routes');
   return (
     <Routes>
       {/* Root route - redirects based on auth status */}

@@ -48,31 +48,87 @@ export function debugTiming(label: string, timeMs: number): void {
   }
 }
 
-// Log auth events in debug mode
+// Log auth events in debug mode with enhanced formatting
 export function logAuthEvent(event: string, data?: any): void {
+  const timestamp = new Date().toISOString();
   if (_debugMode) {
-    console.log(`🔐 Auth Event: ${event}`, data || '');
+    console.log(`🔐 [${timestamp}] Auth Event: ${event}`, data || '');
   }
+  
+  // Add to in-memory log even if debug mode is off
+  addToInMemoryLog('auth', `${event} ${data ? JSON.stringify(data) : ''}`);
 }
 
-// Log routing events in debug mode
+// Log routing events in debug mode with enhanced formatting
 export function logRoutingEvent(event: string, data?: any): void {
+  const timestamp = new Date().toISOString();
   if (_debugMode) {
-    console.log(`🧭 Routing Event: ${event}`, data || '');
+    console.log(`🧭 [${timestamp}] Routing Event: ${event}`, data || '');
   }
+  
+  // Add to in-memory log even if debug mode is off
+  addToInMemoryLog('routing', `${event} ${data ? JSON.stringify(data) : ''}`);
 }
 
-// Track user session events
+// Enhanced session event tracking
+const MAX_SESSION_EVENTS = 200; // Limit the number of events we store
 export const sessionEvents: Record<string, number> = {};
+let sessionEventOrder: string[] = []; // Track the order of events
+
+// In-memory logs for detailed debugging
+const inMemoryLogs: Record<string, string[]> = {
+  auth: [],
+  routing: [],
+  errors: [],
+  performance: []
+};
+
+// Add entry to in-memory log with category
+function addToInMemoryLog(category: string, message: string): void {
+  if (!inMemoryLogs[category]) {
+    inMemoryLogs[category] = [];
+  }
+  
+  // Add timestamp
+  const timestamp = new Date().toISOString();
+  inMemoryLogs[category].push(`[${timestamp}] ${message}`);
+  
+  // Limit the size
+  if (inMemoryLogs[category].length > 100) {
+    inMemoryLogs[category].shift();
+  }
+}
 
 // Record a session event with timestamp
 export function recordSessionEvent(event: string): void {
   const timestamp = Date.now();
+  
+  // Track order and timestamp
   sessionEvents[event] = timestamp;
+  sessionEventOrder.push(event);
+  
+  // Limit the size
+  while (sessionEventOrder.length > MAX_SESSION_EVENTS) {
+    const oldestEvent = sessionEventOrder.shift();
+    if (oldestEvent) delete sessionEvents[oldestEvent];
+  }
   
   if (_debugMode) {
     console.log(`📝 Session Event: ${event} at ${new Date(timestamp).toISOString()}`);
   }
+}
+
+// Log errors with extra context
+export function logError(error: Error | string, context?: string): void {
+  const errorMessage = error instanceof Error ? error.message : error;
+  const errorStack = error instanceof Error ? error.stack : undefined;
+  
+  console.error(`❌ Error${context ? ` [${context}]` : ''}: ${errorMessage}`);
+  
+  addToInMemoryLog('errors', `${context || 'general'} - ${errorMessage}`);
+  
+  // Record as session event
+  recordSessionEvent(`error_${context || 'unknown'}`);
 }
 
 // Get session duration between events
@@ -93,4 +149,32 @@ export function exportSessionEvents(): Record<string, string> {
   });
   
   return formatted;
+}
+
+// Export all in-memory logs
+export function exportLogs(): Record<string, string[]> {
+  return { ...inMemoryLogs };
+}
+
+// Export all debug data (timing, events, logs) as JSON for downloading
+export function exportDebugData(): string {
+  const data = {
+    sessionEvents: exportSessionEvents(),
+    sessionEventOrder,
+    logs: exportLogs(),
+    timestamp: new Date().toISOString(),
+    url: window.location.href,
+    userAgent: navigator.userAgent
+  };
+  
+  return JSON.stringify(data, null, 2);
+}
+
+// Function to check network connection status
+export function checkNetworkStatus(): { online: boolean, type?: string } {
+  const online = navigator.onLine;
+  // @ts-ignore - connection property exists but TypeScript doesn't recognize it
+  const connectionType = navigator.connection?.type || 'unknown';
+  
+  return { online, type: connectionType };
 }

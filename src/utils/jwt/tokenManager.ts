@@ -18,6 +18,25 @@ const needsRefresh = (expiresAt: number): boolean => {
   return expiresAt - now < TOKEN_EXPIRY_BUFFER;
 };
 
+// Check if a token is valid
+export const isTokenValid = async (): Promise<boolean> => {
+  try {
+    // Get current session
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      return false;
+    }
+    
+    // Check if token has expired
+    const now = Math.floor(Date.now() / 1000);
+    return session.expires_at ? session.expires_at > now : false;
+  } catch (error) {
+    console.error("Error checking token validity:", error);
+    return false;
+  }
+};
+
 // Refresh the token if needed
 export async function refreshToken(): Promise<boolean> {
   try {
