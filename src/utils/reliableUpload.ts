@@ -1,155 +1,120 @@
 
-// Refactored: src/utils/reliableUpload.ts
-
 import { supabase } from "@/lib/supabase";
-import { maybeRunDiagnostics, refreshJwt } from "./jwtUploadDiagnostics";
-import { uploadViaSignedUrl } from "./signedUrlUploader";
-import { tryStandardUpload } from "./standardUploader";
-import { handleDirectUploadFallback } from "./fallbackUploader";
-import { FileUploadResult } from "./jwtDiagnosticsTypes";
-import { checkAndRefreshToken } from "./jwtMonitoring";
+import { withFreshToken } from "./jwt/tokenManager";
+import { logAuthEvent, recordSessionEvent } from "./debugMode";
 
-function hasErrorDetails(error: any): error is { message: string, error?: string, statusCode?: number } {
-  return typeof error === 'object' && error !== null && 'message' in error;
+interface UploadOptions {
+  bucketName: string;
+  filePath: string;
+  file: File | Blob;
+  onProgress?: (progress: number) => void;
+  maxRetries?: number;
+  retryDelay?: number;
+}
+
+interface UploadResult {
+  success: boolean;
+  path?: string;
+  error?: string;
+  retries?: number;
 }
 
 /**
- * Orchestrates a reliable upload sequence with modular helpers
+ * Reliable upload with automatic retry and token refresh
  */
-export async function reliableUpload(
-  bucket: string,
-  path: string,
-  file: File,
-  options: { maxRetries?: number; runDiagnostics?: boolean; forceMethod?: "POST" | "PUT" } = {}
-): Promise<FileUploadResult> {
-  console.log(`Starting upload for ${file.name} to ${bucket}/${path}`);
-  const maxRetries = options.maxRetries ?? 3;
-  const isPdf = file.type === 'application/pdf';
-  const isLargeFile = file.size > 5 * 1024 * 1024; // 5MB
-
-  // Stage 1: Pre-upload JWT refresh for all files
-  console.log("Stage 1: Refreshing authentication token");
-  await checkAndRefreshToken();
-
-  // Stage 2: Pre-upload diagnostics (may refresh token for PDF)
-  console.log("Stage 2: Running pre-upload diagnostics");
-  const diagResult = await maybeRunDiagnostics(file, options.runDiagnostics);
-  if (!diagResult.valid) {
-    if (options.runDiagnostics && !isPdf) {
-      console.error("Pre-upload diagnostics failed:", diagResult.reason);
-      return { success: false, method: "diagnostics-precheck", error: diagResult.reason };
-    }
-  }
-
-  // Stage 3: Special: signed URL for large PDFs
-  if (isPdf && isLargeFile) {
-    console.log("Stage 3: Using signed URL for large PDF file");
-    const signedUrlResult = await uploadViaSignedUrl(bucket, path, file);
-    if (signedUrlResult.success) {
-      console.log("Upload completed successfully via signed URL");
-      return signedUrlResult;
-    }
-    console.warn("Signed URL upload failed, falling back to standard upload");
-  } else {
-    console.log("Stage 3: Standard upload path (not a large PDF)");
-  }
-
-  // Stage 4: Standard upload (with retry)
-  console.log("Stage 4: Attempting standard upload with retries");
-  const { result: stdResult, lastError } = await tryStandardUpload(bucket, path, file, isPdf, maxRetries);
-  if (stdResult.success) {
-    console.log("Upload completed successfully via standard upload");
-    return stdResult;
-  }
-  console.warn("Standard upload failed after retries:", lastError);
-
-  // Stage 5: JWT-related error detect (Type guard)
-  console.log("Stage 5: Checking for JWT-related errors");
-  const isJwtError = hasErrorDetails(lastError) && (
-    lastError.message?.toLowerCase().includes('jwt') ||
-    lastError.message?.toLowerCase().includes('token') ||
-    lastError.message?.toLowerCase().includes('auth') ||
-    lastError.error === 'InvalidJWT' ||
-    lastError.statusCode === 400
-  );
+export const reliableUpload = async ({
+  bucketName,
+  filePath,
+  file,
+  onProgress,
+  maxRetries = 3,
+  retryDelay = 1000
+}: UploadOptions): Promise<UploadResult> => {
+  let retries = 0;
   
-  if (isJwtError) {
-    // Stage 6: Try more aggressive token refresh
-    console.log("Stage 6: JWT error detected, performing aggressive token refresh");
-    await refreshJwt(true);
-    await checkAndRefreshToken();
-    
-    // Stage 7: Try standard upload again with fresh token
-    console.log("Stage 7: Retrying standard upload with fresh token");
-    const { result: stdResultRetry } = await tryStandardUpload(bucket, path, file, isPdf, 1);
-    if (stdResultRetry.success) {
-      console.log("Upload successful after token refresh");
-      return stdResultRetry;
-    }
-
-    // Stage 8: If still failing, use direct upload fallback
-    if (isPdf || options.forceMethod) {
-      console.log("Stage 8: Using direct upload fallback method");
-      const fallbackResult = await handleDirectUploadFallback(file, bucket, path);
-      if (fallbackResult.success) {
-        console.log("Upload completed successfully via direct fallback");
-        return fallbackResult;
+  // Function to attempt upload
+  const attemptUpload = async (): Promise<UploadResult> => {
+    try {
+      // Ensure we have a valid token before uploading
+      return await withFreshToken(async () => {
+        recordSessionEvent(`upload_attempt_${bucketName}_try_${retries + 1}`);
+        
+        // Perform the upload with Supabase storage
+        const { data, error } = await supabase
+          .storage
+          .from(bucketName)
+          .upload(filePath, file, { upsert: true });
+        
+        if (error) {
+          logAuthEvent(`Upload failed (attempt ${retries + 1}): ${error.message}`);
+          
+          // Check if we should retry
+          if (retries < maxRetries) {
+            retries++;
+            logAuthEvent(`Retrying upload in ${retryDelay}ms (attempt ${retries} of ${maxRetries})`);
+            
+            // Wait before retry
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+            
+            // Exponential backoff for subsequent retries
+            return attemptUpload();
+          }
+          
+          recordSessionEvent(`upload_failed_after_${retries}_retries`);
+          return {
+            success: false,
+            error: error.message,
+            retries
+          };
+        }
+        
+        logAuthEvent(`Upload successful: ${filePath}`);
+        recordSessionEvent(`upload_success_${bucketName}`);
+        
+        return {
+          success: true,
+          path: data?.path,
+          retries
+        };
+      });
+    } catch (error) {
+      logAuthEvent(`Upload threw exception: ${error instanceof Error ? error.message : String(error)}`);
+      
+      // Check if we should retry
+      if (retries < maxRetries) {
+        retries++;
+        
+        // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        
+        // Exponential backoff for subsequent retries
+        return attemptUpload();
       }
-      console.error("Direct fallback upload also failed");
-      return fallbackResult;
+      
+      recordSessionEvent(`upload_exception_after_${retries}_retries`);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+        retries
+      };
     }
-  } else {
-    console.log("Error not JWT-related, cannot use token refresh path");
-  }
-
-  // All attempts failed
-  console.error("All upload methods failed");
-  return {
-    success: false,
-    method: "all-failed",
-    error: {
-      originalError: lastError,
-      message: isPdf 
-        ? "PDF upload failed after all recovery attempts" 
-        : "Upload failed after all recovery attempts",
-    },
   };
-}
+  
+  // Start the upload process
+  return attemptUpload();
+};
 
 /**
- * Wrapped utility for PDF uploads
+ * Get a public URL for a file, with token refresh
  */
-export async function uploadPdfReliably(bucket: string, path: string, pdfFile: File): Promise<{ success: boolean; url?: string; error?: any }> {
-  console.group('PDF Upload Process');
+export const getPublicUrl = async (bucketName: string, filePath: string): Promise<string> => {
   try {
-    if (pdfFile.type !== 'application/pdf') throw new Error('Not a PDF file');
-    
-    // Ensure we have a fresh token before uploading
-    await checkAndRefreshToken();
-    console.log("Starting PDF upload with fresh token");
-    
-    const result = await reliableUpload(bucket, path, pdfFile, {
-      maxRetries: 3,
-      runDiagnostics: true,
-      forceMethod: pdfFile.size > 5 * 1024 * 1024 ? "PUT" : "POST"
+    return await withFreshToken(async () => {
+      const { data } = supabase.storage.from(bucketName).getPublicUrl(filePath);
+      return data.publicUrl;
     });
-    
-    if (!result.success) {
-      console.error("PDF upload failed:", result.error);
-      throw new Error(typeof result.error === 'object' ? result.error.message || JSON.stringify(result.error) : String(result.error));
-    }
-    
-    // Force token refresh before getting URL
-    await checkAndRefreshToken();
-    console.log("Getting public URL for uploaded PDF");
-    
-    const { data: publicUrl } = supabase.storage.from(bucket).getPublicUrl(path);
-    console.log('Upload complete:', publicUrl);
-    console.groupEnd();
-    return { success: true, url: publicUrl?.publicUrl };
   } catch (error) {
-    console.error('PDF upload failed:', error);
-    console.groupEnd();
-    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    logAuthEvent(`Failed to get public URL: ${error instanceof Error ? error.message : String(error)}`);
+    throw error;
   }
-}
+};

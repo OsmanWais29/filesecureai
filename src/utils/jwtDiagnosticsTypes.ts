@@ -1,67 +1,37 @@
 
 /**
- * Shared types for JWT Diagnostics utilities.
+ * Types for JWT diagnostics
  */
 
-export interface JWTVerificationResult {
-  isValid: boolean;
-  reason?: string;
-  timeRemaining?: number;
+export interface TokenDiagnostics {
+  valid: boolean;
   expiresAt?: Date;
-  currentTime?: Date;
-  payload?: Record<string, any>;
-  error?: any;
+  expiresIn?: number; // seconds
+  reasonInvalid?: string;
+  tokenType?: string;
+  clientVerified: boolean;
+  serverVerified?: boolean;
+  recommendations: string[];
 }
 
-export interface DirectUploadResult {
-  success: boolean;
-  status?: number;
-  data?: any;
-  response?: Response;
-  error?: any;
+export interface SessionDiagnostics {
+  hasSession: boolean;
+  hasCookies: boolean;
+  hasLocalStorage: boolean;
+  persistMode?: 'localStorage' | 'cookie' | 'memory' | 'unknown';
+  authEventsWorking: boolean;
+  recommendations: string[];
 }
 
-export interface StoragePermissionsResult {
-  canListBuckets: boolean;
-  buckets?: any[];
-  canListFiles?: boolean;
-  files?: any[];
-  error?: any;
+export interface AuthDiagnosticsReport {
+  timestamp: number;
+  sessionData: SessionDiagnostics;
+  tokenData: TokenDiagnostics;
+  hasPotentialIssues: boolean;
+  recommendations: string[];
+  userAgent: string;
+  environment: 'development' | 'production' | 'unknown';
+  version: string;
 }
 
-export interface BrowserStorageResult {
-  localStorage?: {
-    keys: string[];
-    count: number;
-  };
-  sessionStorage?: {
-    keys: string[];
-    count: number;
-  };
-  error?: any;
-}
-
-export interface ReauthenticationResult {
-  success: boolean;
-  session?: any;
-  error?: any;
-}
-
-export interface FullDiagnosticsResult {
-  jwtVerification: JWTVerificationResult;
-  storagePermissions: StoragePermissionsResult;
-  browserStorage: BrowserStorageResult;
-  directUpload?: DirectUploadResult;
-  uploadTest?: {
-    success: boolean;
-    data?: any;
-    error?: any;
-  };
-}
-
-export interface FileUploadResult {
-  success: boolean;
-  method: string; // e.g., "standard", "refresh-and-retry", etc.
-  data?: any;
-  error?: any;
-}
+export type DiagnosticsCallback = (report: AuthDiagnosticsReport) => void;

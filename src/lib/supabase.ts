@@ -2,6 +2,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { recordSessionEvent, logAuthEvent } from '@/utils/debugMode';
 
+// Prevent multiple initializations
+let supabaseClientInitialized = false;
+
 const supabaseUrl = 'https://plxuyxacefgttimodrbp.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBseHV5eGFjZWZndHRpbW9kcmJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk4Mjk1NDksImV4cCI6MjA1NTQwNTU0OX0.2eRYQPoDgbl5Zqyya1YP9SBXlUOhZUP0ptWbGthT8sw';
 
@@ -53,23 +56,42 @@ const debugFetch = async (...args: Parameters<typeof fetch>) => {
   return fetch(...args);
 };
 
-// Create Supabase client with enhanced options
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false,
-    storageKey: 'supabase.auth.token',
-  },
-  global: {
-    fetch: debugFetch,
-  },
-});
+// Singleton instance to prevent multiple clients
+let _supabase: ReturnType<typeof createClient>;
 
-// Log when Supabase client is initialized
-recordSessionEvent('supabase_client_initialized');
+// Use a function to get the supabase client
+function getSupabaseClient() {
+  if (!_supabase) {
+    if (supabaseClientInitialized) {
+      console.warn("Attempted to initialize Supabase client multiple times, returning existing instance");
+      return _supabase;
+    }
+    
+    supabaseClientInitialized = true;
+    
+    _supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false,
+        storageKey: 'supabase.auth.token',
+      },
+      global: {
+        fetch: debugFetch,
+      },
+    });
+    
+    logAuthEvent("Supabase client initialized (singleton)");
+    recordSessionEvent('supabase_client_initialized');
+  }
+  
+  return _supabase;
+}
 
-// Re-export token manager functions - fix isTokenValid import
+// Export the supabase client as a singleton
+export const supabase = getSupabaseClient();
+
+// Re-export token manager functions
 export { 
   ensureValidToken, 
   refreshToken, 
