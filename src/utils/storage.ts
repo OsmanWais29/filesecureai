@@ -1,8 +1,9 @@
 
-import { supabase, ensureFreshToken } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { authenticatedStorageOperation } from "@/hooks/useAuthenticatedFetch";
 import { verifyJwtToken } from "./jwtVerifier";
 import { testDirectUpload } from "./storageDiagnostics";
+import { ensureValidToken } from "@/utils/jwt/tokenManager";
 
 // Define an extended StorageError type to handle potential properties
 interface ExtendedStorageError {
@@ -77,7 +78,7 @@ async function directStorageUpload(
   options: { contentType?: string; upsert?: boolean; diagnostics?: boolean } = {}
 ) {
   // Ensure fresh token
-  const tokenRefreshed = await ensureFreshToken();
+  const tokenRefreshed = await ensureValidToken();
   
   if (!tokenRefreshed) {
     console.warn("Failed to refresh token before direct upload");
@@ -163,7 +164,7 @@ export async function downloadFile(bucket: string, filePath: string) {
 export async function getFileUrl(bucket: string, filePath: string) {
   try {
     // Ensure fresh token first (for private buckets)
-    await ensureFreshToken();
+    await ensureValidToken();
     
     const { data } = supabase.storage
       .from(bucket)

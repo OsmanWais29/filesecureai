@@ -65,5 +65,12 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
-// Export the function from our consolidated tokenManager
-export { ensureValidToken } from '@/utils/jwt/tokenManager';
+// Re-export all necessary token manager functions
+export { 
+  ensureValidToken, 
+  refreshToken, 
+  isTokenValid,
+  withFreshToken,
+  startTokenMonitoring,
+  stopTokenMonitoring
+} from '@/utils/jwt/tokenManager';

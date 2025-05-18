@@ -2,7 +2,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
-import { authenticatedFetch, ensureFreshToken } from "@/hooks/useAuthenticatedFetch";
+import { authenticatedFetch } from "@/hooks/useAuthenticatedFetch";
+import { ensureValidToken } from "@/utils/jwt/tokenManager";
 
 export const useDocumentAI = (documentId: string) => {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -88,7 +89,7 @@ export const useDocumentAI = (documentId: string) => {
 
     try {
       // Ensure we have a fresh token for the request
-      const isTokenValid = await ensureFreshToken();
+      const isTokenValid = await ensureValidToken();
       
       if (!isTokenValid) {
         throw new Error('Authentication error: Failed to refresh token');
