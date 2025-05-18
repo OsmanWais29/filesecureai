@@ -1,168 +1,140 @@
 
 import React, { useState } from 'react';
-import { Comment, Profile, ThreadedCommentProps } from './types';
-import { formatDistanceToNow } from 'date-fns';
-import { Button } from "@/components/ui/button";
-import { Trash2, Edit2, MessageSquare, CheckCircle } from 'lucide-react';
+import { CommentItem } from './CommentItem';
 import { CommentInput } from './CommentInput';
+import { ThreadedCommentProps } from './types';
+import { Button } from '@/components/ui/button';
+import { MessageSquarePlus, ChevronDown, ChevronUp, Check, X } from 'lucide-react';
 
 export const ThreadedComment: React.FC<ThreadedCommentProps> = ({
   comment,
-  allComments = [],
+  allComments,
+  replies,
   currentUser,
   userProfile,
   onEdit,
   onDelete,
   onReply,
   onResolve,
-  onSubmit,
   isSubmitting,
+  onSubmit
 }) => {
-  const [isEditing, setIsEditing] = useState(false);
   const [showReplies, setShowReplies] = useState(true);
-  const [replyingToId, setReplyingToId] = useState<string | null>(null);
+  const [isReplying, setIsReplying] = useState(false);
   
-  const isCommentOwner = currentUser?.id === comment.user_id;
-  const hasReplies = allComments.filter(c => c.parent_id === comment.id).length > 0;
+  const handleReply = () => {
+    setIsReplying(true);
+    onReply && onReply(comment.id);
+  };
   
-  const handleReplyClick = () => {
-    if (replyingToId === comment.id) {
-      setReplyingToId(null);
-    } else {
-      setReplyingToId(comment.id);
-      onReply(comment.id);
+  const handleCancelReply = () => {
+    setIsReplying(false);
+  };
+  
+  const handleSubmit = async (content: string, parentId?: string, mentions?: string[]) => {
+    if (onSubmit) {
+      await onSubmit(content, comment.id, mentions);
+      setIsReplying(false);
     }
   };
-
-  const handleEditStart = () => {
-    setIsEditing(true);
+  
+  const handleToggleReplies = () => {
+    setShowReplies(!showReplies);
   };
-
-  const handleEditCancel = () => {
-    setIsEditing(false);
+  
+  const handleResolve = async () => {
+    if (onResolve) {
+      await onResolve(comment.id, !comment.is_resolved);
+    }
   };
-
-  const handleEditSubmit = async (content: string) => {
-    await onEdit(comment.id, content);
-    setIsEditing(false);
-  };
-
-  const handleResolveToggle = () => {
-    onResolve(comment.id, !comment.is_resolved);
-  };
-
-  const replies = allComments.filter(c => c.parent_id === comment.id);
   
   return (
-    <div className={`border-l-2 pl-4 mb-4 ${
-      comment.is_resolved ? 'border-green-400 bg-green-50/30' : 'border-gray-200'
-    }`}>
-      {isEditing ? (
-        <CommentInput
-          currentUser={currentUser}
-          userProfile={userProfile}
-          onSubmit={async (content) => handleEditSubmit(content)}
-          isSubmitting={isSubmitting}
-          onCancel={handleEditCancel}
-          initialValue={comment.content}
-        />
-      ) : (
-        <div>
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <span className="font-medium text-foreground">{userProfile?.full_name || 'User'}</span>
-              <span>{formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}</span>
-              {comment.is_resolved && (
-                <span className="flex items-center text-green-600">
-                  <CheckCircle className="h-3 w-3 mr-1" />
-                  Resolved
-                </span>
-              )}
-            </div>
-            <div className="flex gap-2">
-              {isCommentOwner && (
-                <>
-                  <button
-                    onClick={handleEditStart}
-                    className="text-blue-500 hover:text-blue-700"
-                    aria-label="Edit comment"
-                  >
-                    <Edit2 className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    onClick={() => onDelete(comment.id)}
-                    className="text-red-500 hover:text-red-700"
-                    aria-label="Delete comment"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </>
-              )}
-              <button
-                onClick={handleResolveToggle}
-                className={`${
-                  comment.is_resolved ? 'text-green-600' : 'text-gray-400'
-                } hover:text-green-700`}
-                aria-label={comment.is_resolved ? "Mark as unresolved" : "Mark as resolved"}
-              >
-                <CheckCircle className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-          
-          <div className="mt-1 text-sm">
-            {comment.content}
-          </div>
-          
-          <div className="mt-2 flex items-center gap-2">
-            <Button
-              onClick={handleReplyClick}
-              variant="ghost"
-              size="sm"
-              className="text-xs h-6 px-2 py-0 gap-1"
-            >
-              <MessageSquare className="h-3 w-3" />
-              Reply
-            </Button>
-            
-            {hasReplies && (
-              <Button
-                onClick={() => setShowReplies(!showReplies)}
-                variant="ghost"
-                size="sm"
-                className="text-xs h-6 px-2 py-0"
-              >
-                {showReplies ? 'Hide replies' : `Show ${replies.length} replies`}
-              </Button>
-            )}
-          </div>
-        </div>
-      )}
+    <div className="border-l-2 pl-3 border-border">
+      <CommentItem
+        comment={comment}
+        currentUser={currentUser}
+        userProfile={userProfile}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        isSubmitting={isSubmitting}
+      />
       
-      {replyingToId === comment.id && onSubmit && (
-        <div className="mt-3 pl-4">
+      <div className="mt-1 flex items-center gap-2">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="h-7 px-2 text-xs"
+          onClick={handleReply}
+        >
+          <MessageSquarePlus className="h-3.5 w-3.5 mr-1" />
+          Reply
+        </Button>
+        
+        {comment.is_resolved !== undefined && (
+          <Button 
+            variant={comment.is_resolved ? "outline" : "ghost"} 
+            size="sm" 
+            className={`h-7 px-2 text-xs ${comment.is_resolved ? 'text-green-500' : ''}`}
+            onClick={handleResolve}
+          >
+            {comment.is_resolved ? (
+              <>
+                <Check className="h-3.5 w-3.5 mr-1" />
+                Resolved
+              </>
+            ) : (
+              <>
+                <Check className="h-3.5 w-3.5 mr-1" />
+                Mark as Resolved
+              </>
+            )}
+          </Button>
+        )}
+        
+        {replies && replies.length > 0 && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-7 px-2 text-xs"
+            onClick={handleToggleReplies}
+          >
+            {showReplies ? (
+              <>
+                <ChevronUp className="h-3.5 w-3.5 mr-1" />
+                Hide Replies
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-3.5 w-3.5 mr-1" />
+                Show Replies ({replies.length})
+              </>
+            )}
+          </Button>
+        )}
+      </div>
+      
+      {isReplying && (
+        <div className="mt-2 pl-4">
           <CommentInput
             currentUser={currentUser}
             userProfile={userProfile}
-            onSubmit={async (content, _, mentions) => {
-              await onSubmit(content, comment.id, mentions);
-              setReplyingToId(null);
-            }}
+            onSubmit={handleSubmit}
             isSubmitting={isSubmitting}
             parentId={comment.id}
-            onCancel={() => setReplyingToId(null)}
+            onCancel={handleCancelReply}
             placeholder="Write a reply..."
           />
         </div>
       )}
       
-      {hasReplies && showReplies && (
-        <div className="mt-3 pl-2">
+      {showReplies && replies && replies.length > 0 && (
+        <div className="ml-4 mt-2 space-y-4">
           {replies.map(reply => (
             <ThreadedComment
               key={reply.id}
               comment={reply}
               allComments={allComments}
+              replies={allComments.filter(c => c.parent_id === reply.id)}
               currentUser={currentUser}
               userProfile={userProfile}
               onEdit={onEdit}

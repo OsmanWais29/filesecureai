@@ -1,65 +1,78 @@
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from "@/lib/supabase";
-import { useDocumentAI } from './useDocumentAI';
-import { DocumentRecord } from '../types';
 
-export const useAnalysisInitialization = (documentId: string, storage_path: string) => {
+import { useState, useCallback, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
+import { DocumentRecord } from './types';
+
+export const useAnalysisInitialization = (documentId: string, storagePath: string) => {
   const [isInitializing, setIsInitializing] = useState(false);
-  const { documentRecord, fetchDocument, getProcessingSteps } = useDocumentAI(documentId, storage_path);
+  const [documentRecord, setDocumentRecord] = useState<DocumentRecord | null>(null);
+  const [processingSteps, setProcessingSteps] = useState<string[]>([]);
 
-  const initializeDocumentAnalysis = useCallback(async () => {
-    if (!documentId || !storage_path) return;
+  const fetchDocumentRecord = useCallback(async () => {
+    if (!documentId) return null;
 
-    setIsInitializing(true);
     try {
-      const { data: existingRecord, error: selectError } = await supabase
+      const { data, error } = await supabase
         .from('documents')
         .select('*')
         .eq('id', documentId)
-        .single();
+        .maybeSingle();
 
-      if (selectError) {
-        console.error("Error selecting document:", selectError);
-        throw selectError;
-      }
-
-      if (!existingRecord) {
-        console.log("Document does not exist, creating...");
-        const { data, error } = await supabase
-          .from('documents')
-          .insert({
-            id: documentId,
-            storage_path: storage_path,
-            ai_processing_status: 'pending'
-          })
-          .select();
-
-        if (error) {
-          console.error("Error creating document:", error);
-          throw error;
-        }
-      } else {
-        console.log("Document exists:", existingRecord);
-      }
-
-      await fetchDocument();
+      if (error) throw error;
+      setDocumentRecord(data);
+      return data;
     } catch (error) {
-      console.error("Initialization error:", error);
-    } finally {
-      setIsInitializing(false);
+      console.error('Error fetching document record:', error);
+      return null;
     }
-  }, [documentId, storage_path, fetchDocument]);
+  }, [documentId]);
 
   useEffect(() => {
-    if (documentId && storage_path) {
-      initializeDocumentAnalysis();
+    fetchDocumentRecord();
+  }, [fetchDocumentRecord]);
+
+  const getProcessingSteps = useCallback(() => {
+    if (!documentRecord || !documentRecord.metadata) return [];
+    
+    const metadata = documentRecord.metadata;
+    if (typeof metadata === 'object' && 'processing_steps_completed' in metadata) {
+      return metadata.processing_steps_completed as string[] || [];
     }
-  }, [documentId, storage_path, initializeDocumentAnalysis]);
+    return [];
+  }, [documentRecord]);
+
+  const initializeDocumentAnalysis = useCallback(async () => {
+    setIsInitializing(true);
+
+    try {
+      await fetchDocumentRecord();
+      const initialSteps = ['document_preparation', 'text_extraction'];
+      setProcessingSteps(initialSteps);
+      setIsInitializing(false);
+    } catch (error) {
+      console.error('Error initializing document analysis:', error);
+      setIsInitializing(false);
+    }
+  }, [fetchDocumentRecord]);
+
+  const initializeProcessingSteps = useCallback(async () => {
+    try {
+      const initialSteps = ['extract_text', 'analyze_content', 'extract_metadata', 'assess_risks', 'generate_summary'];
+      setProcessingSteps(initialSteps);
+      return initialSteps;
+    } catch (error) {
+      console.error('Error initializing processing steps:', error);
+      return [];
+    }
+  }, []);
 
   return {
     isInitializing,
     initializeDocumentAnalysis,
     documentRecord,
-    getProcessingSteps
+    getProcessingSteps,
+    processingSteps,
+    setProcessingSteps,
+    initializeProcessingSteps
   };
 };

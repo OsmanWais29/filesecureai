@@ -8,6 +8,10 @@ export interface DocumentDetails {
   storage_path: string;
   analysis?: AnalysisResult[];
   comments?: Comment[];
+  tasks?: Task[];
+  deadlines?: Deadline[];
+  versions?: Version[];
+  metadata?: Record<string, any>;
 }
 
 export interface AnalysisResult {
@@ -40,4 +44,35 @@ export interface Comment {
   is_resolved?: boolean;
   parent_id?: string;
   mentions?: string[];
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  status?: string;
+  assigned_to?: string;
+  created_by?: string;
+  due_date?: string;
+  severity?: string;
+  document_id?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Deadline {
+  id: string;
+  title: string;
+  dueDate: string;
+  description?: string;
+}
+
+export interface Version {
+  id: string;
+  version_number: number;
+  storage_path: string;
+  created_at?: string;
+  created_by?: string;
+  description?: string;
+  is_current?: boolean;
 }

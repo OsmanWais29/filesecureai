@@ -14,4 +14,5 @@ export interface DocumentRecord {
   };
   ai_processing_status?: string;
   storage_path?: string;
+  updated_at?: string;
 }
