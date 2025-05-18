@@ -6,6 +6,7 @@ export const appointments: Appointment[] = [
   {
     id: "1",
     clientName: "John Smith",
+    title: "Initial Consultation - John Smith",
     type: "Initial Consultation",
     time: "09:00",
     date: new Date(new Date().setDate(new Date().getDate())), // Today
@@ -18,6 +19,7 @@ export const appointments: Appointment[] = [
   {
     id: "2",
     clientName: "Sarah Johnson",
+    title: "Follow-up Meeting - Sarah Johnson",
     type: "Follow-up Meeting",
     time: "11:30",
     date: new Date(new Date().setDate(new Date().getDate())), // Today
@@ -30,6 +32,7 @@ export const appointments: Appointment[] = [
   {
     id: "3",
     clientName: "Michael Williams",
+    title: "Document Review - Michael Williams",
     type: "Document Review",
     time: "14:00",
     date: new Date(new Date().setDate(new Date().getDate() + 1)), // Tomorrow
@@ -42,6 +45,7 @@ export const appointments: Appointment[] = [
   {
     id: "4",
     clientName: "Jessica Brown",
+    title: "Initial Consultation - Jessica Brown",
     type: "Initial Consultation",
     time: "10:00",
     date: new Date(new Date().setDate(new Date().getDate() + 2)), // Day after tomorrow
@@ -54,6 +58,7 @@ export const appointments: Appointment[] = [
   {
     id: "5",
     clientName: "David Miller",
+    title: "Financial Assessment - David Miller",
     type: "Financial Assessment",
     time: "13:30",
     date: new Date(new Date().setDate(new Date().getDate() + 3)), // 3 days from now
@@ -66,6 +71,7 @@ export const appointments: Appointment[] = [
   {
     id: "6",
     clientName: "Jennifer Wilson",
+    title: "Budget Planning - Jennifer Wilson",
     type: "Budget Planning",
     time: "15:45",
     date: new Date(new Date().setDate(new Date().getDate() + 4)), // 4 days from now
@@ -78,6 +84,7 @@ export const appointments: Appointment[] = [
   {
     id: "7",
     clientName: "Robert Taylor",
+    title: "Initial Consultation - Robert Taylor",
     type: "Initial Consultation",
     time: "09:30",
     date: new Date(new Date().setDate(new Date().getDate() + 7)), // Week from now
@@ -90,6 +97,7 @@ export const appointments: Appointment[] = [
   {
     id: "8",
     clientName: "Amanda Anderson",
+    title: "Debt Settlement Review - Amanda Anderson",
     type: "Debt Settlement Review",
     time: "14:15",
     date: new Date(new Date().setDate(new Date().getDate() + 7)), // Week from now
@@ -102,6 +110,7 @@ export const appointments: Appointment[] = [
   {
     id: "9",
     clientName: "Mark Thomas",
+    title: "Creditor Negotiation - Mark Thomas",
     type: "Creditor Negotiation",
     time: "11:00",
     date: new Date(new Date().setDate(new Date().getDate() + 14)), // Two weeks from now
@@ -114,6 +123,7 @@ export const appointments: Appointment[] = [
   {
     id: "10",
     clientName: "Lisa Martinez",
+    title: "Follow-up Meeting - Lisa Martinez",
     type: "Follow-up Meeting",
     time: "16:00",
     date: new Date(new Date().setDate(new Date().getDate() + 14)), // Two weeks from now
