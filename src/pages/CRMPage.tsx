@@ -9,39 +9,13 @@ import { Plus, Users, Clock, ListChecks, User } from "lucide-react";
 import { ClientStats } from "@/components/crm/page/ClientStats";
 import { CRMHeader } from "@/components/crm/page/CRMHeader";
 import { CRMTabs } from "@/components/crm/page/CRMTabs";
+import { ClientList } from "@/components/crm/client/ClientList";
+import { ClientFormDialog } from "@/components/crm/client/ClientFormDialog";
+import { ClientData, useClientManagement } from "@/hooks/useClientManagement";
+import { ClientView } from "@/components/crm/ClientView";
+import { format } from "date-fns";
 
-// Mock data for clients
-const CLIENTS = [
-  {
-    id: "1",
-    name: "John Doe",
-    company: "ABC Corp",
-    email: "john@example.com",
-    phone: "(555) 123-4567",
-    status: "Active",
-    lastContact: "2025-05-15T10:30:00Z"
-  },
-  {
-    id: "2",
-    name: "Jane Smith",
-    company: "XYZ Industries",
-    email: "jane@example.com",
-    phone: "(555) 987-6543",
-    status: "Pending",
-    lastContact: "2025-05-12T14:15:00Z"
-  },
-  {
-    id: "3",
-    name: "Robert Johnson",
-    company: "Johnson & Co",
-    email: "robert@example.com",
-    phone: "(555) 456-7890",
-    status: "Inactive",
-    lastContact: "2025-05-01T09:00:00Z"
-  }
-];
-
-// Mock data for recent activities
+// Mock data for recent activities - we'll implement real activities later
 const RECENT_ACTIVITIES = [
   { id: "act1", client: "John Doe", activity: "Document uploaded", date: "2025-05-18T09:30:00Z" },
   { id: "act2", client: "Jane Smith", activity: "Comment added", date: "2025-05-17T15:45:00Z" },
@@ -52,36 +26,85 @@ const RECENT_ACTIVITIES = [
 // Format date to a readable string
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
-  return new Intl.DateTimeFormat('en-US', { 
-    month: 'short', 
-    day: 'numeric', 
-    hour: 'numeric', 
-    minute: 'numeric' 
-  }).format(date);
+  return format(date, 'MMM d, h:mm a');
 };
 
 export default function CRMPage() {
+  const {
+    clients,
+    isLoading,
+    stats,
+    addClient,
+    updateClient,
+    deleteClient
+  } = useClientManagement();
+  
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [clientDialogOpen, setClientDialogOpen] = useState(false);
-
-  const openClientDialog = () => {
-    setClientDialogOpen(true);
+  const [clientFormOpen, setClientFormOpen] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<ClientData | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editClient, setEditClient] = useState<ClientData | null>(null);
+  
+  const handleAddClient = () => {
+    setEditClient(null);
+    setClientFormOpen(true);
+  };
+  
+  const handleEditClient = (client: ClientData) => {
+    setEditClient(client);
+    setClientFormOpen(true);
+  };
+  
+  const handleSaveClient = async (clientData: Partial<ClientData>) => {
+    setIsSubmitting(true);
+    
+    try {
+      if (editClient) {
+        // Update existing client
+        await updateClient(editClient.id, clientData);
+      } else {
+        // Add new client
+        await addClient(clientData as Omit<ClientData, 'id' | 'created_at' | 'updated_at'>);
+      }
+      setClientFormOpen(false);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  const handleDeleteClient = async (client: ClientData) => {
+    await deleteClient(client.id);
+    if (selectedClient?.id === client.id) {
+      setSelectedClient(null);
+    }
+  };
+  
+  const handleSelectClient = (client: ClientData) => {
+    setSelectedClient(client);
   };
 
   return (
     <MainLayout>
       <div className="container py-6">
-        <CRMHeader openClientDialog={openClientDialog} />
+        <CRMHeader openClientDialog={handleAddClient} />
         
-        <ClientStats />
+        <ClientStats stats={stats} isLoading={isLoading} />
 
         <div className="mt-6">
           <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-4">
             <TabsList>
-              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-              <TabsTrigger value="clients">Clients</TabsTrigger>
-              <TabsTrigger value="analytics">Analytics</TabsTrigger>
-              <TabsTrigger value="tasks">Tasks</TabsTrigger>
+              <TabsTrigger value="dashboard" className="flex items-center gap-2">
+                <User className="h-4 w-4" /> Dashboard
+              </TabsTrigger>
+              <TabsTrigger value="clients" className="flex items-center gap-2">
+                <Users className="h-4 w-4" /> Clients
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="flex items-center gap-2">
+                <Clock className="h-4 w-4" /> Analytics
+              </TabsTrigger>
+              <TabsTrigger value="tasks" className="flex items-center gap-2">
+                <ListChecks className="h-4 w-4" /> Tasks
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="dashboard" className="space-y-4">
@@ -122,13 +145,13 @@ export default function CRMPage() {
                           <div className="flex justify-between text-sm">
                             <span>Active</span>
                             <span className="font-medium">
-                              {CLIENTS.filter(c => c.status === "Active").length}/{CLIENTS.length}
+                              {stats.active}/{stats.total}
                             </span>
                           </div>
                           <div className="h-2 rounded bg-muted">
                             <div 
                               className="h-2 rounded bg-primary" 
-                              style={{ width: `${(CLIENTS.filter(c => c.status === "Active").length / CLIENTS.length) * 100}%` }}
+                              style={{ width: `${stats.total > 0 ? (stats.active / stats.total) * 100 : 0}%` }}
                             />
                           </div>
                         </div>
@@ -138,13 +161,13 @@ export default function CRMPage() {
                           <div className="flex justify-between text-sm">
                             <span>Pending</span>
                             <span className="font-medium">
-                              {CLIENTS.filter(c => c.status === "Pending").length}/{CLIENTS.length}
+                              {stats.pending}/{stats.total}
                             </span>
                           </div>
                           <div className="h-2 rounded bg-muted">
                             <div 
                               className="h-2 rounded bg-yellow-500" 
-                              style={{ width: `${(CLIENTS.filter(c => c.status === "Pending").length / CLIENTS.length) * 100}%` }}
+                              style={{ width: `${stats.total > 0 ? (stats.pending / stats.total) * 100 : 0}%` }}
                             />
                           </div>
                         </div>
@@ -154,13 +177,13 @@ export default function CRMPage() {
                           <div className="flex justify-between text-sm">
                             <span>Inactive</span>
                             <span className="font-medium">
-                              {CLIENTS.filter(c => c.status === "Inactive").length}/{CLIENTS.length}
+                              {stats.inactive}/{stats.total}
                             </span>
                           </div>
                           <div className="h-2 rounded bg-muted">
                             <div 
                               className="h-2 rounded bg-gray-500" 
-                              style={{ width: `${(CLIENTS.filter(c => c.status === "Inactive").length / CLIENTS.length) * 100}%` }}
+                              style={{ width: `${stats.total > 0 ? (stats.inactive / stats.total) * 100 : 0}%` }}
                             />
                           </div>
                         </div>
@@ -172,46 +195,27 @@ export default function CRMPage() {
             </TabsContent>
 
             <TabsContent value="clients" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Client Directory</CardTitle>
-                  <CardDescription>Manage and view client information</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="rounded-md border">
-                    <div className="grid grid-cols-6 border-b px-4 py-3 font-medium">
-                      <div className="col-span-2">Name/Company</div>
-                      <div className="col-span-1">Status</div>
-                      <div className="col-span-2">Contact</div>
-                      <div className="col-span-1">Last Activity</div>
-                    </div>
-                    {CLIENTS.map(client => (
-                      <div key={client.id} className="grid grid-cols-6 border-b px-4 py-3 hover:bg-muted/50">
-                        <div className="col-span-2">
-                          <p className="font-medium">{client.name}</p>
-                          <p className="text-sm text-muted-foreground">{client.company}</p>
-                        </div>
-                        <div className="col-span-1">
-                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold 
-                            ${client.status === 'Active' ? 'bg-green-100 text-green-800' : 
-                             client.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 
-                             'bg-gray-100 text-gray-800'}`}
-                          >
-                            {client.status}
-                          </span>
-                        </div>
-                        <div className="col-span-2">
-                          <p className="text-sm">{client.email}</p>
-                          <p className="text-sm text-muted-foreground">{client.phone}</p>
-                        </div>
-                        <div className="col-span-1 text-sm text-muted-foreground">
-                          {formatDate(client.lastContact)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+              {selectedClient ? (
+                <div className="space-y-4">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setSelectedClient(null)}
+                    className="mb-2"
+                  >
+                    ← Back to Client List
+                  </Button>
+                  <ClientView clientId={selectedClient.id} />
+                </div>
+              ) : (
+                <ClientList
+                  clients={clients}
+                  isLoading={isLoading}
+                  onEdit={handleEditClient}
+                  onDelete={handleDeleteClient}
+                  onAdd={handleAddClient}
+                  onClientSelect={handleSelectClient}
+                />
+              )}
             </TabsContent>
 
             <TabsContent value="analytics" className="space-y-4">
@@ -235,6 +239,15 @@ export default function CRMPage() {
           </Tabs>
         </div>
       </div>
+      
+      <ClientFormDialog
+        open={clientFormOpen}
+        onOpenChange={setClientFormOpen}
+        onSave={handleSaveClient}
+        client={editClient || undefined}
+        isSubmitting={isSubmitting}
+        title={editClient ? "Edit Client" : "Add New Client"}
+      />
     </MainLayout>
   );
 }
