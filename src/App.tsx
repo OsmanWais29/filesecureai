@@ -1,14 +1,18 @@
 
 import { Routes, Route, Navigate } from "react-router-dom";
-import NotFound from "./pages/NotFound";
-import ClientPortal from "./pages/ClientPortal";
-import { AuthRoleGuard } from "./components/auth/AuthRoleGuard";
-import TrusteeLogin from "./pages/auth/TrusteeLogin";
-import ClientLogin from "./pages/auth/ClientLogin";
 import { useEffect } from "react";
 import { useAuthState } from "@/hooks/useAuthState";
+import { AuthRoleGuard } from "./components/auth/AuthRoleGuard";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
-// Import from the trustee folder
+// Auth Pages
+import TrusteeLogin from "./pages/auth/TrusteeLogin";
+import ClientLogin from "./pages/auth/ClientLogin";
+
+// Client Portal Pages
+import ClientPortal from "./pages/ClientPortal";
+
+// Trustee Pages
 import Index from "./pages/trustee/Index";
 import CRMPage from "./pages/trustee/CRMPage";
 import DocumentsPage from "./pages/trustee/DocumentsPage";
@@ -28,17 +32,26 @@ import ConBrandingPage from "./pages/trustee/ConBrandingPage";
 import ConverterPage from "./pages/trustee/ConverterPage";
 import MeetingsPage from "./pages/MeetingsPage";
 import SAFAPage from "./pages/SAFA/SAFAPage";
+import NotFound from "./pages/NotFound";
 
 import "./App.css";
 
 // Improved home page resolver that respects authentication status
 function HomePageResolver() {
-  const { user, loading, isClient, isTrustee } = useAuthState();
+  const { user, loading, isClient, isTrustee, redirectInProgress } = useAuthState();
   
-  if (loading) {
+  useEffect(() => {
+    console.log("HomePageResolver: Initialized with user:", !!user, "isClient:", isClient, "isTrustee:", isTrustee);
+  }, [user, isClient, isTrustee]);
+  
+  // Prevent multiple renders/redirects while checking auth
+  if (loading || redirectInProgress) {
     return (
-      <div className="h-screen w-full flex items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="h-screen w-full flex flex-col items-center justify-center">
+        <LoadingSpinner size="lg" />
+        <p className="mt-4 text-muted-foreground">
+          {redirectInProgress ? "Redirecting..." : "Loading authentication state..."}
+        </p>
       </div>
     );
   }
@@ -47,29 +60,43 @@ function HomePageResolver() {
   if (user) {
     // If client, redirect to client portal
     if (isClient) {
+      console.log("HomePageResolver: User is client, redirecting to /portal");
       return <Navigate to="/portal" replace />;
     }
     
     // If trustee, redirect to CRM
     if (isTrustee) {
+      console.log("HomePageResolver: User is trustee, redirecting to /crm");
       return <Navigate to="/crm" replace />;
     }
     
+    console.log("HomePageResolver: User role not recognized:", user.user_metadata?.user_type);
     // If user role is not recognized, go to login
     return <Navigate to="/login" replace />;
   }
   
+  console.log("HomePageResolver: No authenticated user, redirecting to /login");
   // Not authenticated, go to login
   return <Navigate to="/login" replace />;
 }
 
 function App() {
-  const { subdomain, isClient } = useAuthState();
+  const { subdomain, isClient, loading } = useAuthState();
   
   useEffect(() => {
     console.log("App: Current subdomain detected:", subdomain);
-    console.log("Is client subdomain:", isClient);
+    console.log("App: Is client subdomain:", isClient);
   }, [subdomain, isClient]);
+
+  // Show loading state while determining subdomain
+  if (loading && subdomain === null) {
+    return (
+      <div className="h-screen w-full flex flex-col items-center justify-center">
+        <LoadingSpinner size="lg" />
+        <p className="mt-4 text-muted-foreground">Detecting application context...</p>
+      </div>
+    );
+  }
   
   // If subdomain is 'client', show client routes
   if (isClient) {

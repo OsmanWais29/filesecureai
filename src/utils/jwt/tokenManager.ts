@@ -2,57 +2,42 @@
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
-/**
- * TokenManager - A centralized utility for JWT token management
- */
+// Track token state
+let tokenMonitoringActive = false;
+let tokenRefreshInterval: ReturnType<typeof setInterval> | null = null;
+const TOKEN_REFRESH_INTERVAL = 4 * 60 * 1000; // 4 minutes
+const TOKEN_EXPIRY_BUFFER = 10 * 60; // 10 minutes in seconds
 
-// Token expiration buffer (in seconds)
-const TOKEN_REFRESH_BUFFER = 300; // Refresh token if less than 5 minutes until expiry
-
-/**
- * Check if the current token is valid and will remain valid for the buffer period
- */
-export const isTokenValid = async (): Promise<boolean> => {
-  try {
-    const { data } = await supabase.auth.getSession();
-    const session = data?.session;
-    
-    if (!session) {
-      console.warn("No active session found");
-      return false;
-    }
-    
-    // Parse token to check expiration
-    const token = session.access_token;
-    const parts = token.split(".");
-    
-    if (parts.length !== 3) {
-      console.warn("Invalid JWT format");
-      return false;
-    }
-    
-    try {
-      const payload = JSON.parse(atob(parts[1]));
-      const expiresAt = payload.exp;
-      const now = Math.floor(Date.now() / 1000);
-      
-      // Token is valid if it's not expired and won't expire within buffer
-      return expiresAt > now + TOKEN_REFRESH_BUFFER;
-    } catch (error) {
-      console.error("Error decoding JWT:", error);
-      return false;
-    }
-  } catch (error) {
-    console.error("Error checking token validity:", error);
-    return false;
-  }
+// Check if a token needs refreshing based on its expiry
+const needsRefresh = (expiresAt: number): boolean => {
+  if (!expiresAt) return true;
+  
+  // Get current time in seconds
+  const now = Math.floor(Date.now() / 1000);
+  // Check if token will expire within buffer period
+  return expiresAt - now < TOKEN_EXPIRY_BUFFER;
 };
 
-/**
- * Refresh the JWT token
- */
-export const refreshToken = async (): Promise<boolean> => {
+// Refresh the token if needed
+export async function refreshToken(): Promise<boolean> {
   try {
+    // Get current session
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      console.log("No session to refresh");
+      return false;
+    }
+    
+    // Check if token needs refresh
+    if (session.expires_at && !needsRefresh(session.expires_at)) {
+      console.log("Token is still valid, no need to refresh");
+      return true;
+    }
+    
+    console.log("Token needs refreshing, attempting refresh...");
+    
+    // Perform refresh
     const { data, error } = await supabase.auth.refreshSession();
     
     if (error || !data.session) {
@@ -60,87 +45,60 @@ export const refreshToken = async (): Promise<boolean> => {
       return false;
     }
     
+    console.log("Token refreshed successfully");
     return true;
   } catch (error) {
-    console.error("Error refreshing token:", error);
+    console.error("Token refresh failed with exception:", error);
     return false;
   }
-};
+}
 
-/**
- * Ensure the token is valid, refreshing if needed
- */
-export const ensureValidToken = async (): Promise<boolean> => {
-  const valid = await isTokenValid();
-  
-  if (!valid) {
-    console.log("Token needs refreshing");
-    return await refreshToken();
+// Ensure token is valid before operation
+export async function withFreshToken<T>(operation: () => Promise<T>): Promise<T> {
+  // Try to refresh the token first
+  await refreshToken();
+  // Then perform the operation
+  return await operation();
+}
+
+// Start monitoring token and refreshing as needed
+export function startTokenMonitoring(): void {
+  // Don't start multiple intervals
+  if (tokenMonitoringActive) {
+    return;
   }
   
-  return true;
-};
-
-/**
- * Use for critical operations that require a fresh token
- * @param operation The operation to perform with a guaranteed fresh token
- */
-export const withFreshToken = async <T>(operation: () => Promise<T>): Promise<T> => {
-  const tokenValid = await ensureValidToken();
+  console.log("Starting token monitoring");
+  tokenMonitoringActive = true;
   
-  if (!tokenValid) {
-    toast.error("Authentication expired. Please log in again.");
-    throw new Error("Authentication expired");
-  }
+  // Setup immediate refresh check
+  refreshToken();
   
-  try {
-    return await operation();
-  } catch (error: any) {
-    // Check if the error is related to JWT
-    const isJwtError = 
-      error?.error === 'InvalidJWT' || 
-      (error?.message && (error.message.includes('JWT') || error.message.includes('token'))) || 
-      error?.statusCode === 400;
+  // Setup interval for regular checks
+  tokenRefreshInterval = setInterval(async () => {
+    try {
+      const success = await refreshToken();
       
-    if (isJwtError) {
-      // Try once more with a forced token refresh
-      const refreshed = await refreshToken();
-      if (refreshed) {
-        return await operation();
-      } else {
-        toast.error("Authentication failed. Please log in again.");
-        throw new Error("Authentication failed after token refresh");
+      if (!success) {
+        console.warn("Token refresh failed during monitoring cycle");
       }
+    } catch (error) {
+      console.error("Error in token monitoring cycle:", error);
     }
-    
-    throw error;
-  }
-};
+  }, TOKEN_REFRESH_INTERVAL);
+}
 
-/**
- * Start automatic token monitoring
- */
-let tokenMonitorInterval: number | null = null;
-
-export const startTokenMonitoring = (intervalMs = 60000) => {
-  // Clear any existing monitoring
-  stopTokenMonitoring();
+// Stop monitoring token
+export function stopTokenMonitoring(): void {
+  if (!tokenMonitoringActive || !tokenRefreshInterval) return;
   
-  tokenMonitorInterval = window.setInterval(async () => {
-    const shouldRefresh = !(await isTokenValid());
-    if (shouldRefresh) {
-      console.log("Token monitoring: refreshing token");
-      await refreshToken();
-    }
-  }, intervalMs);
-  
-  console.log("Token monitoring started");
-};
+  console.log("Stopping token monitoring");
+  clearInterval(tokenRefreshInterval);
+  tokenRefreshInterval = null;
+  tokenMonitoringActive = false;
+}
 
-export const stopTokenMonitoring = () => {
-  if (tokenMonitorInterval !== null) {
-    window.clearInterval(tokenMonitorInterval);
-    tokenMonitorInterval = null;
-    console.log("Token monitoring stopped");
-  }
-};
+// Check if token is valid, useful for route guards
+export async function ensureValidToken(): Promise<boolean> {
+  return await refreshToken();
+}

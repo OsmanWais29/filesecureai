@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -42,81 +43,102 @@ export function useAuthState() {
   const [initialized, setInitialized] = useState(false);
   const [isClient, setIsClient] = useState<boolean | null>(null);
   const [isTrustee, setIsTrustee] = useState<boolean | null>(null);
+  const [redirectInProgress, setRedirectInProgress] = useState(false);
 
   // Detect subdomain on mount - memoized to avoid recreating on each render
   useEffect(() => {
     const detected = getSubdomain();
+    console.log("useAuthState: Detected subdomain:", detected);
     setSubdomain(detected);
     setIsClient(detected === 'client');
   }, []);
 
   // Handle initial session loading
   useEffect(() => {
-    console.log("Initializing auth state listener...");
+    console.log("useAuthState: Initializing auth state listener...");
     
     let isMounted = true;
+    let authChangeUnsubscribe: () => void | null = null;
     
-    // Set up auth state listener FIRST 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, newSession) => {
-        console.log("Auth state changed:", event);
-        if (newSession?.user) {
-          console.log("User authenticated:", newSession.user.id);
-          console.log("User metadata:", newSession.user.user_metadata);
-          
-          const userType = newSession.user.user_metadata?.user_type;
-          console.log("User type:", userType);
+    const initializeAuth = async () => {
+      try {
+        // Set up auth state listener FIRST 
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          (event, newSession) => {
+            console.log("useAuthState: Auth state changed:", event);
+            if (newSession?.user) {
+              console.log("useAuthState: User authenticated:", newSession.user.id);
+              
+              const userType = newSession.user.user_metadata?.user_type;
+              console.log("useAuthState: User type:", userType);
 
-          if (isMounted) {
-            setSession(newSession);
-            setUser(newSession.user);
-            setIsTrustee(userType === 'trustee');
-            setIsClient(userType === 'client');
+              if (isMounted) {
+                setSession(newSession);
+                setUser(newSession.user);
+                setIsTrustee(userType === 'trustee');
+                setIsClient(userType === 'client');
+              }
+            } else {
+              if (isMounted) {
+                setSession(null);
+                setUser(null);
+                setIsTrustee(false);
+                setIsClient(false);
+              }
+            }
           }
-        } else {
-          if (isMounted) {
-            setSession(null);
-            setUser(null);
-            setIsTrustee(false);
-            setIsClient(false);
+        );
+
+        authChangeUnsubscribe = subscription.unsubscribe;
+
+        // THEN check for existing session - with a small delay to prevent race conditions
+        setTimeout(async () => {
+          try {
+            const { data: { session: currentSession } } = await supabase.auth.getSession();
+            console.log("useAuthState: Retrieved current session:", currentSession ? "Exists" : "None");
+            
+            if (currentSession?.user && isMounted) {
+              console.log("useAuthState: User ID from session:", currentSession.user.id);
+              
+              const userType = currentSession.user.user_metadata?.user_type;
+              console.log("useAuthState: User type from session:", userType);
+
+              setSession(currentSession);
+              setUser(currentSession.user);
+              setIsTrustee(userType === 'trustee');
+              setIsClient(userType === 'client');
+              
+              // Start token monitoring when we have a session
+              startTokenMonitoring();
+            }
+            
+            if (isMounted) {
+              setLoading(false);
+              setInitialized(true);
+            }
+          } catch (error) {
+            console.error("useAuthState: Error retrieving session:", error);
+            if (isMounted) {
+              setLoading(false);
+              setInitialized(true);
+            }
           }
-        }
-      }
-    );
+        }, 100); 
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      console.log("Retrieved current session:", currentSession ? "Exists" : "None");
-      
-      if (currentSession?.user) {
-        console.log("User ID from session:", currentSession.user.id);
-        console.log("User metadata from session:", currentSession.user.user_metadata);
-        
-        const userType = currentSession.user.user_metadata?.user_type;
-        console.log("User role from session:", userType);
-
+      } catch (error) {
+        console.error("useAuthState: Error during initialization:", error);
         if (isMounted) {
-          setSession(currentSession);
-          setUser(currentSession.user);
-          setIsTrustee(userType === 'trustee');
-          setIsClient(userType === 'client');
+          setLoading(false);
+          setInitialized(true);
         }
       }
-      
-      if (isMounted) {
-        setLoading(false);
-        setInitialized(true);
-        
-        // Start token monitoring when we have a session
-        if (currentSession) {
-          startTokenMonitoring();
-        }
-      }
-    });
+    };
+
+    initializeAuth();
 
     return () => {
       isMounted = false;
-      subscription.unsubscribe();
+      if (authChangeUnsubscribe) authChangeUnsubscribe();
       stopTokenMonitoring();
     };
   }, [subdomain]);
@@ -132,27 +154,39 @@ export function useAuthState() {
    * Sign out the user - memoized with useCallback
    */
   const signOut = useCallback(async () => {
+    if (redirectInProgress) {
+      return; // Prevent multiple sign-out attempts
+    }
+    
+    setRedirectInProgress(true);
+    
     try {
-      console.log("Signing out user...");
+      console.log("useAuthState: Signing out user...");
       await supabase.auth.signOut();
       setUser(null);
       setSession(null);
       setIsClient(false);
       setIsTrustee(false);
+      stopTokenMonitoring();
+      
       toast.success('Signed out successfully');
-      console.log("Sign out successful");
+      console.log("useAuthState: Sign out successful");
 
       // Redirect to the correct login page based on subdomain after signout
-      if (subdomain === 'client') {
-        window.location.href = '/login';
-      } else {
-        window.location.href = '/login';
-      }
+      setTimeout(() => {
+        const currentSubdomain = getSubdomain();
+        if (currentSubdomain === 'client') {
+          window.location.href = '/login';
+        } else {
+          window.location.href = '/login';
+        }
+      }, 100);
     } catch (error) {
-      console.error('Sign out error:', error);
+      console.error('useAuthState: Sign out error:', error);
       toast.error('Failed to sign out');
+      setRedirectInProgress(false);
     }
-  }, [subdomain]);
+  }, [redirectInProgress]);
 
   // Memoize the return value to prevent unnecessary rerenders
   return useMemo(() => ({
@@ -164,7 +198,8 @@ export function useAuthState() {
     signOut,
     subdomain,
     isClient,
-    isTrustee
+    isTrustee,
+    redirectInProgress
   }), [
     user, 
     session, 
@@ -174,6 +209,7 @@ export function useAuthState() {
     signOut,
     subdomain,
     isClient,
-    isTrustee
+    isTrustee,
+    redirectInProgress
   ]);
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthState } from '@/hooks/useAuthState';
 import { toast } from 'sonner';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -17,27 +17,45 @@ export const AuthRoleGuard = ({
 }: AuthRoleGuardProps) => {
   const { user, loading, initialized, isTrustee, isClient, subdomain } = useAuthState();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isValidating, setIsValidating] = useState(true);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
     if (!loading && initialized) {
+      console.log(`AuthRoleGuard: Checking access for route ${location.pathname}, required role: ${requiredRole}`);
+      console.log(`AuthRoleGuard: User authentication state - logged in: ${!!user}, isTrustee: ${isTrustee}, isClient: ${isClient}`);
+      
+      // Prevent multiple redirects
+      if (isRedirecting) {
+        return;
+      }
+
       setIsValidating(true);
       
       if (!user) {
         // Not authenticated, redirect to the login page
         console.log(`AuthRoleGuard: User not authenticated, redirecting to ${redirectPath}`);
-        navigate(redirectPath, { replace: true });
+        setIsRedirecting(true);
+        
+        // Delay redirect to prevent flashing
+        setTimeout(() => {
+          navigate(redirectPath, { replace: true });
+        }, 100);
         return;
       }
 
       // Check if user role matches the required role
       const hasCorrectRole = (requiredRole === 'trustee' && isTrustee) || 
-                             (requiredRole === 'client' && isClient);
+                            (requiredRole === 'client' && isClient);
       
       console.log(`AuthRoleGuard: User role check - Required: ${requiredRole}, Has correct role: ${hasCorrectRole}`);
       
       if (!hasCorrectRole) {
+        setIsRedirecting(true);
         console.log(`AuthRoleGuard: Role mismatch: User is ${isClient ? 'client' : isTrustee ? 'trustee' : 'unknown'}, but route requires ${requiredRole}`);
+        
+        // Display error message
         toast.error(`Unauthorized access. This area is for ${requiredRole}s only.`);
         
         // Redirect based on user's actual role and subdomain
@@ -45,63 +63,74 @@ export const AuthRoleGuard = ({
           // If user is trustee but on client subdomain, redirect to trustee subdomain
           if (subdomain === 'client') {
             console.log("AuthRoleGuard: Redirecting trustee from client subdomain to trustee subdomain");
-            const hostname = window.location.hostname;
-            if (hostname === 'localhost') {
-              window.location.href = window.location.origin + '?subdomain=trustee';
-              return;
-            } else {
-              const hostParts = hostname.split('.');
-              if (hostParts.length > 2) {
-                hostParts[0] = 'trustee';
-                window.location.href = `https://${hostParts.join('.')}`;
-                return;
+            
+            setTimeout(() => {
+              const hostname = window.location.hostname;
+              if (hostname === 'localhost') {
+                window.location.href = window.location.origin + '?subdomain=trustee';
+              } else {
+                const hostParts = hostname.split('.');
+                if (hostParts.length > 2) {
+                  hostParts[0] = 'trustee';
+                  window.location.href = `https://${hostParts.join('.')}`;
+                } else {
+                  window.location.href = `https://trustee.${hostname}`;
+                }
               }
-            }
+            }, 100);
+            return;
           }
           // Otherwise, just redirect to trustee dashboard
           console.log("AuthRoleGuard: Redirecting trustee to CRM dashboard");
-          navigate('/crm', { replace: true });
+          setTimeout(() => {
+            navigate('/crm', { replace: true });
+          }, 100);
         } else if (isClient) {
           // If user is client but on trustee subdomain, redirect to client subdomain
           if (subdomain !== 'client') {
             console.log("AuthRoleGuard: Redirecting client from trustee subdomain to client subdomain");
-            const hostname = window.location.hostname;
-            if (hostname === 'localhost') {
-              window.location.href = window.location.origin + '?subdomain=client';
-              return;
-            } else {
-              const hostParts = hostname.split('.');
-              if (hostParts.length > 2) {
-                hostParts[0] = 'client';
-                window.location.href = `https://${hostParts.join('.')}`;
-                return;
+            
+            setTimeout(() => {
+              const hostname = window.location.hostname;
+              if (hostname === 'localhost') {
+                window.location.href = window.location.origin + '?subdomain=client';
               } else {
-                window.location.href = `https://client.${hostname}`;
-                return;
+                const hostParts = hostname.split('.');
+                if (hostParts.length > 2) {
+                  hostParts[0] = 'client';
+                  window.location.href = `https://${hostParts.join('.')}`;
+                } else {
+                  window.location.href = `https://client.${hostname}`;
+                }
               }
-            }
+            }, 100);
+            return;
           }
           // Otherwise, just redirect to client portal
           console.log("AuthRoleGuard: Redirecting client to client portal");
-          navigate('/portal', { replace: true });
+          setTimeout(() => {
+            navigate('/client-portal', { replace: true });
+          }, 100);
         } else {
           // If role is unknown, redirect to login path provided
           console.log("AuthRoleGuard: User role unknown, redirecting to login");
-          navigate(redirectPath, { replace: true });
+          setTimeout(() => {
+            navigate(redirectPath, { replace: true });
+          }, 100);
         }
         return;
       }
       
-      console.log(`AuthRoleGuard: Role verified: User is ${requiredRole}`);
+      console.log(`AuthRoleGuard: Role verified: User is ${requiredRole}, granting access to ${location.pathname}`);
       setIsValidating(false);
     }
-  }, [user, loading, requiredRole, redirectPath, navigate, subdomain, initialized, isTrustee, isClient]);
+  }, [user, loading, requiredRole, redirectPath, navigate, subdomain, initialized, isTrustee, isClient, location.pathname, isRedirecting]);
 
   if (loading || isValidating) {
     return (
-      <div className="h-screen w-full flex items-center justify-center">
-        <LoadingSpinner />
-        <p className="ml-2 text-muted-foreground">
+      <div className="h-screen w-full flex flex-col items-center justify-center">
+        <LoadingSpinner size="lg" />
+        <p className="mt-4 text-muted-foreground">
           {isValidating ? 'Verifying access...' : 'Loading...'}
         </p>
       </div>

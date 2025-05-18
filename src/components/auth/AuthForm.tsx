@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Lock, AlertTriangle, Mail, UserPlus } from 'lucide-react';
@@ -18,6 +18,7 @@ interface AuthFormProps {
 
 export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFormProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,12 +27,24 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [authInProgress, setAuthInProgress] = useState(false);
   const { toast } = useToast();
   const { attempts, isRateLimited, timeLeft, recordAttempt, resetAttempts } = useRateLimiting();
+
+  // Clear errors when switching between sign in and sign up
+  useEffect(() => {
+    setError(null);
+  }, [isSignUp]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Prevent multiple submissions
+    if (authInProgress) {
+      return;
+    }
+    
+    // Validate form inputs
     const validation = validateAuthForm({
       email,
       password,
@@ -53,8 +66,11 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
 
     setLoading(true);
     setError(null);
+    setAuthInProgress(true);
 
     try {
+      console.log(`AuthForm: Starting ${isSignUp ? 'sign up' : 'sign in'} process for ${email}`);
+      
       if (isSignUp) {
         const { user } = await authService.signUp({
           email,
@@ -97,7 +113,7 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
             // Add slight delay to ensure state updates
             setTimeout(() => {
               navigate('/crm', { replace: true });
-            }, 100);
+            }, 300);
           } else {
             // If not trustee, sign out and show error
             console.error("AuthForm: User is not a trustee:", user?.user_metadata?.user_type);
@@ -134,6 +150,7 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
       }
     } finally {
       setLoading(false);
+      setAuthInProgress(false);
     }
   };
 
@@ -172,12 +189,12 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
           setEmail={setEmail}
           password={password}
           setPassword={setPassword}
-          isDisabled={loading}
+          isDisabled={loading || authInProgress}
         />
 
         <Button
           type="submit"
-          disabled={loading || isRateLimited}
+          disabled={loading || isRateLimited || authInProgress}
           className="w-full flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {loading ? (
