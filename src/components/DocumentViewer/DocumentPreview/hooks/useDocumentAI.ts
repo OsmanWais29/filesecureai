@@ -1,11 +1,11 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { DocumentRecord } from './types';
 
 export const useDocumentAI = (documentId: string, storagePath?: string) => {
-  const [documentRecord, setDocumentRecord] = useState<any>(null);
+  const [documentRecord, setDocumentRecord] = useState<DocumentRecord | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -27,6 +27,11 @@ export const useDocumentAI = (documentId: string, storagePath?: string) => {
         .single();
 
       if (fetchError) throw fetchError;
+      
+      if (data) {
+        setDocumentRecord(data as DocumentRecord);
+      }
+      
       return data;
     } catch (error: any) {
       console.error('Error checking document status:', error);
@@ -34,9 +39,32 @@ export const useDocumentAI = (documentId: string, storagePath?: string) => {
     }
   }, [documentId]);
 
+  useEffect(() => {
+    if (documentId) {
+      checkDocumentStatus();
+    }
+  }, [documentId, checkDocumentStatus]);
+
+  // Set AI processing status
+  const setAiProcessingStatus = useCallback(async (status: string) => {
+    if (!documentId) return;
+
+    try {
+      await supabase
+        .from('documents')
+        .update({
+          ai_processing_status: status
+        })
+        .eq('id', documentId);
+    } catch (error) {
+      console.error('Error updating AI processing status:', error);
+    }
+  }, [documentId]);
+
   // Check if processing is complete
   const checkProcessingComplete = useCallback(() => {
     if (!documentRecord) return false;
+    
     return documentRecord.ai_processing_status === 'completed' || 
            documentRecord.ai_processing_status === 'complete';
   }, [documentRecord]);
@@ -44,6 +72,7 @@ export const useDocumentAI = (documentId: string, storagePath?: string) => {
   // Check for processing errors
   const checkProcessingError = useCallback(() => {
     if (!documentRecord) return '';
+    
     return documentRecord.ai_processing_status === 'failed' ? 
            (documentRecord.metadata?.processing_error || 'Analysis failed') : '';
   }, [documentRecord]);
@@ -51,6 +80,7 @@ export const useDocumentAI = (documentId: string, storagePath?: string) => {
   // Get processing steps
   const getProcessingSteps = useCallback(() => {
     if (!documentRecord || !documentRecord.metadata) return [];
+    
     return documentRecord.metadata.processing_steps_completed || [];
   }, [documentRecord]);
 
@@ -67,11 +97,15 @@ export const useDocumentAI = (documentId: string, storagePath?: string) => {
 
       if (!currentDoc) return;
 
+      // Create a safe copy of the metadata
+      const metadata = currentDoc.metadata || {};
+      
+      // Update the metadata
       const updatedMetadata = {
-        ...currentDoc.metadata,
+        ...metadata,
         processing_stage: step,
         processing_steps_completed: [
-          ...(currentDoc.metadata?.processing_steps_completed || []),
+          ...(metadata.processing_steps_completed || []),
           step
         ]
       };
@@ -109,7 +143,7 @@ export const useDocumentAI = (documentId: string, storagePath?: string) => {
         .update({
           ai_processing_status: 'completed',
           metadata: {
-            ...documentRecord?.metadata,
+            ...(documentRecord?.metadata || {}),
             processing_complete: true,
             processing_stage: 'completed',
             last_analyzed: new Date().toISOString()
@@ -123,7 +157,7 @@ export const useDocumentAI = (documentId: string, storagePath?: string) => {
       
       // Refresh document data
       const updatedDoc = await checkDocumentStatus();
-      if (updatedDoc) setDocumentRecord(updatedDoc);
+      if (updatedDoc) setDocumentRecord(updatedDoc as DocumentRecord);
       
       return true;
     } catch (err: any) {
@@ -137,7 +171,7 @@ export const useDocumentAI = (documentId: string, storagePath?: string) => {
         .update({
           ai_processing_status: 'failed',
           metadata: {
-            ...documentRecord?.metadata,
+            ...(documentRecord?.metadata || {}),
             processing_error: err.message || 'Unknown error occurred'
           }
         })
@@ -186,6 +220,7 @@ export const useDocumentAI = (documentId: string, storagePath?: string) => {
     retryCount,
     checkDocumentStatus,
     processDocument,
+    setAiProcessingStatus,
     checkProcessingComplete,
     checkProcessingError,
     getProcessingSteps,

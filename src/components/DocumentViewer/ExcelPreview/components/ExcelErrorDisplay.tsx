@@ -1,33 +1,32 @@
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import React from 'react';
+import { AlertCircle } from 'lucide-react';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 interface ExcelErrorDisplayProps {
   error: string;
-  onRefresh: () => void;
-  publicUrl: string;
 }
 
-export const ExcelErrorDisplay = ({ error, onRefresh, publicUrl }: ExcelErrorDisplayProps) => {
+const ExcelErrorDisplay: React.FC<ExcelErrorDisplayProps> = ({ error }) => {
   return (
-    <Alert className="mb-4">
-      <AlertDescription className="flex flex-col gap-4">
-        <p>{error}</p>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Button variant="outline" size="sm" onClick={onRefresh}>
-            Try Again
-          </Button>
-          <Button variant="default" size="sm" asChild>
-            <a 
-              href={publicUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Download Original Excel File
-            </a>
-          </Button>
-        </div>
-      </AlertDescription>
-    </Alert>
+    <div className="p-4">
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Error Loading Excel Document</AlertTitle>
+        <AlertDescription>
+          {error}
+        </AlertDescription>
+      </Alert>
+      <div className="mt-4 text-sm text-muted-foreground">
+        <p>Please ensure that:</p>
+        <ul className="list-disc pl-5 mt-2 space-y-1">
+          <li>The file is a valid Excel document (.xlsx or .xls format)</li>
+          <li>The file is not corrupted or password protected</li>
+          <li>You have permission to access this document</li>
+        </ul>
+      </div>
+    </div>
   );
 };
+
+export default ExcelErrorDisplay;

@@ -19,7 +19,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
   onAnalysisComplete,
   bypassAnalysis = false
 }) => {
-  const previewState = usePreviewState(documentId || storagePath);
+  const previewState = usePreviewState(documentId || '', storagePath);
 
   // Start JWT monitoring for better token management
   useEffect(() => {

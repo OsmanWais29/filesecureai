@@ -1,6 +1,6 @@
 
 export const extractRisksFromAnalysis = (analysisData: any) => {
-  if (!analysisData || !analysisData.risks) {
+  if (!analysisData || !analysisData.risks || !Array.isArray(analysisData.risks)) {
     return [];
   }
   return analysisData.risks;
@@ -15,31 +15,41 @@ export const processExtractedInfo = (analysisData: any) => {
 
 export const generateAnalysisSection = (analysisData: any) => {
   if (!analysisData) {
-    return [];
+    return {};
   }
   
-  const sections = [];
+  // Extract form type and number information
+  const formInfo = analysisData.extracted_info?.formType 
+    ? `Form ${analysisData.extracted_info.formNumber || 'Unknown'} - ${analysisData.extracted_info.formType}`
+    : 'Unknown Form Type';
+
+  // Extract summary
+  const summary = analysisData.extracted_info?.summary || 'No summary available';
   
-  if (analysisData.extracted_info) {
-    sections.push({
-      title: 'Document Information',
-      content: analysisData.extracted_info
-    });
+  // Extract risks
+  const risks = extractRisksFromAnalysis(analysisData);
+  
+  // Generate risk summary
+  let riskSummary = 'No risks detected';
+  if (risks && risks.length > 0) {
+    const highRisks = risks.filter(risk => risk.severity === 'high');
+    const mediumRisks = risks.filter(risk => risk.severity === 'medium');
+    const lowRisks = risks.filter(risk => risk.severity === 'low');
+    
+    riskSummary = `Detected ${risks.length} issue${risks.length !== 1 ? 's' : ''}: ` +
+      `${highRisks.length} high, ${mediumRisks.length} medium, ${lowRisks.length} low`;
   }
   
-  if (analysisData.risks && analysisData.risks.length > 0) {
-    sections.push({
-      title: 'Risk Assessment',
-      content: analysisData.risks
-    });
-  }
-  
-  return sections;
+  return {
+    formInfo,
+    summary,
+    risks,
+    riskSummary
+  };
 };
 
+// Export the risk assessment function to be used by the analysis process
 export const riskAssessment = {
-  description: 'Assessing document risks and compliance',
-  detailedDescription: 'Analyzing the document for potential compliance issues and risks',
   extractRisksFromAnalysis,
   processExtractedInfo,
   generateAnalysisSection

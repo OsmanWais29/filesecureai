@@ -1,128 +1,107 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { ExcelData } from '../types';
-import { useToast } from '@/hooks/use-toast';
-import { processExcelData } from '../utils/excelDataProcessor';
-import { organizeFolder } from '../services/folderOrganizationService';
-import { loadCachedExcelData, markDocumentProcessingStarted } from '../services/cacheService';
-import { useDebounce } from '@/hooks/use-debounce';
+import { cacheService } from '../services/cacheService';
 
-export const useExcelPreview = (storagePath: string) => {
-  const [data, setData] = useState<ExcelData | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+export const useExcelPreview = (documentId: string, metadata?: any) => {
+  const [excelData, setExcelData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [publicUrl, setPublicUrl] = useState<string>('');
-  const [loadingProgress, setLoadingProgress] = useState<number>(0);
-  const [clientName, setClientName] = useState<string | null>(null);
-  const { toast } = useToast();
-  
-  const fetchExcelDataOptimized = useCallback(async () => {
-    if (!storagePath) {
-      setError('No storage path provided');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setLoadingProgress(10);
-      setError(null);
-      
-      // Get public URL for the file
-      const { data: urlData } = supabase.storage.from('documents').getPublicUrl(storagePath);
-      setPublicUrl(urlData.publicUrl);
-      setLoadingProgress(20);
-
-      // Get document ID
-      const documentId = storagePath.split('/').pop()?.split('.')[0];
-      
-      // Mark document as being processed
-      await markDocumentProcessingStarted(documentId);
-
-      // Check for cached data
-      const { cachedData, clientName: cachedClientName } = await loadCachedExcelData(documentId);
-      
-      // If we have valid cached data, use it
-      if (cachedData) {
-        setData(cachedData);
-        
-        if (cachedClientName) {
-          setClientName(cachedClientName);
-        }
-        
-        setLoading(false);
-        setLoadingProgress(100);
-        return;
-      }
-      
-      setLoadingProgress(30);
-      
-      // Use a more efficient approach - only fetch a small portion of the file
-      const { data: fileData, error: fetchError } = await supabase.storage
-        .from('documents')
-        .download(storagePath);
-
-      if (fetchError) {
-        throw new Error(`Failed to download file: ${fetchError.message}`);
-      }
-      
-      // Process Excel in a non-blocking way using setTimeout
-      setTimeout(async () => {
-        try {
-          // Process the Excel file
-          const { excelData, extractedClientName } = await processExcelData(
-            fileData,
-            documentId,
-            storagePath,
-            setLoadingProgress,
-            setClientName
-          );
-          
-          setData(excelData);
-          
-          // Start folder organization in the background
-          if (extractedClientName && documentId) {
-            const { data: { user } } = await supabase.auth.getUser();
-            
-            if (user) {
-              console.log('Starting background folder organization for client:', extractedClientName);
-              // This is done in the background and doesn't block UI
-              organizeFolder(documentId, user.id, extractedClientName);
-            }
-          }
-          
-          setLoadingProgress(100);
-          setLoading(false);
-        } catch (err: any) {
-          console.error('Error processing Excel file:', err);
-          setError(err.message || 'Failed to process Excel file');
-          setLoading(false);
-        }
-      }, 10); // Small timeout to allow UI to update
-      
-    } catch (err: any) {
-      console.error('Error loading Excel file:', err);
-      setError(err.message || 'Failed to load Excel file');
-      setLoading(false);
-    }
-  }, [storagePath, toast]);
-
-  const handleRefresh = useCallback(() => {
-    fetchExcelDataOptimized();
-  }, [fetchExcelDataOptimized]);
+  const [sheetNames, setSheetNames] = useState<string[]>([]);
+  const [selectedSheet, setSelectedSheet] = useState<string>('');
 
   useEffect(() => {
-    fetchExcelDataOptimized();
-  }, [fetchExcelDataOptimized]);
+    const loadExcelData = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        // Try to get cached data first
+        const cached = await cacheService.getExcelData(documentId);
+        
+        if (cached) {
+          console.log('Using cached Excel data');
+          setExcelData(cached.data);
+          
+          // Set sheet names from cached data
+          if (cached.data) {
+            const sheets = Object.keys(cached.data);
+            setSheetNames(sheets);
+            setSelectedSheet(sheets[0] || '');
+          }
+          
+          setIsLoading(false);
+          return;
+        }
+
+        // If no cache, check if metadata has Excel data
+        if (metadata?.excel_data) {
+          console.log('Using Excel data from metadata');
+          setExcelData(metadata.excel_data);
+          
+          // Set sheet names from metadata
+          if (metadata.excel_data) {
+            const sheets = Object.keys(metadata.excel_data);
+            setSheetNames(sheets);
+            setSelectedSheet(sheets[0] || '');
+          }
+          
+          // Cache the data for future use
+          await cacheService.saveExcelData(documentId, metadata.excel_data, metadata.client_name);
+          
+          setIsLoading(false);
+          return;
+        }
+
+        // If not in cache or metadata, fetch from document in storage
+        const { data, error } = await supabase
+          .from('documents')
+          .select('metadata, storage_path')
+          .eq('id', documentId)
+          .single();
+
+        if (error) throw error;
+        
+        if (!data) {
+          throw new Error('Document not found');
+        }
+        
+        // Check if the metadata contains Excel data
+        if (data.metadata?.excel_data) {
+          setExcelData(data.metadata.excel_data);
+          
+          // Set sheet names
+          const sheets = Object.keys(data.metadata.excel_data);
+          setSheetNames(sheets);
+          setSelectedSheet(sheets[0] || '');
+          
+          // Cache the data
+          await cacheService.saveExcelData(
+            documentId, 
+            data.metadata.excel_data, 
+            data.metadata?.client_name
+          );
+        } else {
+          // No Excel data found
+          throw new Error('No Excel data available for this document');
+        }
+      } catch (err: any) {
+        console.error('Error loading Excel data:', err);
+        setError(err.message || 'Failed to load Excel data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadExcelData();
+  }, [documentId, metadata]);
 
   return {
-    data,
-    loading,
+    excelData,
+    isLoading,
     error,
-    publicUrl,
-    loadingProgress,
-    clientName,
-    handleRefresh
+    sheetNames,
+    selectedSheet,
+    setSelectedSheet
   };
 };
