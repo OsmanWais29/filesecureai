@@ -1,149 +1,158 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { saveAs } from '@/utils/fileSaver';
-import { safeObjectCast, safeString, safeArrayCast } from '@/utils/typeSafetyUtils';
+import * as XLSX from 'xlsx';
+import { safeObjectCast, toSafeSpreadObject } from '@/utils/typeSafetyUtils';
 
-export const useExcelPreview = (documentId: string, storagePath: string) => {
-  const [data, setData] = useState<Record<string, unknown>[] | null>(null);
-  const [sheets, setSheets] = useState<string[]>([]);
-  const [activeSheet, setActiveSheet] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(true);
+export interface ExcelData {
+  sheets: {
+    name: string;
+    data: any[][];
+    columns: string[];
+  }[];
+  activeSheet: number;
+  metadata: {
+    fileName: string;
+    sheetCount: number;
+    lastModified?: string;
+    client_name?: string;
+  }
+}
+
+export const useExcelPreview = (storagePath: string | null, documentId?: string) => {
+  const [excelData, setExcelData] = useState<ExcelData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [clientName, setClientName] = useState<string>('');
+  const [activeSheet, setActiveSheet] = useState<number>(0);
 
-  const fetchExcelData = useCallback(async () => {
-    if (!documentId && !storagePath) {
-      setError('Missing document information');
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // First check if we need to fetch the document record to get the storage path
-      let finalStoragePath = storagePath;
-      if (!finalStoragePath && documentId) {
-        const { data: doc, error: docError } = await supabase
-          .from('documents')
-          .select('storage_path, metadata')
-          .eq('id', documentId)
-          .maybeSingle();
-
-        if (docError) throw docError;
-        
-        if (!doc || !doc.storage_path) {
-          throw new Error('Document storage path not found');
-        }
-
-        finalStoragePath = safeString(doc.storage_path, '');
-        if (!finalStoragePath) {
-          throw new Error('Invalid storage path');
-        }
-      }
-
-      // Fetch the document metadata to get Excel data
-      const { data: document, error: metadataError } = await supabase
-        .from('documents')
-        .select('metadata')
-        .eq(finalStoragePath ? 'storage_path' : 'id', finalStoragePath || documentId)
-        .maybeSingle();
-
-      if (metadataError) throw metadataError;
-      
-      if (!document || !document.metadata) {
-        throw new Error('Document metadata not found');
-      }
-      
-      const metadata = safeObjectCast(document.metadata);
-      
-      // Check if Excel data exists
-      const excelData = metadata.excel_data;
-      if (!excelData) {
-        throw new Error('No Excel data available for this document');
-      }
-
-      // Get client name if available
-      const clientNameValue = safeString(metadata.client_name, 'Unknown Client');
-      setClientName(clientNameValue);
-
-      // Process the Excel data
-      if (Array.isArray(excelData)) {
-        // If it's a simple array, treat as single sheet
-        setData(excelData as Record<string, unknown>[]);
-        setSheets(['Sheet1']);
-        setActiveSheet('Sheet1');
-      } else if (typeof excelData === 'object' && excelData !== null) {
-        // If it's an object with sheet names as keys
-        const sheetNames = Object.keys(excelData as Record<string, unknown>);
-        if (sheetNames.length > 0) {
-          setSheets(sheetNames);
-          setActiveSheet(sheetNames[0]);
-          
-          const sheetData = (excelData as Record<string, unknown>)[sheetNames[0]];
-          if (Array.isArray(sheetData)) {
-            setData(sheetData as Record<string, unknown>[]);
-          } else {
-            throw new Error('Invalid Excel sheet data format');
-          }
-        } else {
-          throw new Error('Excel file has no sheets');
-        }
-      } else {
-        throw new Error('Invalid Excel data format');
-      }
-    } catch (err: any) {
-      console.error('Error fetching Excel data:', err);
-      setError(err.message || 'Failed to load Excel data');
-      setData(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [documentId, storagePath]);
-
-  // Download Excel file
-  const downloadExcel = useCallback(async () => {
-    try {
-      if (!storagePath) {
-        throw new Error('No storage path available for download');
-      }
-
-      const { data, error } = await supabase.storage
-        .from('documents')
-        .download(storagePath);
-
-      if (error) throw error;
-
-      // Create a download blob and trigger download
-      const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      saveAs(blob, `${clientName || 'excel_file'}.xlsx`);
-    } catch (err: any) {
-      console.error('Error downloading Excel file:', err);
-      setError(err.message || 'Failed to download Excel file');
-    }
-  }, [storagePath, clientName]);
-
-  // Function to refresh the data
-  const refresh = useCallback(() => {
-    return fetchExcelData();
-  }, [fetchExcelData]);
-
-  // Initial data fetch
   useEffect(() => {
-    fetchExcelData();
-  }, [fetchExcelData]);
+    const loadExcel = async () => {
+      if (!storagePath) {
+        setError('No storage path provided');
+        setLoading(false);
+        return;
+      }
 
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Check if we already have processed this excel file and stored it
+        if (documentId) {
+          const { data: document } = await supabase
+            .from('documents')
+            .select('metadata')
+            .eq('id', documentId)
+            .single();
+            
+          if (document?.metadata) {
+            const metadata = toSafeSpreadObject(document.metadata);
+            const excelDataFromMetadata = metadata.excel_data;
+            
+            if (excelDataFromMetadata) {
+              setExcelData(safeObjectCast<ExcelData>(excelDataFromMetadata));
+              setLoading(false);
+              return;
+            }
+          }
+        }
+        
+        // If we don't have cached data, download and process the file
+        const { data: fileData, error: downloadError } = await supabase.storage
+          .from('documents')
+          .download(storagePath);
+          
+        if (downloadError) {
+          throw new Error(`Failed to download Excel file: ${downloadError.message}`);
+        }
+        
+        // Get the client name from document metadata if available
+        let clientName = '';
+        if (documentId) {
+          const { data: document } = await supabase
+            .from('documents')
+            .select('metadata')
+            .eq('id', documentId)
+            .single();
+            
+          if (document?.metadata) {
+            const metadata = toSafeSpreadObject(document.metadata);
+            clientName = String(metadata.client_name || '');
+          }
+        }
+        
+        const arrayBuffer = await fileData.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        
+        const sheets = workbook.SheetNames.map(name => {
+          const worksheet = workbook.Sheets[name];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+          
+          // Extract column headers if available (first row)
+          const columns = jsonData.length > 0 ? 
+            (jsonData[0] as any[]).map(col => String(col || '')) : 
+            [];
+            
+          return {
+            name,
+            data: jsonData,
+            columns
+          };
+        });
+        
+        const newExcelData: ExcelData = {
+          sheets,
+          activeSheet: 0,
+          metadata: {
+            fileName: storagePath.split('/').pop() || '',
+            sheetCount: sheets.length,
+            lastModified: new Date().toISOString(),
+            client_name: clientName
+          }
+        };
+        
+        setExcelData(newExcelData);
+        
+        // Store the processed data in document metadata for future access
+        if (documentId) {
+          await supabase
+            .from('documents')
+            .update({
+              metadata: {
+                excel_data: newExcelData,
+                excel_processed: true,
+                last_processed: new Date().toISOString()
+              }
+            })
+            .eq('id', documentId);
+        }
+        
+      } catch (err: any) {
+        console.error('Error loading Excel file:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadExcel();
+  }, [storagePath, documentId]);
+  
+  // Function to change active sheet
+  const changeSheet = (sheetIndex: number) => {
+    if (excelData && sheetIndex >= 0 && sheetIndex < excelData.sheets.length) {
+      setActiveSheet(sheetIndex);
+      setExcelData(prevData => 
+        prevData ? { ...prevData, activeSheet: sheetIndex } : null
+      );
+    }
+  };
+  
   return {
-    data,
-    isLoading,
+    excelData,
+    loading,
     error,
-    sheets,
     activeSheet,
-    setActiveSheet,
-    downloadExcel,
-    refresh,
-    clientName
+    changeSheet
   };
 };

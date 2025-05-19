@@ -1,23 +1,7 @@
 
-export interface DocumentVersion {
-  id: string;
-  documentId: string;
-  content: Record<string, unknown>;
-  createdAt: string;
-  userId: string;
-  versionNumber: number;
-  description?: string;
-  storagePath?: string;
-  isCurrent?: boolean;
-  changes?: {
-    added?: number;
-    removed?: number;
-    modified?: number;
-  };
-}
+import { DocumentVersion } from "../types";
 
 export interface VersionComparisonProps {
-  oldVersion: DocumentVersion;
-  newVersion: DocumentVersion;
-  onClose: () => void;
+  currentVersion: DocumentVersion;
+  previousVersion: DocumentVersion;
 }

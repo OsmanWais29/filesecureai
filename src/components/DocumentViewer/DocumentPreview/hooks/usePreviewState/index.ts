@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
@@ -8,12 +7,7 @@ import { useNetworkResilience } from './useNetworkResilience';
 import { useAnalysisInitialization } from './useAnalysisInitialization';
 import { useTimeTracker } from './useTimeTracker';
 import { Session } from '@supabase/supabase-js';
-import {
-  PreviewState,
-  FileLoadResult,
-  NetworkResilienceResult,
-  UseFileCheckerReturn
-} from '../../types';
+import { PreviewState } from '../types';
 import { logDocumentEvent } from '@/utils/debugMode';
 import { useSessionContext } from '@/contexts/SessionContext';
 import { useDocumentTitle } from './useDocumentTitle';
@@ -56,7 +50,7 @@ export const usePreviewState = ({
   const {
     checkFile,
     handleFileCheckError
-  }: UseFileCheckerReturn = useFileChecker({
+  } = useFileChecker({
     setFileUrl,
     setIsLoading,
     setPreviewError,
@@ -69,7 +63,7 @@ export const usePreviewState = ({
     resetRetries,
     incrementRetry,
     shouldRetry
-  }: NetworkResilienceResult = useNetworkResilience();
+  } = useNetworkResilience();
 
   const {
     isAnalysisStuck,
@@ -78,10 +72,7 @@ export const usePreviewState = ({
   } = useTimeTracker();
 
   const {
-    fileExists
-  } = useDocumentType(storagePath);
-
-  const {
+    fileExists,
     isExcelFile,
     fileType
   } = useDocumentType(storagePath);
@@ -90,12 +81,12 @@ export const usePreviewState = ({
     title
   } = useDocumentTitle(documentId);
 
-  const forceRefresh = useCallback(async () => {
+  const forceRefresh = useCallback(async (): Promise<void> => {
     setForceReloadCount(prevCount => prevCount + 1);
     return Promise.resolve();
   }, []);
 
-  const handleFullRecovery = useCallback(async () => {
+  const handleFullRecovery = useCallback(async (): Promise<void> => {
     console.log('Attempting full recovery: refreshing session and retrying');
     toast({
       title: "Attempting Recovery",
@@ -110,7 +101,7 @@ export const usePreviewState = ({
     return Promise.resolve();
   }, [refreshSession, toast]);
 
-  const loadFile = useCallback(async (useDirectLink = false): Promise<FileLoadResult> => {
+  const loadFile = useCallback(async (useDirectLink = false) => {
     setIsLoading(true);
     setPreviewError(null);
     setErrorDetails(null);
@@ -208,6 +199,13 @@ export const usePreviewState = ({
     bypassAnalysis
   });
 
+  const handleCheckFile = useCallback(async (): Promise<void> => {
+    if (storagePath) {
+      await checkFile(storagePath);
+    }
+    return Promise.resolve();
+  }, [storagePath, checkFile]);
+
   return {
     fileUrl,
     fileExists,
@@ -222,18 +220,16 @@ export const usePreviewState = ({
     session,
     setSession,
     handleAnalyzeDocument: async () => {
-      // Implement the analyze document functionality
       try {
-        // Your implementation here
-        console.log("Analyzing document...");
-        return await handleAnalyzeDocument(session);
+        await handleAnalyzeDocument(session);
+        return Promise.resolve();
       } catch (error) {
         console.error("Error analyzing document:", error);
-        return false;
+        return Promise.resolve();
       }
     },
     isAnalysisStuck,
-    checkFile: async (path: string) => await checkFile(path),
+    checkFile: handleCheckFile,
     isLoading,
     handleAnalysisRetry: () => {
       if (error) {

@@ -132,3 +132,45 @@ export function toIterable<T>(value: unknown): Iterable<T> {
   }
   return [] as T[];
 }
+
+/**
+ * Safe cast for array spreading
+ * Used when spreading potentially unknown values in arrays
+ * @param value The value to safely spread
+ * @returns An array that can be safely spread
+ */
+export function toSafeSpreadArray<T>(value: unknown): T[] {
+  if (Array.isArray(value)) {
+    return value as T[];
+  }
+  return [] as T[];
+}
+
+/**
+ * Safe cast for object spreading
+ * Used when spreading potentially unknown values in objects
+ * @param value The value to safely spread
+ * @returns An object that can be safely spread
+ */
+export function toSafeSpreadObject(value: unknown): Record<string, unknown> {
+  if (value && typeof value === 'object' && value !== null) {
+    return value as Record<string, unknown>;
+  }
+  return {};
+}
+
+/**
+ * Extract property from unknown as array
+ * @param obj The object to extract from
+ * @param key The property key
+ * @returns The property value as array or empty array
+ */
+export function extractArrayProperty<T>(obj: unknown, key: string): T[] {
+  if (obj && typeof obj === 'object' && key in (obj as object)) {
+    const value = (obj as Record<string, unknown>)[key];
+    if (Array.isArray(value)) {
+      return value as T[];
+    }
+  }
+  return [] as T[];
+}

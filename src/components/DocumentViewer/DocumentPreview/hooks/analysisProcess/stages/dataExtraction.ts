@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { DocumentRecord } from "../../types";
 import { updateAnalysisStatus } from "../documentStatusUpdates";
 import { AnalysisProcessContext } from "../types";
+import { toSafeSpreadArray, toSafeSpreadObject } from "@/utils/typeSafetyUtils";
 
 export const dataExtraction = async (
   documentRecord: DocumentRecord,
@@ -14,15 +15,19 @@ export const dataExtraction = async (
   setAnalysisStep("Stage 3: Data Extraction & Content Processing...");
   setProgress(40);
   
+  const processingStepsCompleted = documentRecord.metadata?.processing_steps_completed 
+    ? toSafeSpreadArray<string>(documentRecord.metadata.processing_steps_completed) 
+    : [];
+  
   // Update document with classification results
   await supabase
     .from('documents')
     .update({
       metadata: {
-        ...documentRecord.metadata,
+        ...toSafeSpreadObject(documentRecord.metadata),
         formType: isForm76 ? 'form-76' : 'unknown',
         processing_stage: 'data_extraction',
-        processing_steps_completed: [...(documentRecord.metadata?.processing_steps_completed || []), 'classification_completed']
+        processing_steps_completed: [...processingStepsCompleted, 'classification_completed']
       }
     })
     .eq('id', documentRecord.id);

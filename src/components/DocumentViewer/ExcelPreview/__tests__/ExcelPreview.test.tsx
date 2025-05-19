@@ -1,35 +1,41 @@
 
-import { render, screen } from '@testing-library/react';
-import ExcelPreview from "../index";
-import { vi, describe, it, expect } from 'vitest';
+import React from 'react';
+import { render, screen, waitFor } from '@testing-library/react';
+import { describe, expect, it, vi } from './setup';
+import { ExcelPreview } from '../components/ExcelPreview';
 
-// Mock data for the useExcelPreview hook
-const mockExcelData = {
-  data: [
-    { name: 'John', age: 30 },
-    { name: 'Jane', age: 25 }
-  ],
-  isLoading: false,
-  error: null,
-  sheets: ['Sheet1'],
-  activeSheet: 'Sheet1',
-  setActiveSheet: vi.fn(),
-  downloadExcel: vi.fn(),
-  refresh: vi.fn()
-};
-
-// Mock the useExcelPreview hook
 vi.mock('../hooks/useExcelPreview', () => ({
-  useExcelPreview: () => mockExcelData
+  useExcelPreview: () => ({
+    excelData: {
+      sheets: [
+        {
+          name: 'Sheet1',
+          data: [
+            ['Header1', 'Header2'],
+            ['Value1', 'Value2']
+          ],
+          columns: ['Header1', 'Header2']
+        }
+      ],
+      activeSheet: 0,
+      metadata: {
+        fileName: 'test.xlsx',
+        sheetCount: 1
+      }
+    },
+    loading: false,
+    error: null,
+    activeSheet: 0,
+    changeSheet: vi.fn()
+  })
 }));
 
 describe('ExcelPreview', () => {
-  it('renders Excel data correctly', () => {
-    render(<ExcelPreview documentId="test-id" storagePath="test/path" />);
+  it('renders the Excel preview component', async () => {
+    render(<ExcelPreview storagePath="test/path.xlsx" />);
     
-    // Check for sheet tab
-    expect(screen.getByText('Sheet1')).toBeInTheDocument();
-    
-    // We don't need to check for table content here as ExcelTable is tested separately
+    await waitFor(() => {
+      expect(screen.getByText('test.xlsx')).toBeInTheDocument();
+    });
   });
 });

@@ -2,6 +2,7 @@
 import { supabase } from "@/lib/supabase";
 import { DocumentRecord } from "../../types";
 import { AnalysisProcessContext } from "../types";
+import { toSafeSpreadArray, toSafeSpreadObject } from "@/utils/typeSafetyUtils";
 
 export const continuousLearning = async (
   documentRecord: DocumentRecord,
@@ -9,15 +10,19 @@ export const continuousLearning = async (
 ): Promise<void> => {
   const { setAnalysisStep, setProgress, toast, onAnalysisComplete, isForm76 } = context;
   
+  const processingStepsCompleted = documentRecord.metadata?.processing_steps_completed 
+    ? toSafeSpreadArray<string>(documentRecord.metadata.processing_steps_completed) 
+    : [];
+  
   // Final update - processing complete
   await supabase
     .from('documents')
     .update({
       ai_processing_status: 'completed',
       metadata: {
-        ...documentRecord.metadata,
+        ...toSafeSpreadObject(documentRecord.metadata),
         processing_stage: 'completed',
-        processing_steps_completed: [...(documentRecord.metadata?.processing_steps_completed || []), 'analysis_completed'],
+        processing_steps_completed: [...processingStepsCompleted, 'analysis_completed'],
         completion_date: new Date().toISOString()
       }
     })

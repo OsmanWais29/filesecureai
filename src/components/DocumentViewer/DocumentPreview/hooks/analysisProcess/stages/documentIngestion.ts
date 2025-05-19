@@ -4,6 +4,7 @@ import { DocumentRecord } from "../../types";
 import { updateAnalysisStatus } from "../documentStatusUpdates";
 import { AnalysisProcessContext } from "../types";
 import { isUUID } from "@/utils/validation";
+import { toSafeSpreadObject } from "@/utils/typeSafetyUtils";
 
 export const documentIngestion = async (
   storagePath: string,
@@ -51,7 +52,7 @@ export const documentIngestion = async (
       const typedDocument: DocumentRecord = {
         id: String(documentByTitle.id),
         title: String(documentByTitle.title || ''),
-        metadata: documentByTitle.metadata || {},
+        metadata: toSafeSpreadObject(documentByTitle.metadata),
         ai_processing_status: documentByTitle.ai_processing_status ? String(documentByTitle.ai_processing_status) : undefined,
         storage_path: documentByTitle.storage_path ? String(documentByTitle.storage_path) : undefined
       };
@@ -84,7 +85,7 @@ export const documentIngestion = async (
   const typedDocumentRecord: DocumentRecord = {
     id: String(documentRecord.id),
     title: String(documentRecord.title || ''),
-    metadata: documentRecord.metadata || {},
+    metadata: toSafeSpreadObject(documentRecord.metadata),
     ai_processing_status: documentRecord.ai_processing_status ? String(documentRecord.ai_processing_status) : undefined,
     storage_path: documentRecord.storage_path ? String(documentRecord.storage_path) : undefined
   };

@@ -1,36 +1,38 @@
 
+import React from 'react';
 import { render, screen } from '@testing-library/react';
-import ExcelTable from "../components/ExcelTable";
+import { describe, expect, it } from './setup';
+import { ExcelTable } from '../components/ExcelTable';
 
-describe('ExcelTable', () => {
-  const testData = [
-    { name: 'John', age: 30, city: 'New York' },
-    { name: 'Jane', age: 25, city: 'Boston' }
+describe('ExcelTable Component', () => {
+  const mockData = [
+    ['Header1', 'Header2', 'Header3'],
+    ['Row1Col1', 'Row1Col2', 'Row1Col3'],
+    ['Row2Col1', 'Row2Col2', 'Row2Col3']
   ];
 
-  it('renders table headers correctly', () => {
-    render(<ExcelTable data={testData} />);
+  it('renders the table with correct headers and data', () => {
+    render(<ExcelTable data={mockData} />);
     
-    expect(screen.getByText('name')).toBeInTheDocument();
-    expect(screen.getByText('age')).toBeInTheDocument();
-    expect(screen.getByText('city')).toBeInTheDocument();
+    expect(screen.getByText('Header1')).toBeInTheDocument();
+    expect(screen.getByText('Header2')).toBeInTheDocument();
+    expect(screen.getByText('Header3')).toBeInTheDocument();
   });
 
-  it('renders table data correctly', () => {
-    render(<ExcelTable data={testData} />);
+  it('renders the table with correct rows', () => {
+    render(<ExcelTable data={mockData} />);
     
-    expect(screen.getByText('John')).toBeInTheDocument();
-    expect(screen.getByText('30')).toBeInTheDocument();
-    expect(screen.getByText('New York')).toBeInTheDocument();
+    expect(screen.getByText('Row1Col1')).toBeInTheDocument();
+    expect(screen.getByText('Row1Col2')).toBeInTheDocument();
+    expect(screen.getByText('Row1Col3')).toBeInTheDocument();
     
-    expect(screen.getByText('Jane')).toBeInTheDocument();
-    expect(screen.getByText('25')).toBeInTheDocument();
-    expect(screen.getByText('Boston')).toBeInTheDocument();
+    expect(screen.getByText('Row2Col1')).toBeInTheDocument();
+    expect(screen.getByText('Row2Col2')).toBeInTheDocument();
+    expect(screen.getByText('Row2Col3')).toBeInTheDocument();
   });
 
-  it('handles empty data gracefully', () => {
+  it('renders empty state when no data is provided', () => {
     render(<ExcelTable data={[]} />);
-    
     expect(screen.getByText('No data available')).toBeInTheDocument();
   });
 });

@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
-import { safeObjectCast } from "@/utils/typeSafetyUtils";
+import { toSafeSpreadArray, toSafeSpreadObject, toRecord } from "@/utils/typeSafetyUtils";
 
 export interface AnalysisProcessProps {
   setAnalysisStep: (step: string) => void;
@@ -53,12 +53,12 @@ export const useDocumentAnalysis = (storagePath: string, onAnalysisComplete?: ()
       // Update document status in database
       const { data: document } = await supabase
         .from('documents')
-        .select('id, ai_processing_status')
+        .select('id, ai_processing_status, metadata')
         .eq('storage_path', storagePath)
         .maybeSingle();
         
       if (document) {
-        const metadata = safeObjectCast(document.metadata);
+        const metadata = toSafeSpreadObject(document.metadata);
         const updatedMetadata = {
           ...metadata,
           processing_complete: true,
@@ -153,7 +153,7 @@ export const useDocumentAnalysis = (storagePath: string, onAnalysisComplete?: ()
               .maybeSingle();
               
             if (document) {
-              const metadata = safeObjectCast(document.metadata);
+              const metadata = toRecord(document.metadata);
               
               // Check if processing steps are completed
               const processingStepsCompleted = Array.isArray(metadata.processing_steps_completed) 

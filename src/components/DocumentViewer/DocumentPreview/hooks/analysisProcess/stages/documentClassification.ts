@@ -4,6 +4,7 @@ import { DocumentRecord } from "../../types";
 import { updateAnalysisStatus } from "../documentStatusUpdates";
 import { AnalysisProcessProps } from "../types";
 import { isForm76, isForm47 } from "../formIdentification";
+import { toSafeSpreadArray, toSafeSpreadObject } from "@/utils/typeSafetyUtils";
 
 export const documentClassification = async (
   documentRecord: DocumentRecord,
@@ -17,7 +18,7 @@ export const documentClassification = async (
     // Get document content from storage
     const { data: fileData, error: fileError } = await supabase.storage
       .from('documents')
-      .download(documentRecord.storage_path);
+      .download(documentRecord.storage_path || '');
       
     if (fileError) {
       throw fileError;
@@ -53,17 +54,21 @@ export const documentClassification = async (
       formNumber = '31';
     }
     
+    const processingStepsCompleted = documentRecord.metadata?.processing_steps_completed 
+      ? toSafeSpreadArray<string>(documentRecord.metadata.processing_steps_completed) 
+      : [];
+    
     // Update document with classification results
     await supabase
       .from('documents')
       .update({
         metadata: {
-          ...documentRecord.metadata,
+          ...toSafeSpreadObject(documentRecord.metadata),
           formType,
           formNumber,
           classification_confidence: (isForm76Document || isForm47Document || isForm31) ? 'high' : 'medium',
           processing_stage: 'classification',
-          processing_steps_completed: [...(documentRecord.metadata?.processing_steps_completed || []), 'ingestion_completed']
+          processing_steps_completed: [...processingStepsCompleted, 'ingestion_completed']
         }
       })
       .eq('id', documentRecord.id);
