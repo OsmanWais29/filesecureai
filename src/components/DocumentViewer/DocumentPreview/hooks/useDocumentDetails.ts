@@ -2,9 +2,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
+import { safeString, safeObjectCast, safeArrayCast } from '@/utils/typeSafetyUtils';
 
 // Define proper interfaces for document-related data
-interface Comment {
+export interface Comment {
   id: string;
   content: string;
   user_id: string;
@@ -15,7 +16,7 @@ interface Comment {
   mentions?: string[];
 }
 
-interface Task {
+export interface Task {
   id: string;
   title: string;
   description?: string;
@@ -29,14 +30,14 @@ interface Task {
   document_id?: string;
 }
 
-interface AnalysisResult {
+export interface AnalysisResult {
   id: string;
   content: any;
   document_id?: string;
   created_at?: string;
 }
 
-interface Version {
+export interface Version {
   id: string;
   version_number: number;
   storage_path: string;
@@ -54,7 +55,7 @@ export interface DocumentDetails {
   created_at: string;
   updated_at: string;
   storage_path: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   comments?: Comment[];
   tasks?: Task[];
   analysis?: AnalysisResult[];
@@ -99,13 +100,13 @@ export const useDocumentDetails = (documentId: string | undefined, options: UseD
       
       // Build complete document details
       const documentDetails: DocumentDetails = {
-        id: docData.id,
-        title: docData.title,
-        type: docData.type || 'document',
-        created_at: docData.created_at,
-        updated_at: docData.updated_at,
-        storage_path: docData.storage_path || '',
-        metadata: docData.metadata || {},
+        id: safeString(docData.id, ''),
+        title: safeString(docData.title, ''),
+        type: safeString(docData.type, 'document'),
+        created_at: safeString(docData.created_at, ''),
+        updated_at: safeString(docData.updated_at, ''),
+        storage_path: safeString(docData.storage_path, ''),
+        metadata: safeObjectCast(docData.metadata),
         comments: [],
         tasks: [],
         analysis: [],
@@ -122,7 +123,17 @@ export const useDocumentDetails = (documentId: string | undefined, options: UseD
           .order('created_at', { ascending: false });
           
         if (!commentsError && comments) {
-          documentDetails.comments = comments as Comment[];
+          // Safely cast the comments data to the Comment type
+          documentDetails.comments = safeArrayCast<Comment>(comments, (item: Record<string, unknown>) => ({
+            id: safeString(item.id),
+            content: safeString(item.content),
+            user_id: safeString(item.user_id),
+            created_at: safeString(item.created_at),
+            document_id: safeString(item.document_id),
+            is_resolved: item.is_resolved as boolean,
+            parent_id: safeString(item.parent_id),
+            mentions: safeArrayCast<string>(item.mentions)
+          }));
         }
       }
       
@@ -135,7 +146,20 @@ export const useDocumentDetails = (documentId: string | undefined, options: UseD
           .order('created_at', { ascending: false });
           
         if (!tasksError && tasks) {
-          documentDetails.tasks = tasks as Task[];
+          // Safely cast the tasks data to the Task type
+          documentDetails.tasks = safeArrayCast<Task>(tasks, (item: Record<string, unknown>) => ({
+            id: safeString(item.id),
+            title: safeString(item.title),
+            description: safeString(item.description),
+            status: safeString(item.status),
+            assigned_to: safeString(item.assigned_to),
+            created_by: safeString(item.created_by),
+            created_at: safeString(item.created_at),
+            updated_at: safeString(item.updated_at),
+            due_date: safeString(item.due_date),
+            severity: safeString(item.severity),
+            document_id: safeString(item.document_id)
+          }));
         }
       }
       
@@ -148,7 +172,13 @@ export const useDocumentDetails = (documentId: string | undefined, options: UseD
           .order('created_at', { ascending: false });
           
         if (!analysisError && analysis) {
-          documentDetails.analysis = analysis as AnalysisResult[];
+          // Safely cast the analysis data to the AnalysisResult type
+          documentDetails.analysis = safeArrayCast<AnalysisResult>(analysis, (item: Record<string, unknown>) => ({
+            id: safeString(item.id),
+            content: item.content,
+            document_id: safeString(item.document_id),
+            created_at: safeString(item.created_at)
+          }));
         }
       }
       
@@ -161,14 +191,24 @@ export const useDocumentDetails = (documentId: string | undefined, options: UseD
           .order('version_number', { ascending: false });
           
         if (!versionsError && versions) {
-          documentDetails.versions = versions as Version[];
+          // Safely cast the versions data to the Version type
+          documentDetails.versions = safeArrayCast<Version>(versions, (item: Record<string, unknown>) => ({
+            id: safeString(item.id),
+            version_number: Number(item.version_number || 0),
+            storage_path: safeString(item.storage_path),
+            document_id: safeString(item.document_id),
+            created_at: safeString(item.created_at),
+            created_by: safeString(item.created_by),
+            is_current: Boolean(item.is_current),
+            description: safeString(item.description)
+          }));
         }
       }
       
       // Get deadlines from metadata if present
-      const metadata = docData.metadata || {};
+      const metadata = safeObjectCast(docData.metadata);
       if (metadata && Array.isArray(metadata.deadlines)) {
-        documentDetails.deadlines = metadata.deadlines;
+        documentDetails.deadlines = metadata.deadlines as any[];
       }
       
       setDocument(documentDetails);

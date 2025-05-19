@@ -1,7 +1,16 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { DocumentRecord } from './types';
+import { safeString, safeObjectCast } from '@/utils/typeSafetyUtils';
+
+export interface DocumentRecord {
+  id: string;
+  title: string;
+  metadata: Record<string, unknown>;
+  ai_processing_status?: string;
+  storage_path?: string;
+  updated_at?: string;
+}
 
 export const useAnalysisInitialization = (documentId: string, storagePath: string) => {
   const [isInitializing, setIsInitializing] = useState(false);
@@ -23,12 +32,12 @@ export const useAnalysisInitialization = (documentId: string, storagePath: strin
       // Create a properly typed DocumentRecord before setting state
       if (data) {
         const record: DocumentRecord = {
-          id: data.id || '',
-          title: data.title || '',
-          metadata: data.metadata || {},
-          ai_processing_status: data.ai_processing_status,
-          storage_path: data.storage_path,
-          updated_at: data.updated_at
+          id: safeString(data.id, ''),
+          title: safeString(data.title, ''),
+          metadata: safeObjectCast(data.metadata),
+          ai_processing_status: safeString(data.ai_processing_status),
+          storage_path: safeString(data.storage_path),
+          updated_at: safeString(data.updated_at)
         };
         setDocumentRecord(record);
         return record;
@@ -48,9 +57,12 @@ export const useAnalysisInitialization = (documentId: string, storagePath: strin
     if (!documentRecord || !documentRecord.metadata) return [];
     
     const metadata = documentRecord.metadata;
-    if (typeof metadata === 'object' && 'processing_steps_completed' in metadata) {
-      return metadata.processing_steps_completed as string[] || [];
+    const processingSteps = metadata.processing_steps_completed;
+    
+    if (Array.isArray(processingSteps)) {
+      return processingSteps as string[];
     }
+    
     return [];
   }, [documentRecord]);
 

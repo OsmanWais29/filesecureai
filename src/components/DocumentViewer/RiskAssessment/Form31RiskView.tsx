@@ -1,126 +1,160 @@
-
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, AlertTriangle, Info } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import React, { useState, useCallback } from 'react';
+import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
+import { useTaskManager } from '../TaskManager/hooks/useTaskManager';
+import { Task } from '../TaskManager/types';
+import { TaskList } from '../TaskManager/components/TaskList';
 
 interface Form31RiskViewProps {
-  analysisData: any;
+  risks: any[];
 }
 
-const Form31RiskView: React.FC<Form31RiskViewProps> = ({ analysisData }) => {
-  if (!analysisData) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>No Analysis Available</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">Run document analysis to see risk assessment.</p>
-        </CardContent>
-      </Card>
-    );
-  }
+export const Form31RiskView: React.FC<Form31RiskViewProps> = ({ risks }) => {
+  const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+  const [taskTitle, setTaskTitle] = useState('');
+  const [taskDescription, setTaskDescription] = useState('');
+  const [selectedSeverity, setSelectedSeverity] = useState('medium');
+  const { toast } = useToast();
+  const { createTask, tasks, isLoading, error } = useTaskManager();
 
-  let risks: any[] = [];
-  let formDetails: Record<string, any> = {};
+  const toggleCreateTask = useCallback(() => {
+    setIsCreateTaskOpen((prev) => !prev);
+  }, []);
 
-  // Extract risks and form details from analysis data
-  if (Array.isArray(analysisData)) {
-    // If analysis data is an array, find the first item with risks
-    const analysisWithRisks = analysisData.find(item => 
-      item && typeof item === 'object' && item.content && item.content.risks
-    );
-    
-    if (analysisWithRisks) {
-      risks = analysisWithRisks.content.risks || [];
-      formDetails = analysisWithRisks.content.extracted_info || {};
+  const handleCreateTask = useCallback(async () => {
+    if (!taskTitle.trim()) {
+      toast({
+        title: "Error",
+        description: "Task title cannot be empty.",
+        variant: "destructive",
+      });
+      return;
     }
-  } else if (analysisData && typeof analysisData === 'object') {
-    // If analysis data is an object, check if it has content property
-    if (analysisData.content) {
-      risks = analysisData.content.risks || [];
-      formDetails = analysisData.content.extracted_info || {};
-    } else if (analysisData.risks) {
-      risks = analysisData.risks || [];
-      formDetails = analysisData.extracted_info || {};
-    }
-  }
 
-  // Sort risks by severity
-  const sortedRisks = [...risks].sort((a, b) => {
-    const severityOrder = { high: 0, medium: 1, low: 2 };
-    return severityOrder[a.severity as keyof typeof severityOrder] - 
-           severityOrder[b.severity as keyof typeof severityOrder];
-  });
+    try {
+      const newTask: Omit<Task, 'id' | 'created_at' | 'updated_at'> = {
+        title: taskTitle,
+        description: taskDescription,
+        severity: selectedSeverity,
+        document_id: 'form31', // Replace with actual document ID
+      };
+
+      await createTask(newTask);
+
+      toast({
+        title: "Success",
+        description: "Task created successfully.",
+      });
+
+      setTaskTitle('');
+      setTaskDescription('');
+      setSelectedSeverity('medium');
+      setIsCreateTaskOpen(false);
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: `Failed to create task: ${err.message}`,
+        variant: "destructive",
+      });
+    }
+  }, [createTask, taskTitle, taskDescription, selectedSeverity, toast]);
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Form 31 Risk Assessment</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Form Details */}
-          <div className="space-y-2">
-            <h3 className="font-medium">Form Details</h3>
-            <ul className="space-y-1">
-              {Object.entries(formDetails).map(([key, value]) => (
-                <li key={key} className="text-sm">
-                  <span className="font-medium">{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:</span> {value as React.ReactNode}
-                </li>
-              ))}
-            </ul>
-          </div>
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {risks.map((risk, index) => (
+        <Card key={index}>
+          <CardHeader>
+            <CardTitle>{risk.type}</CardTitle>
+            <CardDescription>
+              <Badge
+                variant={
+                  risk.severity === "high"
+                    ? "destructive"
+                    : risk.severity === "medium"
+                    ? "secondary"
+                    : "outline"
+                }
+              >
+                {risk.severity}
+              </Badge>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p>{risk.description}</p>
+          </CardContent>
+          <CardFooter className="flex justify-between items-center">
+            <Button
+              variant="default"  // Changed from "outline" to "default"
+              onClick={toggleCreateTask}
+            >
+              Create Task
+            </Button>
+            <Checkbox id={`risk-${index}`} />
+          </CardFooter>
+        </Card>
+      ))}
 
-          {/* Risk Items */}
-          <div className="space-y-3">
-            <h3 className="font-medium">Identified Risks</h3>
-            {sortedRisks.length > 0 ? (
-              sortedRisks.map((risk, index) => (
-                <Alert 
-                  key={index}
-                  variant={risk.severity === 'high' ? 'destructive' : (risk.severity === 'medium' ? 'default' : 'outline')}
-                  className="flex items-start"
-                >
-                  {risk.severity === 'high' ? (
-                    <AlertCircle className="h-4 w-4 mt-0.5" />
-                  ) : risk.severity === 'medium' ? (
-                    <AlertTriangle className="h-4 w-4 mt-0.5" />
-                  ) : (
-                    <Info className="h-4 w-4 mt-0.5" />
-                  )}
-                  <div className="ml-2">
-                    <div className="flex items-center">
-                      <AlertTitle>{risk.type}</AlertTitle>
-                      <Badge 
-                        className={`ml-2 ${
-                          risk.severity === 'high' 
-                            ? 'bg-destructive' 
-                            : risk.severity === 'medium' 
-                              ? 'bg-amber-500' 
-                              : 'bg-emerald-500'
-                        }`}
-                      >
-                        {risk.severity}
-                      </Badge>
-                    </div>
-                    <AlertDescription>{risk.description}</AlertDescription>
-                    {risk.solution && (
-                      <p className="mt-2 text-sm"><span className="font-medium">Recommendation:</span> {risk.solution}</p>
-                    )}
-                  </div>
-                </Alert>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground">No risks detected for this document.</p>
-            )}
-          </div>
+      {isCreateTaskOpen && (
+        <Card className="col-span-1 md:col-span-2 lg:col-span-3">
+          <CardHeader>
+            <CardTitle>Create New Task</CardTitle>
+            <CardDescription>Add details for this task.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="task-title">Title</Label>
+              <Input
+                type="text"
+                id="task-title"
+                value={taskTitle}
+                onChange={(e) => setTaskTitle(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="task-description">Description</Label>
+              <Textarea
+                id="task-description"
+                value={taskDescription}
+                onChange={(e) => setTaskDescription(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="task-severity">Severity</Label>
+              <select
+                id="task-severity"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={selectedSeverity}
+                onChange={(e) => setSelectedSeverity(e.target.value)}
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-end">
+            <Button type="button" onClick={handleCreateTask}>
+              Create Task
+            </Button>
+          </CardFooter>
+        </Card>
+      )}
+
+      <Card className="col-span-1 md:col-span-2 lg:col-span-3">
+        <CardHeader>
+          <CardTitle>Task List</CardTitle>
+          <CardDescription>All tasks associated with this document.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <TaskList documentId="form31" />
         </CardContent>
       </Card>
     </div>
   );
 };
-
-export default Form31RiskView;

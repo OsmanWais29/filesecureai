@@ -1,61 +1,50 @@
 
 import React from 'react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface ExcelTableProps {
-  data: any[][];
-  tableName?: string;
+  data: any;
 }
 
-const ExcelTable: React.FC<ExcelTableProps> = ({ data, tableName }) => {
+export const ExcelTable: React.FC<ExcelTableProps> = ({ data }) => {
   if (!data || !Array.isArray(data) || data.length === 0) {
-    return (
-      <div className="text-center p-4 text-muted-foreground">
-        No data available in this sheet
-      </div>
-    );
+    return <div className="p-4 text-muted-foreground">No data available</div>;
   }
 
-  // Get header row
-  const headers = data[0];
-  
+  // Get all unique keys from the data objects
+  const allKeys = data.reduce((keys: Set<string>, row: any) => {
+    if (row && typeof row === 'object') {
+      Object.keys(row).forEach(key => keys.add(key));
+    }
+    return keys;
+  }, new Set<string>());
+
+  const headers = Array.from(allKeys);
+
   return (
-    <div className="overflow-auto max-h-full pb-4">
-      {tableName && (
-        <h3 className="font-medium text-lg sticky top-0 bg-background p-2">
-          {tableName}
-        </h3>
-      )}
-      <table className="w-full border-collapse">
-        <thead>
-          <tr className="bg-muted/50">
-            {headers.map((header: any, index: number) => (
-              <th 
-                key={`header-${index}`} 
-                className="border border-border p-2 text-left font-medium text-sm sticky top-10 bg-muted/50"
-              >
-                {header?.toString() || ''}
-              </th>
+    <div className="overflow-auto h-full">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            {headers.map((header, idx) => (
+              <TableHead key={idx} className="whitespace-nowrap">
+                {header}
+              </TableHead>
             ))}
-          </tr>
-        </thead>
-        <tbody>
-          {data.slice(1).map((row, rowIndex) => (
-            <tr 
-              key={`row-${rowIndex}`} 
-              className={rowIndex % 2 === 0 ? 'bg-background' : 'bg-muted/20'}
-            >
-              {row.map((cell, cellIndex) => (
-                <td 
-                  key={`cell-${rowIndex}-${cellIndex}`} 
-                  className="border border-border p-2 text-sm"
-                >
-                  {cell?.toString() || ''}
-                </td>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {data.map((row: any, rowIdx: number) => (
+            <TableRow key={rowIdx}>
+              {headers.map((header, cellIdx) => (
+                <TableCell key={cellIdx} className="whitespace-nowrap">
+                  {row && row[header] !== undefined ? String(row[header]) : ''}
+                </TableCell>
               ))}
-            </tr>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 };
