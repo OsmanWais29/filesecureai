@@ -72,3 +72,112 @@ export const getBrowserStorageInfo = (): {
     };
   }
 };
+
+/**
+ * Run comprehensive storage diagnostics
+ * Tests browser storage capabilities and restrictions
+ */
+export const runStorageDiagnostics = async (): Promise<{
+  localStorage: {
+    available: boolean;
+    writeable: boolean;
+    error?: string;
+  };
+  cookies: {
+    enabled: boolean;
+    error?: string;
+  };
+  privateMode: {
+    isPrivate: boolean;
+    confidence: number;
+  };
+}> => {
+  // Default result with conservative values
+  const result = {
+    localStorage: {
+      available: false,
+      writeable: false,
+    },
+    cookies: {
+      enabled: false,
+    },
+    privateMode: {
+      isPrivate: false,
+      confidence: 0,
+    }
+  };
+  
+  // Test localStorage
+  try {
+    // Test availability
+    if (typeof localStorage !== 'undefined') {
+      result.localStorage.available = true;
+      
+      // Test if writeable
+      const testKey = `test_${Date.now()}`;
+      try {
+        localStorage.setItem(testKey, '1');
+        localStorage.removeItem(testKey);
+        result.localStorage.writeable = true;
+      } catch (e) {
+        result.localStorage.writeable = false;
+        result.localStorage.error = e instanceof Error ? e.message : String(e);
+      }
+    }
+  } catch (error) {
+    result.localStorage.available = false;
+    result.localStorage.error = error instanceof Error ? error.message : String(error);
+  }
+  
+  // Test cookies
+  try {
+    const testCookie = `test_cookie_${Date.now()}`;
+    document.cookie = `${testCookie}=1; path=/; max-age=60`;
+    
+    // Check if cookie was set
+    result.cookies.enabled = document.cookie.includes(testCookie);
+    
+    // Clean up test cookie
+    document.cookie = `${testCookie}=; path=/; max-age=0`;
+  } catch (error) {
+    result.cookies.enabled = false;
+    result.cookies.error = error instanceof Error ? error.message : String(error);
+  }
+  
+  // Check for private browsing mode
+  // This is a best-effort detection, not 100% reliable
+  try {
+    // Test storage quota - private mode often has severe limitations
+    const quota = (navigator as any)?.storage?.estimate ? 
+      await (navigator as any).storage.estimate() : 
+      undefined;
+      
+    // Common private browsing indicators
+    const indicators = {
+      limitedQuota: quota && quota.quota && quota.quota < 120000000, // Less than 120MB often indicates private mode
+      noIndexedDB: !window.indexedDB,
+      safariPrivateMode: !!window.safari && !!window.safari.pushNotification,
+      cookiesRestricted: !result.cookies.enabled,
+      localStorageRestricted: !result.localStorage.writeable,
+    };
+    
+    // Count positive indicators
+    const positiveIndicators = Object.values(indicators).filter(Boolean).length;
+    
+    // Calculate confidence level (0-100%)
+    const confidence = Math.min(positiveIndicators * 25, 100);
+    
+    result.privateMode = {
+      isPrivate: confidence >= 50, // At least 2 indicators to consider it private
+      confidence
+    };
+  } catch (error) {
+    // If we can't detect, assume not private with low confidence
+    result.privateMode = {
+      isPrivate: false,
+      confidence: 0
+    };
+  }
+  
+  return result;
+};

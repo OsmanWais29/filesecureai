@@ -1,7 +1,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { recordSessionEvent, logAuthEvent, logError } from './debugMode';
-import { runStorageDiagnostics } from './browserDiagnostics';
+import { runStorageDiagnostics, getBrowserStorageInfo } from './browserDiagnostics';
 import { refreshToken } from './jwt/tokenManager';
 
 /**
