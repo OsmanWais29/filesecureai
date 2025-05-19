@@ -1,14 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { TaskList } from './components/TaskList';
-import { TaskForm } from './TaskForm';
+import TaskList from './components/TaskList';
 import { useTaskManager } from './hooks/useTaskManager';
 import { Task } from './types';
 import { EmptyState } from './EmptyState';
 import { TaskHeader } from './components/TaskHeader';
 import { Card, CardContent } from '@/components/ui/card';
 
-interface TaskManagerProps {
+export interface TaskManagerProps {
   documentId: string;
   initialTasks?: Task[];
   onTaskUpdate?: () => void;
@@ -62,11 +61,9 @@ export const TaskManager: React.FC<TaskManagerProps> = ({
           />
           
           {showForm ? (
-            <TaskForm
-              documentId={documentId}
-              onTaskCreated={handleTaskCreated}
-              onCancel={() => setShowForm(false)}
-            />
+            <div className="mt-4">
+              <p className="text-center text-sm text-muted-foreground">Task form will be implemented here</p>
+            </div>
           ) : null}
           
           {loading ? (

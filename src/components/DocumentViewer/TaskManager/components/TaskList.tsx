@@ -9,10 +9,11 @@ import { formatDistanceToNow } from 'date-fns';
 interface TaskListProps {
   tasks: Task[];
   onTaskUpdate?: (task: Task) => void;
+  onTaskDelete?: (id: string) => void;
   isLoading?: boolean;
 }
 
-const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskUpdate, isLoading = false }) => {
+const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskUpdate, onTaskDelete, isLoading = false }) => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-4">

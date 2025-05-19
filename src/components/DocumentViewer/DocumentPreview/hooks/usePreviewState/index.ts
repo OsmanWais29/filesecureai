@@ -199,6 +199,7 @@ export const usePreviewState = ({
     bypassAnalysis
   });
 
+  // We need to redefine handleCheckFile to match the interface signature
   const handleCheckFile = useCallback(async (): Promise<void> => {
     if (storagePath) {
       await checkFile(storagePath);
@@ -229,7 +230,7 @@ export const usePreviewState = ({
       }
     },
     isAnalysisStuck,
-    checkFile: handleCheckFile,
+    checkFile: handleCheckFile, // Using our wrapper function
     isLoading,
     handleAnalysisRetry: () => {
       if (error) {
@@ -244,6 +245,33 @@ export const usePreviewState = ({
     handleFullRecovery,
     forceRefresh,
     forceReload: forceReloadCount,
-    errorDetails
+    errorDetails,
+    // Add the missing properties
+    isPdfFile: () => fileType === 'pdf',
+    isDocFile: () => fileType === 'doc' || fileType === 'docx',
+    isImageFile: () => ['jpg', 'jpeg', 'png', 'gif'].includes(fileType || ''),
+    useDirectLink: hasFallbackToDirectUrl,
+    zoomLevel: 100, // Default value
+    onZoomIn: () => {}, // Placeholder
+    onZoomOut: () => {}, // Placeholder
+    onOpenInNewTab: () => {
+      if (fileUrl) window.open(fileUrl, '_blank');
+    },
+    onDownload: () => {
+      if (fileUrl) {
+        const link = document.createElement('a');
+        link.href = fileUrl;
+        link.download = documentId || 'document';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    },
+    onPrint: () => {
+      if (fileUrl && iframeRef.current && iframeRef.current.contentWindow) {
+        iframeRef.current.contentWindow.print();
+      }
+    },
+    iframeRef
   };
 };

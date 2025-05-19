@@ -81,3 +81,40 @@ export function safeNumber(value: unknown, defaultValue = 0): number {
   }
   return defaultValue;
 }
+
+/**
+ * Safely converts unknown to string with optional default
+ */
+export function toString(value: unknown, defaultValue: string = ''): string {
+  if (typeof value === 'string') {
+    return value;
+  } else if (value !== null && value !== undefined) {
+    return String(value);
+  }
+  return defaultValue;
+}
+
+/**
+ * Safely converts unknown to a string array
+ */
+export function toStringArray(value: unknown, defaultValue: string[] = []): string[] {
+  if (Array.isArray(value)) {
+    return value.map(item => toString(item));
+  }
+  return defaultValue;
+}
+
+/**
+ * Safely checks if a value is a string and handles methods on it
+ */
+export function isString(value: unknown): value is string {
+  return typeof value === 'string';
+}
+
+/**
+ * Safely checks if a value is an object
+ */
+export function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+

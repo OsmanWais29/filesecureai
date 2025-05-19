@@ -1,5 +1,6 @@
 
 import { Session } from "@supabase/supabase-js";
+import { RefObject } from "react";
 
 export interface DocumentRecord {
   id: string;
@@ -36,6 +37,17 @@ export interface PreviewState {
   forceRefresh: () => Promise<void>;
   forceReload: number;
   errorDetails: any;
+  isPdfFile: () => boolean;
+  isDocFile: () => boolean;
+  isImageFile: () => boolean;
+  useDirectLink: boolean;
+  zoomLevel: number;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onOpenInNewTab: () => void;
+  onDownload: () => void;
+  onPrint: () => void;
+  iframeRef: RefObject<HTMLIFrameElement>;
 }
 
 export interface NetworkResilienceOptions {

@@ -1,49 +1,53 @@
 
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Card } from '@/components/ui/card';
 import { safeString } from '@/utils/typeSafetyUtils';
 
-export interface ExcelTableProps {
-  data: Record<string, unknown>[];
+interface ExcelTableProps {
+  data: Record<string, any>[];
 }
 
 const ExcelTable: React.FC<ExcelTableProps> = ({ data }) => {
-  if (!data || data.length === 0) {
+  if (!data || !data.length) {
     return (
-      <div className="flex items-center justify-center h-full p-6 text-center">
+      <div className="flex items-center justify-center h-full p-4">
         <p className="text-muted-foreground">No data available</p>
       </div>
     );
   }
-  
-  // Get headers from the first data item
-  const headers = Object.keys(data[0]);
+
+  // Get all unique keys from all objects
+  const allKeys = Object.keys(data.reduce((result, obj) => {
+    Object.keys(obj).forEach(key => {
+      result[key] = true;
+    });
+    return result;
+  }, {} as Record<string, boolean>));
 
   return (
-    <div className="border rounded-md">
+    <Card className="h-full overflow-auto">
       <Table>
         <TableHeader>
           <TableRow>
-            {headers.map((header) => (
-              <TableHead key={header} className="font-medium">
-                {header}
-              </TableHead>
+            {allKeys.map((key) => (
+              <TableHead key={key}>{key}</TableHead>
             ))}
           </TableRow>
         </TableHeader>
         <TableBody>
           {data.map((row, rowIndex) => (
             <TableRow key={rowIndex}>
-              {headers.map((header) => (
-                <TableCell key={`${rowIndex}-${header}`}>
-                  {safeString(row[header], '')}
+              {allKeys.map((key) => (
+                <TableCell key={`${rowIndex}-${key}`}>
+                  {safeString(row[key], '')}
                 </TableCell>
               ))}
             </TableRow>
           ))}
         </TableBody>
       </Table>
-    </div>
+    </Card>
   );
 };
 

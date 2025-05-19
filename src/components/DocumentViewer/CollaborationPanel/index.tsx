@@ -53,7 +53,6 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
               <div className="p-3">
                 <TaskManager
                   documentId={document.id}
-                  tasks={document.tasks || []}
                   onTaskUpdate={onCommentAdded}
                 />
               </div>

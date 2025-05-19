@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { DocumentPreviewContentProps } from '../hooks/types';
 import { PDFViewer } from '../PDFViewer';
