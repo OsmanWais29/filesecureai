@@ -2,50 +2,54 @@
 import React from 'react';
 
 interface ExcelTableProps {
-  data: any;
-  sheet: string;
+  data: any[][];
+  tableName?: string;
 }
 
-const ExcelTable: React.FC<ExcelTableProps> = ({ data, sheet }) => {
-  if (!data || !data[sheet] || !data[sheet].data) {
+const ExcelTable: React.FC<ExcelTableProps> = ({ data, tableName }) => {
+  if (!data || !Array.isArray(data) || data.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64 border rounded-md">
-        <p className="text-muted-foreground">No data available for this sheet</p>
+      <div className="text-center p-4 text-muted-foreground">
+        No data available in this sheet
       </div>
     );
   }
 
-  const sheetData = data[sheet].data;
-  const headers = sheetData[0] || [];
-  const rows = sheetData.slice(1);
-
+  // Get header row
+  const headers = data[0];
+  
   return (
-    <div className="overflow-auto">
+    <div className="overflow-auto max-h-full pb-4">
+      {tableName && (
+        <h3 className="font-medium text-lg sticky top-0 bg-background p-2">
+          {tableName}
+        </h3>
+      )}
       <table className="w-full border-collapse">
         <thead>
-          <tr className="bg-muted">
+          <tr className="bg-muted/50">
             {headers.map((header: any, index: number) => (
               <th 
-                key={index} 
-                className="p-2 text-left text-sm font-medium border text-muted-foreground"
+                key={`header-${index}`} 
+                className="border border-border p-2 text-left font-medium text-sm sticky top-10 bg-muted/50"
               >
-                {header || ''}
+                {header?.toString() || ''}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {rows.map((row: any[], rowIndex: number) => (
+          {data.slice(1).map((row, rowIndex) => (
             <tr 
-              key={rowIndex}
-              className={rowIndex % 2 === 0 ? 'bg-background' : 'bg-muted/30'}
+              key={`row-${rowIndex}`} 
+              className={rowIndex % 2 === 0 ? 'bg-background' : 'bg-muted/20'}
             >
               {row.map((cell, cellIndex) => (
                 <td 
-                  key={cellIndex} 
-                  className="p-2 text-sm border"
+                  key={`cell-${rowIndex}-${cellIndex}`} 
+                  className="border border-border p-2 text-sm"
                 >
-                  {cell !== null && cell !== undefined ? String(cell) : ''}
+                  {cell?.toString() || ''}
                 </td>
               ))}
             </tr>

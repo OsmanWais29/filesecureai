@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { Session } from "@supabase/supabase-js";
+import { DocumentRecord } from "../types";
 
 interface AnalysisInitializationProps {
   storagePath: string;
@@ -121,11 +122,16 @@ export const useAnalysisInitialization = ({
             }
               
             if (document) {
+              const metadata = document.metadata || {};
+              const processingStepsCompleted = Array.isArray(metadata.processing_steps_completed) 
+                ? metadata.processing_steps_completed 
+                : [];
+                
               const shouldStartAnalysis = 
                 document.ai_processing_status === 'pending' || 
                 document.ai_processing_status === 'failed' || 
-                !document.metadata?.processing_steps_completed ||
-                document.metadata?.processing_steps_completed.length < 6;
+                !processingStepsCompleted ||
+                processingStepsCompleted.length < 6;
                 
               if (shouldStartAnalysis && !analyzing && !error) {
                 console.log('Starting analysis based on document status:', document.ai_processing_status);

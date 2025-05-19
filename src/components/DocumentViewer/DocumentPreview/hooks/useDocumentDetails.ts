@@ -1,8 +1,66 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { DocumentDetails } from '../../types';
 import { useToast } from '@/hooks/use-toast';
+
+// Define proper interfaces for document-related data
+interface Comment {
+  id: string;
+  content: string;
+  user_id: string;
+  created_at: string;
+  document_id: string;
+  is_resolved?: boolean;
+  parent_id?: string;
+  mentions?: string[];
+}
+
+interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  status?: string;
+  assigned_to?: string;
+  created_by?: string;
+  created_at?: string;
+  updated_at?: string;
+  due_date?: string;
+  severity?: string;
+  document_id?: string;
+}
+
+interface AnalysisResult {
+  id: string;
+  content: any;
+  document_id?: string;
+  created_at?: string;
+}
+
+interface Version {
+  id: string;
+  version_number: number;
+  storage_path: string;
+  document_id: string;
+  created_at?: string;
+  created_by?: string;
+  is_current?: boolean;
+  description?: string;
+}
+
+export interface DocumentDetails {
+  id: string;
+  title: string;
+  type?: string;
+  created_at: string;
+  updated_at: string;
+  storage_path: string;
+  metadata?: Record<string, any>;
+  comments?: Comment[];
+  tasks?: Task[];
+  analysis?: AnalysisResult[];
+  versions?: Version[];
+  deadlines?: any[];
+}
 
 interface UseDocumentDetailsOptions {
   onSuccess?: (data: DocumentDetails) => void;
@@ -35,8 +93,19 @@ export const useDocumentDetails = (documentId: string | undefined, options: UseD
       
       if (docError) throw docError;
       
+      if (!docData) {
+        throw new Error('Document not found');
+      }
+      
+      // Build complete document details
       const documentDetails: DocumentDetails = {
-        ...docData,
+        id: docData.id,
+        title: docData.title,
+        type: docData.type || 'document',
+        created_at: docData.created_at,
+        updated_at: docData.updated_at,
+        storage_path: docData.storage_path || '',
+        metadata: docData.metadata || {},
         comments: [],
         tasks: [],
         analysis: [],
@@ -53,7 +122,7 @@ export const useDocumentDetails = (documentId: string | undefined, options: UseD
           .order('created_at', { ascending: false });
           
         if (!commentsError && comments) {
-          documentDetails.comments = comments;
+          documentDetails.comments = comments as Comment[];
         }
       }
       
@@ -66,7 +135,7 @@ export const useDocumentDetails = (documentId: string | undefined, options: UseD
           .order('created_at', { ascending: false });
           
         if (!tasksError && tasks) {
-          documentDetails.tasks = tasks;
+          documentDetails.tasks = tasks as Task[];
         }
       }
       
@@ -79,7 +148,7 @@ export const useDocumentDetails = (documentId: string | undefined, options: UseD
           .order('created_at', { ascending: false });
           
         if (!analysisError && analysis) {
-          documentDetails.analysis = analysis;
+          documentDetails.analysis = analysis as AnalysisResult[];
         }
       }
       
@@ -92,13 +161,14 @@ export const useDocumentDetails = (documentId: string | undefined, options: UseD
           .order('version_number', { ascending: false });
           
         if (!versionsError && versions) {
-          documentDetails.versions = versions;
+          documentDetails.versions = versions as Version[];
         }
       }
       
-      // Fetch deadlines from metadata
-      if (docData.metadata && docData.metadata.deadlines) {
-        documentDetails.deadlines = docData.metadata.deadlines;
+      // Get deadlines from metadata if present
+      const metadata = docData.metadata || {};
+      if (metadata && Array.isArray(metadata.deadlines)) {
+        documentDetails.deadlines = metadata.deadlines;
       }
       
       setDocument(documentDetails);

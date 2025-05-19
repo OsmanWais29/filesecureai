@@ -7,7 +7,7 @@ import { DocumentRecord } from './types';
 export const useDocumentAI = (documentId: string, storagePath?: string) => {
   const [documentRecord, setDocumentRecord] = useState<DocumentRecord | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [analysisStatus, setAnalysisStatus] = useState('');
   const [analysisStep, setAnalysisStep] = useState('');
@@ -29,7 +29,8 @@ export const useDocumentAI = (documentId: string, storagePath?: string) => {
       if (fetchError) throw fetchError;
       
       if (data) {
-        setDocumentRecord(data as DocumentRecord);
+        // Cast the data to DocumentRecord type with proper type assertion
+        setDocumentRecord(data as unknown as DocumentRecord);
       }
       
       return data;
@@ -62,7 +63,7 @@ export const useDocumentAI = (documentId: string, storagePath?: string) => {
   }, [documentId]);
 
   // Check if processing is complete
-  const checkProcessingComplete = useCallback(() => {
+  const isProcessingComplete = useCallback(() => {
     if (!documentRecord) return false;
     
     return documentRecord.ai_processing_status === 'completed' || 
@@ -105,7 +106,7 @@ export const useDocumentAI = (documentId: string, storagePath?: string) => {
         ...metadata,
         processing_stage: step,
         processing_steps_completed: [
-          ...(metadata.processing_steps_completed || []),
+          ...(metadata.processing_steps_completed ? metadata.processing_steps_completed : []),
           step
         ]
       };
@@ -120,14 +121,19 @@ export const useDocumentAI = (documentId: string, storagePath?: string) => {
     }
   }, [documentId]);
 
-  // Process document
-  const processDocument = async () => {
-    if (isProcessing) {
+  // Handle the document analysis process
+  const handleAnalyzeDocument = async (
+    onStepChange?: (step: string) => void, 
+    onProgress?: (progress: number) => void,
+    onError?: (message: string) => void,
+    onErrorDetails?: (details: any) => void
+  ) => {
+    if (analyzing) {
       console.log('Document analysis already in progress');
       return false;
     }
 
-    setIsProcessing(true);
+    setAnalyzing(true);
     setProgress(5);
     setAnalysisStatus('Initializing document analysis...');
     setAnalysisStep('document_initialization');
@@ -135,7 +141,7 @@ export const useDocumentAI = (documentId: string, storagePath?: string) => {
 
     try {
       // Simulate document analysis progress
-      await simulateDocumentAnalysis();
+      await simulateDocumentAnalysis(onStepChange, onProgress);
       
       // Update document status to completed
       await supabase
@@ -153,17 +159,20 @@ export const useDocumentAI = (documentId: string, storagePath?: string) => {
       
       setProgress(100);
       setAnalysisStatus('Analysis complete');
-      setIsProcessing(false);
+      setAnalyzing(false);
       
       // Refresh document data
       const updatedDoc = await checkDocumentStatus();
-      if (updatedDoc) setDocumentRecord(updatedDoc as DocumentRecord);
       
       return true;
     } catch (err: any) {
       console.error('Error processing document:', err);
-      setError(err.message || 'Failed to process document');
-      setIsProcessing(false);
+      const errorMessage = err.message || 'Failed to process document';
+      setError(errorMessage);
+      setAnalyzing(false);
+      
+      if (onError) onError(errorMessage);
+      if (onErrorDetails) onErrorDetails(err);
       
       // Update document status to failed
       await supabase
@@ -172,7 +181,7 @@ export const useDocumentAI = (documentId: string, storagePath?: string) => {
           ai_processing_status: 'failed',
           metadata: {
             ...(documentRecord?.metadata || {}),
-            processing_error: err.message || 'Unknown error occurred'
+            processing_error: errorMessage
           }
         })
         .eq('id', documentId);
@@ -182,7 +191,10 @@ export const useDocumentAI = (documentId: string, storagePath?: string) => {
   };
 
   // Simulate document analysis progress
-  const simulateDocumentAnalysis = async () => {
+  const simulateDocumentAnalysis = async (
+    onStepChange?: (step: string) => void,
+    onProgress?: (progress: number) => void
+  ) => {
     const stages = [
       { step: 'document_ingestion', status: 'Ingesting document...', progress: 15 },
       { step: 'document_classification', status: 'Classifying document...', progress: 30 },
@@ -196,7 +208,11 @@ export const useDocumentAI = (documentId: string, storagePath?: string) => {
       setProgress(stage.progress);
       setAnalysisStatus(stage.status);
       setAnalysisStep(stage.step);
+      if (onStepChange) onStepChange(stage.step);
+      if (onProgress) onProgress(stage.progress);
+      
       await updateProcessingStep(stage.step);
+      
       // Simulate processing time
       await new Promise(resolve => setTimeout(resolve, 500));
     }
@@ -206,25 +222,27 @@ export const useDocumentAI = (documentId: string, storagePath?: string) => {
   const handleAnalysisRetry = () => {
     setRetryCount(prev => prev + 1);
     setError('');
-    processDocument();
+    handleAnalyzeDocument();
   };
 
   return {
     documentRecord,
     isLoading,
     error,
-    isProcessing,
+    analyzing,
     progress,
     analysisStatus,
     analysisStep,
     retryCount,
     checkDocumentStatus,
-    processDocument,
+    handleAnalyzeDocument,
     setAiProcessingStatus,
-    checkProcessingComplete,
+    isProcessingComplete,
     checkProcessingError,
     getProcessingSteps,
     updateProcessingStep,
-    handleAnalysisRetry
+    handleAnalysisRetry,
+    processingStage: documentRecord?.metadata?.processing_stage || null,
+    fetchDocumentDetails: checkDocumentStatus
   };
 };

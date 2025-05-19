@@ -1,11 +1,13 @@
-import { useState, useEffect, useCallback } from "react";
+
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useNetworkStatus } from "@/hooks/useNetworkStatus";
-import { useFileChecker } from "./useFileChecker";
-import { useDocumentAI } from "./useDocumentAI";
-import { useDocumentDetails } from "../../hooks/useDocumentDetails";
-import { useDocumentRealtime } from "../../hooks/useDocumentRealtime";
+import { useFileChecker } from "../useFileChecker";
+import { useDocumentAI } from "../useDocumentAI";
+import { useDocumentDetails } from "../useDocumentDetails";
+import { useDocumentRealtime } from "../useDocumentRealtime";
 import { DocumentRecord } from "../types";
+import { supabase } from "@/lib/supabase";
 
 export const usePreviewState = (documentId: string, storagePath: string) => {
   const [fileUrl, setFileUrl] = useState<string | null>(null);
@@ -23,47 +25,167 @@ export const usePreviewState = (documentId: string, storagePath: string) => {
   const [fileType, setFileType] = useState<string | null>(null);
   const [errorDetails, setErrorDetails] = useState<any>(null);
   const { toast } = useToast();
-	const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const networkStatus = useNetworkStatus();
+  const [isAnalysisStuck, setIsAnalysisStuck] = useState({ stuck: false, minutesStuck: 0 });
   const [documentRecord, setDocumentRecord] = useState<DocumentRecord | null>(null);
+  const [useDirectLink, setUseDirectLink] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(100);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
+  // Get file checker utilities
   const { checkFile, handleFileCheckError } = useFileChecker();
-  const {
-    isProcessingComplete,
+  
+  // Get document AI utilities
+  const { 
+    analyzing: isAnalyzing,
+    error: aiError,
+    analysisStep: aiAnalysisStep,
+    progress: aiProgress,
+    processingStage,
+    documentRecord: aiDocumentRecord,
+    handleAnalyzeDocument,
+    handleAnalysisRetry,
+    fetchDocumentDetails,
     checkProcessingError,
     getProcessingSteps,
-    updateProcessingStep,
-    handleAnalyzeDocument: handleAnalyze,
+    updateProcessingStep
   } = useDocumentAI(documentId, storagePath);
-
-  const { fetchDocumentDetails } = useDocumentDetails(documentId, {
-    onSuccess: (data) => {
-      setDocumentRecord(data);
-    },
-    onError: (err) => {
-      console.error("Error fetching document details:", err);
-      setError(`Failed to load document details: ${err.message}`);
-    },
-  });
-
+  
+  // Setup document realtime updates
   useDocumentRealtime(documentId, fetchDocumentDetails);
+  
+  useEffect(() => {
+    if (aiDocumentRecord) {
+      setDocumentRecord(aiDocumentRecord);
+    }
+  }, [aiDocumentRecord]);
+  
+  useEffect(() => {
+    if (aiError) {
+      setError(aiError);
+    }
+  }, [aiError]);
+  
+  useEffect(() => {
+    if (aiAnalysisStep) {
+      setAnalysisStep(aiAnalysisStep);
+    }
+  }, [aiAnalysisStep]);
+  
+  useEffect(() => {
+    if (isAnalyzing !== undefined) {
+      setAnalyzing(isAnalyzing);
+    }
+  }, [isAnalyzing]);
+  
+  useEffect(() => {
+    if (aiProgress) {
+      setProgress(aiProgress);
+    }
+  }, [aiProgress]);
 
-  const processingError = checkProcessingError();
-  const processingSteps = getProcessingSteps();
+  // Zoom functions
+  const onZoomIn = () => setZoomLevel(prev => Math.min(prev + 10, 200));
+  const onZoomOut = () => setZoomLevel(prev => Math.max(prev - 10, 20));
 
-  const handleAnalysisRetry = () => {
-    setAnalyzing(false);
-    setAnalysisStep(null);
-    setProgress(0);
-    setError(null);
-    setPreviewError(null);
-    setAttemptCount((prev) => prev + 1);
-  };
-
+  // Force refresh function
   const forceRefresh = async () => {
-    setForceReload((prev) => prev + 1);
+    setForceReload(prev => prev + 1);
+    return Promise.resolve();
   };
 
+  // Open in new tab function
+  const onOpenInNewTab = () => {
+    if (fileUrl) {
+      window.open(fileUrl, '_blank');
+    } else {
+      toast({
+        title: "Error",
+        description: "No document URL available to open.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Download function
+  const onDownload = () => {
+    if (fileUrl) {
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.download = documentId || 'document';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      toast({
+        title: "Error",
+        description: "No document URL available to download.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Print function
+  const onPrint = () => {
+    if (iframeRef.current) {
+      iframeRef.current.contentWindow?.print();
+    } else {
+      toast({
+        title: "Error",
+        description: "Cannot print the document. Please ensure it's properly loaded.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // File extension checker
+  const isFileType = (url: string | null, type: string): boolean => {
+    if (!url) return false;
+    const lowerUrl = url.toLowerCase();
+    return lowerUrl.endsWith(`.${type}`);
+  };
+
+  // Check if the file is a PDF
+  const isPdfFile = useCallback(() => isFileType(fileUrl, "pdf"), [fileUrl]);
+
+  // Check if the file is a DOC
+  const isDocFile = useCallback(() => isFileType(fileUrl, "doc") || isFileType(fileUrl, "docx"), [fileUrl]);
+
+  // Check if the file is an image
+  const isImageFile = useCallback(() => {
+    return isFileType(fileUrl, "png") || isFileType(fileUrl, "jpg") || isFileType(fileUrl, "jpeg") || isFileType(fileUrl, "gif");
+  }, [fileUrl]);
+
+  // Check if the file is an excel file
+  useEffect(() => {
+    setIsExcelFile(isFileType(storagePath, "xlsx") || isFileType(storagePath, "xls"));
+  }, [storagePath]);
+
+  // Check analysis stuck status
+  const checkAnalysisStuck = useCallback(() => {
+    if (!analyzing || !analysisStep || !documentRecord) return { stuck: false, minutesStuck: 0 };
+    
+    let lastUpdateTime = new Date();
+    if (documentRecord.updated_at) {
+      // Safely handle the unknown type
+      if (typeof documentRecord.updated_at === 'string' || documentRecord.updated_at instanceof Date) {
+        lastUpdateTime = new Date(documentRecord.updated_at);
+      }
+    }
+    
+    const currentTime = new Date();
+    const diffInMinutes = (currentTime.getTime() - lastUpdateTime.getTime()) / (1000 * 60);
+    const stuck = diffInMinutes > 2;
+    return { stuck, minutesStuck: Math.floor(diffInMinutes) };
+  }, [analyzing, analysisStep, documentRecord]);
+
+  useEffect(() => {
+    const result = checkAnalysisStuck();
+    setIsAnalysisStuck(result);
+  }, [checkAnalysisStuck]);
+
+  // Full recovery function
   const handleFullRecovery = async () => {
     console.log("Attempting full recovery: clearing all states and retrying.");
     setAnalyzing(false);
@@ -79,112 +201,45 @@ export const usePreviewState = (documentId: string, storagePath: string) => {
     setIsExcelFile(false);
     setFileType(null);
     setErrorDetails(null);
-    await checkFile(storagePath);
-  };
-
-  const handleAnalyzeDocument = async () => {
-    if (analyzing) {
-      toast({
-        title: "Analysis in Progress",
-        description: "Document analysis is already running.",
-      });
-      return;
-    }
-
-    if (!fileExists) {
-      toast({
-        title: "File Not Found",
-        description: "The document file does not exist or is not accessible.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setAnalyzing(true);
-    setError(null);
-    setPreviewError(null);
-    setAttemptCount(0);
-
-    try {
-      await handleAnalyze(
-        (step: string) => {
-          setAnalysisStep(step);
-          updateProcessingStep(step);
-        },
-        (prog: number) => {
-          setProgress(prog);
-        },
-        (err: string) => {
-          setError(err);
-        },
-        (details: any) => {
-          setErrorDetails(details);
-        }
-      );
-    } catch (err: any) {
-      console.error("Analysis error:", err);
-      setError(err.message || "Failed to analyze document.");
-      toast({
-        variant: "destructive",
-        title: "Analysis Failed",
-        description: err.message || "Failed to analyze document.",
-      });
-    } finally {
-      setAnalyzing(false);
-    }
-  };
-
-  const checkAnalysisStuck = useCallback(() => {
-    if (!isAnalyzing || !analysisStep || !documentRecord) return { stuck: false, minutesStuck: 0 };
     
-    let lastUpdateTime = new Date();
-    if (documentRecord.updated_at) {
-      // Safely handle the unknown type
-      if (typeof documentRecord.updated_at === 'string' || documentRecord.updated_at instanceof Date) {
-        lastUpdateTime = new Date(documentRecord.updated_at);
+    if (storagePath) {
+      try {
+        const exists = await checkFile(storagePath);
+        setFileExists(exists);
+        
+        if (exists) {
+          const { data } = supabase.storage.from('documents').getPublicUrl(storagePath);
+          setFileUrl(data.publicUrl);
+        }
+      } catch (e) {
+        handleFileCheckError(e, fileUrl);
       }
     }
     
-    const currentTime = new Date();
-    const diffInMinutes = (currentTime.getTime() - lastUpdateTime.getTime()) / (1000 * 60);
-    const stuck = diffInMinutes > 2;
-    return { stuck, minutesStuck: Math.floor(diffInMinutes) };
-  }, [isAnalyzing, analysisStep, documentRecord]);
+    return Promise.resolve();
+  };
 
-  useEffect(() => {
-    if (processingError) {
-      setError(processingError);
-      setAnalyzing(false);
-      toast({
-        variant: "destructive",
-        title: "Document Processing Error",
-        description: processingError,
-      });
-    }
-  }, [processingError, toast]);
-
-  useEffect(() => {
-    if (isProcessingComplete) {
-      setAnalyzing(false);
-      toast({
-        title: "Analysis Complete",
-        description: "Document analysis completed successfully.",
-      });
-    }
-  }, [isProcessingComplete, toast]);
-
+  // Initial file check on mount
   useEffect(() => {
     const checkFileAndSetState = async () => {
-			setIsLoading(true);
+      setIsLoading(true);
       try {
         if (storagePath) {
-          await checkFile(storagePath);
+          const exists = await checkFile(storagePath);
+          setFileExists(exists);
+          
+          if (exists) {
+            const { data } = supabase.storage.from('documents').getPublicUrl(storagePath);
+            setFileUrl(data.publicUrl);
+            setFileType(storagePath.split('.').pop()?.toLowerCase() || null);
+          }
         }
       } catch (e: any) {
-        handleFileCheckError(e, fileUrl);
+        const errorMessage = handleFileCheckError(e, fileUrl);
+        setPreviewError(errorMessage);
       } finally {
-				setIsLoading(false);
-			}
+        setIsLoading(false);
+      }
     };
 
     checkFileAndSetState();
@@ -194,26 +249,39 @@ export const usePreviewState = (documentId: string, storagePath: string) => {
     fileUrl,
     fileExists,
     isExcelFile,
+    fileType,
     previewError,
     setPreviewError,
     analyzing,
     error,
     analysisStep,
     progress,
-    processingStage: documentRecord?.metadata?.processing_stage || null,
+    processingStage,
     session,
     setSession,
     handleAnalyzeDocument,
-    isAnalysisStuck: checkAnalysisStuck(),
+    isAnalysisStuck,
     checkFile,
     isLoading,
     handleAnalysisRetry,
     hasFallbackToDirectUrl,
     networkStatus: networkStatus.isOnline ? "online" : "offline",
     attemptCount,
-    fileType,
     handleFullRecovery,
     forceRefresh,
     errorDetails,
+    isPdfFile,
+    isDocFile,
+    isImageFile,
+    useDirectLink,
+    setUseDirectLink,
+    zoomLevel,
+    setZoomLevel,
+    onZoomIn,
+    onZoomOut,
+    onOpenInNewTab,
+    onDownload,
+    onPrint,
+    iframeRef
   };
 };

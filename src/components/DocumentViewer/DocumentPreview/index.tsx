@@ -2,7 +2,6 @@
 import React, { useEffect } from 'react';
 import { usePreviewState } from './hooks/usePreviewState';
 import { DocumentPreviewContent } from './components/DocumentPreviewContent';
-import { startJwtMonitoring, stopJwtMonitoring } from "@/utils/jwtMonitoring";
 
 interface DocumentPreviewProps {
   storagePath: string;
@@ -20,15 +19,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
   bypassAnalysis = false
 }) => {
   const previewState = usePreviewState(documentId || '', storagePath);
-
-  // Start JWT monitoring for better token management
-  useEffect(() => {
-    startJwtMonitoring();
-    
-    return () => {
-      stopJwtMonitoring();
-    };
-  }, []);
 
   return (
     <DocumentPreviewContent
