@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
@@ -91,6 +92,7 @@ export const usePreviewState = ({
 
   const forceRefresh = useCallback(async () => {
     setForceReloadCount(prevCount => prevCount + 1);
+    return Promise.resolve();
   }, []);
 
   const handleFullRecovery = useCallback(async () => {
@@ -105,6 +107,7 @@ export const usePreviewState = ({
     setIsLoading(true);
     setHasFallbackToDirectUrl(false);
     setForceReloadCount(prevCount => prevCount + 1);
+    return Promise.resolve();
   }, [refreshSession, toast]);
 
   const loadFile = useCallback(async (useDirectLink = false): Promise<FileLoadResult> => {
@@ -168,7 +171,7 @@ export const usePreviewState = ({
     } finally {
       setIsLoading(false);
     }
-  }, [storagePath, session, isOnline, resetRetries, incrementRetry, shouldRetry, toast]);
+  }, [storagePath, session, isOnline, resetRetries, incrementRetry, shouldRetry]);
 
   useEffect(() => {
     if (previewError) {
@@ -223,12 +226,14 @@ export const usePreviewState = ({
       try {
         // Your implementation here
         console.log("Analyzing document...");
+        return await handleAnalyzeDocument(session);
       } catch (error) {
         console.error("Error analyzing document:", error);
+        return false;
       }
     },
     isAnalysisStuck,
-    checkFile,
+    checkFile: async (path: string) => await checkFile(path),
     isLoading,
     handleAnalysisRetry: () => {
       if (error) {

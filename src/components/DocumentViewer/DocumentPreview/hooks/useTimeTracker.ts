@@ -1,64 +1,77 @@
 
 import { useState, useEffect, useRef } from 'react';
+import { TimeTrackerResult } from './types';
 
-export const useTimeTracker = () => {
-  const [isAnalysisStuck, setIsAnalysisStuck] = useState<{ stuck: boolean; minutesStuck: number }>({
-    stuck: false,
-    minutesStuck: 0
+export const useTimeTracker = (): TimeTrackerResult => {
+  const startTimeRef = useRef<number | null>(null);
+  const [isTracking, setIsTracking] = useState(false);
+  const [isAnalysisStuck, setIsAnalysisStuck] = useState<{ stuck: boolean; minutesStuck: number }>({ 
+    stuck: false, 
+    minutesStuck: 0 
   });
-  
-  const startTime = useRef<number | null>(null);
-  const checkIntervalRef = useRef<number | null>(null);
-  
+  const intervalRef = useRef<number | null>(null);
+
   const startTracking = () => {
-    startTime.current = Date.now();
+    if (isTracking) return;
+    
+    startTimeRef.current = Date.now();
+    setIsTracking(true);
     
     // Clear any existing interval
-    if (checkIntervalRef.current) {
-      clearInterval(checkIntervalRef.current);
+    if (intervalRef.current) {
+      window.clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
     
-    // Set up interval to check if analysis is stuck
-    const intervalId = window.setInterval(() => {
-      if (startTime.current) {
-        const elapsedMs = Date.now() - startTime.current;
-        const elapsedMinutes = Math.floor(elapsedMs / (1000 * 60));
-        
-        // Consider analysis stuck if it takes more than 5 minutes
-        const isStuck = elapsedMinutes > 5;
-        
+    // Set up interval to check if analysis is stuck (every minute)
+    intervalRef.current = window.setInterval(() => {
+      if (!startTimeRef.current) return;
+      
+      const elapsedMinutes = (Date.now() - startTimeRef.current) / (1000 * 60);
+      
+      // Consider analysis stuck if it's been running for more than 5 minutes
+      if (elapsedMinutes > 5) {
         setIsAnalysisStuck({
-          stuck: isStuck,
-          minutesStuck: elapsedMinutes
+          stuck: true,
+          minutesStuck: Math.floor(elapsedMinutes)
+        });
+      } else {
+        setIsAnalysisStuck({
+          stuck: false,
+          minutesStuck: Math.floor(elapsedMinutes)
         });
       }
-    }, 30000); // Check every 30 seconds
-    
-    checkIntervalRef.current = intervalId;
+    }, 60000); // Check every minute
   };
-  
+
   const stopTracking = () => {
-    if (checkIntervalRef.current) {
-      clearInterval(checkIntervalRef.current);
-      checkIntervalRef.current = null;
+    if (!isTracking) return;
+    
+    setIsTracking(false);
+    startTimeRef.current = null;
+    
+    // Clear interval
+    if (intervalRef.current) {
+      window.clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
     
-    startTime.current = null;
+    // Reset stuck status
     setIsAnalysisStuck({
       stuck: false,
       minutesStuck: 0
     });
   };
-  
-  // Clean up interval on unmount
+
+  // Clean up on unmount
   useEffect(() => {
     return () => {
-      if (checkIntervalRef.current) {
-        clearInterval(checkIntervalRef.current);
+      if (intervalRef.current) {
+        window.clearInterval(intervalRef.current);
       }
     };
   }, []);
-  
+
   return {
     isAnalysisStuck,
     startTracking,

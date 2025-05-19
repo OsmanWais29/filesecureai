@@ -26,7 +26,7 @@ export const DocumentAIPanel: React.FC<DocumentAIPanelProps> = ({
     analyzing, 
     error, 
     progress, 
-    analysisStatus,
+    processingStage,
     retryCount,
     checkDocumentStatus 
   } = useDocumentAI(documentId, ''); // Empty string for storagePath as we don't need it here
@@ -101,7 +101,7 @@ export const DocumentAIPanel: React.FC<DocumentAIPanelProps> = ({
           {analyzing ? (
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">{analysisStatus}</span>
+                <span className="text-sm font-medium">{processingStage}</span>
                 <span className="text-sm font-medium">{progress}%</span>
               </div>
               <Progress value={progress} />

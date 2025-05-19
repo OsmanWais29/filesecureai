@@ -1,44 +1,48 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
+import { toString } from '@/utils/typeSafetyUtils';
 
 export const useDocumentTitle = (documentId: string) => {
-  const [title, setTitle] = useState<string>('Document');
-  const [isLoading, setIsLoading] = useState(false);
+  const [title, setTitle] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!documentId) return;
-
-    const fetchDocumentTitle = async () => {
+  const fetchDocumentTitle = useCallback(async () => {
+    if (!documentId) {
+      setTitle('');
+      setIsLoading(false);
+      return;
+    }
+    
+    try {
       setIsLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('documents')
-          .select('title')
-          .eq('id', documentId)
-          .single();
-
-        if (error) {
-          console.error('Error fetching document title:', error);
-          setError(error.message);
-        } else if (data) {
-          setTitle(data.title || 'Document');
-        }
-      } catch (err) {
-        console.error('Exception fetching document title:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error');
-      } finally {
-        setIsLoading(false);
+      setError(null);
+      
+      const { data, error } = await supabase
+        .from('documents')
+        .select('title')
+        .eq('id', documentId)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching document title:', error);
+        setError(error.message);
+        return;
       }
-    };
-
-    fetchDocumentTitle();
+      
+      setTitle(toString(data?.title));
+    } catch (err: any) {
+      console.error('Exception fetching document title:', err);
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   }, [documentId]);
 
-  return {
-    title,
-    isLoading,
-    error
-  };
+  useEffect(() => {
+    fetchDocumentTitle();
+  }, [fetchDocumentTitle]);
+
+  return { title, isLoading, error, fetchDocumentTitle };
 };

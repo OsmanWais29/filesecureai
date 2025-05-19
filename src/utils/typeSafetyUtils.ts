@@ -86,3 +86,49 @@ export function toString(value: unknown, defaultValue: string = ''): string {
   }
   return String(value);
 }
+
+/**
+ * Safely convert an unknown value to a string
+ * @param value The value to convert
+ * @param defaultValue Optional default value
+ * @returns A string
+ */
+export function safeString(value: unknown, defaultValue: string = ''): string {
+  if (value === null || value === undefined) {
+    return defaultValue;
+  }
+  return String(value);
+}
+
+/**
+ * Safely convert unknown to a Record<string, unknown>
+ * @param value The value to convert
+ * @returns A safe object that can be indexed
+ */
+export function safeRecordCast(value: unknown): Record<string, unknown> {
+  if (value && typeof value === 'object') {
+    return value as Record<string, unknown>;
+  }
+  return {};
+}
+
+/**
+ * Check if a value is iterable
+ * @param value The value to check
+ * @returns Whether the value is iterable
+ */
+export function isIterable(value: unknown): value is Iterable<unknown> {
+  return value != null && typeof (value as any)[Symbol.iterator] === 'function';
+}
+
+/**
+ * Convert an unknown value to an iterable
+ * @param value The value to convert
+ * @returns An iterable
+ */
+export function toIterable<T>(value: unknown): Iterable<T> {
+  if (isIterable(value)) {
+    return value as Iterable<T>;
+  }
+  return [] as T[];
+}

@@ -1,7 +1,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { safeString, safeObjectCast } from '@/utils/typeSafetyUtils';
+import { toString, safeObjectCast } from '@/utils/typeSafetyUtils';
 
 export interface DocumentRecord {
   id: string;
@@ -32,12 +32,12 @@ export const useAnalysisInitialization = (documentId: string, storagePath: strin
       // Create a properly typed DocumentRecord before setting state
       if (data) {
         const record: DocumentRecord = {
-          id: safeString(data.id, ''),
-          title: safeString(data.title, ''),
-          metadata: safeObjectCast(data.metadata),
-          ai_processing_status: safeString(data.ai_processing_status),
-          storage_path: safeString(data.storage_path),
-          updated_at: safeString(data.updated_at)
+          id: toString(data.id, ''),
+          title: toString(data.title, ''),
+          metadata: safeObjectCast(data.metadata || {}),
+          ai_processing_status: toString(data.ai_processing_status),
+          storage_path: toString(data.storage_path),
+          updated_at: toString(data.updated_at)
         };
         setDocumentRecord(record);
         return record;

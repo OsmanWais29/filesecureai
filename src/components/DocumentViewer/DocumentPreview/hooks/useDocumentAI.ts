@@ -1,9 +1,9 @@
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentRecord } from "./types";
-import { toStringArray, safeObjectCast, toString } from "@/utils/typeSafetyUtils";
+import { toStringArray, safeObjectCast, toString, toRecord } from "@/utils/typeSafetyUtils";
 
 export const useDocumentAI = (documentId: string, storagePath: string) => {
   const [analyzing, setAnalyzing] = useState(false);
@@ -12,6 +12,8 @@ export const useDocumentAI = (documentId: string, storagePath: string) => {
   const [progress, setProgress] = useState<number>(0);
   const [processingStage, setProcessingStage] = useState<string>("");
   const [documentRecord, setDocumentRecord] = useState<DocumentRecord | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [analysisStatus, setAnalysisStatus] = useState<string>("");
   const { toast } = useToast();
 
   const fetchDocumentDetails = useCallback(async () => {
@@ -22,7 +24,7 @@ export const useDocumentAI = (documentId: string, storagePath: string) => {
         .from('documents')
         .select('*')
         .eq('id', documentId)
-        .single();
+        .maybeSingle();
         
       if (error) {
         console.error("Error fetching document details:", error);
@@ -37,7 +39,7 @@ export const useDocumentAI = (documentId: string, storagePath: string) => {
           type: toString(data.type),
           storage_path: toString(data.storage_path),
           ai_processing_status: toString(data.ai_processing_status),
-          metadata: safeObjectCast(data.metadata),
+          metadata: toRecord(data.metadata),
           updated_at: toString(data.updated_at),
           created_at: toString(data.created_at)
         };
@@ -57,6 +59,7 @@ export const useDocumentAI = (documentId: string, storagePath: string) => {
     setAnalysisStep(step);
     setProgress(progress);
     setProcessingStage(stage);
+    setAnalysisStatus(stage); // Set the analysis status
     
     // Also update the document record if available
     if (documentId) {
@@ -66,7 +69,7 @@ export const useDocumentAI = (documentId: string, storagePath: string) => {
           .update({
             ai_processing_status: 'processing',
             metadata: {
-              ...(documentRecord?.metadata || {}),
+              ...toRecord(documentRecord?.metadata),
               current_step: step,
               progress,
               processing_stage: stage,
@@ -84,7 +87,7 @@ export const useDocumentAI = (documentId: string, storagePath: string) => {
     if (!documentRecord) return false;
     
     // Check if there's an error in the metadata
-    const metadata = documentRecord.metadata || {};
+    const metadata = toRecord(documentRecord.metadata);
     if (metadata.error || metadata.processing_error) {
       setError(toString(metadata.error || metadata.processing_error));
       return true;
@@ -99,9 +102,20 @@ export const useDocumentAI = (documentId: string, storagePath: string) => {
     return toStringArray(documentRecord.metadata.processing_steps_completed || []);
   };
 
+  const checkDocumentStatus = async () => {
+    try {
+      const document = await fetchDocumentDetails();
+      return document;
+    } catch (error) {
+      console.error("Error checking document status:", error);
+      return null;
+    }
+  };
+
   const processDocument = async () => {
     setAnalyzing(true);
     setError(null);
+    setRetryCount(prev => prev + 1);
     
     try {
       await updateProcessingStep('starting_analysis', 5, 'Initializing analysis');
@@ -145,11 +159,11 @@ export const useDocumentAI = (documentId: string, storagePath: string) => {
         .update({
           ai_processing_status: 'complete',
           metadata: {
-            ...(document.metadata || {}),
+            ...toRecord(document.metadata),
             analysis_completed: true,
             completed_at: new Date().toISOString(),
             processing_steps_completed: [
-              ...(toStringArray(document.metadata?.processing_steps_completed)),
+              ...toStringArray(document.metadata?.processing_steps_completed),
               'completed'
             ]
           }
@@ -160,7 +174,8 @@ export const useDocumentAI = (documentId: string, storagePath: string) => {
         title: "Document Analysis Complete",
         description: "Document has been successfully analyzed",
       });
-        
+      
+      return true;  
     } catch (error: any) {
       console.error("Document analysis failed:", error);
       setError(error.message || "An unknown error occurred");
@@ -172,7 +187,7 @@ export const useDocumentAI = (documentId: string, storagePath: string) => {
           .update({
             ai_processing_status: 'failed',
             metadata: {
-              ...(documentRecord.metadata || {}),
+              ...toRecord(documentRecord.metadata),
               error: error.message,
               error_at: new Date().toISOString()
             }
@@ -185,6 +200,8 @@ export const useDocumentAI = (documentId: string, storagePath: string) => {
         title: "Analysis Failed",
         description: error.message || "Failed to analyze document"
       });
+      
+      return false;
     } finally {
       setAnalyzing(false);
     }
@@ -202,11 +219,14 @@ export const useDocumentAI = (documentId: string, storagePath: string) => {
     analysisStep,
     progress,
     processingStage,
+    analysisStatus,
+    retryCount,
     handleAnalysisRetry,
     processDocument,
     documentRecord,
     fetchDocumentDetails,
     updateProcessingStep,
+    checkDocumentStatus,
     checkProcessingError,
     getProcessingSteps
   };
