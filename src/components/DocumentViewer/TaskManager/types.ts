@@ -20,3 +20,10 @@ export interface TaskListProps {
   onTaskDelete?: (taskId: string) => void;
   isLoading?: boolean;
 }
+
+export interface TaskFormProps {
+  documentId: string;
+  onTaskCreated?: () => void;
+  initialTask?: Partial<Task>;
+  onCancel?: () => void;
+}

@@ -1,83 +1,88 @@
 
 /**
- * Utility functions for safe type handling
+ * Utility functions for type safety
  */
 
 /**
- * Safely cast a value to string or return default if not a string
+ * Safely cast an object to a specific type
+ * @param obj The object to cast
+ * @returns The object cast to the specified type
  */
-export function safeString(value: unknown, defaultValue: string = ''): string {
-  if (typeof value === 'string') {
-    return value;
+export function safeObjectCast<T>(obj: unknown): T {
+  return obj as T;
+}
+
+/**
+ * Safely cast an array to a specific type
+ * @param arr The array to cast
+ * @returns The array cast to the specified type
+ */
+export function safeArrayCast<T>(arr: unknown): T[] {
+  if (!Array.isArray(arr)) {
+    return [] as T[];
+  }
+  return arr as T[];
+}
+
+/**
+ * Safely access a property from an unknown object
+ * @param obj The object to access
+ * @param key The property key
+ * @param defaultValue The default value to return if the property doesn't exist
+ * @returns The property value or the default value
+ */
+export function safeGetProperty<T>(
+  obj: unknown,
+  key: string,
+  defaultValue: T
+): T {
+  if (obj && typeof obj === 'object' && key in obj) {
+    return (obj as Record<string, unknown>)[key] as T;
   }
   return defaultValue;
 }
 
 /**
- * Safely cast a value to number or return default if not a number
+ * Create an empty record with the specified type
+ * @returns An empty record
  */
-export function safeNumber(value: unknown, defaultValue: number = 0): number {
-  if (typeof value === 'number') {
-    return value;
-  }
-  // Try to convert string to number
-  if (typeof value === 'string') {
-    const parsed = parseFloat(value);
-    if (!isNaN(parsed)) {
-      return parsed;
-    }
-  }
-  return defaultValue;
+export function createEmptyRecord<T>(): Record<string, T> {
+  return {} as Record<string, T>;
 }
 
 /**
- * Safely cast a value to boolean or return default if not a boolean
+ * Convert an unknown value to a Record<string, unknown>
+ * @param value The value to convert
+ * @returns A record object
  */
-export function safeBoolean(value: unknown, defaultValue: boolean = false): boolean {
-  if (typeof value === 'boolean') {
-    return value;
-  }
-  return defaultValue;
-}
-
-/**
- * Safely cast a value to an object or return empty object
- */
-export function safeObjectCast(value: unknown): Record<string, unknown> {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
+export function toRecord(value: unknown): Record<string, unknown> {
+  if (value && typeof value === 'object') {
     return value as Record<string, unknown>;
   }
   return {};
 }
 
 /**
- * Safely cast an array to a typed array using a mapper function
+ * Convert an unknown value to a string array
+ * @param value The value to convert
+ * @returns A string array
  */
-export function safeArrayCast<T>(
-  value: unknown, 
-  mapper: (item: Record<string, unknown>) => T
-): T[] {
+export function toStringArray(value: unknown): string[] {
   if (Array.isArray(value)) {
-    try {
-      return value.map(item => {
-        if (item && typeof item === 'object') {
-          return mapper(item as Record<string, unknown>);
-        }
-        throw new Error('Array item is not an object');
-      });
-    } catch (error) {
-      console.error('Error casting array:', error);
-      return [];
-    }
+    return value.map(item => String(item));
   }
   return [];
 }
 
 /**
- * Create a debug logger function
+ * Convert an unknown value to a string
+ * @param value The value to convert
+ * @param defaultValue Optional default value
+ * @returns A string
  */
-export function createLogger(component: string) {
-  return (message: string, data?: any) => {
-    console.log(`[${component}] ${message}`, data || '');
-  };
+export function toString(value: unknown, defaultValue: string = ''): string {
+  if (value === null || value === undefined) {
+    return defaultValue;
+  }
+  return String(value);
 }

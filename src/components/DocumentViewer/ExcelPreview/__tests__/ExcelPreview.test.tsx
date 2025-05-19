@@ -1,6 +1,7 @@
 
 import { render, screen } from '@testing-library/react';
 import ExcelPreview from "../index";
+import { vi, describe, it, expect } from 'vitest';
 
 // Mock data for the useExcelPreview hook
 const mockExcelData = {
@@ -12,9 +13,9 @@ const mockExcelData = {
   error: null,
   sheets: ['Sheet1'],
   activeSheet: 'Sheet1',
-  setActiveSheet: vitest.fn(),
-  downloadExcel: vitest.fn(),
-  refresh: vitest.fn()
+  setActiveSheet: vi.fn(),
+  downloadExcel: vi.fn(),
+  refresh: vi.fn()
 };
 
 // Mock the useExcelPreview hook

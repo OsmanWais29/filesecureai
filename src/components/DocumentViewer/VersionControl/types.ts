@@ -9,4 +9,15 @@ export interface DocumentVersion {
   description?: string;
   storagePath?: string;
   isCurrent?: boolean;
+  changes?: {
+    added?: number;
+    removed?: number;
+    modified?: number;
+  };
+}
+
+export interface VersionComparisonProps {
+  oldVersion: DocumentVersion;
+  newVersion: DocumentVersion;
+  onClose: () => void;
 }
