@@ -91,6 +91,8 @@ export const runStorageDiagnostics = async (): Promise<{
     isPrivate: boolean;
     confidence: number;
   };
+  hasStorageIssue?: boolean;
+  recommendations?: string[];
 }> => {
   // Default result with conservative values
   const result = {
@@ -104,7 +106,9 @@ export const runStorageDiagnostics = async (): Promise<{
     privateMode: {
       isPrivate: false,
       confidence: 0,
-    }
+    },
+    hasStorageIssue: false,
+    recommendations: [] as string[]
   };
   
   // Test localStorage
@@ -122,11 +126,15 @@ export const runStorageDiagnostics = async (): Promise<{
       } catch (e) {
         result.localStorage.writeable = false;
         result.localStorage.error = e instanceof Error ? e.message : String(e);
+        result.hasStorageIssue = true;
+        result.recommendations.push('Enable localStorage in your browser settings');
       }
     }
   } catch (error) {
     result.localStorage.available = false;
     result.localStorage.error = error instanceof Error ? error.message : String(error);
+    result.hasStorageIssue = true;
+    result.recommendations.push('Check if your browser has localStorage disabled');
   }
   
   // Test cookies
@@ -139,9 +147,16 @@ export const runStorageDiagnostics = async (): Promise<{
     
     // Clean up test cookie
     document.cookie = `${testCookie}=; path=/; max-age=0`;
+    
+    if (!result.cookies.enabled) {
+      result.hasStorageIssue = true;
+      result.recommendations.push('Enable cookies in your browser settings');
+    }
   } catch (error) {
     result.cookies.enabled = false;
     result.cookies.error = error instanceof Error ? error.message : String(error);
+    result.hasStorageIssue = true;
+    result.recommendations.push('Check if your browser has cookies disabled');
   }
   
   // Check for private browsing mode
@@ -171,6 +186,11 @@ export const runStorageDiagnostics = async (): Promise<{
       isPrivate: confidence >= 50, // At least 2 indicators to consider it private
       confidence
     };
+    
+    if (result.privateMode.isPrivate && confidence >= 75) {
+      result.hasStorageIssue = true;
+      result.recommendations.push('Consider using regular browsing mode instead of private/incognito mode');
+    }
   } catch (error) {
     // If we can't detect, assume not private with low confidence
     result.privateMode = {

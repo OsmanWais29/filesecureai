@@ -20,8 +20,14 @@ logAuthEvent('Application initialization started');
 
 // Check for storage issues early
 runStorageDiagnostics().then(diagnostics => {
-  if (diagnostics.hasStorageIssue) {
-    console.warn('⚠️ Storage issues detected that may affect authentication:', diagnostics.recommendations);
+  if (!diagnostics.localStorage.writeable || !diagnostics.cookies.enabled) {
+    console.warn('⚠️ Storage issues detected that may affect authentication:', 
+      {
+        localStorage: diagnostics.localStorage,
+        cookies: diagnostics.cookies,
+        privateMode: diagnostics.privateMode
+      }
+    );
   }
 });
 

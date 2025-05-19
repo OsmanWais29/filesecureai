@@ -2,6 +2,24 @@
 // Utility functions for debug logging
 
 /**
+ * Initialize debug mode settings
+ * Should be called early in the app lifecycle
+ */
+export const initDebugMode = (): void => {
+  if (typeof window !== 'undefined') {
+    const storedDebugMode = window.localStorage.getItem('securefiles_debug_mode');
+    
+    // Enable debug console messages if in debug mode
+    if (storedDebugMode === 'true') {
+      console.info('🐞 Debug mode enabled');
+    }
+    
+    // Initialize debug timestamp for session tracking
+    window.localStorage.setItem('securefiles_debug_timestamp', Date.now().toString());
+  }
+};
+
+/**
  * Log authentication-related events
  * @param message The message to log
  */
