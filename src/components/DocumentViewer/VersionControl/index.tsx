@@ -4,7 +4,7 @@ import { VersionHistory } from './VersionHistory';
 import { ComparisonView } from './ComparisonView';
 import { supabase } from '@/lib/supabase';
 import { DocumentVersion } from '../types';
-import { safeObjectCast } from '@/utils/typeSafetyUtils';
+import { toSafeSpreadObject } from '@/utils/typeSafetyUtils';
 
 interface VersionControlProps {
   documentId: string;
@@ -34,17 +34,17 @@ export const VersionControl: React.FC<VersionControlProps> = ({ documentId }) =>
         if (data && Array.isArray(data)) {
           // Map the database result to our DocumentVersion type
           const documentVersions: DocumentVersion[] = data.map(item => ({
-            id: safeObjectCast<string>(item.id),
-            documentId: safeObjectCast<string>(item.document_id),
-            versionNumber: safeObjectCast<number>(item.version_number),
-            content: safeObjectCast<any>(item.content),
-            createdAt: safeObjectCast<string>(item.created_at),
-            createdBy: safeObjectCast<string>(item.created_by),
-            isCurrent: safeObjectCast<boolean>(item.is_current),
-            description: safeObjectCast<string>(item.description),
-            changesSummary: safeObjectCast<string>(item.changes_summary),
-            metadata: safeObjectCast<Record<string, any>>(item.metadata),
-            changes: safeObjectCast<Record<string, any>[]>(item.changes || [])
+            id: String(item.id || ''),
+            documentId: String(item.document_id || ''),
+            versionNumber: Number(item.version_number || 0),
+            content: item.content || {},
+            createdAt: String(item.created_at || ''),
+            createdBy: String(item.created_by || ''),
+            isCurrent: Boolean(item.is_current || false),
+            description: String(item.description || ''),
+            changesSummary: String(item.changes_summary || ''),
+            metadata: toSafeSpreadObject(item.metadata) || {},
+            changes: Array.isArray(item.changes) ? item.changes : []
           }));
           
           setVersions(documentVersions);

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import TaskList from './components/TaskList';
 import { useTaskManager } from './hooks/useTaskManager';
 import { Task } from './types';

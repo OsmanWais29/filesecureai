@@ -105,6 +105,19 @@ export const toNumberArray = (value: unknown, defaultValue: number[] = []): numb
 };
 
 /**
+ * Safely cast an unknown value to a specific type of array
+ * @param value The value to cast
+ * @param defaultValue Default value if cast fails
+ * @returns The value cast to type T[]
+ */
+export const toSafeSpreadArray = <T>(value: unknown, defaultValue: T[] = []): T[] => {
+  if (Array.isArray(value)) {
+    return value as T[];
+  }
+  return defaultValue;
+};
+
+/**
  * Safely cast an unknown value to a specific type
  * @param value The value to cast
  * @param defaultValue Default value if cast fails

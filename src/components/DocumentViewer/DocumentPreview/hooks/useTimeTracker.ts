@@ -54,7 +54,7 @@ export const useTimeTracker = (timeout = 2): TimeTrackerResult => {
   }, []);
 
   return {
-    isAnalysisStuck: isStuck, // Fixed to return a boolean, not an object
+    isAnalysisStuck: isStuck, // Return a boolean directly, not an object
     startTracking,
     stopTracking
   };

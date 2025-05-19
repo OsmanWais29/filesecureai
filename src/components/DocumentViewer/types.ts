@@ -90,4 +90,5 @@ export interface DocumentVersion {
   changesSummary?: string;
   metadata?: Record<string, any>;
   changes?: Record<string, any>[];
+  storage_path?: string;
 }

@@ -1,29 +1,85 @@
 
 import { Session } from "@supabase/supabase-js";
+import { RefObject } from "react";
 
 export interface PreviewStateProps {
+  documentId: string;
   storagePath: string;
   title?: string;
   onAnalysisComplete?: () => void;
+  bypassAnalysis?: boolean;
 }
 
 export interface PreviewState {
+  // Basic file properties
+  fileUrl: string | null;
+  fileExists: boolean;
+  fileType: string | null;
+  isExcelFile: boolean;
+  
+  // Error handling
   previewError: string | null;
   setPreviewError: (error: string | null) => void;
-  publicUrl: string;
-  isExcelFile: boolean;
-  fileExists: boolean;
-  analyzing: boolean;
   error: string | null;
+  
+  // Analysis state
+  analyzing: boolean;
   analysisStep: string;
   progress: number;
   processingStage: string;
+  
+  // Loading state
+  isLoading: boolean;
   loading: boolean;
+  
+  // Analysis control
   bypassAnalysis: boolean;
   setBypassAnalysis: (bypass: boolean) => void;
+  handleAnalyzeDocument: (session?: Session | null) => Promise<void>;
+  isAnalysisStuck: boolean;
+  handleAnalysisRetry: () => void;
+  
+  // UI helpers
   handleRefreshPreview: () => void;
   handleIframeError: () => void;
-  handleAnalyzeDocument: (session?: Session | null) => void;
+  checkFile: () => Promise<void>;
+  handleFullRecovery: () => Promise<void>;
+  forceRefresh: () => Promise<void>;
+  
+  // Network resilience
+  hasFallbackToDirectUrl: boolean;
+  networkStatus: string;
+  attemptCount: number;
+  
+  // Error details
+  errorDetails: any;
+  
+  // Public URL for download/sharing
+  publicUrl: string;
+  
+  // Document type checks
+  isPdfFile: () => boolean;
+  isDocFile: () => boolean;
+  isImageFile: () => boolean;
+  
+  // Viewing options
+  useDirectLink: boolean;
+  zoomLevel: number;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onOpenInNewTab: () => void;
+  onDownload: () => void;
+  onPrint: () => void;
+  
+  // References
+  iframeRef: RefObject<HTMLIFrameElement>;
+  forceReload: number;
+  
+  // Debug options
   diagnosticsMode?: boolean;
   toggleDiagnosticsMode?: () => void;
+  
+  // Session management
+  session: Session | null;
+  setSession: (session: Session | null) => void;
 }
