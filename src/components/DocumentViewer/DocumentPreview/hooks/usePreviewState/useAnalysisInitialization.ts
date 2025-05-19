@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { Session } from "@supabase/supabase-js";
 import { DocumentRecord } from "../types";
+import { toString } from "@/utils/typeSafetyUtils";
 
 interface AnalysisInitializationProps {
   storagePath: string;

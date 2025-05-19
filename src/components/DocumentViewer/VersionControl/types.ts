@@ -26,3 +26,9 @@ export interface VersionCardProps {
 export interface VersionControlProps {
   documentId: string;
 }
+
+// Add the missing type that was referenced
+export interface VersionComparisonProps {
+  currentVersion: DocumentVersion;
+  previousVersion: DocumentVersion;
+}

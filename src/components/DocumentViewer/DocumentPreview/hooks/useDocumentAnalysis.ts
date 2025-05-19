@@ -2,7 +2,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
-import { toSafeSpreadArray, toSafeSpreadObject, toRecord } from "@/utils/typeSafetyUtils";
+import { toString, toSafeSpreadArray, toSafeSpreadObject, toRecord } from "@/utils/typeSafetyUtils";
+import { Session } from "@supabase/supabase-js";
 
 export interface AnalysisProcessProps {
   setAnalysisStep: (step: string) => void;
@@ -58,7 +59,7 @@ export const useDocumentAnalysis = (storagePath: string, onAnalysisComplete?: ()
         .maybeSingle();
         
       if (document) {
-        const metadata = toSafeSpreadObject(document.metadata);
+        const metadata = toRecord(document.metadata);
         const updatedMetadata = {
           ...metadata,
           processing_complete: true,

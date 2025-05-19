@@ -123,7 +123,7 @@ export const toSafeSpreadArray = <T>(value: unknown, defaultValue: T[] = []): T[
  * @param defaultValue Default value if cast fails
  * @returns The value cast to type T
  */
-export const safeObjectCast = <T extends object>(value: unknown, defaultValue: T): T => {
+export const safeObjectCast = <T extends object>(value: unknown, defaultValue: T = {} as T): T => {
   if (value === null || value === undefined) return defaultValue;
   if (typeof value === 'object' && value !== null) return value as T;
   return defaultValue;

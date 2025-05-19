@@ -11,6 +11,7 @@ export interface ExcelData {
   metadata?: {
     fileName?: string;
     sheetNames?: string[];
+    totalSheets?: number;
     [key: string]: any;
   };
 }
