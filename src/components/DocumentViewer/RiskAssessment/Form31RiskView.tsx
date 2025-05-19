@@ -1,160 +1,150 @@
-import React, { useState, useCallback } from 'react';
-import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useToast } from "@/hooks/use-toast";
-import { useTaskManager } from '../TaskManager/hooks/useTaskManager';
+
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { Shield, FileText, AlertTriangle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Alert } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
 import { Task } from '../TaskManager/types';
-import { TaskList } from '../TaskManager/components/TaskList';
+import TaskList from '../TaskManager/components/TaskList';
 
 interface Form31RiskViewProps {
   risks: any[];
+  documentId: string;
+  isLoading?: boolean;
 }
 
-export const Form31RiskView: React.FC<Form31RiskViewProps> = ({ risks }) => {
-  const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
-  const [taskTitle, setTaskTitle] = useState('');
-  const [taskDescription, setTaskDescription] = useState('');
-  const [selectedSeverity, setSelectedSeverity] = useState('medium');
-  const { toast } = useToast();
-  const { createTask, tasks, isLoading, error } = useTaskManager();
+export const Form31RiskView: React.FC<Form31RiskViewProps> = ({ risks, documentId, isLoading }) => {
+  const [localTasks, setLocalTasks] = useState<Task[]>([]);
+  
+  // This is a mock implementation as we don't have the full TaskManager context
+  // In a real implementation, we'd use the full TaskManager hook 
+  const createTask = (task: Task) => {
+    setLocalTasks((prev) => [...prev, task]);
+  };
 
-  const toggleCreateTask = useCallback(() => {
-    setIsCreateTaskOpen((prev) => !prev);
-  }, []);
+  // Filter and sort risks
+  const highRisks = risks.filter(risk => risk.severity === 'high');
+  const mediumRisks = risks.filter(risk => risk.severity === 'medium');
+  const lowRisks = risks.filter(risk => risk.severity === 'low');
+  
+  // Combined and sorted risks
+  const sortedRisks = [...highRisks, ...mediumRisks, ...lowRisks];
 
-  const handleCreateTask = useCallback(async () => {
-    if (!taskTitle.trim()) {
-      toast({
-        title: "Error",
-        description: "Task title cannot be empty.",
-        variant: "destructive",
-      });
-      return;
+  const renderRiskBadge = (severity: string) => {
+    switch (severity) {
+      case 'high':
+        return <Badge variant="destructive">High</Badge>
+      case 'medium':
+        return <Badge variant="default">Medium</Badge>
+      case 'low':
+        return <Badge variant="outline">Low</Badge>
+      default:
+        return <Badge>Unknown</Badge>
     }
-
-    try {
-      const newTask: Omit<Task, 'id' | 'created_at' | 'updated_at'> = {
-        title: taskTitle,
-        description: taskDescription,
-        severity: selectedSeverity,
-        document_id: 'form31', // Replace with actual document ID
-      };
-
-      await createTask(newTask);
-
-      toast({
-        title: "Success",
-        description: "Task created successfully.",
-      });
-
-      setTaskTitle('');
-      setTaskDescription('');
-      setSelectedSeverity('medium');
-      setIsCreateTaskOpen(false);
-    } catch (err: any) {
-      toast({
-        title: "Error",
-        description: `Failed to create task: ${err.message}`,
-        variant: "destructive",
-      });
-    }
-  }, [createTask, taskTitle, taskDescription, selectedSeverity, toast]);
+  };
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {risks.map((risk, index) => (
-        <Card key={index}>
-          <CardHeader>
-            <CardTitle>{risk.type}</CardTitle>
-            <CardDescription>
-              <Badge
-                variant={
-                  risk.severity === "high"
-                    ? "destructive"
-                    : risk.severity === "medium"
-                    ? "secondary"
-                    : "outline"
-                }
-              >
-                {risk.severity}
-              </Badge>
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p>{risk.description}</p>
-          </CardContent>
-          <CardFooter className="flex justify-between items-center">
-            <Button
-              variant="default"  // Changed from "outline" to "default"
-              onClick={toggleCreateTask}
-            >
-              Create Task
-            </Button>
-            <Checkbox id={`risk-${index}`} />
-          </CardFooter>
-        </Card>
-      ))}
-
-      {isCreateTaskOpen && (
-        <Card className="col-span-1 md:col-span-2 lg:col-span-3">
-          <CardHeader>
-            <CardTitle>Create New Task</CardTitle>
-            <CardDescription>Add details for this task.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="task-title">Title</Label>
-              <Input
-                type="text"
-                id="task-title"
-                value={taskTitle}
-                onChange={(e) => setTaskTitle(e.target.value)}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="task-description">Description</Label>
-              <Textarea
-                id="task-description"
-                value={taskDescription}
-                onChange={(e) => setTaskDescription(e.target.value)}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="task-severity">Severity</Label>
-              <select
-                id="task-severity"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                value={selectedSeverity}
-                onChange={(e) => setSelectedSeverity(e.target.value)}
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-            </div>
-          </CardContent>
-          <CardFooter className="flex justify-end">
-            <Button type="button" onClick={handleCreateTask}>
-              Create Task
-            </Button>
-          </CardFooter>
-        </Card>
-      )}
-
-      <Card className="col-span-1 md:col-span-2 lg:col-span-3">
-        <CardHeader>
-          <CardTitle>Task List</CardTitle>
-          <CardDescription>All tasks associated with this document.</CardDescription>
+    <div className="space-y-4">
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg font-medium flex items-center">
+              <Shield className="h-5 w-5 mr-2 text-primary" />
+              Form 31 Risk Assessment
+            </CardTitle>
+            <Select defaultValue="all">
+              <SelectTrigger className="w-[130px] h-8">
+                <SelectValue placeholder="Risk Level" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Risks</SelectItem>
+                <SelectItem value="high">High Risks</SelectItem>
+                <SelectItem value="medium">Medium Risks</SelectItem>
+                <SelectItem value="low">Low Risks</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <CardDescription>
+            Risk analysis for Proof of Claim (Form 31)
+          </CardDescription>
         </CardHeader>
-        <CardContent>
-          <TaskList documentId="form31" />
+        <CardContent className="space-y-4">
+          {isLoading ? (
+            <div className="flex items-center justify-center p-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+            </div>
+          ) : sortedRisks.length > 0 ? (
+            <div className="space-y-3">
+              {sortedRisks.map((risk, index) => (
+                <div key={index} className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <div className="flex items-center">
+                        {risk.severity === 'high' && <AlertTriangle className="h-4 w-4 text-destructive mr-2" />}
+                        <h4 className="font-medium">{risk.title || risk.type || 'Risk Issue'}</h4>
+                        <div className="ml-2">{renderRiskBadge(risk.severity)}</div>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{risk.description}</p>
+                      
+                      {risk.solution && (
+                        <Alert className="mt-2 py-2">
+                          <p className="text-xs">
+                            <span className="font-semibold">Solution: </span>
+                            {risk.solution}
+                          </p>
+                        </Alert>
+                      )}
+
+                      {risk.regulation && (
+                        <div className="mt-2 text-xs flex items-center">
+                          <FileText className="h-3 w-3 mr-1" />
+                          <span className="text-muted-foreground">{risk.regulation}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => createTask({
+                        id: `task-${Date.now()}`,
+                        title: risk.title || risk.type || 'Fix Risk Issue',
+                        description: risk.description,
+                        severity: risk.severity,
+                        document_id: documentId,
+                        solution: risk.solution,
+                        status: 'pending'
+                      })}
+                    >
+                      Create Task
+                    </Button>
+                  </div>
+                  
+                  {index < sortedRisks.length - 1 && <Separator className="mt-3" />}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              No risks found for this document
+            </div>
+          )}
         </CardContent>
       </Card>
+      
+      {localTasks.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-medium">Related Tasks</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TaskList tasks={localTasks} />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

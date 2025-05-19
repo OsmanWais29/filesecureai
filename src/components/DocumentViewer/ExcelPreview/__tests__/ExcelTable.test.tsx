@@ -1,6 +1,6 @@
 
 import { render, screen } from '@testing-library/react';
-import { ExcelTable } from "../components/ExcelTable";
+import ExcelTable from "../components/ExcelTable";
 
 describe('ExcelTable', () => {
   const testData = [

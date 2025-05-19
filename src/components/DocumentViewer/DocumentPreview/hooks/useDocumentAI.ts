@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentRecord, DocumentAIProps, DocumentAIResult } from "./types";
+import { safeString, safeObjectCast } from "@/utils/typeSafetyUtils";
 
 export const useDocumentAI = (documentId: string, storagePath: string): DocumentAIResult => {
   const [documentRecord, setDocumentRecord] = useState<DocumentRecord>({
@@ -42,23 +43,23 @@ export const useDocumentAI = (documentId: string, storagePath: string): Document
         return null;
       }
       
-      // Create a properly typed record using explicit type definitions
+      // Create a properly typed record using explicit type definitions and safe type conversions
       const record: DocumentRecord = {
-        id: data.id || '',
-        title: data.title || '',
-        metadata: data.metadata || {},
-        ai_processing_status: data.ai_processing_status || '',
-        storage_path: data.storage_path || '',
-        updated_at: data.updated_at || '',
+        id: safeString(data.id, ''),
+        title: safeString(data.title, ''),
+        metadata: safeObjectCast(data.metadata),
+        ai_processing_status: safeString(data.ai_processing_status, ''),
+        storage_path: safeString(data.storage_path, ''),
+        updated_at: safeString(data.updated_at, ''),
       };
       
       setDocumentRecord(record);
       
       // Check processing status
-      if (data.ai_processing_status === 'processing') {
+      if (record.ai_processing_status === 'processing') {
         setAnalyzing(true);
-        updateAnalysisStatus(data);
-      } else if (data.ai_processing_status === 'complete' || data.ai_processing_status === 'completed') {
+        updateAnalysisStatus(record);
+      } else if (record.ai_processing_status === 'complete' || record.ai_processing_status === 'completed') {
         setAnalyzing(false);
         setProgress(100);
       }
@@ -83,18 +84,19 @@ export const useDocumentAI = (documentId: string, storagePath: string): Document
   }, [fetchDocumentDetails]);
 
   // Update analysis status from document
-  const updateAnalysisStatus = useCallback((document: any) => {
+  const updateAnalysisStatus = useCallback((document: DocumentRecord) => {
     if (!document || !document.metadata) return;
     
     // Handle metadata with proper type casting
-    const metadata = document.metadata as Record<string, any>;
-    const processingStage = metadata?.processing_stage as string || 'Initializing...';
+    const metadata = safeObjectCast(document.metadata);
+    const processingStage = safeString(metadata?.processing_stage, 'Initializing...');
     setProcessingStage(processingStage);
     setAnalysisStatus(processingStage);
     
     // Calculate progress based on steps completed
-    const completedSteps = Array.isArray(metadata?.processing_steps_completed) 
-      ? metadata.processing_steps_completed.length 
+    const metadataProcessingSteps = metadata?.processing_steps_completed;
+    const completedSteps = Array.isArray(metadataProcessingSteps) 
+      ? metadataProcessingSteps.length 
       : 0;
       
     const totalSteps = 8;
@@ -153,11 +155,12 @@ export const useDocumentAI = (documentId: string, storagePath: string): Document
       
       // Determine form type from title if available
       let formType = null;
-      if (document?.title) {
-        const title = (document.title as string).toLowerCase();
-        if (title.includes('form 31') || title.includes('proof of claim')) {
+      const title = safeString(document?.title, '');
+      if (title) {
+        const titleLower = title.toLowerCase();
+        if (titleLower.includes('form 31') || titleLower.includes('proof of claim')) {
           formType = 'form-31';
-        } else if (title.includes('form 47') || title.includes('consumer proposal')) {
+        } else if (titleLower.includes('form 47') || titleLower.includes('consumer proposal')) {
           formType = 'form-47';
         }
       }
@@ -171,7 +174,7 @@ export const useDocumentAI = (documentId: string, storagePath: string): Document
           documentId,
           module: 'document-analysis',
           formType,
-          title: document?.title,
+          title,
           debug: true
         }
       });
@@ -212,7 +215,7 @@ export const useDocumentAI = (documentId: string, storagePath: string): Document
 
   // Adding handleAnalyzeDocument for compatibility
   const handleAnalyzeDocument = async () => {
-    await processDocument();
+    return await processDocument();
   };
 
   // Retry analysis
@@ -226,15 +229,19 @@ export const useDocumentAI = (documentId: string, storagePath: string): Document
     if (!documentRecord) return null;
     
     // Check for errors in metadata
-    return documentRecord.metadata?.processing_error || null;
+    const metadata = safeObjectCast(documentRecord.metadata);
+    return safeString(metadata?.processing_error, null);
   };
 
   // Get processing steps
   const getProcessingSteps = async (): Promise<string[]> => {
     if (!documentRecord || !documentRecord.metadata) return [];
     
-    return Array.isArray(documentRecord.metadata.processing_steps_completed) 
-      ? documentRecord.metadata.processing_steps_completed 
+    const metadata = safeObjectCast(documentRecord.metadata);
+    const steps = metadata.processing_steps_completed;
+    
+    return Array.isArray(steps) 
+      ? steps.map(step => safeString(step, '')) 
       : [];
   };
 
@@ -243,15 +250,16 @@ export const useDocumentAI = (documentId: string, storagePath: string): Document
     if (!documentId) return;
     
     try {
-      const currentSteps = Array.isArray(documentRecord.metadata?.processing_steps_completed)
-        ? documentRecord.metadata.processing_steps_completed
+      const metadata = safeObjectCast(documentRecord.metadata);
+      const currentSteps = Array.isArray(metadata.processing_steps_completed)
+        ? metadata.processing_steps_completed
         : [];
         
       await supabase
         .from('documents')
         .update({
           metadata: {
-            ...documentRecord.metadata,
+            ...metadata,
             processing_stage: step,
             processing_steps_completed: [...currentSteps, step]
           }
@@ -284,11 +292,11 @@ export const useDocumentAI = (documentId: string, storagePath: string): Document
         filter: `id=eq.${documentId}`
       }, (payload) => {
         if (payload.new) {
-          updateAnalysisStatus(payload.new);
+          updateAnalysisStatus(payload.new as DocumentRecord);
           
           // If analysis is complete, update the document record
-          if (payload.new.ai_processing_status === 'complete' || 
-              payload.new.ai_processing_status === 'completed') {
+          const status = safeString(payload.new.ai_processing_status, '');
+          if (status === 'complete' || status === 'completed') {
             setAnalyzing(false);
             setProgress(100);
             fetchDocumentDetails();

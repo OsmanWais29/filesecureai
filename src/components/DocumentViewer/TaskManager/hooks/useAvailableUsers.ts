@@ -1,6 +1,8 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { safeString } from '@/utils/typeSafetyUtils';
 
 export interface AvailableUser {
   id: string;
@@ -19,11 +21,18 @@ export const useAvailableUsers = () => {
         .select('*');
 
       if (error) throw error;
-      setAvailableUsers(data ? data.map((item: Record<string, unknown>) => ({
-        id: typeof item.id === 'string' ? item.id : '',
-        full_name: typeof item.full_name === 'string' ? item.full_name : '',
-        email: typeof item.email === 'string' ? item.email : ''
-      })) : []);
+      
+      if (data && Array.isArray(data)) {
+        const typedUsers: AvailableUser[] = data.map(item => ({
+          id: safeString(item.id, ''),
+          full_name: safeString(item.full_name, null),
+          email: safeString(item.email, '')
+        }));
+        
+        setAvailableUsers(typedUsers);
+      } else {
+        setAvailableUsers([]);
+      }
     } catch (error) {
       console.error('Error fetching available users:', error);
       toast({

@@ -5,13 +5,19 @@ import { UseFileCheckerReturn } from "../../types";
 /**
  * Hook for checking file existence and accessibility in storage
  */
-export const useFileChecker = (
-  setFileExists: (exists: boolean) => void,
-  setFileUrl: (url: string | null) => void,
-  setIsExcelFile: (isExcel: boolean) => void,
-  setPreviewError: (error: string | null) => void,
-  setNetworkStatus: (status: 'online' | 'offline') => void
-): UseFileCheckerReturn => {
+export const useFileChecker = ({
+  setFileUrl,
+  setIsLoading,
+  setPreviewError,
+  setHasFallbackToDirectUrl,
+  setErrorDetails
+}: {
+  setFileUrl: (url: string | null) => void;
+  setIsLoading: (isLoading: boolean) => void;
+  setPreviewError: (error: string | null) => void;
+  setHasFallbackToDirectUrl: (hasFallbackToDirectUrl: boolean) => void;
+  setErrorDetails: (errorDetails: any) => void;
+}): UseFileCheckerReturn => {
   
   /**
    * Handle errors that occur during file checking
@@ -22,29 +28,26 @@ export const useFileChecker = (
     // More specific error handling
     if (error.message && (error.message.includes('fetch') || error.message.includes('network'))) {
       setPreviewError(`Network error: ${navigator.onLine ? "Server connection issue" : "You appear to be offline"}`);
-      setNetworkStatus('offline');
       
       // In case of network error but URL is already set, we'll still try to display
       if (publicUrl) {
-        setFileExists(true);
         setFileUrl(publicUrl);
       } else {
-        setFileExists(false);
         setFileUrl(null);
       }
     } else {
-      setFileExists(false);
       setFileUrl(null);
       setPreviewError(`Database error: ${error.message || "Failed to check file existence"}`);
     }
-  }, [setFileExists, setFileUrl, setPreviewError, setNetworkStatus]);
+    
+    setErrorDetails(error);
+  }, [setFileUrl, setPreviewError, setErrorDetails]);
   
   /**
    * Check if file exists in storage and get its public URL
    */
   const checkFile = useCallback(async (storagePath: string) => {
     if (!storagePath) {
-      setFileExists(false);
       setFileUrl(null);
       setPreviewError("No storage path provided");
       return;
@@ -85,19 +88,10 @@ export const useFileChecker = (
           console.log("File accessibility check response:", response.status);
           
           if (response.ok) {
-            setFileExists(true);
-            
-            // Check file type
-            const isExcel = storagePath.toLowerCase().endsWith('.xlsx') || 
-                           storagePath.toLowerCase().endsWith('.xls') ||
-                           storagePath.toLowerCase().endsWith('.csv');
-                           
-            setIsExcelFile(isExcel);
             setPreviewError(null);
-            setNetworkStatus('online'); // Explicitly set online status on success
+            setHasFallbackToDirectUrl(false);
           } else {
             // Status code error
-            setFileExists(false);
             setPreviewError(`File accessibility error: HTTP ${response.status}`);
             
             // Try no-cors mode as fallback
@@ -109,15 +103,8 @@ export const useFileChecker = (
               
               // If we get here, assume file might exist
               console.log("No-cors fetch didn't throw, assuming file exists");
-              setFileExists(true);
-              
-              // Check file type
-              const isExcel = storagePath.toLowerCase().endsWith('.xlsx') || 
-                            storagePath.toLowerCase().endsWith('.xls') ||
-                            storagePath.toLowerCase().endsWith('.csv');
-                            
-              setIsExcelFile(isExcel);
               setPreviewError(null);
+              setHasFallbackToDirectUrl(true);
             } catch (corsError) {
               console.error("No-cors fetch also failed:", corsError);
             }
@@ -128,32 +115,22 @@ export const useFileChecker = (
           if (fetchError.name === 'AbortError') {
             setPreviewError("Request timed out. The server might be busy or the file too large.");
             // Still try to show the file
-            setFileExists(true);
+            setHasFallbackToDirectUrl(true);
           } else if (fetchError.message?.includes('network') || 
                     fetchError.message?.includes('fetch')) {
             // Network error, but we'll still try to show the file
-            setFileExists(true);
             setPreviewError("Network issue detected. Preview might be limited.");
-            
-            // Check if it's an Excel file anyway
-            const isExcel = storagePath.toLowerCase().endsWith('.xlsx') || 
-                          storagePath.toLowerCase().endsWith('.xls') ||
-                          storagePath.toLowerCase().endsWith('.csv');
-            setIsExcelFile(isExcel);
-            
-            // Update network status
-            setNetworkStatus('offline');
+            setHasFallbackToDirectUrl(true);
           } else {
             // Other errors
-            setFileExists(false);
             setPreviewError(`Error accessing file: ${fetchError.message || "Unknown error"}`);
           }
         }
       } else {
         console.error("No public URL returned for file:", storagePath);
-        setFileExists(false);
         setFileUrl(null);
         setPreviewError("File not found in storage or not accessible");
+        setHasFallbackToDirectUrl(false);
       }
     } catch (error: any) {
       // Use the error handler with the data from the current scope
@@ -166,13 +143,14 @@ export const useFileChecker = (
       } catch (innerError) {
         handleFileCheckError(error);
       }
+    } finally {
+      setIsLoading(false);
     }
   }, [
-    setFileExists, 
     setFileUrl, 
-    setIsExcelFile, 
     setPreviewError, 
-    setNetworkStatus, 
+    setHasFallbackToDirectUrl, 
+    setIsLoading, 
     handleFileCheckError
   ]);
 

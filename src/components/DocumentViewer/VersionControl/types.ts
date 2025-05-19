@@ -2,17 +2,11 @@
 export interface DocumentVersion {
   id: string;
   documentId: string;
-  content: string;
+  content: Record<string, unknown>;
   createdAt: string;
   userId: string;
-  changes?: {
-    added: string[];
-    removed: string[];
-    modified: string[];
-  };
-}
-
-export interface VersionComparisonProps {
-  currentVersion: DocumentVersion;
-  previousVersion: DocumentVersion;
+  versionNumber: number;
+  description?: string;
+  storagePath?: string;
+  isCurrent?: boolean;
 }
