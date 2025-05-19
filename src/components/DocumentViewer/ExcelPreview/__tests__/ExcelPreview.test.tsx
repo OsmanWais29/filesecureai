@@ -2,7 +2,7 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from './setup';
-import { ExcelPreview } from '../components/ExcelPreview';
+import ExcelPreview from '../index';
 
 vi.mock('../hooks/useExcelPreview', () => ({
   useExcelPreview: () => ({
@@ -26,16 +26,22 @@ vi.mock('../hooks/useExcelPreview', () => ({
     loading: false,
     error: null,
     activeSheet: 0,
-    changeSheet: vi.fn()
+    changeSheet: vi.fn(),
+    sheets: ['Sheet1'],
+    downloadExcel: vi.fn(),
+    refresh: vi.fn(),
+    data: [
+      { Header1: 'Value1', Header2: 'Value2' }
+    ]
   })
 }));
 
 describe('ExcelPreview', () => {
   it('renders the Excel preview component', async () => {
-    render(<ExcelPreview storagePath="test/path.xlsx" />);
+    render(<ExcelPreview storagePath="test/path.xlsx" documentId="test-id" />);
     
     await waitFor(() => {
-      expect(screen.getByText('test.xlsx')).toBeInTheDocument();
+      expect(screen.getByText('Sheet1')).toBeInTheDocument();
     });
   });
 });

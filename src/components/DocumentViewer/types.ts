@@ -1,4 +1,3 @@
-
 export interface DocumentDetails {
   id: string;
   title: string;
@@ -77,4 +76,18 @@ export interface Version {
   created_by?: string;
   description?: string;
   is_current?: boolean;
+}
+
+export interface DocumentVersion {
+  id: string;
+  documentId: string;
+  versionNumber: number;
+  content: any;
+  createdAt: string;
+  createdBy?: string;
+  isCurrent: boolean;
+  description?: string;
+  changesSummary?: string;
+  metadata?: Record<string, any>;
+  changes?: Record<string, any>[];
 }

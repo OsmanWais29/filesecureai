@@ -1,95 +1,107 @@
 
 import React from 'react';
-import { formatDate } from '@/utils/dateUtils';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, Eye } from 'lucide-react';
-import { DocumentVersion } from '../types';
+import { Card, CardContent } from "@/components/ui/card";
+import { formatDate } from "@/utils/dateUtils";
+import { Button } from "@/components/ui/button";
+import { Clock, Download, Eye } from "lucide-react";
+import { DocumentVersion } from "../types";
 
 interface VersionHistoryProps {
   versions: DocumentVersion[];
-  onSelectVersion: (version: DocumentVersion) => void;
-  onCompare: (current: DocumentVersion, previous: DocumentVersion) => void;
+  currentVersion: DocumentVersion | null;
+  onViewVersion: (version: DocumentVersion) => void;
+  onDownloadVersion?: (version: DocumentVersion) => void;
+  onCompareVersions?: (current: DocumentVersion, previous: DocumentVersion) => void;
 }
 
 export const VersionHistory: React.FC<VersionHistoryProps> = ({
   versions,
-  onSelectVersion,
-  onCompare
+  currentVersion,
+  onViewVersion,
+  onDownloadVersion,
+  onCompareVersions
 }) => {
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Document Version History</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {versions.length > 0 ? (
-          <div className="space-y-4">
-            {versions.map((version, index) => {
-              // Determine if there's a previous version for comparison
-              const hasPreviousVersion = index < versions.length - 1;
-              const previousVersion = hasPreviousVersion ? versions[index + 1] : null;
-              
-              return (
-                <div key={version.id} className="p-4 border rounded-lg bg-card hover:bg-accent/5">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-medium">Version {version.version_number}</h3>
-                        {version.is_current && (
-                          <Badge variant="secondary">Current</Badge>
-                        )}
-                      </div>
-                      
-                      <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
-                        <Clock className="w-3 h-3" />
-                        <span>{formatDate(version.createdAt)}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => onSelectVersion(version)}
-                      >
-                        <Eye className="mr-1 h-4 w-4" />
-                        View
-                      </Button>
-                      
-                      {hasPreviousVersion && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onCompare(version, previousVersion!)}
-                        >
-                          Compare
-                        </Button>
+    <Card>
+      <CardContent className="p-4 space-y-4">
+        <h3 className="font-medium">Version History</h3>
+        
+        <div className="space-y-3">
+          {versions.map((version, index) => {
+            const changes = version.changes || [];
+            const isActive = currentVersion?.id === version.id;
+            const previousVersion = index < versions.length - 1 ? versions[index + 1] : null;
+            
+            return (
+              <div
+                key={version.id}
+                className={`p-3 border rounded-md ${
+                  isActive ? 'bg-primary/10 border-primary/20' : 'bg-card'
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h4 className="text-sm font-medium">
+                      Version {version.versionNumber}
+                      {version.isCurrent && (
+                        <span className="ml-2 text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">
+                          Current
+                        </span>
                       )}
-                    </div>
+                    </h4>
+                    <p className="text-xs text-muted-foreground flex items-center mt-1">
+                      <Clock className="h-3 w-3 mr-1" />
+                      {formatDate(version.createdAt)}
+                    </p>
                   </div>
                   
-                  {version.changes && version.changes.length > 0 && (
-                    <div className="mt-2 text-sm text-muted-foreground border-t pt-2">
-                      <p className="font-medium">Changes:</p>
-                      <ul className="list-disc list-inside">
-                        {version.changes.slice(0, 2).map((change, i) => (
-                          <li key={i}>{change}</li>
-                        ))}
-                        {version.changes.length > 2 && (
-                          <li>...and {version.changes.length - 2} more changes</li>
-                        )}
-                      </ul>
-                    </div>
-                  )}
+                  <div className="flex items-center space-x-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2"
+                      onClick={() => onViewVersion(version)}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    
+                    {onDownloadVersion && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-2"
+                        onClick={() => onDownloadVersion(version)}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="text-center p-4 text-muted-foreground">
-            No version history available for this document
+                
+                {version.changesSummary && (
+                  <p className="text-xs mt-2">{version.changesSummary}</p>
+                )}
+                
+                {previousVersion && onCompareVersions && (
+                  <div className="mt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs h-7"
+                      onClick={() => onCompareVersions(version, previousVersion)}
+                    >
+                      Compare with v{previousVersion.versionNumber}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        
+        {versions.length === 0 && (
+          <div className="text-center py-4 text-muted-foreground">
+            No versions available
           </div>
         )}
       </CardContent>

@@ -24,6 +24,8 @@ export const useExcelPreview = (storagePath: string | null, documentId?: string)
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [activeSheet, setActiveSheet] = useState<number>(0);
+  const [sheets, setSheets] = useState<string[]>([]);
+  const [data, setData] = useState<Record<string, any>[] | null>(null);
 
   useEffect(() => {
     const loadExcel = async () => {
@@ -50,7 +52,31 @@ export const useExcelPreview = (storagePath: string | null, documentId?: string)
             const excelDataFromMetadata = metadata.excel_data;
             
             if (excelDataFromMetadata) {
-              setExcelData(safeObjectCast<ExcelData>(excelDataFromMetadata));
+              const typedExcelData = safeObjectCast<ExcelData>(excelDataFromMetadata);
+              setExcelData(typedExcelData);
+              setSheets(typedExcelData.sheets.map(s => s.name));
+              
+              // Convert data for current active sheet to row objects
+              if (typedExcelData.sheets.length > 0) {
+                const activeSheetData = typedExcelData.sheets[activeSheet];
+                const headers = activeSheetData.columns;
+                
+                // Convert raw data to row objects
+                if (activeSheetData.data.length > 1) {
+                  const rowObjects = activeSheetData.data.slice(1).map((row: any[]) => {
+                    const obj: Record<string, any> = {};
+                    headers.forEach((header, index) => {
+                      obj[header] = row[index];
+                    });
+                    return obj;
+                  });
+                  
+                  setData(rowObjects);
+                } else {
+                  setData([]);
+                }
+              }
+              
               setLoading(false);
               return;
             }
@@ -84,9 +110,10 @@ export const useExcelPreview = (storagePath: string | null, documentId?: string)
         const arrayBuffer = await fileData.arrayBuffer();
         const workbook = XLSX.read(arrayBuffer, { type: 'array' });
         
-        const sheets = workbook.SheetNames.map(name => {
+        const sheetNames = workbook.SheetNames;
+        const sheetArray = sheetNames.map(name => {
           const worksheet = workbook.Sheets[name];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
           
           // Extract column headers if available (first row)
           const columns = jsonData.length > 0 ? 
@@ -101,17 +128,37 @@ export const useExcelPreview = (storagePath: string | null, documentId?: string)
         });
         
         const newExcelData: ExcelData = {
-          sheets,
+          sheets: sheetArray,
           activeSheet: 0,
           metadata: {
             fileName: storagePath.split('/').pop() || '',
-            sheetCount: sheets.length,
+            sheetCount: sheetArray.length,
             lastModified: new Date().toISOString(),
             client_name: clientName
           }
         };
         
         setExcelData(newExcelData);
+        setSheets(sheetArray.map(s => s.name));
+        
+        // Create row objects for the active sheet
+        if (sheetArray.length > 0) {
+          const activeSheetData = sheetArray[0];
+          const headers = activeSheetData.columns;
+          
+          // Convert raw data to row objects
+          if (activeSheetData.data.length > 1) {
+            const rowObjects = activeSheetData.data.slice(1).map((row: any[]) => {
+              const obj: Record<string, any> = {};
+              headers.forEach((header, index) => {
+                obj[header] = row[index];
+              });
+              return obj;
+            });
+            
+            setData(rowObjects);
+          }
+        }
         
         // Store the processed data in document metadata for future access
         if (documentId) {
@@ -136,15 +183,81 @@ export const useExcelPreview = (storagePath: string | null, documentId?: string)
     };
     
     loadExcel();
-  }, [storagePath, documentId]);
+  }, [storagePath, documentId, activeSheet]);
   
   // Function to change active sheet
-  const changeSheet = (sheetIndex: number) => {
-    if (excelData && sheetIndex >= 0 && sheetIndex < excelData.sheets.length) {
-      setActiveSheet(sheetIndex);
-      setExcelData(prevData => 
-        prevData ? { ...prevData, activeSheet: sheetIndex } : null
-      );
+  const changeSheet = (sheetIndex: string) => {
+    const index = parseInt(sheetIndex, 10);
+    if (excelData && sheets[index]) {
+      setActiveSheet(index);
+      
+      // Update data for the new active sheet
+      if (excelData.sheets[index]) {
+        const activeSheetData = excelData.sheets[index];
+        const headers = activeSheetData.columns;
+        
+        // Convert raw data to row objects
+        if (activeSheetData.data.length > 1) {
+          const rowObjects = activeSheetData.data.slice(1).map((row: any[]) => {
+            const obj: Record<string, any> = {};
+            headers.forEach((header, index) => {
+              obj[header] = row[index];
+            });
+            return obj;
+          });
+          
+          setData(rowObjects);
+        } else {
+          setData([]);
+        }
+      }
+    }
+  };
+
+  // Function to download Excel file
+  const downloadExcel = () => {
+    if (storagePath) {
+      const publicUrl = supabase.storage
+        .from('documents')
+        .getPublicUrl(storagePath).data.publicUrl;
+      
+      // Create a temporary link and trigger the download
+      const link = document.createElement('a');
+      link.href = publicUrl;
+      link.setAttribute('download', excelData?.metadata?.fileName || 'download.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+  
+  // Function to refresh data
+  const refresh = () => {
+    setLoading(true);
+    setError(null);
+    setExcelData(null);
+    setData(null);
+    
+    if (storagePath) {
+      // Clear cached data and reload
+      if (documentId) {
+        supabase
+          .from('documents')
+          .update({
+            metadata: {
+              excel_processed: false,
+            }
+          })
+          .eq('id', documentId)
+          .then(() => {
+            // Reload after cache is cleared
+            setTimeout(() => {
+              window.location.reload();
+            }, 500);
+          });
+      } else {
+        window.location.reload();
+      }
     }
   };
   
@@ -153,6 +266,10 @@ export const useExcelPreview = (storagePath: string | null, documentId?: string)
     loading,
     error,
     activeSheet,
-    changeSheet
+    changeSheet,
+    sheets,
+    downloadExcel,
+    refresh,
+    data
   };
 };

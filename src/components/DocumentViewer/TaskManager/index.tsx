@@ -1,100 +1,96 @@
 
-import { useState } from 'react';
-import { useToast } from "@/hooks/use-toast";
-import type { Task } from "../types";
-import { TaskItem } from "./TaskItem";
-import { EmptyState } from "./EmptyState";
-import { TaskCreationDialog } from "./TaskCreationDialog";
-import { TaskHeader } from "./components/TaskHeader";
-import { useTaskManager } from "./hooks/useTaskManager";
-import { useAvailableUsers } from "./hooks/useAvailableUsers";
-import { updateTaskStatus, assignTask } from "./services/taskService";
+import React, { useState, useEffect } from 'react';
+import { TaskList } from './components/TaskList';
+import { TaskForm } from './TaskForm';
+import { useTaskManager } from './hooks/useTaskManager';
+import { Task } from './types';
+import { EmptyState } from './EmptyState';
+import { TaskHeader } from './components/TaskHeader';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface TaskManagerProps {
   documentId: string;
-  tasks: Task[];
-  onTaskUpdate: () => void;
+  initialTasks?: Task[];
+  onTaskUpdate?: () => void;
 }
 
-export const TaskManager = ({ documentId, tasks: initialTasks, onTaskUpdate }: TaskManagerProps) => {
-  const { toast } = useToast();
+export const TaskManager: React.FC<TaskManagerProps> = ({ 
+  documentId, 
+  initialTasks = [],
+  onTaskUpdate 
+}) => {
+  const [showForm, setShowForm] = useState(false);
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
-  const [isCreatingTask, setIsCreatingTask] = useState(false);
-  
-  const { localTasks } = useTaskManager({ documentId, initialTasks, onTaskUpdate });
-  const { availableUsers } = useAvailableUsers();
+  const { tasks, loading, error, createTask, updateTask, deleteTask } = useTaskManager(documentId);
 
-  const handleUpdateTaskStatus = async (taskId: string, newStatus: Task['status']) => {
-    try {
-      await updateTaskStatus(taskId, newStatus);
-      toast({
-        title: "Task Updated",
-        description: `Task status changed to ${newStatus}`,
-      });
-    } catch (error) {
-      console.error('Error updating task:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update task status"
-      });
-    }
-  };
-
-  const handleAssignTask = async (taskId: string, userId: string) => {
-    try {
-      await assignTask(taskId, userId);
-      toast({
-        title: "Task Assigned",
-        description: "Task has been assigned successfully",
-      });
-    } catch (error) {
-      console.error('Error assigning task:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to assign task"
-      });
-    }
-  };
-
-  const filteredTasks = localTasks.filter(task => {
+  // Filter tasks based on the current filter
+  const filteredTasks = tasks.filter(task => {
     if (filter === 'all') return true;
-    if (filter === 'pending') return ['pending', 'in_progress'].includes(task.status);
+    if (filter === 'pending') return task.status !== 'completed';
     return task.status === 'completed';
   });
 
+  // Handle task updates
+  const handleTaskUpdate = (updatedTask: Task) => {
+    updateTask(updatedTask.id, updatedTask);
+    if (onTaskUpdate) {
+      onTaskUpdate();
+    }
+  };
+
+  // Handle creating a new task
+  const handleCreateTask = () => {
+    setShowForm(true);
+  };
+
+  // Handle task creation completion
+  const handleTaskCreated = () => {
+    setShowForm(false);
+    if (onTaskUpdate) {
+      onTaskUpdate();
+    }
+  };
+
   return (
-    <div className="space-y-4">
-      <TaskHeader 
-        filter={filter}
-        onFilterChange={setFilter}
-        onCreateTask={() => setIsCreatingTask(true)}
-      />
-
-      <div className="space-y-3">
-        {filteredTasks.length > 0 ? (
-          filteredTasks.map((task) => (
-            <TaskItem 
-              key={task.id} 
-              task={task} 
-              availableUsers={availableUsers}
-              onUpdateStatus={handleUpdateTaskStatus}
-              onAssignTask={handleAssignTask}
+    <Card>
+      <CardContent className="p-4">
+        <div className="space-y-4">
+          <TaskHeader
+            filter={filter}
+            onFilterChange={setFilter}
+            onCreateTask={handleCreateTask}
+          />
+          
+          {showForm ? (
+            <TaskForm
+              documentId={documentId}
+              onTaskCreated={handleTaskCreated}
+              onCancel={() => setShowForm(false)}
             />
-          ))
-        ) : (
-          <EmptyState filter={filter} />
-        )}
-      </div>
-
-      <TaskCreationDialog 
-        isOpen={isCreatingTask}
-        onClose={() => setIsCreatingTask(false)}
-        documentId={documentId}
-        availableUsers={availableUsers}
-        onTaskCreated={onTaskUpdate}
-      />
-    </div>
+          ) : null}
+          
+          {loading ? (
+            <div className="py-4 text-center">
+              <p className="text-sm text-muted-foreground">Loading tasks...</p>
+            </div>
+          ) : filteredTasks.length > 0 ? (
+            <TaskList
+              tasks={filteredTasks}
+              onTaskUpdate={handleTaskUpdate}
+              onTaskDelete={deleteTask}
+              isLoading={loading}
+            />
+          ) : (
+            <EmptyState filter={filter} />
+          )}
+          
+          {error && (
+            <div className="mt-2 text-sm text-destructive">
+              {error}
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 };

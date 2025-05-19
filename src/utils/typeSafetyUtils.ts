@@ -1,176 +1,83 @@
 
 /**
- * Utility functions for type safety
+ * Type-safe utility functions for handling potentially unknown values
  */
 
 /**
- * Safely cast an object to a specific type
- * @param obj The object to cast
- * @returns The object cast to the specified type
+ * Safely casts an unknown object to a specific type
  */
 export function safeObjectCast<T>(obj: unknown): T {
   return obj as T;
 }
 
 /**
- * Safely cast an array to a specific type
- * @param arr The array to cast
- * @returns The array cast to the specified type
+ * Safely spreads an unknown object preserving type information
  */
-export function safeArrayCast<T>(arr: unknown): T[] {
-  if (!Array.isArray(arr)) {
-    return [] as T[];
-  }
-  return arr as T[];
-}
-
-/**
- * Safely access a property from an unknown object
- * @param obj The object to access
- * @param key The property key
- * @param defaultValue The default value to return if the property doesn't exist
- * @returns The property value or the default value
- */
-export function safeGetProperty<T>(
-  obj: unknown,
-  key: string,
-  defaultValue: T
-): T {
-  if (obj && typeof obj === 'object' && key in obj) {
-    return (obj as Record<string, unknown>)[key] as T;
-  }
-  return defaultValue;
-}
-
-/**
- * Create an empty record with the specified type
- * @returns An empty record
- */
-export function createEmptyRecord<T>(): Record<string, T> {
-  return {} as Record<string, T>;
-}
-
-/**
- * Convert an unknown value to a Record<string, unknown>
- * @param value The value to convert
- * @returns A record object
- */
-export function toRecord(value: unknown): Record<string, unknown> {
-  if (value && typeof value === 'object') {
-    return value as Record<string, unknown>;
+export function toSafeSpreadObject(obj: unknown): Record<string, unknown> {
+  if (typeof obj === 'object' && obj !== null) {
+    return { ...obj as Record<string, unknown> };
   }
   return {};
 }
 
 /**
- * Convert an unknown value to a string array
- * @param value The value to convert
- * @returns A string array
+ * Safely spreads an unknown array preserving type information
  */
-export function toStringArray(value: unknown): string[] {
-  if (Array.isArray(value)) {
-    return value.map(item => String(item));
+export function toSafeSpreadArray<T>(arr: unknown): T[] {
+  if (Array.isArray(arr)) {
+    return [...arr] as T[];
   }
   return [];
 }
 
 /**
- * Convert an unknown value to a string
- * @param value The value to convert
- * @param defaultValue Optional default value
- * @returns A string
+ * Safely converts unknown to a Record<string, unknown>
  */
-export function toString(value: unknown, defaultValue: string = ''): string {
-  if (value === null || value === undefined) {
-    return defaultValue;
-  }
-  return String(value);
-}
-
-/**
- * Safely convert an unknown value to a string
- * @param value The value to convert
- * @param defaultValue Optional default value
- * @returns A string
- */
-export function safeString(value: unknown, defaultValue: string = ''): string {
-  if (value === null || value === undefined) {
-    return defaultValue;
-  }
-  return String(value);
-}
-
-/**
- * Safely convert unknown to a Record<string, unknown>
- * @param value The value to convert
- * @returns A safe object that can be indexed
- */
-export function safeRecordCast(value: unknown): Record<string, unknown> {
-  if (value && typeof value === 'object') {
-    return value as Record<string, unknown>;
+export function toRecord(obj: unknown): Record<string, unknown> {
+  if (typeof obj === 'object' && obj !== null) {
+    return obj as Record<string, unknown>;
   }
   return {};
 }
 
 /**
- * Check if a value is iterable
- * @param value The value to check
- * @returns Whether the value is iterable
+ * Safely converts unknown to string
  */
-export function isIterable(value: unknown): value is Iterable<unknown> {
-  return value != null && typeof (value as any)[Symbol.iterator] === 'function';
+export function safeString(value: unknown, defaultValue: string | null = ''): string | null {
+  if (typeof value === 'string') {
+    return value;
+  } else if (value !== null && value !== undefined) {
+    return String(value);
+  }
+  return defaultValue;
 }
 
 /**
- * Convert an unknown value to an iterable
- * @param value The value to convert
- * @returns An iterable
+ * Safely converts a value to a boolean
  */
-export function toIterable<T>(value: unknown): Iterable<T> {
-  if (isIterable(value)) {
-    return value as Iterable<T>;
+export function safeBoolean(value: unknown, defaultValue = false): boolean {
+  if (typeof value === 'boolean') {
+    return value;
   }
-  return [] as T[];
+  if (typeof value === 'string') {
+    return value.toLowerCase() === 'true';
+  }
+  if (typeof value === 'number') {
+    return value !== 0;
+  }
+  return defaultValue;
 }
 
 /**
- * Safe cast for array spreading
- * Used when spreading potentially unknown values in arrays
- * @param value The value to safely spread
- * @returns An array that can be safely spread
+ * Safely converts a value to a number
  */
-export function toSafeSpreadArray<T>(value: unknown): T[] {
-  if (Array.isArray(value)) {
-    return value as T[];
+export function safeNumber(value: unknown, defaultValue = 0): number {
+  if (typeof value === 'number' && !isNaN(value)) {
+    return value;
   }
-  return [] as T[];
-}
-
-/**
- * Safe cast for object spreading
- * Used when spreading potentially unknown values in objects
- * @param value The value to safely spread
- * @returns An object that can be safely spread
- */
-export function toSafeSpreadObject(value: unknown): Record<string, unknown> {
-  if (value && typeof value === 'object' && value !== null) {
-    return value as Record<string, unknown>;
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? defaultValue : parsed;
   }
-  return {};
-}
-
-/**
- * Extract property from unknown as array
- * @param obj The object to extract from
- * @param key The property key
- * @returns The property value as array or empty array
- */
-export function extractArrayProperty<T>(obj: unknown, key: string): T[] {
-  if (obj && typeof obj === 'object' && key in (obj as object)) {
-    const value = (obj as Record<string, unknown>)[key];
-    if (Array.isArray(value)) {
-      return value as T[];
-    }
-  }
-  return [] as T[];
+  return defaultValue;
 }

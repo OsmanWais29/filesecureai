@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useExcelPreview } from './hooks/useExcelPreview';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import ExcelTable from './components/ExcelTable';
@@ -14,15 +14,16 @@ interface ExcelPreviewProps {
 
 const ExcelPreview: React.FC<ExcelPreviewProps> = ({ documentId, storagePath }) => {
   const {
-    data,
-    isLoading,
+    excelData,
+    loading: isLoading,
     error,
-    sheets,
     activeSheet,
-    setActiveSheet,
+    changeSheet: setActiveSheet,
+    sheets,
     downloadExcel,
-    refresh
-  } = useExcelPreview(documentId, storagePath);
+    refresh,
+    data
+  } = useExcelPreview(storagePath, documentId);
 
   if (isLoading) {
     return (
@@ -53,7 +54,7 @@ const ExcelPreview: React.FC<ExcelPreviewProps> = ({ documentId, storagePath }) 
   return (
     <div className="flex flex-col h-full">
       <div className="flex justify-between items-center p-2 border-b">
-        <Tabs value={activeSheet} onValueChange={setActiveSheet} className="w-full">
+        <Tabs value={activeSheet.toString()} onValueChange={setActiveSheet} className="w-full">
           <TabsList>
             {sheets.map((sheet) => (
               <TabsTrigger key={sheet} value={sheet}>

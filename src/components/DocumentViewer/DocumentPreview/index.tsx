@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { usePreviewState } from './hooks/usePreviewState';
 import { DocumentPreviewContent } from './components/DocumentPreviewContent';
 
@@ -18,7 +18,12 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
   onAnalysisComplete,
   bypassAnalysis = false
 }) => {
-  const previewState = usePreviewState(documentId || '', storagePath);
+  const previewState = usePreviewState({
+    documentId: documentId || '',
+    storagePath,
+    onAnalysisComplete,
+    bypassAnalysis
+  });
 
   return (
     <DocumentPreviewContent

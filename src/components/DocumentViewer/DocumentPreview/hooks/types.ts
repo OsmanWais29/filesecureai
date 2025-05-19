@@ -1,84 +1,65 @@
 
-export interface DocumentPreviewContentProps {
-  storagePath: string;
-  documentId?: string;
-  title?: string;
-  previewState: any; // This will be expanded with the proper type later
-}
-
-export interface TimeTrackerResult {
-  isAnalysisStuck: { stuck: boolean; minutesStuck: number };
-  startTracking: () => void;
-  stopTracking: () => void;
-}
+import { Session } from "@supabase/supabase-js";
 
 export interface DocumentRecord {
   id: string;
-  title?: string;
-  type?: string;
-  storage_path?: string;
-  ai_processing_status?: string;
-  metadata?: Record<string, unknown>;
-  updated_at?: string;
-  created_at?: string;
+  title: string;
+  storage_path: string;
+  metadata: any;
+  ai_processing_status: string;
+  [key: string]: any;
 }
 
-export interface AnalysisResult {
-  success: boolean;
-  data?: Record<string, unknown>;
-  error?: string;
+export interface PreviewState {
+  fileUrl: string | null;
+  fileExists: boolean;
+  isExcelFile: boolean;
+  previewError: string | null;
+  setPreviewError: (error: string | null) => void;
+  analyzing: boolean;
+  error: string | null;
+  analysisStep: string;
+  progress: number;
+  processingStage: string;
+  session: Session | null;
+  setSession: (session: Session | null) => void;
+  handleAnalyzeDocument: () => Promise<void>;
+  isAnalysisStuck: boolean;
+  checkFile: () => Promise<void>;
+  isLoading: boolean;
+  handleAnalysisRetry: () => void;
+  hasFallbackToDirectUrl: boolean;
+  networkStatus: string;
+  attemptCount: number;
+  fileType: string | null;
+  handleFullRecovery: () => Promise<void>;
+  forceRefresh: () => Promise<void>;
+  forceReload: number;
+  errorDetails: any;
 }
 
 export interface NetworkResilienceOptions {
   maxRetries?: number;
-  retryDelay?: number;
-  retryMultiplier?: number;
+  backoffFactor?: number;
+  initialDelay?: number;
 }
 
 export interface NetworkResilienceResult {
   isOnline: boolean;
   resetRetries: () => void;
   incrementRetry: () => void;
-  shouldRetry: (error: Error) => boolean;
-  retryCount: number;
+  shouldRetry: (error: any) => boolean;
 }
 
-export interface FileLoadResult {
-  success: boolean;
-  url?: string;
-  method?: string;
-  error?: Error;
+export interface TimeTrackerResult {
+  isAnalysisStuck: boolean;
+  startTracking: () => void;
+  stopTracking: () => void;
 }
 
-export interface UseFileCheckerReturn {
-  checkFile: (path: string) => Promise<boolean>;
-  handleFileCheckError: (error: Error, fileUrl?: string | null) => void;
-}
-
-export interface Task {
-  id: string;
-  title: string;
-  description?: string;
-  status?: string;
-  severity?: string;
-  assigned_to?: string;
-  document_id?: string;
-  due_date?: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface DocumentVersion {
-  id: string;
-  documentId: string;
-  version_number: number;
-  content: any;
-  createdAt: string;
-  is_current: boolean;
-  changes: any[];
-}
-
-export interface VersionComparisonProps {
-  currentVersion: DocumentVersion;
-  previousVersion: DocumentVersion;
+export interface DocumentPreviewContentProps {
+  storagePath: string;
+  documentId?: string;
+  title?: string;
+  previewState: PreviewState;
 }

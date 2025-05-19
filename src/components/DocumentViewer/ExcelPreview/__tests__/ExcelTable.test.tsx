@@ -2,13 +2,12 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from './setup';
-import { ExcelTable } from '../components/ExcelTable';
+import ExcelTable from '../components/ExcelTable';
 
 describe('ExcelTable Component', () => {
   const mockData = [
-    ['Header1', 'Header2', 'Header3'],
-    ['Row1Col1', 'Row1Col2', 'Row1Col3'],
-    ['Row2Col1', 'Row2Col2', 'Row2Col3']
+    { Header1: 'Row1Col1', Header2: 'Row1Col2', Header3: 'Row1Col3' },
+    { Header1: 'Row2Col1', Header2: 'Row2Col2', Header3: 'Row2Col3' }
   ];
 
   it('renders the table with correct headers and data', () => {
