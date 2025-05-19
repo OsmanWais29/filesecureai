@@ -123,9 +123,12 @@ export const useAnalysisInitialization = ({
               
             if (document) {
               const metadata = document.metadata || {};
-              const processingStepsCompleted = Array.isArray(metadata.processing_steps_completed) 
-                ? metadata.processing_steps_completed 
-                : [];
+              // Type-safe access to nested properties
+              const processingStepsCompleted = metadata && 
+                typeof metadata === 'object' && 
+                'processing_steps_completed' in metadata ? 
+                (metadata.processing_steps_completed as string[] || []) : 
+                [];
                 
               const shouldStartAnalysis = 
                 document.ai_processing_status === 'pending' || 

@@ -19,8 +19,21 @@ export const useAnalysisInitialization = (documentId: string, storagePath: strin
         .maybeSingle();
 
       if (error) throw error;
-      setDocumentRecord(data);
-      return data;
+      
+      // Create a properly typed DocumentRecord before setting state
+      if (data) {
+        const record: DocumentRecord = {
+          id: data.id || '',
+          title: data.title || '',
+          metadata: data.metadata || {},
+          ai_processing_status: data.ai_processing_status,
+          storage_path: data.storage_path,
+          updated_at: data.updated_at
+        };
+        setDocumentRecord(record);
+        return record;
+      }
+      return null;
     } catch (error) {
       console.error('Error fetching document record:', error);
       return null;

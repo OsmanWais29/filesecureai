@@ -42,14 +42,14 @@ export const useDocumentAI = (documentId: string, storagePath: string): Document
         return null;
       }
       
-      // Create a properly typed document record
+      // Create a properly typed record using explicit type definitions
       const record: DocumentRecord = {
-        id: data.id,
+        id: data.id || '',
         title: data.title || '',
         metadata: data.metadata || {},
-        ai_processing_status: data.ai_processing_status,
-        storage_path: data.storage_path,
-        updated_at: data.updated_at,
+        ai_processing_status: data.ai_processing_status || '',
+        storage_path: data.storage_path || '',
+        updated_at: data.updated_at || '',
       };
       
       setDocumentRecord(record);
@@ -86,9 +86,9 @@ export const useDocumentAI = (documentId: string, storagePath: string): Document
   const updateAnalysisStatus = useCallback((document: any) => {
     if (!document || !document.metadata) return;
     
-    // Handle metadata with proper type checking
-    const metadata = document.metadata;
-    const processingStage = metadata?.processing_stage || 'Initializing...';
+    // Handle metadata with proper type casting
+    const metadata = document.metadata as Record<string, any>;
+    const processingStage = metadata?.processing_stage as string || 'Initializing...';
     setProcessingStage(processingStage);
     setAnalysisStatus(processingStage);
     
@@ -123,7 +123,7 @@ export const useDocumentAI = (documentId: string, storagePath: string): Document
         .update({
           ai_processing_status: 'processing',
           metadata: {
-            ...documentRecord.metadata,
+            ...(documentRecord.metadata || {}),
             processing_started: new Date().toISOString(),
             processing_stage: 'Initializing analysis',
             processing_steps_completed: []
@@ -154,7 +154,7 @@ export const useDocumentAI = (documentId: string, storagePath: string): Document
       // Determine form type from title if available
       let formType = null;
       if (document?.title) {
-        const title = document.title.toLowerCase();
+        const title = (document.title as string).toLowerCase();
         if (title.includes('form 31') || title.includes('proof of claim')) {
           formType = 'form-31';
         } else if (title.includes('form 47') || title.includes('consumer proposal')) {
@@ -208,6 +208,11 @@ export const useDocumentAI = (documentId: string, storagePath: string): Document
       
       return false;
     }
+  };
+
+  // Adding handleAnalyzeDocument for compatibility
+  const handleAnalyzeDocument = async () => {
+    await processDocument();
   };
 
   // Retry analysis
@@ -308,6 +313,7 @@ export const useDocumentAI = (documentId: string, storagePath: string): Document
     retryCount,
     processingStage,
     processDocument,
+    handleAnalyzeDocument,
     handleAnalysisRetry,
     checkDocumentStatus,
     fetchDocumentDetails,

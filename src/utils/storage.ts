@@ -1,6 +1,7 @@
+
 import { supabase } from "@/lib/supabase";
 import { logError } from "./debugMode";
-import { testDirectUpload } from "./testDirectUpload";
+import { testDirectUpload } from "./storageDiagnostics";
 import { authenticatedStorageOperation } from "@/hooks/useAuthenticatedFetch";
 import { verifyJwtToken } from "./jwtVerifier";
 import { ensureValidToken } from "@/utils/jwt/tokenManager";

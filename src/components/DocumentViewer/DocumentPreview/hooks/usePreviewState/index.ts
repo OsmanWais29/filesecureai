@@ -37,53 +37,38 @@ export const usePreviewState = (documentId: string, storagePath: string) => {
   const { checkFile, handleFileCheckError } = useFileChecker();
   
   // Get document AI utilities
-  const { 
-    analyzing: isAnalyzing,
-    error: aiError,
-    analysisStep: aiAnalysisStep,
-    progress: aiProgress,
-    processingStage,
-    documentRecord: aiDocumentRecord,
-    handleAnalyzeDocument,
-    handleAnalysisRetry,
-    fetchDocumentDetails,
-    checkProcessingError,
-    getProcessingSteps,
-    updateProcessingStep
-  } = useDocumentAI(documentId, storagePath);
+  const documentAI = useDocumentAI(documentId, storagePath);
   
   // Setup document realtime updates
-  useDocumentRealtime(documentId, fetchDocumentDetails);
+  useDocumentRealtime(documentId, documentAI.fetchDocumentDetails);
   
   useEffect(() => {
-    if (aiDocumentRecord) {
-      setDocumentRecord(aiDocumentRecord);
+    if (documentAI.documentRecord) {
+      setDocumentRecord(documentAI.documentRecord);
     }
-  }, [aiDocumentRecord]);
+  }, [documentAI.documentRecord]);
   
   useEffect(() => {
-    if (aiError) {
-      setError(aiError);
+    if (documentAI.error) {
+      setError(documentAI.error);
     }
-  }, [aiError]);
+  }, [documentAI.error]);
   
   useEffect(() => {
-    if (aiAnalysisStep) {
-      setAnalysisStep(aiAnalysisStep);
+    if (documentAI.analysisStep) {
+      setAnalysisStep(documentAI.analysisStep);
     }
-  }, [aiAnalysisStep]);
+  }, [documentAI.analysisStep]);
   
   useEffect(() => {
-    if (isAnalyzing !== undefined) {
-      setAnalyzing(isAnalyzing);
-    }
-  }, [isAnalyzing]);
+    setAnalyzing(documentAI.analyzing);
+  }, [documentAI.analyzing]);
   
   useEffect(() => {
-    if (aiProgress) {
-      setProgress(aiProgress);
+    if (documentAI.progress) {
+      setProgress(documentAI.progress);
     }
-  }, [aiProgress]);
+  }, [documentAI.progress]);
 
   // Zoom functions
   const onZoomIn = () => setZoomLevel(prev => Math.min(prev + 10, 200));
@@ -169,7 +154,7 @@ export const usePreviewState = (documentId: string, storagePath: string) => {
     let lastUpdateTime = new Date();
     if (documentRecord.updated_at) {
       // Safely handle the unknown type
-      if (typeof documentRecord.updated_at === 'string' || documentRecord.updated_at instanceof Date) {
+      if (typeof documentRecord.updated_at === 'string') {
         lastUpdateTime = new Date(documentRecord.updated_at);
       }
     }
@@ -245,6 +230,11 @@ export const usePreviewState = (documentId: string, storagePath: string) => {
     checkFileAndSetState();
   }, [storagePath, checkFile, handleFileCheckError, fileUrl]);
 
+  // This is the handler that will use the documentAI's process document
+  const handleAnalyzeDocument = () => {
+    documentAI.handleAnalyzeDocument();
+  };
+
   return {
     fileUrl,
     fileExists,
@@ -256,14 +246,14 @@ export const usePreviewState = (documentId: string, storagePath: string) => {
     error,
     analysisStep,
     progress,
-    processingStage,
+    processingStage: documentAI.processingStage,
     session,
     setSession,
     handleAnalyzeDocument,
     isAnalysisStuck,
     checkFile,
     isLoading,
-    handleAnalysisRetry,
+    handleAnalysisRetry: documentAI.handleAnalysisRetry,
     hasFallbackToDirectUrl,
     networkStatus: networkStatus.isOnline ? "online" : "offline",
     attemptCount,

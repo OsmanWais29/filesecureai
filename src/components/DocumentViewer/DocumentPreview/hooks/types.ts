@@ -1,4 +1,3 @@
-
 export interface DocumentRecord {
   id: string;
   title: string;
@@ -133,6 +132,7 @@ export interface DocumentAIResult {
   retryCount: number;
   processingStage: string | null;
   processDocument: () => Promise<boolean>;
+  handleAnalyzeDocument: () => Promise<void>;
   handleAnalysisRetry: () => Promise<void>;
   checkDocumentStatus: () => Promise<DocumentRecord | null>;
   fetchDocumentDetails: () => Promise<DocumentRecord | null>;
