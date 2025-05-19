@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useNetworkStatus } from "@/hooks/useNetworkStatus";
@@ -37,8 +38,8 @@ export const usePreviewState = (documentId: string, storagePath: string) => {
     error,
     analysisStep,
     progress,
-    handleAnalyzeDocument,
     handleAnalysisRetry,
+    processDocument,
     processingStage,
     documentRecord,
     fetchDocumentDetails,
@@ -60,6 +61,7 @@ export const usePreviewState = (documentId: string, storagePath: string) => {
   // Force refresh function
   const forceRefresh = async () => {
     setForceReload(prev => prev + 1);
+    return Promise.resolve();
   };
 
   // Open in new tab function
@@ -153,8 +155,8 @@ export const usePreviewState = (documentId: string, storagePath: string) => {
       endTiming(`file-load-${documentId}`);
     } catch (err: any) {
       console.error("Error getting public URL:", err);
-      handleFileCheckError(err, fileUrl);
-      setPreviewError(err.message || "Failed to load document");
+      handleFileCheckError(err as Error, fileUrl);
+      setPreviewError(err instanceof Error ? err.message : String(err));
       setErrorDetails(err);
       endTiming(`file-load-${documentId}`);
     } finally {
@@ -178,18 +180,18 @@ export const usePreviewState = (documentId: string, storagePath: string) => {
     } finally {
       setIsRetrying(false);
     }
+    
+    return Promise.resolve();
   }, [loadFileUrl, checkFile, storagePath]);
 
   // Check if analysis is stuck
   const checkAnalysisStuck = useCallback(() => {
-    if (!isAnalyzing || !analysisStep || !documentRecord) return { stuck: false, minutesStuck: 0 };
+    if (!analyzing || !analysisStep || !documentRecord) return { stuck: false, minutesStuck: 0 };
     
     let lastUpdateTime = new Date();
     if (documentRecord.updated_at) {
-      // Safely handle the unknown type
-      if (typeof documentRecord.updated_at === 'string' || documentRecord.updated_at instanceof Date) {
-        lastUpdateTime = new Date(documentRecord.updated_at);
-      }
+      // Safely handle the updated_at field
+      lastUpdateTime = new Date(documentRecord.updated_at);
     }
     
     const currentTime = new Date();
@@ -200,7 +202,7 @@ export const usePreviewState = (documentId: string, storagePath: string) => {
       stuck,
       minutesStuck: Math.floor(diffInMinutes)
     };
-  }, [isAnalyzing, analysisStep, documentRecord]);
+  }, [analyzing, analysisStep, documentRecord]);
 
   // Initial file check
   useEffect(() => {
@@ -214,14 +216,19 @@ export const usePreviewState = (documentId: string, storagePath: string) => {
 
       try {
         startTiming(`initial-check-${documentId}`);
-        await checkFile(storagePath);
-        await loadFileUrl();
+        const exists = await checkFile(storagePath);
+        setFileExists(exists);
+        
+        if (exists) {
+          await loadFileUrl();
+        }
+        
         setHasFallbackToDirectUrl(false);
         endTiming(`initial-check-${documentId}`);
       } catch (checkError: any) {
         console.error("Initial check failed:", checkError);
         handleFileCheckError(checkError, fileUrl);
-        setPreviewError(checkError.message || "Failed to load document");
+        setPreviewError(checkError instanceof Error ? checkError.message : String(checkError));
         setErrorDetails(checkError);
         setHasFallbackToDirectUrl(true);
         endTiming(`initial-check-${documentId}`);
@@ -242,6 +249,13 @@ export const usePreviewState = (documentId: string, storagePath: string) => {
 
     return () => clearInterval(intervalId);
   }, [checkAnalysisStuck]);
+
+  // Handle analyze document
+  const handleAnalyzeDocument = () => {
+    if (processDocument) {
+      processDocument();
+    }
+  };
 
   return {
     fileUrl,
@@ -265,7 +279,6 @@ export const usePreviewState = (documentId: string, storagePath: string) => {
     hasFallbackToDirectUrl,
     networkStatus,
     attemptCount,
-    fileType,
     handleFullRecovery,
     forceRefresh,
     errorDetails,
@@ -282,8 +295,6 @@ export const usePreviewState = (documentId: string, storagePath: string) => {
     onDownload,
     onPrint,
     iframeRef,
-    forceReload,
-    isRetrying,
-    fetchDocumentDetails
+    forceReload
   };
 };

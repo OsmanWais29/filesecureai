@@ -23,13 +23,13 @@ export const DocumentAIPanel: React.FC<DocumentAIPanelProps> = ({
 }) => {
   const { 
     processDocument, 
-    isProcessing, 
+    analyzing, 
     error, 
     progress, 
     analysisStatus,
     retryCount,
     checkDocumentStatus 
-  } = useDocumentAI(documentId);
+  } = useDocumentAI(documentId, ''); // Empty string for storagePath as we don't need it here
 
   const [processingTime, setProcessingTime] = useState(0);
   const [isStuck, setIsStuck] = useState(false);
@@ -38,7 +38,7 @@ export const DocumentAIPanel: React.FC<DocumentAIPanelProps> = ({
   useEffect(() => {
     let interval: number | null = null;
     
-    if (isProcessing) {
+    if (analyzing) {
       const startTime = Date.now();
       interval = window.setInterval(() => {
         const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
@@ -59,7 +59,7 @@ export const DocumentAIPanel: React.FC<DocumentAIPanelProps> = ({
         clearInterval(interval);
       }
     };
-  }, [isProcessing, progress]);
+  }, [analyzing, progress]);
 
   // Check document status on mount
   useEffect(() => {
@@ -98,7 +98,7 @@ export const DocumentAIPanel: React.FC<DocumentAIPanelProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {isProcessing ? (
+          {analyzing ? (
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">{analysisStatus}</span>

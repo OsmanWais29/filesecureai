@@ -1,229 +1,301 @@
 
-import { useState, useCallback, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-import { useToast } from '@/hooks/use-toast';
-import { DocumentRecord } from './types';
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/lib/supabase";
+import { useToast } from "@/hooks/use-toast";
+import { DocumentRecord, DocumentAIProps, DocumentAIResult } from "./types";
 
-export const useDocumentAI = (documentId: string, storagePath?: string) => {
-  const [documentRecord, setDocumentRecord] = useState<DocumentRecord | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+export const useDocumentAI = (documentId: string, storagePath: string): DocumentAIResult => {
+  const [documentRecord, setDocumentRecord] = useState<DocumentRecord>({
+    id: documentId,
+    title: '',
+    metadata: {},
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string>('');
   const [analyzing, setAnalyzing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [analysisStatus, setAnalysisStatus] = useState('');
   const [analysisStep, setAnalysisStep] = useState('');
-  const [error, setError] = useState('');
   const [retryCount, setRetryCount] = useState(0);
+  const [processingStage, setProcessingStage] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Check document status
-  const checkDocumentStatus = useCallback(async () => {
+  // Fetch document details
+  const fetchDocumentDetails = useCallback(async () => {
     if (!documentId) return null;
-
+    
     try {
-      const { data, error: fetchError } = await supabase
+      const { data, error } = await supabase
         .from('documents')
         .select('*')
         .eq('id', documentId)
         .single();
-
-      if (fetchError) throw fetchError;
-      
-      if (data) {
-        // Cast the data to DocumentRecord type with proper type assertion
-        setDocumentRecord(data as unknown as DocumentRecord);
+        
+      if (error) {
+        console.error('Error fetching document:', error.message);
+        setError(error.message);
+        return null;
       }
       
-      return data;
-    } catch (error: any) {
-      console.error('Error checking document status:', error);
+      if (!data) {
+        console.warn('Document not found:', documentId);
+        return null;
+      }
+      
+      // Create a properly typed document record
+      const record: DocumentRecord = {
+        id: data.id,
+        title: data.title || '',
+        metadata: data.metadata || {},
+        ai_processing_status: data.ai_processing_status,
+        storage_path: data.storage_path,
+        updated_at: data.updated_at,
+      };
+      
+      setDocumentRecord(record);
+      
+      // Check processing status
+      if (data.ai_processing_status === 'processing') {
+        setAnalyzing(true);
+        updateAnalysisStatus(data);
+      } else if (data.ai_processing_status === 'complete' || data.ai_processing_status === 'completed') {
+        setAnalyzing(false);
+        setProgress(100);
+      }
+      
+      return record;
+    } catch (err) {
+      console.error('Error in fetchDocumentDetails:', err);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [documentId]);
+
+  // Check document status
+  const checkDocumentStatus = useCallback(async () => {
+    try {
+      return await fetchDocumentDetails();
+    } catch (err) {
+      console.error('Error checking document status:', err);
       return null;
     }
-  }, [documentId]);
+  }, [fetchDocumentDetails]);
 
-  useEffect(() => {
-    if (documentId) {
-      checkDocumentStatus();
+  // Update analysis status from document
+  const updateAnalysisStatus = useCallback((document: any) => {
+    if (!document || !document.metadata) return;
+    
+    // Handle metadata with proper type checking
+    const metadata = document.metadata;
+    const processingStage = metadata?.processing_stage || 'Initializing...';
+    setProcessingStage(processingStage);
+    setAnalysisStatus(processingStage);
+    
+    // Calculate progress based on steps completed
+    const completedSteps = Array.isArray(metadata?.processing_steps_completed) 
+      ? metadata.processing_steps_completed.length 
+      : 0;
+      
+    const totalSteps = 8;
+    const calculatedProgress = Math.min(Math.round((completedSteps / totalSteps) * 100), 100);
+    setProgress(calculatedProgress);
+    
+    // Check if processing is complete
+    if (document.ai_processing_status === 'complete' || document.ai_processing_status === 'completed') {
+      setAnalyzing(false);
+      setProgress(100);
+      setAnalysisStatus('Analysis complete');
     }
-  }, [documentId, checkDocumentStatus]);
+  }, []);
 
-  // Set AI processing status
-  const setAiProcessingStatus = useCallback(async (status: string) => {
-    if (!documentId) return;
-
+  // Process the document
+  const processDocument = async (): Promise<boolean> => {
     try {
-      await supabase
+      setAnalyzing(true);
+      setAnalysisStatus('Initializing analysis...');
+      setProgress(0);
+      setError('');
+      
+      // Update document status to processing
+      const { error: updateError } = await supabase
         .from('documents')
         .update({
-          ai_processing_status: status
-        })
-        .eq('id', documentId);
-    } catch (error) {
-      console.error('Error updating AI processing status:', error);
-    }
-  }, [documentId]);
-
-  // Check if processing is complete
-  const isProcessingComplete = useCallback(() => {
-    if (!documentRecord) return false;
-    
-    return documentRecord.ai_processing_status === 'completed' || 
-           documentRecord.ai_processing_status === 'complete';
-  }, [documentRecord]);
-
-  // Check for processing errors
-  const checkProcessingError = useCallback(() => {
-    if (!documentRecord) return '';
-    
-    return documentRecord.ai_processing_status === 'failed' ? 
-           (documentRecord.metadata?.processing_error || 'Analysis failed') : '';
-  }, [documentRecord]);
-
-  // Get processing steps
-  const getProcessingSteps = useCallback(() => {
-    if (!documentRecord || !documentRecord.metadata) return [];
-    
-    return documentRecord.metadata.processing_steps_completed || [];
-  }, [documentRecord]);
-
-  // Update processing step
-  const updateProcessingStep = useCallback(async (step: string) => {
-    if (!documentId) return;
-
-    try {
-      const { data: currentDoc } = await supabase
-        .from('documents')
-        .select('metadata')
-        .eq('id', documentId)
-        .single();
-
-      if (!currentDoc) return;
-
-      // Create a safe copy of the metadata
-      const metadata = currentDoc.metadata || {};
-      
-      // Update the metadata
-      const updatedMetadata = {
-        ...metadata,
-        processing_stage: step,
-        processing_steps_completed: [
-          ...(metadata.processing_steps_completed ? metadata.processing_steps_completed : []),
-          step
-        ]
-      };
-
-      await supabase
-        .from('documents')
-        .update({ metadata: updatedMetadata })
-        .eq('id', documentId);
-
-    } catch (error) {
-      console.error('Error updating processing step:', error);
-    }
-  }, [documentId]);
-
-  // Handle the document analysis process
-  const handleAnalyzeDocument = async (
-    onStepChange?: (step: string) => void, 
-    onProgress?: (progress: number) => void,
-    onError?: (message: string) => void,
-    onErrorDetails?: (details: any) => void
-  ) => {
-    if (analyzing) {
-      console.log('Document analysis already in progress');
-      return false;
-    }
-
-    setAnalyzing(true);
-    setProgress(5);
-    setAnalysisStatus('Initializing document analysis...');
-    setAnalysisStep('document_initialization');
-    setError('');
-
-    try {
-      // Simulate document analysis progress
-      await simulateDocumentAnalysis(onStepChange, onProgress);
-      
-      // Update document status to completed
-      await supabase
-        .from('documents')
-        .update({
-          ai_processing_status: 'completed',
+          ai_processing_status: 'processing',
           metadata: {
-            ...(documentRecord?.metadata || {}),
-            processing_complete: true,
-            processing_stage: 'completed',
-            last_analyzed: new Date().toISOString()
+            ...documentRecord.metadata,
+            processing_started: new Date().toISOString(),
+            processing_stage: 'Initializing analysis',
+            processing_steps_completed: []
           }
         })
         .eq('id', documentId);
+        
+      if (updateError) {
+        throw new Error(`Failed to update document status: ${updateError.message}`);
+      }
       
+      // Process the document by triggering edge function
+      const { data: fileData, error: fileError } = await supabase.storage
+        .from('documents')
+        .download(storagePath);
+        
+      if (fileError) {
+        throw new Error(`Failed to download document: ${fileError.message}`);
+      }
+      
+      // Get document title for context
+      const { data: document } = await supabase
+        .from('documents')
+        .select('title')
+        .eq('id', documentId)
+        .single();
+      
+      // Determine form type from title if available
+      let formType = null;
+      if (document?.title) {
+        const title = document.title.toLowerCase();
+        if (title.includes('form 31') || title.includes('proof of claim')) {
+          formType = 'form-31';
+        } else if (title.includes('form 47') || title.includes('consumer proposal')) {
+          formType = 'form-47';
+        }
+      }
+      
+      const textContent = await fileData.text();
+      
+      // Call the process-ai-request function
+      const { data, error: aiError } = await supabase.functions.invoke('process-ai-request', {
+        body: {
+          message: textContent.substring(0, 100000), // Limit text size
+          documentId,
+          module: 'document-analysis',
+          formType,
+          title: document?.title,
+          debug: true
+        }
+      });
+      
+      if (aiError) {
+        throw new Error(`Analysis failed: ${aiError.message}`);
+      }
+      
+      // Update progress after successful processing
       setProgress(100);
       setAnalysisStatus('Analysis complete');
+      
+      // Refresh document details
+      await fetchDocumentDetails();
+      
+      toast({
+        title: "Analysis complete",
+        description: "Document has been successfully analyzed"
+      });
+      
       setAnalyzing(false);
-      
-      // Refresh document data
-      const updatedDoc = await checkDocumentStatus();
-      
       return true;
     } catch (err: any) {
       console.error('Error processing document:', err);
-      const errorMessage = err.message || 'Failed to process document';
-      setError(errorMessage);
+      
+      setError(err.message || 'An unknown error occurred');
       setAnalyzing(false);
       
-      if (onError) onError(errorMessage);
-      if (onErrorDetails) onErrorDetails(err);
-      
-      // Update document status to failed
-      await supabase
-        .from('documents')
-        .update({
-          ai_processing_status: 'failed',
-          metadata: {
-            ...(documentRecord?.metadata || {}),
-            processing_error: errorMessage
-          }
-        })
-        .eq('id', documentId);
+      toast({
+        variant: "destructive",
+        title: "Analysis Failed",
+        description: err.message || "Failed to analyze document"
+      });
       
       return false;
     }
   };
 
-  // Simulate document analysis progress
-  const simulateDocumentAnalysis = async (
-    onStepChange?: (step: string) => void,
-    onProgress?: (progress: number) => void
-  ) => {
-    const stages = [
-      { step: 'document_ingestion', status: 'Ingesting document...', progress: 15 },
-      { step: 'document_classification', status: 'Classifying document...', progress: 30 },
-      { step: 'data_extraction', status: 'Extracting document data...', progress: 45 },
-      { step: 'risk_assessment', status: 'Performing risk assessment...', progress: 60 },
-      { step: 'issue_prioritization', status: 'Prioritizing issues...', progress: 75 },
-      { step: 'collaboration_setup', status: 'Setting up collaboration tasks...', progress: 90 }
-    ];
+  // Retry analysis
+  const handleAnalysisRetry = async () => {
+    setRetryCount(prev => prev + 1);
+    await processDocument();
+  };
+
+  // Check for processing errors
+  const checkProcessingError = async (): Promise<string | null> => {
+    if (!documentRecord) return null;
     
-    for (const stage of stages) {
-      setProgress(stage.progress);
-      setAnalysisStatus(stage.status);
-      setAnalysisStep(stage.step);
-      if (onStepChange) onStepChange(stage.step);
-      if (onProgress) onProgress(stage.progress);
-      
-      await updateProcessingStep(stage.step);
-      
-      // Simulate processing time
-      await new Promise(resolve => setTimeout(resolve, 500));
+    // Check for errors in metadata
+    return documentRecord.metadata?.processing_error || null;
+  };
+
+  // Get processing steps
+  const getProcessingSteps = async (): Promise<string[]> => {
+    if (!documentRecord || !documentRecord.metadata) return [];
+    
+    return Array.isArray(documentRecord.metadata.processing_steps_completed) 
+      ? documentRecord.metadata.processing_steps_completed 
+      : [];
+  };
+
+  // Update processing step
+  const updateProcessingStep = async (step: string) => {
+    if (!documentId) return;
+    
+    try {
+      const currentSteps = Array.isArray(documentRecord.metadata?.processing_steps_completed)
+        ? documentRecord.metadata.processing_steps_completed
+        : [];
+        
+      await supabase
+        .from('documents')
+        .update({
+          metadata: {
+            ...documentRecord.metadata,
+            processing_stage: step,
+            processing_steps_completed: [...currentSteps, step]
+          }
+        })
+        .eq('id', documentId);
+        
+      setAnalysisStep(step);
+    } catch (error) {
+      console.error('Error updating processing step:', error);
     }
   };
 
-  // Handle analysis retry
-  const handleAnalysisRetry = () => {
-    setRetryCount(prev => prev + 1);
-    setError('');
-    handleAnalyzeDocument();
-  };
+  // Load document on mount
+  useEffect(() => {
+    if (documentId) {
+      fetchDocumentDetails();
+    }
+  }, [documentId, fetchDocumentDetails]);
+
+  // Subscribe to document updates
+  useEffect(() => {
+    if (!documentId) return;
+    
+    const channel = supabase
+      .channel(`document_updates_${documentId}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'documents',
+        filter: `id=eq.${documentId}`
+      }, (payload) => {
+        if (payload.new) {
+          updateAnalysisStatus(payload.new);
+          
+          // If analysis is complete, update the document record
+          if (payload.new.ai_processing_status === 'complete' || 
+              payload.new.ai_processing_status === 'completed') {
+            setAnalyzing(false);
+            setProgress(100);
+            fetchDocumentDetails();
+          }
+        }
+      })
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [documentId, fetchDocumentDetails, updateAnalysisStatus]);
 
   return {
     documentRecord,
@@ -234,15 +306,13 @@ export const useDocumentAI = (documentId: string, storagePath?: string) => {
     analysisStatus,
     analysisStep,
     retryCount,
+    processingStage,
+    processDocument,
+    handleAnalysisRetry,
     checkDocumentStatus,
-    handleAnalyzeDocument,
-    setAiProcessingStatus,
-    isProcessingComplete,
+    fetchDocumentDetails,
     checkProcessingError,
     getProcessingSteps,
-    updateProcessingStep,
-    handleAnalysisRetry,
-    processingStage: documentRecord?.metadata?.processing_stage || null,
-    fetchDocumentDetails: checkDocumentStatus
+    updateProcessingStep
   };
 };

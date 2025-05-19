@@ -63,7 +63,6 @@ export interface PreviewState {
   iframeRef?: React.RefObject<HTMLIFrameElement>;
 }
 
-// Props for DocumentPreviewContent
 export interface DocumentPreviewContentProps {
   storagePath: string;
   documentId?: string;
@@ -71,13 +70,11 @@ export interface DocumentPreviewContentProps {
   previewState: PreviewState;
 }
 
-// Props for ErrorDisplay component
 export interface ErrorDisplayProps {
   error: string;
   onRetry: () => void;
 }
 
-// Props for ViewerToolbar component
 export interface ViewerToolbarProps {
   title?: string;
   zoomLevel: number;
@@ -90,7 +87,6 @@ export interface ViewerToolbarProps {
   onPrint: () => void;
 }
 
-// Props for DocumentViewerFrame component
 export interface DocumentViewerFrameProps {
   fileUrl: string | null;
   title?: string;
@@ -107,7 +103,6 @@ export interface DocumentViewerFrameProps {
   onDownload: () => void;
 }
 
-// Network resilience interface
 export interface NetworkResilienceResult {
   isOnline: boolean;
   resetRetries: () => void;
@@ -115,10 +110,33 @@ export interface NetworkResilienceResult {
   shouldRetry: (error: Error | { message: string }) => boolean;
 }
 
-// File load result interface
 export interface FileLoadResult {
   success: boolean;
   url?: string;
   method?: string;
   error?: any;
+}
+
+export interface DocumentAIProps {
+  documentId: string;
+  storagePath: string;
+}
+
+export interface DocumentAIResult {
+  documentRecord: DocumentRecord;
+  isLoading: boolean;
+  error: string;
+  analyzing: boolean;
+  progress: number;
+  analysisStatus: string;
+  analysisStep: string;
+  retryCount: number;
+  processingStage: string | null;
+  processDocument: () => Promise<boolean>;
+  handleAnalysisRetry: () => Promise<void>;
+  checkDocumentStatus: () => Promise<DocumentRecord | null>;
+  fetchDocumentDetails: () => Promise<DocumentRecord | null>;
+  checkProcessingError: () => Promise<string | null>;
+  getProcessingSteps: () => Promise<string[]>;
+  updateProcessingStep: (step: string) => Promise<void>;
 }
