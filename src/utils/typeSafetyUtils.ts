@@ -1,120 +1,135 @@
 
 /**
- * Type-safe utility functions for handling potentially unknown values
+ * Type safety utility functions to handle unknown types safely
  */
 
 /**
- * Safely casts an unknown object to a specific type
+ * Convert an unknown value to a string
+ * @param value The value to convert
+ * @param defaultValue Optional default value if conversion fails
+ * @returns A string
  */
-export function safeObjectCast<T>(obj: unknown): T {
-  return obj as T;
-}
-
-/**
- * Safely spreads an unknown object preserving type information
- */
-export function toSafeSpreadObject(obj: unknown): Record<string, unknown> {
-  if (typeof obj === 'object' && obj !== null) {
-    return { ...obj as Record<string, unknown> };
-  }
-  return {};
-}
-
-/**
- * Safely spreads an unknown array preserving type information
- */
-export function toSafeSpreadArray<T>(arr: unknown): T[] {
-  if (Array.isArray(arr)) {
-    return [...arr] as T[];
-  }
-  return [];
-}
-
-/**
- * Safely converts unknown to a Record<string, unknown>
- */
-export function toRecord(obj: unknown): Record<string, unknown> {
-  if (typeof obj === 'object' && obj !== null) {
-    return obj as Record<string, unknown>;
-  }
-  return {};
-}
-
-/**
- * Safely converts unknown to string
- */
-export function safeString(value: unknown, defaultValue: string | null = ''): string | null {
-  if (typeof value === 'string') {
-    return value;
-  } else if (value !== null && value !== undefined) {
-    return String(value);
-  }
+export const toString = (value: unknown, defaultValue: string = ''): string => {
+  if (value === null || value === undefined) return defaultValue;
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') return String(value);
   return defaultValue;
-}
+};
 
 /**
- * Safely converts a value to a boolean
+ * Convert an unknown value to a number
+ * @param value The value to convert
+ * @param defaultValue Optional default value if conversion fails
+ * @returns A number
  */
-export function safeBoolean(value: unknown, defaultValue = false): boolean {
-  if (typeof value === 'boolean') {
-    return value;
-  }
-  if (typeof value === 'string') {
-    return value.toLowerCase() === 'true';
-  }
-  if (typeof value === 'number') {
-    return value !== 0;
-  }
-  return defaultValue;
-}
-
-/**
- * Safely converts a value to a number
- */
-export function safeNumber(value: unknown, defaultValue = 0): number {
-  if (typeof value === 'number' && !isNaN(value)) {
-    return value;
-  }
+export const toNumber = (value: unknown, defaultValue: number = 0): number => {
+  if (value === null || value === undefined) return defaultValue;
+  if (typeof value === 'number') return value;
   if (typeof value === 'string') {
     const parsed = parseFloat(value);
     return isNaN(parsed) ? defaultValue : parsed;
   }
+  if (typeof value === 'boolean') return value ? 1 : 0;
   return defaultValue;
-}
+};
 
 /**
- * Safely converts unknown to string with optional default
+ * Convert an unknown value to a boolean
+ * @param value The value to convert
+ * @param defaultValue Optional default value if conversion fails
+ * @returns A boolean
  */
-export function toString(value: unknown, defaultValue: string = ''): string {
-  if (typeof value === 'string') {
-    return value;
-  } else if (value !== null && value !== undefined) {
-    return String(value);
+export const toBoolean = (value: unknown, defaultValue: boolean = false): boolean => {
+  if (value === null || value === undefined) return defaultValue;
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') return value.toLowerCase() === 'true' || value === '1';
+  if (typeof value === 'number') return value !== 0;
+  return defaultValue;
+};
+
+/**
+ * Convert an unknown value to an array
+ * @param value The value to convert
+ * @param defaultValue Optional default value if conversion fails
+ * @returns An array
+ */
+export const toArray = (value: unknown, defaultValue: any[] = []): any[] => {
+  if (Array.isArray(value)) return value;
+  if (value === null || value === undefined) return defaultValue;
+  return defaultValue;
+};
+
+/**
+ * Convert an unknown value to a Record/Object
+ * @param value The value to convert
+ * @param defaultValue Optional default value if conversion fails
+ * @returns A Record/Object
+ */
+export const toRecord = (value: unknown, defaultValue: Record<string, unknown> = {}): Record<string, unknown> => {
+  if (value === null || value === undefined) return defaultValue;
+  if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
   }
   return defaultValue;
-}
+};
 
 /**
- * Safely converts unknown to a string array
+ * Safely spread an unknown object
+ * @param obj The object to spread
+ * @returns A safe object that can be spread
  */
-export function toStringArray(value: unknown, defaultValue: string[] = []): string[] {
-  if (Array.isArray(value)) {
-    return value.map(item => toString(item));
-  }
+export const toSafeSpreadObject = (obj: unknown): Record<string, unknown> => {
+  return toRecord(obj);
+};
+
+/**
+ * Convert to a string array safely
+ * @param value The value to convert
+ * @param defaultValue Optional default value if conversion fails
+ * @returns A string array
+ */
+export const toStringArray = (value: unknown, defaultValue: string[] = []): string[] => {
+  if (!Array.isArray(value)) return defaultValue;
+  return value.map(item => toString(item));
+};
+
+/**
+ * Convert to a number array safely
+ * @param value The value to convert
+ * @param defaultValue Optional default value if conversion fails
+ * @returns A number array
+ */
+export const toNumberArray = (value: unknown, defaultValue: number[] = []): number[] => {
+  if (!Array.isArray(value)) return defaultValue;
+  return value.map(item => toNumber(item));
+};
+
+/**
+ * Safely cast an unknown value to a specific type
+ * @param value The value to cast
+ * @param defaultValue Default value if cast fails
+ * @returns The value cast to type T
+ */
+export const safeObjectCast = <T extends object>(value: unknown, defaultValue: T): T => {
+  if (value === null || value === undefined) return defaultValue;
+  if (typeof value === 'object' && value !== null) return value as T;
   return defaultValue;
-}
+};
 
 /**
- * Safely checks if a value is a string and handles methods on it
+ * Create a safe string for display
+ * @param value The value to convert to a string
+ * @param defaultValue Default value if conversion fails
+ * @returns A safe string for display
  */
-export function isString(value: unknown): value is string {
-  return typeof value === 'string';
-}
-
-/**
- * Safely checks if a value is an object
- */
-export function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
+export const safeString = (value: unknown, defaultValue: string = ''): string => {
+  if (value === null || value === undefined) return defaultValue;
+  if (typeof value === 'object') {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return defaultValue;
+    }
+  }
+  return String(value);
+};

@@ -16,7 +16,7 @@ interface ExcelPreviewProps {
 const ExcelViewer: React.FC<ExcelPreviewProps> = ({ url, documentId, title }) => {
   const { 
     excelData, 
-    loading: isLoading, 
+    loading, 
     error, 
     activeSheet, 
     changeSheet,
@@ -26,9 +26,9 @@ const ExcelViewer: React.FC<ExcelPreviewProps> = ({ url, documentId, title }) =>
     data
   } = useExcelPreview(url, documentId);
   
-  const [activeTab, setActiveTab] = useState<string>('0');
+  const [activeTab, setActiveTab] = useState<string>("0");
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-full bg-muted/20">
         <div className="text-center">
@@ -63,7 +63,7 @@ const ExcelViewer: React.FC<ExcelPreviewProps> = ({ url, documentId, title }) =>
     <Card className="h-full flex flex-col">
       <div className="border-b p-2 flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-medium">{title || excelData.metadata?.fileName || 'Excel Document'}</h3>
+          <h3 className="text-sm font-medium">{title || excelData?.metadata?.fileName || 'Excel Document'}</h3>
         </div>
         <div>
           <Button variant="outline" size="sm" onClick={downloadExcel}>

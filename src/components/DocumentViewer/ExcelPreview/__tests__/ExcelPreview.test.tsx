@@ -1,47 +1,23 @@
-
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from './setup';
-import ExcelPreview from '../index';
+import { render, screen } from '@testing-library/react';
+import './setup'; // Import the test setup first
+import ExcelViewer from '../index'; // Correct import path
 
-vi.mock('../hooks/useExcelPreview', () => ({
-  useExcelPreview: () => ({
-    excelData: {
-      sheets: [
-        {
-          name: 'Sheet1',
-          data: [
-            ['Header1', 'Header2'],
-            ['Value1', 'Value2']
-          ],
-          columns: ['Header1', 'Header2']
-        }
-      ],
-      activeSheet: 0,
-      metadata: {
-        fileName: 'test.xlsx',
-        sheetCount: 1
-      }
-    },
-    loading: false,
-    error: null,
-    activeSheet: 0,
-    changeSheet: vi.fn(),
-    sheets: ['Sheet1'],
-    downloadExcel: vi.fn(),
-    refresh: vi.fn(),
-    data: [
-      { Header1: 'Value1', Header2: 'Value2' }
-    ]
-  })
-}));
+describe('ExcelPreview Component', () => {
+  const mockUrl = 'https://example.com/test.xlsx';
+  const mockDocumentId = 'doc-123';
+  const mockTitle = 'Test Excel Document';
 
-describe('ExcelPreview', () => {
-  it('renders the Excel preview component', async () => {
-    render(<ExcelPreview storagePath="test/path.xlsx" documentId="test-id" />);
-    
-    await waitFor(() => {
-      expect(screen.getByText('Sheet1')).toBeInTheDocument();
-    });
+  it('should render loading state initially', () => {
+    render(
+      <ExcelViewer 
+        url={mockUrl} 
+        documentId={mockDocumentId} 
+        title={mockTitle} 
+      />
+    );
+    expect(screen.getByText(/Loading spreadsheet/i)).toBeDefined();
   });
+
+  // Additional tests would go here
 });

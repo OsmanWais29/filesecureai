@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo } from "react";
 import DocumentPreview from "./DocumentPreview";
 import { useDocumentViewer } from "./hooks/useDocumentViewer";
@@ -130,7 +129,6 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
           taskPanel={
             <TaskManager 
               documentId="form47" 
-              tasks={[]} 
               onTaskUpdate={handleDocumentUpdated} 
             />
           }
@@ -190,7 +188,6 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
         taskPanel={
           <TaskManager 
             documentId={documentId} 
-            tasks={document.tasks || []} 
             onTaskUpdate={handleDocumentUpdated} 
           />
         }

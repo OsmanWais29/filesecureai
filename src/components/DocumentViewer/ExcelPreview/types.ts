@@ -1,16 +1,28 @@
 
 export interface ExcelPreviewProps {
-  storagePath: string;
+  url: string;
+  documentId?: string;
   title?: string;
 }
 
 export interface ExcelData {
   headers: string[];
   rows: any[][];
+  metadata?: {
+    fileName?: string;
+    sheetNames?: string[];
+    [key: string]: any;
+  };
+}
+
+export interface ExcelSheetData {
+  name: string;
+  data: any[][];
+  columns: string[];
 }
 
 export interface ExcelTableProps {
-  data: ExcelData;
+  data: Record<string, any>[];
   enableSorting?: boolean;
   enableFiltering?: boolean;
 }
