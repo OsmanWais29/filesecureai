@@ -14,6 +14,23 @@ export const isDebugMode = (): boolean => {
 };
 
 /**
+ * Initialize debug mode based on URL parameters or environment settings
+ */
+export const initDebugMode = (): void => {
+  if (typeof window !== 'undefined') {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('debug')) {
+      debugModeEnabled = urlParams.get('debug') === 'true';
+      console.log(`Debug mode ${debugModeEnabled ? 'enabled' : 'disabled'} via URL parameter`);
+    } else if (import.meta.env?.MODE === 'development') {
+      // Optionally enable debug mode in development by default
+      debugModeEnabled = true;
+      console.log('Debug mode enabled in development environment');
+    }
+  }
+};
+
+/**
  * Enable debug mode
  */
 export const enableDebugMode = (): void => {
@@ -84,4 +101,3 @@ export const logError = (error: unknown, context: string): void => {
     console.error(`[Error] Context: ${context}`, error);
   }
 };
-
