@@ -1,3 +1,4 @@
+
 import { supabase } from "@/lib/supabase";
 import { logAuthEvent, recordSessionEvent } from "./debugMode";
 
