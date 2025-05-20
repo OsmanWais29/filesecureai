@@ -7,10 +7,19 @@ export interface SheetMetadata {
   totalColumns: number;
 }
 
+export interface ExcelData {
+  headers: string[];
+  rows: any[][];
+  metadata: SheetMetadata;
+}
+
 export interface ExcelSheetData {
   headers: string[];
   rows: any[][];
   metadata: SheetMetadata;
+  name?: string;
+  columns?: string[];
+  data?: any[][];
 }
 
 export interface ExcelPreviewProps {
@@ -22,9 +31,11 @@ export interface ExcelPreviewProps {
 }
 
 export interface ExcelTableProps {
-  data: ExcelSheetData;
+  data: any[];
   selectedSheet: string;
   onSheetSelect: (sheetName: string) => void;
+  enableSorting?: boolean;
+  enableFiltering?: boolean;
 }
 
 export interface ExcelHeaderActionsProps {
@@ -32,9 +43,14 @@ export interface ExcelHeaderActionsProps {
   selectedSheet: string;
   onSheetSelect: (sheetName: string) => void;
   fileName: string;
+  title?: string;
+  onRefresh?: () => void;
+  publicUrl?: string;
 }
 
 export interface ExcelErrorDisplayProps {
   error: string;
   onRetry: () => void;
+  onRefresh?: () => void;
+  publicUrl?: string;
 }

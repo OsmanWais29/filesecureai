@@ -6,9 +6,18 @@ import { ExcelErrorDisplayProps } from '../types';
 
 const ExcelErrorDisplay: React.FC<ExcelErrorDisplayProps> = ({ 
   error, 
-  onRefresh, 
-  publicUrl 
+  onRetry, 
+  publicUrl,
+  onRefresh
 }) => {
+  const handleRefresh = () => {
+    if (onRefresh) {
+      onRefresh();
+    } else {
+      onRetry();
+    }
+  };
+
   return (
     <div className="flex flex-col items-center justify-center h-full p-8">
       <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
@@ -17,7 +26,7 @@ const ExcelErrorDisplay: React.FC<ExcelErrorDisplayProps> = ({
         {error || "Failed to load the spreadsheet. It may be corrupted or in an unsupported format."}
       </p>
       <div className="flex flex-wrap gap-3 justify-center">
-        <Button onClick={onRefresh} className="flex items-center gap-2">
+        <Button onClick={handleRefresh} className="flex items-center gap-2">
           <RefreshCw className="h-4 w-4" />
           Retry
         </Button>

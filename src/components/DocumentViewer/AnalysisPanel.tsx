@@ -2,6 +2,7 @@
 import { FileText, AlertTriangle, CheckCircle } from "lucide-react";
 import { DocumentDetails, Risk } from "./types";
 import { DeadlineManager } from "./DeadlineManager";
+import { toRecord, toString } from "@/utils/typeSafetyUtils";
 
 interface AnalysisPanelProps {
   document: DocumentDetails;
@@ -10,8 +11,10 @@ interface AnalysisPanelProps {
 
 export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ document, onDeadlineUpdated }) => {
   const analysisContent = document.analysis?.[0]?.content;
-  const extractedInfo = analysisContent?.extracted_info;
-  const risks = analysisContent?.risks || [];
+  // Safely convert to record to avoid "unknown" type errors
+  const extractedInfo = analysisContent?.extracted_info ? toRecord(analysisContent.extracted_info) : {};
+  // Safely convert to array to avoid "unknown" array operations
+  const risks = Array.isArray(analysisContent?.risks) ? analysisContent?.risks : [];
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -26,10 +29,10 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ document, onDeadli
     }
   };
 
-  // Determine form type for specialized display
-  const formType = extractedInfo?.type || extractedInfo?.formType || document.type;
-  const isForm31 = formType?.includes('form-31') || formType?.includes('proof-of-claim') || (extractedInfo?.formNumber === '31');
-  const isForm47 = formType?.includes('form-47') || formType?.includes('consumer-proposal') || (extractedInfo?.formNumber === '47');
+  // Determine form type for specialized display, using toString for type safety
+  const formType = toString(extractedInfo.type) || toString(extractedInfo.formType) || document.type;
+  const isForm31 = formType?.includes('form-31') || formType?.includes('proof-of-claim') || (toString(extractedInfo.formNumber) === '31');
+  const isForm47 = formType?.includes('form-47') || formType?.includes('consumer-proposal') || (toString(extractedInfo.formNumber) === '47');
 
   return (
     <div className="rounded-lg border bg-card p-6">
@@ -54,7 +57,7 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ document, onDeadli
             {/* Generic fields */}
             <div>
               <span className="text-muted-foreground">Client Name:</span>
-              <p>{extractedInfo?.clientName || extractedInfo?.debtorName || 'Not extracted'}</p>
+              <p>{toString(extractedInfo.clientName) || toString(extractedInfo.debtorName) || 'Not extracted'}</p>
             </div>
 
             {/* Form 31 specific fields */}
@@ -62,23 +65,23 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ document, onDeadli
               <>
                 <div>
                   <span className="text-muted-foreground">Creditor Name:</span>
-                  <p>{extractedInfo?.claimantName || extractedInfo?.creditorName || 'Not extracted'}</p>
+                  <p>{toString(extractedInfo.claimantName) || toString(extractedInfo.creditorName) || 'Not extracted'}</p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Claim Amount:</span>
-                  <p>{extractedInfo?.claimAmount || 'Not extracted'}</p>
+                  <p>{toString(extractedInfo.claimAmount) || 'Not extracted'}</p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Claim Type:</span>
-                  <p>{extractedInfo?.claimType || extractedInfo?.claimClassification || 'Not extracted'}</p>
+                  <p>{toString(extractedInfo.claimType) || toString(extractedInfo.claimClassification) || 'Not extracted'}</p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Security Details:</span>
-                  <p>{extractedInfo?.securityDetails || 'Not provided'}</p>
+                  <p>{toString(extractedInfo.securityDetails) || 'Not provided'}</p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Creditor Address:</span>
-                  <p>{extractedInfo?.creditorAddress || 'Not extracted'}</p>
+                  <p>{toString(extractedInfo.creditorAddress) || 'Not extracted'}</p>
                 </div>
               </>
             )}
@@ -88,19 +91,19 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ document, onDeadli
               <>
                 <div>
                   <span className="text-muted-foreground">Trustee Name:</span>
-                  <p>{extractedInfo?.trusteeName || 'Not extracted'}</p>
+                  <p>{toString(extractedInfo.trusteeName) || 'Not extracted'}</p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Administrator:</span>
-                  <p>{extractedInfo?.administratorName || extractedInfo?.trusteeName || 'Not extracted'}</p>
+                  <p>{toString(extractedInfo.administratorName) || toString(extractedInfo.trusteeName) || 'Not extracted'}</p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Proposal Type:</span>
-                  <p>{extractedInfo?.proposalType || 'Consumer Proposal'}</p>
+                  <p>{toString(extractedInfo.proposalType) || 'Consumer Proposal'}</p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Monthly Payment:</span>
-                  <p>{extractedInfo?.monthlyPayment || 'Not specified'}</p>
+                  <p>{toString(extractedInfo.monthlyPayment) || 'Not specified'}</p>
                 </div>
               </>
             )}
@@ -108,15 +111,15 @@ export const AnalysisPanel: React.FC<AnalysisPanelProps> = ({ document, onDeadli
             {/* Common fields for all forms */}
             <div>
               <span className="text-muted-foreground">Date Signed:</span>
-              <p>{extractedInfo?.dateSigned || 'Not extracted'}</p>
+              <p>{toString(extractedInfo.dateSigned) || 'Not extracted'}</p>
             </div>
             <div>
               <span className="text-muted-foreground">Form Number:</span>
-              <p>{extractedInfo?.formNumber || (isForm31 ? '31' : isForm47 ? '47' : 'Not extracted')}</p>
+              <p>{toString(extractedInfo.formNumber) || (isForm31 ? '31' : isForm47 ? '47' : 'Not extracted')}</p>
             </div>
             <div>
               <span className="text-muted-foreground">Estate Number:</span>
-              <p>{extractedInfo?.estateNumber || 'Not extracted'}</p>
+              <p>{toString(extractedInfo.estateNumber) || 'Not extracted'}</p>
             </div>
           </div>
         </div>

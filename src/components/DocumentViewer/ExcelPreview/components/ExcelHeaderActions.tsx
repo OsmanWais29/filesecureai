@@ -7,7 +7,11 @@ import { ExcelHeaderActionsProps } from '../types';
 const ExcelHeaderActions: React.FC<ExcelHeaderActionsProps> = ({ 
   title = "Excel Document", 
   onRefresh, 
-  publicUrl 
+  publicUrl,
+  sheetNames,
+  selectedSheet,
+  onSheetSelect,
+  fileName
 }) => {
   const handleDownload = () => {
     if (publicUrl) {
@@ -27,14 +31,16 @@ const ExcelHeaderActions: React.FC<ExcelHeaderActionsProps> = ({
         <h3 className="font-medium text-sm">{title}</h3>
       </div>
       <div className="flex gap-2">
-        <Button 
-          onClick={onRefresh} 
-          variant="ghost" 
-          size="sm"
-          title="Refresh"
-        >
-          <RefreshCw className="h-4 w-4" />
-        </Button>
+        {onRefresh && (
+          <Button 
+            onClick={onRefresh} 
+            variant="ghost" 
+            size="sm"
+            title="Refresh"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        )}
         {publicUrl && (
           <Button 
             onClick={handleDownload} 

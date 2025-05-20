@@ -2,16 +2,20 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import * as XLSX from 'xlsx';
-import { ExcelData, ExcelSheetData, SheetMetadata } from '../types';
+import { ExcelSheetData, SheetMetadata } from '../types';
 
 export const useExcelPreview = (url: string, documentId?: string) => {
-  const [excelData, setExcelData] = useState<ExcelData>({ headers: [], rows: [] });
+  const [excelData, setExcelData] = useState<ExcelSheetData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeSheet, setActiveSheet] = useState(0);
   const [sheets, setSheets] = useState<string[]>([]);
   const [data, setData] = useState<Record<string, any>[]>([]);
-  const [sheetData, setSheetData] = useState<ExcelSheetData[]>([]);
+  const [sheetData, setSheetData] = useState<Array<{
+    name: string;
+    data: any[][];
+    columns: string[];
+  }>>([]);
 
   const parseExcel = useCallback(async (arrayBuffer: ArrayBuffer) => {
     try {
@@ -20,7 +24,11 @@ export const useExcelPreview = (url: string, documentId?: string) => {
       setSheets(sheetNames);
 
       // Process all sheets
-      const sheetsData: ExcelSheetData[] = [];
+      const sheetsData: Array<{
+        name: string;
+        data: any[][];
+        columns: string[];
+      }> = [];
       
       // Track total rows and columns for metadata
       let totalRows = 0;
@@ -56,16 +64,23 @@ export const useExcelPreview = (url: string, documentId?: string) => {
       
       // Extract metadata for the full Excel file
       const metadata: SheetMetadata = {
+        fileName: documentId ? `document_${documentId}.xlsx` : 'document.xlsx',
         sheetNames: sheetNames,
+        totalSheets: sheetNames.length,
         totalRows: totalRows,
         totalColumns: totalColumns
       };
       
-      setExcelData({
-        headers: sheetsData[0]?.columns || [],
-        rows: sheetsData[0]?.data || [],
-        metadata: metadata
-      });
+      if (sheetsData.length > 0) {
+        setExcelData({
+          headers: sheetsData[0]?.columns || [],
+          rows: sheetsData[0]?.data || [],
+          metadata: metadata,
+          name: sheetsData[0]?.name,
+          columns: sheetsData[0]?.columns,
+          data: sheetsData[0]?.data
+        });
+      }
       
       return {
         sheetNames,
@@ -78,7 +93,11 @@ export const useExcelPreview = (url: string, documentId?: string) => {
     }
   }, [documentId]);
 
-  const processSheetData = useCallback((sheetInfo: ExcelSheetData) => {
+  const processSheetData = useCallback((sheetInfo: {
+    name: string;
+    data: any[][];
+    columns: string[];
+  }) => {
     const { columns, data: rowData } = sheetInfo;
     
     // Convert data to format suitable for display
@@ -99,11 +118,18 @@ export const useExcelPreview = (url: string, documentId?: string) => {
       processSheetData(sheetData[sheetIndex]);
       
       // Update excelData with current sheet info
-      setExcelData(prev => ({
-        ...prev,
-        headers: sheetData[sheetIndex].columns || [],
-        rows: sheetData[sheetIndex].data || []
-      }));
+      const currentSheet = sheetData[sheetIndex];
+      setExcelData(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          headers: currentSheet.columns || [],
+          rows: currentSheet.data || [],
+          name: currentSheet.name,
+          columns: currentSheet.columns,
+          data: currentSheet.data
+        };
+      });
     }
   }, [sheetData, processSheetData]);
 

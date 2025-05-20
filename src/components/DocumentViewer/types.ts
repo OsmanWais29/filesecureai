@@ -1,4 +1,3 @@
-
 // Base document record type
 export interface DocumentRecord {
   id: string;
@@ -13,14 +12,23 @@ export interface DocumentRecord {
 }
 
 // Document details type with additional information
-export interface DocumentDetails extends DocumentRecord {
-  versions: DocumentVersion[];
-  tasks: Task[];
-  comments: Comment[];
-  analysis?: Array<{
-    id: string;
-    content: Record<string, unknown>;
-  }>;
+export interface DocumentDetails {
+  id: string;
+  title: string;
+  type: string;
+  storage_path: string;
+  created_at: string;
+  updated_at: string;
+  analysis?: DocumentAnalysis[];
+  comments?: Comment[];
+  tasks?: Task[];
+  versions?: DocumentVersion[];
+  deadlines?: Deadline[];
+  // Add other fields that might be available
+  metadata?: Record<string, unknown>;
+  parent_folder_id?: string;
+  ai_processing_status?: string;
+  ai_processing_stage?: string;
 }
 
 // Document version type
@@ -28,13 +36,11 @@ export interface DocumentVersion {
   id: string;
   document_id: string;
   version_number: number;
+  storage_path?: string;
   created_at: string;
+  created_by?: string;
   description?: string;
-  is_current: boolean;
-  changes_summary?: string;
-  storage_path: string;
-  versionNumber?: number; // For backwards compatibility
-  createdAt?: string; // For backwards compatibility
+  is_current?: boolean;
 }
 
 // Task type
@@ -42,42 +48,58 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
-  status?: string;
+  status: string;
   assigned_to?: string;
-  created_by?: string;
-  created_at?: string;
-  updated_at?: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
   due_date?: string;
-  severity?: string;
+  severity: string;
   document_id?: string;
-  solution?: string;
 }
 
 // Comment type
 export interface Comment {
   id: string;
   content: string;
-  created_at: string;
   user_id: string;
+  created_at: string;
   document_id: string;
+  parent_id?: string;
 }
 
 // Risk type
 export interface Risk {
-  id?: string;
   type: string;
   description: string;
-  severity: string;
-  impact?: string;
+  severity: 'high' | 'medium' | 'low';
   regulation?: string;
+  impact?: string;
+  requiredAction?: string;
   solution?: string;
+  deadline?: string;
 }
 
 // Deadline type
 export interface Deadline {
-  id?: string;
+  id: string;
   title: string;
   dueDate: string;
   description?: string;
-  status?: string;
+  priority: string;
+  status: string;
+}
+
+// Document analysis type
+export interface DocumentAnalysis {
+  id: string;
+  content: {
+    extracted_info?: Record<string, unknown>;
+    risks?: Risk[];
+    regulatory_compliance?: {
+      status: string;
+      details: string;
+      references: string[];
+    };
+  };
 }

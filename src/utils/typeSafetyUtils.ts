@@ -84,6 +84,15 @@ export function toSafeComment(
 }
 
 /**
+ * Safely convert an unknown value to an array and spread it
+ * @param value Value to convert and spread
+ * @returns Safe array for spreading
+ */
+export function toSafeSpreadArray<T = unknown>(value: unknown): T[] {
+  return toArray<T>(value);
+}
+
+/**
  * Safely create a spread object for use in database operations
  * @param obj Object to spread
  * @returns Safe object for spreading
@@ -106,4 +115,26 @@ export function safeObjectCast<T extends Record<string, unknown>>(
     return { ...defaultObj, ...value as Record<string, unknown> };
   }
   return defaultObj;
+}
+
+/**
+ * Converts an unknown value to a string array
+ * @param value Any value that needs to be safely converted to a string array
+ * @returns A string array or empty array if value is not an array
+ */
+export function toStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map(item => toString(item));
+  }
+  return [];
+}
+
+/**
+ * Safely converts a value to a string, with additional type checking
+ * @param value Value to convert to string
+ * @param defaultValue Default if null/undefined
+ * @returns Safe string
+ */
+export function safeString(value: unknown, defaultValue = ''): string {
+  return toString(value, defaultValue);
 }
