@@ -69,6 +69,9 @@ export const useFileUpload = ({ clientName, onDocumentUpload, setFiles }: UseFil
       
       if (docError) throw docError;
       
+      // Ensure document.id is a string
+      const documentId = document?.id?.toString() || '';
+      
       // Update file status to analyzing
       setFiles(prev => 
         prev.map(f => 
@@ -77,14 +80,14 @@ export const useFileUpload = ({ clientName, onDocumentUpload, setFiles }: UseFil
                 ...f,
                 status: 'analyzing',
                 progress: 50,
-                documentId: document.id
+                documentId: documentId
               } 
             : f
         )
       );
       
       // Upload file to storage
-      const filePath = `${user.id}/${document.id}/${fileInfo.name}`;
+      const filePath = `${user.id}/${documentId}/${fileInfo.name}`;
       const { error: uploadError } = await supabase.storage
         .from("documents")
         .upload(filePath, file);
@@ -103,7 +106,7 @@ export const useFileUpload = ({ clientName, onDocumentUpload, setFiles }: UseFil
           storage_path: filePath,
           ai_processing_status: "complete"
         })
-        .eq("id", document.id);
+        .eq("id", documentId);
       
       if (updateError) throw updateError;
       
@@ -121,8 +124,8 @@ export const useFileUpload = ({ clientName, onDocumentUpload, setFiles }: UseFil
       );
       
       // Call the onDocumentUpload callback if provided
-      if (onDocumentUpload) {
-        onDocumentUpload(document.id);
+      if (onDocumentUpload && documentId) {
+        onDocumentUpload(documentId);
       }
       
       toast({

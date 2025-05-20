@@ -1,111 +1,69 @@
 
 import { useState, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
-import { toast } from 'sonner';
-import { AnalysisProcessContext } from './types';
+import { toast as showToast } from 'sonner';
+import { dataExtraction } from './stages/dataExtraction';
+import { documentClassification } from './stages/documentClassification';
 import { useRiskAssessment } from './stages/riskAssessment';
-import { toRecord, toString } from '@/utils/typeSafetyUtils';
+import { toRecord } from '@/utils/typeSafetyUtils';
 
-export const useAnalysisProcess = (documentId: string) => {
-  const [analyzing, setAnalyzing] = useState(false);
-  const [step, setStep] = useState('');
+export const useAnalysisProcess = () => {
+  const [analysisStep, setAnalysisStep] = useState('');
   const [progress, setProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
   const [processingStage, setProcessingStage] = useState('');
-  const [error, setError] = useState<null | string>(null);
-  
-  const initiateAnalysis = useCallback(async () => {
-    setAnalyzing(true);
-    setError(null);
-    setStep('Initializing');
+
+  const analyzeDocument = useCallback(async (document: any) => {
+    // Reset states
+    setAnalysisStep('');
     setProgress(0);
-    
+    setError(null);
+    setProcessingStage('');
+
     try {
-      // Get document record
-      const { data: document, error: docError } = await supabase
-        .from('documents')
-        .select('*')
-        .eq('id', documentId)
-        .maybeSingle();
-        
-      if (docError || !document) {
-        throw new Error(`Failed to fetch document: ${docError?.message || 'Not found'}`);
+      if (!document) {
+        throw new Error('No document provided for analysis');
       }
-      
-      // Update status to processing
-      await supabase
-        .from('documents')
-        .update({
-          ai_processing_status: 'processing',
-          metadata: {
-            ...toRecord(document.metadata),
-            processing_started: new Date().toISOString(),
-            processing_stage: 'initialization'
-          }
-        })
-        .eq('id', documentId);
-        
-      // Create analysis context
-      const metadata = toRecord(document.metadata);
-      
-      // Safely get formType from metadata
-      const formType = toString(metadata.formType);
-      
-      const context: AnalysisProcessContext = {
-        setAnalysisStep: setStep,
+
+      const context = {
+        setAnalysisStep,
         setProgress,
         setError,
         setProcessingStage,
-        toast,
-        // If this document is a form, determine the type
-        isForm47: formType === 'form-47',
-        isForm76: formType === 'form-76'
+        toast: showToast,
+        isForm47: false,
+        isForm76: false,
+        isForm31: false
       };
+
+      // Detect form types from metadata
+      const metadata = toRecord(document.metadata);
+      const formType = metadata.formType ? String(metadata.formType) : '';
       
-      // Simulate document preparation
-      setStep('Document preparation');
-      setProgress(10);
-      setProcessingStage('Preparation');
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Run risk assessment
-      setStep('Risk assessment');
-      setProgress(60);
+      // Set form type flags
+      context.isForm47 = formType === 'form-47';
+      context.isForm76 = formType === 'form-76';
+      context.isForm31 = formType === 'form-31';
+
+      // Run analysis stages
+      await documentClassification(context, document);
+      await dataExtraction(context, document);
       await useRiskAssessment(context, document);
-      
-      // Complete processing
-      setStep('Finalizing analysis');
+
+      setAnalysisStep('Analysis complete');
       setProgress(100);
-      
-      // Update status to complete
-      await supabase
-        .from('documents')
-        .update({
-          ai_processing_status: 'complete',
-          metadata: {
-            ...toRecord(document.metadata),
-            processing_complete: true,
-            processing_completed_at: new Date().toISOString()
-          }
-        })
-        .eq('id', documentId);
-      
-      setAnalyzing(false);
       return { success: true };
     } catch (err: any) {
-      console.error('Analysis process failed:', err);
-      setError(err.message || 'Analysis failed');
-      setAnalyzing(false);
-      
-      return { success: false, error: err.message };
+      console.error('Analysis process error:', err);
+      setError(err.message || 'An unknown error occurred during analysis');
+      return { success: false, error: err };
     }
-  }, [documentId, toast]);
-  
+  }, []);
+
   return {
-    analyzing,
-    step,
+    analyzeDocument,
+    analysisStep,
     progress,
-    processingStage,
     error,
-    initiateAnalysis
+    processingStage
   };
 };

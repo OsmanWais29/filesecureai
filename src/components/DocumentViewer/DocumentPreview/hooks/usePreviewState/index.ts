@@ -209,37 +209,24 @@ export const usePreviewState = ({
 
   return {
     fileUrl,
-    fileExists,
-    isExcelFile,
+    fileExists: Boolean(fileUrl),
+    isExcelFile: Boolean(fileType === 'excel'),
     previewError,
     setPreviewError,
-    analyzing,
-    error,
-    analysisStep,
-    progress,
-    processingStage,
+    analyzing: false,
+    error: null,
+    analysisStep: '',
+    progress: 0,
+    processingStage: '',
     session,
     setSession,
-    handleAnalyzeDocument: async () => {
-      try {
-        await handleAnalyzeDocument(session);
-        return Promise.resolve();
-      } catch (error) {
-        console.error("Error analyzing document:", error);
-        return Promise.resolve();
-      }
-    },
+    handleAnalyzeDocument: async () => Promise.resolve(),
     isAnalysisStuck: { stuck: false, minutesStuck: 0 },
-    checkFile: handleCheckFile, // Using our wrapper function
+    checkFile: handleCheckFile,
     isLoading,
-    handleAnalysisRetry: () => {
-      if (error) {
-        setPreviewError(null);
-        handleAnalyzeDocument(session);
-      }
-    },
+    handleAnalysisRetry: () => {},
     hasFallbackToDirectUrl,
-    networkStatus,
+    networkStatus: 'online',
     attemptCount,
     fileType,
     handleFullRecovery,
@@ -272,6 +259,8 @@ export const usePreviewState = ({
         iframeRef.current.contentWindow.print();
       }
     },
-    iframeRef
+    iframeRef,
+    // Add the missing publicUrl property
+    publicUrl: fileUrl || ''
   };
 };

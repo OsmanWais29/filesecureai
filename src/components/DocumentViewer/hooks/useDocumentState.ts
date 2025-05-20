@@ -1,13 +1,9 @@
+
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentDetails } from "../types";
-import { 
-  toString,
-  toRecord,
-  toSafeArray,
-  toSafeComment
-} from "@/utils/typeSafetyUtils";
+import { toString, toRecord, toSafeArray, toSafeComment } from "@/utils/typeSafetyUtils";
 
 export const useDocumentState = (documentId: string, documentTitle?: string) => {
   const [document, setDocument] = useState<DocumentDetails | null>(null);
@@ -71,7 +67,7 @@ export const useDocumentState = (documentId: string, documentTitle?: string) => 
           if (content && typeof content === 'object') {
             documentData.analysis = [{ 
               id: toString(analysisItem.id || ''), 
-              content: content
+              content: content as Record<string, unknown>
             }];
             
             // Set debug info if available
@@ -164,7 +160,7 @@ export const useDocumentState = (documentId: string, documentTitle?: string) => 
           documentId: documentId,
           module: "document-analysis",
           formType: formType,
-          title: document.title,
+          title: document.title || "",
           debug: true
         }
       });

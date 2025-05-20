@@ -7,4 +7,5 @@ export interface AnalysisProcessContext {
   toast: any;
   isForm47: boolean;
   isForm76: boolean;
+  isForm31: boolean; // Added this field that was missing
 }

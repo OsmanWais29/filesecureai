@@ -1,6 +1,6 @@
 
 import { AnalysisProcessContext } from '../types';
-import { DocumentRecord } from '../../types';
+import { DocumentRecord } from '../../../types';
 import { updateAnalysisStatus } from '../documentStatusUpdates';
 import { toRecord } from '@/utils/typeSafetyUtils';
 

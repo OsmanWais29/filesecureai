@@ -1,50 +1,43 @@
-export interface DocumentDetails {
+
+// Base document record type
+export interface DocumentRecord {
   id: string;
   title: string;
-  type?: string;
+  storage_path: string;
+  type: string;
   created_at: string;
   updated_at: string;
-  storage_path: string;
-  analysis?: AnalysisResult[];
-  comments?: Comment[];
-  tasks?: Task[];
-  deadlines?: Deadline[];
-  versions?: Version[];
-  metadata?: Record<string, any>;
+  user_id?: string;
+  size?: number;
+  metadata?: Record<string, unknown>;
 }
 
-export interface AnalysisResult {
+// Document details type with additional information
+export interface DocumentDetails extends DocumentRecord {
+  versions: DocumentVersion[];
+  tasks: Task[];
+  comments: Comment[];
+  analysis?: Array<{
+    id: string;
+    content: Record<string, unknown>;
+  }>;
+}
+
+// Document version type
+export interface DocumentVersion {
   id: string;
-  content: {
-    extracted_info?: {
-      formNumber?: string;
-      formType?: string;
-      summary?: string;
-      [key: string]: any;
-    };
-    risks?: Risk[];
-    [key: string]: any;
-  };
-}
-
-export interface Risk {
-  type: string;
-  description: string;
-  severity: 'low' | 'medium' | 'high';
-  [key: string]: any;
-}
-
-export interface Comment {
-  id: string;
-  content: string;
-  user_id: string;
-  created_at: string;
   document_id: string;
-  is_resolved?: boolean;
-  parent_id?: string;
-  mentions?: string[];
+  version_number: number;
+  created_at: string;
+  description?: string;
+  is_current: boolean;
+  changes_summary?: string;
+  storage_path: string;
+  versionNumber?: number; // For backwards compatibility
+  createdAt?: string; // For backwards compatibility
 }
 
+// Task type
 export interface Task {
   id: string;
   title: string;
@@ -52,43 +45,39 @@ export interface Task {
   status?: string;
   assigned_to?: string;
   created_by?: string;
+  created_at?: string;
+  updated_at?: string;
   due_date?: string;
   severity?: string;
   document_id?: string;
-  created_at?: string;
-  updated_at?: string;
+  solution?: string;
+}
+
+// Comment type
+export interface Comment {
+  id: string;
+  content: string;
+  created_at: string;
+  user_id: string;
+  document_id: string;
+}
+
+// Risk type
+export interface Risk {
+  id?: string;
+  type: string;
+  description: string;
+  severity: string;
+  impact?: string;
   regulation?: string;
   solution?: string;
 }
 
+// Deadline type
 export interface Deadline {
-  id: string;
+  id?: string;
   title: string;
   dueDate: string;
   description?: string;
-}
-
-export interface Version {
-  id: string;
-  version_number: number;
-  storage_path: string;
-  created_at?: string;
-  created_by?: string;
-  description?: string;
-  is_current?: boolean;
-}
-
-export interface DocumentVersion {
-  id: string;
-  documentId: string;
-  versionNumber: number;
-  content: any;
-  createdAt: string;
-  createdBy?: string;
-  isCurrent: boolean;
-  description?: string;
-  changesSummary?: string;
-  metadata?: Record<string, any>;
-  changes?: Record<string, any>[];
-  storage_path?: string;
+  status?: string;
 }

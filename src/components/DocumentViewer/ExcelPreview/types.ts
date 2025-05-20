@@ -1,45 +1,40 @@
 
-export interface ExcelErrorDisplayProps {
-  error: string;
-  onRefresh: () => void;
-  publicUrl: string;
-}
-
-export interface ExcelHeaderActionsProps {
-  title?: string;
-  onRefresh: () => void;
-  publicUrl: string;
-}
-
-export interface ExcelTableProps {
-  data: Record<string, any>[];
-  enableSorting?: boolean;
-  enableFiltering?: boolean;
-}
-
 export interface SheetMetadata {
+  fileName: string;
   sheetNames: string[];
+  totalSheets: number;
   totalRows: number;
   totalColumns: number;
 }
 
-export interface ExcelData {
-  headers: string[];
-  rows: (string | number | null)[][];
-  metadata?: SheetMetadata;
-}
-
-export interface UseExcelPreviewReturn {
-  excelData: ExcelData | null;
-  loading: boolean;
-  error: string | null;
-  activeSheet: number;
-  changeSheet: (index: number) => void;
-  refresh: () => void;
-}
-
 export interface ExcelSheetData {
-  name: string;
-  data: any[][];
-  columns: string[];
+  headers: string[];
+  rows: any[][];
+  metadata: SheetMetadata;
+}
+
+export interface ExcelPreviewProps {
+  fileUrl?: string;
+  documentId: string;
+  onDataLoaded?: (data: ExcelSheetData) => void;
+  selectedSheet?: string;
+  onSheetSelect?: (sheetName: string) => void;
+}
+
+export interface ExcelTableProps {
+  data: ExcelSheetData;
+  selectedSheet: string;
+  onSheetSelect: (sheetName: string) => void;
+}
+
+export interface ExcelHeaderActionsProps {
+  sheetNames: string[];
+  selectedSheet: string;
+  onSheetSelect: (sheetName: string) => void;
+  fileName: string;
+}
+
+export interface ExcelErrorDisplayProps {
+  error: string;
+  onRetry: () => void;
 }
