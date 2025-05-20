@@ -3,6 +3,7 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentDetails } from "../types";
+import { toString, toRecord } from "@/utils/typeSafetyUtils";
 
 export const useDocumentState = (documentId: string, documentTitle?: string) => {
   const [document, setDocument] = useState<DocumentDetails | null>(null);
@@ -20,7 +21,7 @@ export const useDocumentState = (documentId: string, documentTitle?: string) => 
       
       console.log('Fetching document details for ID:', documentId);
       
-      const { data: document, error: docError } = await supabase
+      const { data: docData, error: docError } = await supabase
         .from('documents')
         .select(`
           *,
@@ -36,26 +37,76 @@ export const useDocumentState = (documentId: string, documentTitle?: string) => 
         return;
       }
       
-      if (!document) {
+      if (!docData) {
         console.error("Document not found");
         setLoadingError("Document not found. It may have been deleted or moved.");
         return;
       }
       
-      if (!document.analysis || document.analysis.length === 0) {
-        setAnalysisError("No analysis data found for this document");
-      } else {
-        setDebugInfo(document.analysis[0]?.content?.debug_info || null);
+      // Create a complete document object with safe type handling
+      const documentData: DocumentDetails = {
+        id: toString(docData.id),
+        title: toString(docData.title),
+        type: toString(docData.type),
+        created_at: toString(docData.created_at),
+        updated_at: toString(docData.updated_at),
+        storage_path: toString(docData.storage_path),
+        // Add missing properties needed by DocumentDetails interface
+        versions: [],
+        tasks: [],
+        comments: []
+      };
+      
+      // Safely process analysis data
+      if (docData.analysis && Array.isArray(docData.analysis) && docData.analysis.length > 0) {
+        const analysisItem = docData.analysis[0];
         
-        const analysisContent = document.analysis[0]?.content;
-        if (!analysisContent || (!analysisContent.extracted_info && !analysisContent.risks)) {
-          setAnalysisError("Analysis data is incomplete or malformed");
+        // Check if content exists and is an object before accessing properties
+        if (analysisItem && typeof analysisItem === 'object' && analysisItem !== null) {
+          const content = analysisItem.content;
+          
+          // Only process content if it's an object
+          if (content && typeof content === 'object') {
+            documentData.analysis = [{ 
+              id: toString(analysisItem.id || ''), 
+              content: content
+            }];
+            
+            // Set debug info if available
+            if ('debug_info' in content) {
+              setDebugInfo(content.debug_info);
+            }
+            
+            // Check if analysis data is incomplete
+            const hasExtractedInfo = content.extracted_info !== undefined;
+            const hasRisks = content.risks !== undefined;
+            
+            if (!hasExtractedInfo && !hasRisks) {
+              setAnalysisError("Analysis data is incomplete or malformed");
+            } else {
+              setAnalysisError(null);
+            }
+          } else {
+            setAnalysisError("Analysis content is not in the expected format");
+          }
         } else {
-          setAnalysisError(null);
+          setAnalysisError("Analysis data is missing or malformed");
         }
+      } else {
+        setAnalysisError("No analysis data found for this document");
+      }
+      
+      // Process comments safely
+      if (docData.comments && Array.isArray(docData.comments)) {
+        documentData.comments = docData.comments.map(comment => ({
+          id: toString(comment.id),
+          content: toString(comment.content),
+          created_at: toString(comment.created_at),
+          user_id: toString(comment.user_id)
+        }));
       }
 
-      setDocument(document);
+      setDocument(documentData);
     } catch (error: any) {
       console.error('Error fetching document details:', error);
       setLoadingError(`Failed to load document: ${error.message}`);
@@ -94,9 +145,10 @@ export const useDocumentState = (documentId: string, documentTitle?: string) => 
       
       const textContent = await fileData.text();
       
+      // Safely determine form type from the document title
       let formType = null;
       if (document.title) {
-        const title = document.title.toLowerCase();
+        const title = toString(document.title).toLowerCase();
         if (title.includes('form 31') || title.includes('proof of claim')) {
           formType = 'form-31';
         } else if (title.includes('form 47') || title.includes('consumer proposal')) {

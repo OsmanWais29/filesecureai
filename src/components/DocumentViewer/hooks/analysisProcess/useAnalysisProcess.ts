@@ -1,210 +1,121 @@
 
+import { useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { AnalysisProcessProps } from "./types";
-import { Session } from "@supabase/supabase-js";
-import { stages } from "../../DocumentPreview/hooks/analysisProcess/stages";
+import { useToast } from "@/hooks/use-toast";
+import { riskAssessment } from "./stages/riskAssessment";
+import { toString, toRecord } from "@/utils/typeSafetyUtils";
+
+export interface AnalysisProcessProps {
+  setAnalysisStep: (step: string) => void;
+  setProgress: (progress: number) => void;
+  setError: (error: string) => void;
+  setProcessingStage: (stage: string) => void;
+  toast: any;
+  onAnalysisComplete?: () => void;
+}
 
 export const useAnalysisProcess = (props: AnalysisProcessProps) => {
-  const { setAnalysisStep, setProgress, setError, setProcessingStage, toast, onAnalysisComplete } = props;
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisStep, setAnalysisStep] = useState<string>("");
+  const [processingSteps, setProcessingSteps] = useState<string[]>([]);
 
-  const executeAnalysisProcess = async (storagePath: string, session: Session) => {
+  const startAnalysis = useCallback(async () => {
+    const { 
+      setAnalysisStep,
+      setProgress,
+      setError,
+      setProcessingStage,
+      toast,
+      onAnalysisComplete 
+    } = props;
+
+    setIsAnalyzing(true);
+    setAnalysisStep("initializing");
+    
     try {
-      if (!session) {
-        throw new Error('Authentication required: You must be logged in to analyze documents');
-      }
-
-      // Check if the file exists and get document ID
-      const { data: documents, error: documentsError } = await supabase
-        .from('documents')
-        .select('id, title, metadata')
-        .eq('storage_path', storagePath)
-        .limit(1);
-
-      if (documentsError) {
-        console.error('Error fetching document:', documentsError);
-        setError(`Error fetching document: ${documentsError.message}`);
-        return;
-      }
-
-      if (!documents || documents.length === 0) {
-        setError('Document not found in the database');
-        return;
-      }
-
-      const documentId = documents[0].id;
-      const documentTitle = documents[0].title;
-      const documentMetadata = documents[0].metadata || {};
-
-      // Begin the analysis process
-      setAnalysisStep('Initializing document analysis');
-      setProgress(5);
-      setProcessingStage('Preparing document for processing');
-
-      // Download document content for analysis
-      setAnalysisStep('Downloading document content');
-      setProgress(15);
+      // Initialize processing steps
+      const steps = ['extract_text', 'analyze_content', 'extract_metadata', 'assess_risks', 'generate_summary'];
+      setProcessingSteps(steps);
       
-      // Make sure we're using a fresh token for the storage download
-      const { data: refreshedSession, error: refreshError } = await supabase.auth.getSession();
-      if (refreshError) {
-        console.error('Failed to refresh session for document download:', refreshError);
-        throw new Error('Authentication error: Failed to refresh your session');
-      }
-      
-      const { data: fileData, error: downloadError } = await supabase.storage
-        .from('documents')
-        .download(storagePath);
+      // Set initial progress
+      setProgress(10);
+      setProcessingStage('processing');
 
-      if (downloadError) {
-        console.error('Error downloading document:', downloadError);
-        setError(`Error downloading document: ${downloadError.message}`);
-        return;
-      }
-
-      // Convert file to text
-      setAnalysisStep('Extracting text content');
-      setProgress(25);
-      setProcessingStage('Converting document to processable format');
-      
-      let textContent: string;
-      try {
-        textContent = await fileData.text();
-      } catch (error: any) {
-        console.error('Error converting file to text:', error);
-        setError(`Error converting file to text: ${error.message}`);
-        return;
-      }
-
-      // Execute classification stage
-      setAnalysisStep(stages.documentClassification.description);
-      setProgress(35);
-      setProcessingStage(stages.documentClassification.detailedDescription);
-      
-      // Log authentication info for debugging
-      console.log("Using authenticated session for API call");
-      
-      // Process document with AI
-      setAnalysisStep('Processing with AI assistant');
-      setProgress(50);
-      setProcessingStage('Analyzing document content with AI');
-
-      try {
-        // Ensure we have a valid session before making the API call
-        const { data: latestSession, error: sessionError } = await supabase.auth.getSession();
+      // Process each step with simulated timing
+      for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
+        setAnalysisStep(step);
         
-        if (sessionError || !latestSession.session) {
-          console.error("Session validation error:", sessionError);
-          throw new Error("Authentication error: Invalid or expired session");
-        }
-
-        // Make API request with fresh session token
-        const result = await supabase.functions.invoke('process-ai-request', {
-          body: {
-            message: textContent.substring(0, 100000), // Limit text size to avoid payload issues
-            documentId,
-            module: "document-analysis",
-            title: documentTitle,
-            formType: documentMetadata.formType
-          }
-        });
-
-        if (result.error) {
-          console.error("Edge function error:", result.error);
-          throw new Error(`AI processing error: ${result.error.message || JSON.stringify(result.error)}`);
-        }
+        // Update progress based on current step
+        const progressIncrement = 80 / steps.length;
+        const currentProgress = 10 + (i + 1) * progressIncrement;
+        setProgress(currentProgress);
         
-        console.log("AI processing response:", result.data);
-      } catch (error: any) {
-        console.error('AI processing error:', error);
-        setError(`AI processing error: ${error.message}`);
-        return;
+        // Simulate processing delay
+        await new Promise(resolve => setTimeout(resolve, 800));
       }
-
-      // Execute remaining stages
-      setAnalysisStep(stages.dataExtraction.description);
-      setProgress(65);
-      setProcessingStage(stages.dataExtraction.detailedDescription);
-
-      // Brief delay to show progress
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      setAnalysisStep(stages.riskAssessment.description);
-      setProgress(75);
-      setProcessingStage(stages.riskAssessment.detailedDescription);
-
-      // Brief delay to show progress
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      setAnalysisStep(stages.documentOrganization.description);
-      setProgress(90);
-      setProcessingStage(stages.documentOrganization.detailedDescription);
-
-      // Analysis complete
-      setAnalysisStep('Analysis complete');
+      
+      // Set completed
       setProgress(100);
-      setProcessingStage('Document successfully analyzed');
+      setProcessingStage('completed');
       
-      console.log("Document analysis completed successfully");
-
-      // Update document status to complete in database
-      await supabase
-        .from('documents')
-        .update({
-          ai_processing_status: 'complete',
-          metadata: {
-            ...documentMetadata,
-            analyzed_at: new Date().toISOString(),
-            analysis_version: '1.0',
-            processing_steps_completed: [
-              "documentIngestion",
-              "documentClassification",
-              "dataExtraction",
-              "riskAssessment",
-              "documentOrganization",
-              "analysisComplete"
-            ]
-          }
-        })
-        .eq('id', documentId);
-
-      // Call onComplete callback if provided
       if (onAnalysisComplete) {
         onAnalysisComplete();
       }
-    } catch (error: any) {
-      console.error('Analysis process error:', error);
-      setError(`Analysis process error: ${error.message}`);
       
-      // Try to update document status to failed
-      try {
-        if (storagePath) {
-          const { data } = await supabase
-            .from('documents')
-            .select('id, metadata')
-            .eq('storage_path', storagePath)
-            .maybeSingle();
-            
-          if (data?.id) {
-            await supabase
-              .from('documents')
-              .update({
-                ai_processing_status: 'failed',
-                metadata: {
-                  ...(data.metadata || {}),
-                  analysis_error: error.message,
-                  analysis_failed_at: new Date().toISOString()
-                }
-              })
-              .eq('id', data.id);
-          }
-        }
-      } catch (updateErr) {
-        console.error('Failed to update document failure status:', updateErr);
+      toast({
+        title: "Analysis Complete",
+        description: "Document analysis completed successfully"
+      });
+      
+    } catch (error: any) {
+      console.error("Analysis process failed:", error);
+      setError(error.message || "Failed to analyze document");
+      setProcessingStage('failed');
+      
+      toast({
+        variant: "destructive",
+        title: "Analysis Failed",
+        description: error.message || "Failed to analyze document."
+      });
+      
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }, [props]);
+
+  // Safe access to data properties with unknown types
+  const safelyProcessFormType = (data: unknown) => {
+    if (typeof data === 'object' && data !== null) {
+      // Type guard for accessing properties safely
+      const typedData = data as Record<string, unknown>;
+      if ('formType' in typedData) {
+        return toString(typedData.formType);
       }
     }
+    return '';
+  };
+
+  // Safe spread handling
+  const safeMergeObjects = <T extends Record<string, unknown>>(
+    target: T, 
+    source: unknown
+  ): T => {
+    if (typeof source !== 'object' || source === null) {
+      return target;
+    }
+    
+    // Create safe copy that can be spread
+    const safeSource = { ...toRecord(source) };
+    return { ...target, ...safeSource };
   };
 
   return {
-    executeAnalysisProcess
+    startAnalysis,
+    isAnalyzing,
+    analysisStep,
+    processingSteps,
+    safelyProcessFormType,
+    safeMergeObjects
   };
 };

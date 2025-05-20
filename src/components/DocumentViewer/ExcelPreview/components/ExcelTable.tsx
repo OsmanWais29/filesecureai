@@ -1,53 +1,57 @@
 
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Card } from '@/components/ui/card';
-import { safeString } from '@/utils/typeSafetyUtils';
+import { ExcelTableProps } from '../types';
 
-interface ExcelTableProps {
-  data: Record<string, any>[];
-}
-
-const ExcelTable: React.FC<ExcelTableProps> = ({ data }) => {
+const ExcelTable: React.FC<ExcelTableProps> = ({ 
+  data,
+  enableSorting = false,
+  enableFiltering = false
+}) => {
   if (!data || !data.length) {
     return (
-      <div className="flex items-center justify-center h-full p-4">
+      <div className="flex items-center justify-center h-full p-6">
         <p className="text-muted-foreground">No data available</p>
       </div>
     );
   }
 
-  // Get all unique keys from all objects
-  const allKeys = Object.keys(data.reduce((result, obj) => {
-    Object.keys(obj).forEach(key => {
-      result[key] = true;
+  // Get all possible column headers from data
+  const columns = React.useMemo(() => {
+    const headers = new Set<string>();
+    data.forEach(row => {
+      Object.keys(row).forEach(key => {
+        headers.add(key);
+      });
     });
-    return result;
-  }, {} as Record<string, boolean>));
+    return Array.from(headers);
+  }, [data]);
 
   return (
-    <Card className="h-full overflow-auto">
+    <div className="overflow-auto h-full w-full">
       <Table>
         <TableHeader>
           <TableRow>
-            {allKeys.map((key) => (
-              <TableHead key={key}>{key}</TableHead>
+            {columns.map((column) => (
+              <TableHead key={column}>
+                {column}
+              </TableHead>
             ))}
           </TableRow>
         </TableHeader>
         <TableBody>
           {data.map((row, rowIndex) => (
             <TableRow key={rowIndex}>
-              {allKeys.map((key) => (
-                <TableCell key={`${rowIndex}-${key}`}>
-                  {safeString(row[key], '')}
+              {columns.map((column) => (
+                <TableCell key={`${rowIndex}-${column}`}>
+                  {row[column] !== undefined ? String(row[column]) : ''}
                 </TableCell>
               ))}
             </TableRow>
           ))}
         </TableBody>
       </Table>
-    </Card>
+    </div>
   );
 };
 

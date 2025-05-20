@@ -1,9 +1,20 @@
 
+// Test setup file for Jest
 import '@testing-library/jest-dom';
 
-// Re-export the Jest globals to make them available in tests
-export const describe = global.describe;
-export const it = global.it;
-export const expect = global.expect;
-export const beforeEach = global.beforeEach;
-export const afterEach = global.afterEach;
+// Mock global object
+global.ResizeObserver = jest.fn().mockImplementation(() => ({
+  observe: jest.fn(),
+  unobserve: jest.fn(),
+  disconnect: jest.fn(),
+}));
+
+// Ensure Jest global types are available
+declare global {
+  namespace jest {
+    interface Matchers<R> {
+      toBeInTheDocument(): R;
+      toHaveTextContent(text: string): R;
+    }
+  }
+}

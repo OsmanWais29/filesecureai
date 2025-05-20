@@ -1,55 +1,65 @@
 
 import React from 'react';
-import { FileSpreadsheet, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
-interface ExcelHeaderActionsProps {
-  documentTitle: string;
-  selectedSheet: string;
-  setSelectedSheet: (sheet: string) => void;
-  sheetNames: string[];
-}
+import { 
+  Download, 
+  RefreshCw, 
+  ExternalLink 
+} from 'lucide-react';
+import { ExcelHeaderActionsProps } from '../types';
 
 const ExcelHeaderActions: React.FC<ExcelHeaderActionsProps> = ({
-  documentTitle,
-  selectedSheet,
-  setSelectedSheet,
-  sheetNames
+  title,
+  onRefresh,
+  publicUrl
 }) => {
+  const handleDownload = () => {
+    if (!publicUrl) return;
+    
+    const link = document.createElement('a');
+    link.href = publicUrl;
+    link.download = title || 'spreadsheet';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
-    <div className="flex flex-col border-b p-4 bg-card">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center">
-          <FileSpreadsheet className="h-5 w-5 mr-2 text-emerald-600" />
-          <h3 className="font-medium text-lg">{documentTitle}</h3>
-        </div>
-        
-        {sheetNames.length > 0 && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="ml-auto">
-                {selectedSheet}
-                <ChevronDown className="ml-2 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {sheetNames.map((sheet) => (
-                <DropdownMenuItem 
-                  key={sheet} 
-                  onClick={() => setSelectedSheet(sheet)}
-                  className={selectedSheet === sheet ? "bg-muted" : ""}
-                >
-                  {sheet}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+    <div className="flex items-center justify-between p-2 border-b">
+      <div className="font-medium truncate">
+        {title || 'Spreadsheet Data'}
+      </div>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onRefresh}
+          className="h-8 px-2 flex gap-1 items-center"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Refresh
+        </Button>
+        {publicUrl && (
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.open(publicUrl, '_blank')}
+              className="h-8 px-2 flex gap-1 items-center"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Open
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownload}
+              className="h-8 px-2 flex gap-1 items-center"
+            >
+              <Download className="h-4 w-4" />
+              Download
+            </Button>
+          </>
         )}
       </div>
     </div>

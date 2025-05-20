@@ -1,29 +1,32 @@
 
 import React from 'react';
-import { AlertCircle } from 'lucide-react';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { AlertTriangle, RefreshCw, Download } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ExcelErrorDisplayProps } from '../types';
 
-interface ExcelErrorDisplayProps {
-  error: string;
-}
-
-const ExcelErrorDisplay: React.FC<ExcelErrorDisplayProps> = ({ error }) => {
+const ExcelErrorDisplay: React.FC<ExcelErrorDisplayProps> = ({ 
+  error, 
+  onRefresh, 
+  publicUrl 
+}) => {
   return (
-    <div className="p-4">
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Error Loading Excel Document</AlertTitle>
-        <AlertDescription>
-          {error}
-        </AlertDescription>
-      </Alert>
-      <div className="mt-4 text-sm text-muted-foreground">
-        <p>Please ensure that:</p>
-        <ul className="list-disc pl-5 mt-2 space-y-1">
-          <li>The file is a valid Excel document (.xlsx or .xls format)</li>
-          <li>The file is not corrupted or password protected</li>
-          <li>You have permission to access this document</li>
-        </ul>
+    <div className="flex flex-col items-center justify-center h-full p-8">
+      <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+      <h3 className="text-xl font-medium mb-2">Error Loading Spreadsheet</h3>
+      <p className="text-muted-foreground mb-6 text-center max-w-md">
+        {error || "Failed to load the spreadsheet. It may be corrupted or in an unsupported format."}
+      </p>
+      <div className="flex flex-wrap gap-3 justify-center">
+        <Button onClick={onRefresh} className="flex items-center gap-2">
+          <RefreshCw className="h-4 w-4" />
+          Retry
+        </Button>
+        {publicUrl && (
+          <Button variant="outline" onClick={() => window.open(publicUrl, '_blank')} className="flex items-center gap-2">
+            <Download className="h-4 w-4" />
+            Download Original File
+          </Button>
+        )}
       </div>
     </div>
   );

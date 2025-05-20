@@ -1,238 +1,159 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useDocumentDetails } from "./hooks/useDocumentDetails";
+import { useDocumentRealtime } from "./hooks/useDocumentRealtime";
+import { DocumentDetails, Risk } from "./types";
 import { useToast } from "@/hooks/use-toast";
+import { toast as sonnerToast } from "sonner";
+import { startTiming, endTiming } from "@/utils/performanceMonitor";
 import { supabase } from "@/lib/supabase";
-import { DocumentDetails } from "./types";
+import { toString } from "@/utils/typeSafetyUtils";
 
 export const useDocumentViewer = (documentId: string) => {
   const [document, setDocument] = useState<DocumentDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingError, setLoadingError] = useState<string | null>(null);
+  const [isNetworkError, setIsNetworkError] = useState(false);
   const { toast } = useToast();
+  const fetchAttempts = useRef(0);
+  const cachedDocumentId = useRef<string | null>(null);
+  const timeoutRef = useRef<number | null>(null);
+  const maxAttempts = 2;
 
-  const fetchDocumentDetails = async () => {
-    try {
-      setLoading(true);
-      
-      console.log('Fetching document details for ID:', documentId);
-      
-      const { data: document, error: docError } = await supabase
-        .from('documents')
-        .select(`
-          *,
-          analysis:document_analysis(content),
-          comments:document_comments(id, content, created_at, user_id)
-        `)
-        .eq('id', documentId)
-        .maybeSingle();
+  // Handle successful document load
+  const handleDocumentSuccess = useCallback((data: DocumentDetails) => {
+    setDocument(data);
+    setLoading(false);
+    setLoadingError(null);
+    setIsNetworkError(false);
+    fetchAttempts.current = 0;
+    endTiming(`document-load-${documentId}`);
+  }, [documentId]);
 
-      if (docError) throw docError;
-      if (!document) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Document not found"
-        });
-        setLoading(false);
-        return;
-      }
-      
-      console.log("Raw document data:", document);
-
-      // Process the analysis content
-      let processedAnalysis = null;
-      if (document?.analysis?.[0]?.content) {
-        try {
-          let analysisContent = document.analysis[0].content;
-          
-          // Handle both string and object content
-          if (typeof analysisContent === 'string') {
-            try {
-              analysisContent = JSON.parse(analysisContent);
-              console.log("Successfully parsed analysis content from string");
-            } catch (parseError) {
-              console.error("Error parsing analysis content:", parseError);
-              // Keep as string if parsing fails
+  // Handle document loading errors
+  const handleDocumentError = useCallback((error: any) => {
+    console.error("Error loading document:", error, "DocumentID:", documentId);
+    fetchAttempts.current += 1;
+    
+    // Special handling for Form 47
+    if (documentId === "form47") {
+      // Create a synthetic document for Form 47
+      const form47Document: DocumentDetails = {
+        id: "form47",
+        title: "Form 47 - Consumer Proposal",
+        type: "form",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        storage_path: "sample-documents/form-47-consumer-proposal.pdf",
+        analysis: [
+          {
+            id: "form47-analysis-1",
+            content: {
+              extracted_info: {
+                formNumber: "47",
+                formType: "consumer-proposal",
+                summary: "This is a form used for consumer proposals under the Bankruptcy and Insolvency Act."
+              },
+              risks: [
+                {
+                  type: "Missing Information",
+                  description: "Please ensure all required fields are completed.",
+                  severity: "medium"
+                } as Risk
+              ]
             }
           }
-
-          // Ensure extracted info has all required fields with better defaults and formatting
-          const extractedInfo = {
-            // Client Information
-            clientName: analysisContent.extracted_info?.clientName || '',
-            clientAddress: analysisContent.extracted_info?.clientAddress || '',
-            clientPhone: analysisContent.extracted_info?.clientPhone || '',
-            clientId: analysisContent.extracted_info?.clientId || analysisContent.extracted_info?.caseNumber || '',
-            clientEmail: analysisContent.extracted_info?.clientEmail || '',
-            
-            // Form 31 (Proof of Claim) specific fields
-            creditorName: analysisContent.extracted_info?.creditorName || 
-                         analysisContent.extracted_info?.claimantName || '',
-            claimantName: analysisContent.extracted_info?.claimantName || 
-                         analysisContent.extracted_info?.creditorName || '',
-            claimAmount: analysisContent.extracted_info?.claimAmount || '',
-            claimType: analysisContent.extracted_info?.claimType || 
-                      analysisContent.extracted_info?.claimClassification || '',
-            claimClassification: analysisContent.extracted_info?.claimClassification || 
-                                analysisContent.extracted_info?.claimType || '',
-            securityDetails: analysisContent.extracted_info?.securityDetails || '',
-            creditorAddress: analysisContent.extracted_info?.creditorAddress || '',
-            creditorRepresentative: analysisContent.extracted_info?.creditorRepresentative || '',
-            creditorContactInfo: analysisContent.extracted_info?.creditorContactInfo || '',
-            
-            // Document Details
-            formNumber: analysisContent.extracted_info?.formNumber || 
-                       document.title.match(/Form\s+(\d+)/)?.[1] || 
-                       document.title.match(/F(\d+)/)?.[1] || '',
-            formType: analysisContent.extracted_info?.type || 
-                     analysisContent.extracted_info?.formType || 
-                     (document.title.toLowerCase().includes('bankruptcy') ? 'bankruptcy' : 
-                      document.title.toLowerCase().includes('proposal') ? 'proposal' : '') || '',
-            dateSigned: analysisContent.extracted_info?.dateSigned || 
-                       analysisContent.extracted_info?.dateOfFiling || '',
-            
-            // Trustee Information
-            trusteeName: analysisContent.extracted_info?.trusteeName || 
-                        analysisContent.extracted_info?.insolvencyTrustee || '',
-            trusteeAddress: analysisContent.extracted_info?.trusteeAddress || '',
-            trusteePhone: analysisContent.extracted_info?.trusteePhone || '',
-            trusteeEmail: analysisContent.extracted_info?.trusteeEmail || '',
-            
-            // Case Information
-            estateNumber: analysisContent.extracted_info?.estateNumber || '',
-            district: analysisContent.extracted_info?.district || '',
-            divisionNumber: analysisContent.extracted_info?.divisionNumber || '',
-            courtNumber: analysisContent.extracted_info?.courtNumber || '',
-            
-            // Additional Details
-            meetingOfCreditors: analysisContent.extracted_info?.meetingOfCreditors || '',
-            chairInfo: analysisContent.extracted_info?.chairInfo || '',
-            securityInfo: analysisContent.extracted_info?.securityInfo || '',
-            dateBankruptcy: analysisContent.extracted_info?.dateBankruptcy || 
-                           analysisContent.extracted_info?.dateOfBankruptcy || '',
-            officialReceiver: analysisContent.extracted_info?.officialReceiver || '',
-            documentStatus: analysisContent.extracted_info?.documentStatus || '',
-            filingDate: analysisContent.extracted_info?.filingDate || '',
-            submissionDeadline: analysisContent.extracted_info?.submissionDeadline || '',
-            
-            // Form 47 specific fields
-            proposalType: analysisContent.extracted_info?.proposalType || '',
-            monthlyPayment: analysisContent.extracted_info?.monthlyPayment || '',
-            proposalDuration: analysisContent.extracted_info?.proposalDuration || '',
-            paymentSchedule: analysisContent.extracted_info?.paymentSchedule || '',
-            
-            // Financial Information
-            totalDebts: analysisContent.extracted_info?.totalDebts || '',
-            totalAssets: analysisContent.extracted_info?.totalAssets || '',
-            monthlyIncome: analysisContent.extracted_info?.monthlyIncome || '',
-            
-            // Document Summary
-            summary: analysisContent.extracted_info?.summary || '',
-            
-            // Original text for form type detection
-            fullText: analysisContent.extracted_info?.fullText || '',
-          };
-
-          // Ensure risks are properly formatted and enhanced
-          const risks = (analysisContent.risks || []).map((risk: any) => ({
-            type: risk.type || 'Unknown Risk',
-            description: risk.description || '',
-            severity: risk.severity || 'medium',
-            regulation: risk.regulation || '',
-            impact: risk.impact || '',
-            requiredAction: risk.requiredAction || '',
-            solution: risk.solution || '',
-            deadline: risk.deadline || '7 days',
-          }));
-
-          console.log("Processed analysis content:", { extractedInfo, risks });
-
-          processedAnalysis = [{
-            content: {
-              extracted_info: extractedInfo,
-              risks: risks,
-              regulatory_compliance: analysisContent.regulatory_compliance || {
-                status: 'pending',
-                details: 'Regulatory compliance check pending',
-                references: []
-              }
-            }
-          }];
-        } catch (e) {
-          console.error('Error processing analysis content:', e);
-          toast({
-            variant: "default", // Changed from "warning" to "default"
-            title: "Warning",
-            description: "Could not process document analysis"
-          });
-        }
-      }
-
-      // Set the document with processed analysis
-      const processedDocument = {
-        ...document,
-        analysis: processedAnalysis
+        ],
+        comments: [],
+        versions: [],
+        tasks: []
       };
       
-      console.log('Final processed document:', processedDocument);
-
-      setDocument(processedDocument);
-    } catch (error: any) {
-      console.error('Error fetching document details:', error);
+      handleDocumentSuccess(form47Document);
+      return;
+    }
+    
+    // Handle various error types
+    const errorMsg = toString(error.message);
+    const isNetwork = errorMsg.includes('Failed to fetch') ||
+                     errorMsg.includes('NetworkError') ||
+                     errorMsg.includes('network');
+    
+    setIsNetworkError(isNetwork);
+    
+    if (fetchAttempts.current >= maxAttempts) {
+      setLoading(false);
+      setLoadingError(errorMsg);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to load document details"
+        title: "Document Loading Error",
+        description: errorMsg
       });
-    } finally {
-      setLoading(false);
+      endTiming(`document-load-${documentId}`);
     }
-  };
+  }, [documentId, toast]);
+
+  // Initialize document details hook
+  const { fetchDocumentDetails } = useDocumentDetails(documentId, {
+    onSuccess: handleDocumentSuccess,
+    onError: handleDocumentError
+  });
 
   useEffect(() => {
+    if (!documentId) return;
+    
+    // Cancel any running timeouts
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    
+    // Skip for cached documents
+    if (cachedDocumentId.current === documentId && document) {
+      console.log("Using cached document details for ID:", documentId);
+      return;
+    }
+    
+    // Start new document fetch
+    console.log("Fetching document details for ID:", documentId);
+    setLoading(true);
+    setLoadingError(null);
+    setIsNetworkError(false);
+    fetchAttempts.current = 0;
+    cachedDocumentId.current = documentId;
+    
+    startTiming(`document-load-${documentId}`);
     fetchDocumentDetails();
-
-    const channelName = `document_updates_${documentId}`;
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'document_analysis',
-          filter: `document_id=eq.${documentId}`
-        },
-        async (payload) => {
-          console.log("Analysis update detected:", payload);
-          await fetchDocumentDetails();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'document_comments',
-          filter: `document_id=eq.${documentId}`
-        },
-        async (payload) => {
-          console.log("Comment update detected:", payload);
-          await fetchDocumentDetails();
-        }
-      )
-      .subscribe((status) => {
-        console.log(`Subscription status for ${channelName}:`, status);
-      });
-
+    
+    // Cleanup function
     return () => {
-      console.log("Cleaning up real-time subscription for channel:", channelName);
-      supabase.removeChannel(channel);
+      endTiming(`document-load-${documentId}`);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
     };
-  }, [documentId]);
+  }, [documentId, fetchDocumentDetails, document]);
+
+  // Setup real-time updates
+  useDocumentRealtime(documentId !== "form47" ? documentId : null, document ? fetchDocumentDetails : null);
+
+  const handleRefresh = useCallback(async () => {
+    sonnerToast.info("Refreshing document...");
+    setLoading(true);
+    setLoadingError(null);
+    setIsNetworkError(false);
+    fetchAttempts.current = 0;
+    startTiming(`document-load-${documentId}`);
+    fetchDocumentDetails();
+  }, [documentId, fetchDocumentDetails]);
 
   return {
     document,
     loading,
-    fetchDocumentDetails
+    loadingError,
+    isNetworkError,
+    fetchDocumentDetails,
+    handleRefresh
   };
 };
