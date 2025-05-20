@@ -1,9 +1,13 @@
-
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentDetails } from "../types";
-import { toString, toRecord } from "@/utils/typeSafetyUtils";
+import { 
+  toString,
+  toRecord,
+  toSafeArray,
+  toSafeComment
+} from "@/utils/typeSafetyUtils";
 
 export const useDocumentState = (documentId: string, documentTitle?: string) => {
   const [document, setDocument] = useState<DocumentDetails | null>(null);
@@ -61,11 +65,9 @@ export const useDocumentState = (documentId: string, documentTitle?: string) => 
       if (docData.analysis && Array.isArray(docData.analysis) && docData.analysis.length > 0) {
         const analysisItem = docData.analysis[0];
         
-        // Check if content exists and is an object before accessing properties
         if (analysisItem && typeof analysisItem === 'object' && analysisItem !== null) {
           const content = analysisItem.content;
           
-          // Only process content if it's an object
           if (content && typeof content === 'object') {
             documentData.analysis = [{ 
               id: toString(analysisItem.id || ''), 
@@ -73,13 +75,13 @@ export const useDocumentState = (documentId: string, documentTitle?: string) => 
             }];
             
             // Set debug info if available
-            if ('debug_info' in content) {
+            if (content && 'debug_info' in content) {
               setDebugInfo(content.debug_info);
             }
             
             // Check if analysis data is incomplete
-            const hasExtractedInfo = content.extracted_info !== undefined;
-            const hasRisks = content.risks !== undefined;
+            const hasExtractedInfo = content && 'extracted_info' in content;
+            const hasRisks = content && 'risks' in content;
             
             if (!hasExtractedInfo && !hasRisks) {
               setAnalysisError("Analysis data is incomplete or malformed");
@@ -96,14 +98,16 @@ export const useDocumentState = (documentId: string, documentTitle?: string) => 
         setAnalysisError("No analysis data found for this document");
       }
       
-      // Process comments safely
+      // Process comments safely with document_id
       if (docData.comments && Array.isArray(docData.comments)) {
-        documentData.comments = docData.comments.map(comment => ({
-          id: toString(comment.id),
-          content: toString(comment.content),
-          created_at: toString(comment.created_at),
-          user_id: toString(comment.user_id)
-        }));
+        documentData.comments = docData.comments.map(comment => 
+          toSafeComment({
+            id: toString(comment.id),
+            content: toString(comment.content),
+            created_at: toString(comment.created_at),
+            user_id: toString(comment.user_id)
+          }, documentId)
+        );
       }
 
       setDocument(documentData);
@@ -147,13 +151,11 @@ export const useDocumentState = (documentId: string, documentTitle?: string) => 
       
       // Safely determine form type from the document title
       let formType = null;
-      if (document.title) {
-        const title = toString(document.title).toLowerCase();
-        if (title.includes('form 31') || title.includes('proof of claim')) {
-          formType = 'form-31';
-        } else if (title.includes('form 47') || title.includes('consumer proposal')) {
-          formType = 'form-47';
-        }
+      const title = toString(document.title).toLowerCase();
+      if (title.includes('form 31') || title.includes('proof of claim')) {
+        formType = 'form-31';
+      } else if (title.includes('form 47') || title.includes('consumer proposal')) {
+        formType = 'form-47';
       }
       
       const { data: analysisData, error: analysisError } = await supabase.functions.invoke('process-ai-request', {

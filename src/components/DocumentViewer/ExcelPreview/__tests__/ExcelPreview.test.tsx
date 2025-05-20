@@ -1,10 +1,9 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import './setup'; // Import the test setup first
-import ExcelViewer from '../index'; // Correct import path
+import { describe, it, expect } from './setup'; 
+import ExcelViewer from '../index';
 
-// Use global Jest functions
 describe('ExcelPreview Component', () => {
   const mockUrl = 'https://example.com/test.xlsx';
   const mockDocumentId = 'doc-123';

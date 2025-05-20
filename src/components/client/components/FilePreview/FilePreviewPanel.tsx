@@ -10,6 +10,7 @@ import { ActivityTab } from "./ActivityTab";
 import { useState, useEffect, useCallback, memo } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { toString } from "@/utils/typeSafetyUtils";
 
 interface FilePreviewPanelProps {
   document: Document | null;
@@ -21,8 +22,10 @@ export const FilePreviewPanel = memo(({ document, onDocumentOpen }: FilePreviewP
   const [fileExists, setFileExists] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Use the storage path from metadata if present
-  const storagePath = document?.metadata?.storage_path || null;
+  // Use the storage path from metadata if present and convert to string safely
+  const storagePath = document?.metadata?.storage_path 
+    ? toString(document.metadata.storage_path) 
+    : null;
 
   // Memoize the function to check if file exists
   const checkFileExists = useCallback(async () => {
@@ -35,6 +38,7 @@ export const FilePreviewPanel = memo(({ document, onDocumentOpen }: FilePreviewP
     setError(null);
     
     try {
+      // Safely handle the path splitting
       const pathParts = storagePath.split('/');
       const fileName = pathParts.pop() || '';
       const folderPath = pathParts.join('/');

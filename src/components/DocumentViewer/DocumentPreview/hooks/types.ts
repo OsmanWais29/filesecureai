@@ -25,7 +25,7 @@ export interface PreviewState {
   session: Session | null;
   setSession: (session: Session | null) => void;
   handleAnalyzeDocument: () => Promise<void>;
-  isAnalysisStuck: boolean;
+  isAnalysisStuck: { stuck: boolean; minutesStuck: number; };
   checkFile: () => Promise<void>;
   isLoading: boolean;
   handleAnalysisRetry: () => void;
@@ -48,6 +48,7 @@ export interface PreviewState {
   onDownload: () => void;
   onPrint: () => void;
   iframeRef: RefObject<HTMLIFrameElement>;
+  publicUrl: string;
 }
 
 export interface NetworkResilienceOptions {
@@ -64,7 +65,7 @@ export interface NetworkResilienceResult {
 }
 
 export interface TimeTrackerResult {
-  isAnalysisStuck: boolean;
+  isAnalysisStuck: { stuck: boolean; minutesStuck: number };
   startTracking: () => void;
   stopTracking: () => void;
 }

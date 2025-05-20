@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from "react";
 import { useExcelPreview } from "./hooks/useExcelPreview";
-import ExcelTable from "./components/ExcelTable"; // Fix import
-import ExcelHeaderActions from "./components/ExcelHeaderActions"; // Fix import
-import ExcelErrorDisplay from "./components/ExcelErrorDisplay"; // Fix import
+import ExcelTable from "./components/ExcelTable"; // Fixed import
+import ExcelHeaderActions from "./components/ExcelHeaderActions"; // Fixed import
+import ExcelErrorDisplay from "./components/ExcelErrorDisplay"; // Fixed import
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ExcelPreviewProps {
