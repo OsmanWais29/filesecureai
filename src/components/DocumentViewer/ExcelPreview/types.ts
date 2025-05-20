@@ -37,3 +37,9 @@ export interface UseExcelPreviewReturn {
   changeSheet: (index: number) => void;
   refresh: () => void;
 }
+
+export interface ExcelSheetData {
+  name: string;
+  data: any[][];
+  columns: string[];
+}

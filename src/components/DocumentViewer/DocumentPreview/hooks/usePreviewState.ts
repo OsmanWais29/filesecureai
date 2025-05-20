@@ -31,7 +31,7 @@ export const usePreviewState = ({
       setFileExists(false);
       setError('No storage path provided');
       setIsLoading(false);
-      return false;
+      return;
     }
 
     try {
@@ -61,19 +61,16 @@ export const usePreviewState = ({
             setFileType('other');
           }
         }
-        return true;
       } else {
         setFileUrl(null);
         setFileExists(false);
         setError('File not found in storage');
-        return false;
       }
     } catch (error: any) {
       console.error('Error checking file:', error);
       setFileUrl(null);
       setFileExists(false);
       setError(`Error: ${error.message}`);
-      return false;
     } finally {
       setIsLoading(false);
     }
@@ -88,7 +85,7 @@ export const usePreviewState = ({
   const refresh = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    return checkFile();
+    await checkFile();
   }, [checkFile]);
 
   // Add properties required by PreviewState interface

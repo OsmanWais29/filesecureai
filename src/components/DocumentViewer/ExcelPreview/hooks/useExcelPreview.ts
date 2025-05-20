@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import * as XLSX from 'xlsx';
-import { ExcelData, ExcelSheetData } from '../types';
+import { ExcelData, ExcelSheetData, SheetMetadata } from '../types';
 
 export const useExcelPreview = (url: string, documentId?: string) => {
   const [excelData, setExcelData] = useState<ExcelData>({ headers: [], rows: [] });
@@ -22,6 +22,10 @@ export const useExcelPreview = (url: string, documentId?: string) => {
       // Process all sheets
       const sheetsData: ExcelSheetData[] = [];
       
+      // Track total rows and columns for metadata
+      let totalRows = 0;
+      let totalColumns = 0;
+      
       for (let i = 0; i < sheetNames.length; i++) {
         const sheetName = sheetNames[i];
         const worksheet = workbook.Sheets[sheetName];
@@ -32,6 +36,10 @@ export const useExcelPreview = (url: string, documentId?: string) => {
         
         // Format data for tabular display
         const formattedData: any[][] = jsonData.slice(1);
+        
+        // Update total counts
+        totalRows += formattedData.length;
+        totalColumns = Math.max(totalColumns, columns.length);
         
         sheetsData.push({
           name: sheetName,
@@ -47,10 +55,10 @@ export const useExcelPreview = (url: string, documentId?: string) => {
       }
       
       // Extract metadata for the full Excel file
-      const metadata = {
-        fileName: documentId ? `Document ${documentId}` : 'Excel Document',
+      const metadata: SheetMetadata = {
         sheetNames: sheetNames,
-        totalSheets: sheetNames.length
+        totalRows: totalRows,
+        totalColumns: totalColumns
       };
       
       setExcelData({

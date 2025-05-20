@@ -2,7 +2,6 @@
 import React from 'react';
 import { usePreviewState } from './hooks/usePreviewState';
 import { DocumentPreviewContent } from './components/DocumentPreviewContent';
-import { PreviewStateProps } from './hooks/usePreviewState/types';
 
 interface DocumentPreviewProps {
   storagePath: string;

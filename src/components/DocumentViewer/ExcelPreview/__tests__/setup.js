@@ -1,14 +1,14 @@
 
 // Mock Jest testing functions
-const describe = (name, fn) => fn();
-const it = (name, fn) => fn();
-const expect = (value) => ({
+export const describe = (name, fn) => fn();
+export const it = (name, fn) => fn();
+export const expect = (value) => ({
   toBeDefined: () => true,
   toBeInTheDocument: () => true,
   toHaveTextContent: () => true
 });
-const beforeEach = (fn) => fn();
-const afterEach = (fn) => fn();
+export const beforeEach = (fn) => fn();
+export const afterEach = (fn) => fn();
 
 // Mock ResizeObserver
 global.ResizeObserver = class {
@@ -16,6 +16,3 @@ global.ResizeObserver = class {
   unobserve() {}
   disconnect() {}
 };
-
-// Export mock functions
-export { describe, it, expect, beforeEach, afterEach };

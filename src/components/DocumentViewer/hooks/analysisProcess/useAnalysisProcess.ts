@@ -1,121 +1,107 @@
 
-import { useState, useCallback } from "react";
-import { supabase } from "@/lib/supabase";
-import { useToast } from "@/hooks/use-toast";
-import { riskAssessment } from "./stages/riskAssessment";
-import { toString, toRecord } from "@/utils/typeSafetyUtils";
+import { useState, useCallback } from 'react';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
+import { AnalysisProcessContext } from './types';
+import { useRiskAssessment } from './stages/riskAssessment';
+import { toSafeSpreadObject } from '@/utils/typeSafetyUtils';
 
-export interface AnalysisProcessProps {
-  setAnalysisStep: (step: string) => void;
-  setProgress: (progress: number) => void;
-  setError: (error: string) => void;
-  setProcessingStage: (stage: string) => void;
-  toast: any;
-  onAnalysisComplete?: () => void;
-}
-
-export const useAnalysisProcess = (props: AnalysisProcessProps) => {
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisStep, setAnalysisStep] = useState<string>("");
-  const [processingSteps, setProcessingSteps] = useState<string[]>([]);
-
-  const startAnalysis = useCallback(async () => {
-    const { 
-      setAnalysisStep,
-      setProgress,
-      setError,
-      setProcessingStage,
-      toast,
-      onAnalysisComplete 
-    } = props;
-
-    setIsAnalyzing(true);
-    setAnalysisStep("initializing");
+export const useAnalysisProcess = (documentId: string) => {
+  const [analyzing, setAnalyzing] = useState(false);
+  const [step, setStep] = useState('');
+  const [progress, setProgress] = useState(0);
+  const [processingStage, setProcessingStage] = useState('');
+  const [error, setError] = useState<null | string>(null);
+  
+  const initiateAnalysis = useCallback(async () => {
+    setAnalyzing(true);
+    setError(null);
+    setStep('Initializing');
+    setProgress(0);
     
     try {
-      // Initialize processing steps
-      const steps = ['extract_text', 'analyze_content', 'extract_metadata', 'assess_risks', 'generate_summary'];
-      setProcessingSteps(steps);
+      // Get document record
+      const { data: document, error: docError } = await supabase
+        .from('documents')
+        .select('*')
+        .eq('id', documentId)
+        .maybeSingle();
+        
+      if (docError || !document) {
+        throw new Error(`Failed to fetch document: ${docError?.message || 'Not found'}`);
+      }
       
-      // Set initial progress
+      // Update status to processing
+      await supabase
+        .from('documents')
+        .update({
+          ai_processing_status: 'processing',
+          metadata: {
+            ...toSafeSpreadObject(document.metadata),
+            processing_started: new Date().toISOString(),
+            processing_stage: 'initialization'
+          }
+        })
+        .eq('id', documentId);
+        
+      // Create analysis context
+      const context: AnalysisProcessContext = {
+        setAnalysisStep: setStep,
+        setProgress,
+        setError,
+        setProcessingStage,
+        toast,
+        // If this document is a form, determine the type
+        isForm47: document.metadata?.formType === 'form-47' || false,
+        isForm76: document.metadata?.formType === 'form-76' || false,
+        isForm31: document.metadata?.formType === 'form-31' || false
+      };
+      
+      // Simulate document preparation
+      setStep('Document preparation');
       setProgress(10);
-      setProcessingStage('processing');
-
-      // Process each step with simulated timing
-      for (let i = 0; i < steps.length; i++) {
-        const step = steps[i];
-        setAnalysisStep(step);
-        
-        // Update progress based on current step
-        const progressIncrement = 80 / steps.length;
-        const currentProgress = 10 + (i + 1) * progressIncrement;
-        setProgress(currentProgress);
-        
-        // Simulate processing delay
-        await new Promise(resolve => setTimeout(resolve, 800));
-      }
+      setProcessingStage('Preparation');
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Set completed
+      // Run risk assessment
+      setStep('Risk assessment');
+      setProgress(60);
+      await useRiskAssessment(context, document);
+      
+      // Complete processing
+      setStep('Finalizing analysis');
       setProgress(100);
-      setProcessingStage('completed');
       
-      if (onAnalysisComplete) {
-        onAnalysisComplete();
-      }
+      // Update status to complete
+      await supabase
+        .from('documents')
+        .update({
+          ai_processing_status: 'complete',
+          metadata: {
+            ...toSafeSpreadObject(document.metadata),
+            processing_complete: true,
+            processing_completed_at: new Date().toISOString()
+          }
+        })
+        .eq('id', documentId);
       
-      toast({
-        title: "Analysis Complete",
-        description: "Document analysis completed successfully"
-      });
+      setAnalyzing(false);
+      return { success: true };
+    } catch (err: any) {
+      console.error('Analysis process failed:', err);
+      setError(err.message || 'Analysis failed');
+      setAnalyzing(false);
       
-    } catch (error: any) {
-      console.error("Analysis process failed:", error);
-      setError(error.message || "Failed to analyze document");
-      setProcessingStage('failed');
-      
-      toast({
-        variant: "destructive",
-        title: "Analysis Failed",
-        description: error.message || "Failed to analyze document."
-      });
-      
-    } finally {
-      setIsAnalyzing(false);
+      return { success: false, error: err.message };
     }
-  }, [props]);
-
-  // Safe access to data properties with unknown types
-  const safelyProcessFormType = (data: unknown) => {
-    if (typeof data === 'object' && data !== null) {
-      // Type guard for accessing properties safely
-      const typedData = data as Record<string, unknown>;
-      if ('formType' in typedData) {
-        return toString(typedData.formType);
-      }
-    }
-    return '';
-  };
-
-  // Safe spread handling
-  const safeMergeObjects = <T extends Record<string, unknown>>(
-    target: T, 
-    source: unknown
-  ): T => {
-    if (typeof source !== 'object' || source === null) {
-      return target;
-    }
-    
-    // Create safe copy that can be spread
-    const safeSource = { ...toRecord(source) };
-    return { ...target, ...safeSource };
-  };
-
+  }, [documentId, toast]);
+  
   return {
-    startAnalysis,
-    isAnalyzing,
-    analysisStep,
-    processingSteps,
-    safelyProcessFormType,
-    safeMergeObjects
+    analyzing,
+    step,
+    progress,
+    processingStage,
+    error,
+    initiateAnalysis
   };
 };

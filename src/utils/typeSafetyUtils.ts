@@ -6,9 +6,9 @@
 /**
  * Safely converts a value to string
  */
-export const toString = (value: unknown): string => {
+export const toString = (value: unknown, defaultValue: string = ''): string => {
   if (typeof value === 'string') return value;
-  if (value === null || value === undefined) return '';
+  if (value === null || value === undefined) return defaultValue;
   return String(value);
 };
 
@@ -25,13 +25,13 @@ export const toStringArray = (value: unknown): string[] => {
 /**
  * Safely converts a value to a number
  */
-export const toNumber = (value: unknown): number => {
+export const toNumber = (value: unknown, defaultValue: number = 0): number => {
   if (typeof value === 'number') return value;
   if (typeof value === 'string') {
     const parsed = parseFloat(value);
-    return isNaN(parsed) ? 0 : parsed;
+    return isNaN(parsed) ? defaultValue : parsed;
   }
-  return 0;
+  return defaultValue;
 };
 
 /**
@@ -93,4 +93,52 @@ export const toSafeComment = (comment: any, documentId: string): any => {
     ...comment,
     document_id: documentId
   };
+};
+
+/**
+ * Safely spread an object that might be unknown
+ * @param obj Object to spread
+ * @returns Safely spread object or empty object
+ */
+export const toSafeSpreadObject = (obj: unknown): Record<string, unknown> => {
+  if (obj && typeof obj === 'object' && obj !== null) {
+    return { ...toRecord(obj) };
+  }
+  return {};
+};
+
+/**
+ * Safely cast an object to a specific type with type checking
+ * @param value Value to cast
+ * @returns Safely cast object
+ */
+export const safeObjectCast = <T extends Record<string, unknown>>(value: unknown): T => {
+  if (value && typeof value === 'object' && value !== null) {
+    return value as T;
+  }
+  return {} as T;
+};
+
+/**
+ * Safely convert a value to an array
+ * @param value Value to convert to array
+ * @returns Array or empty array
+ */
+export const toArray = <T>(value: unknown): T[] => {
+  if (Array.isArray(value)) {
+    return value as T[];
+  }
+  return [];
+};
+
+/**
+ * Safely convert a value to string
+ * @param value Value to convert to string
+ * @returns String or empty string
+ */
+export const safeString = (value: unknown): string => {
+  if (typeof value === 'string') {
+    return value;
+  }
+  return '';
 };
