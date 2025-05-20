@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { AnalysisProcessContext } from './types';
 import { useRiskAssessment } from './stages/riskAssessment';
-import { toSafeSpreadObject } from '@/utils/typeSafetyUtils';
+import { toRecord, toString } from '@/utils/typeSafetyUtils';
 
 export const useAnalysisProcess = (documentId: string) => {
   const [analyzing, setAnalyzing] = useState(false);
@@ -37,7 +37,7 @@ export const useAnalysisProcess = (documentId: string) => {
         .update({
           ai_processing_status: 'processing',
           metadata: {
-            ...toSafeSpreadObject(document.metadata),
+            ...toRecord(document.metadata),
             processing_started: new Date().toISOString(),
             processing_stage: 'initialization'
           }
@@ -45,6 +45,11 @@ export const useAnalysisProcess = (documentId: string) => {
         .eq('id', documentId);
         
       // Create analysis context
+      const metadata = toRecord(document.metadata);
+      
+      // Safely get formType from metadata
+      const formType = toString(metadata.formType);
+      
       const context: AnalysisProcessContext = {
         setAnalysisStep: setStep,
         setProgress,
@@ -52,9 +57,8 @@ export const useAnalysisProcess = (documentId: string) => {
         setProcessingStage,
         toast,
         // If this document is a form, determine the type
-        isForm47: document.metadata?.formType === 'form-47' || false,
-        isForm76: document.metadata?.formType === 'form-76' || false,
-        isForm31: document.metadata?.formType === 'form-31' || false
+        isForm47: formType === 'form-47',
+        isForm76: formType === 'form-76'
       };
       
       // Simulate document preparation
@@ -78,7 +82,7 @@ export const useAnalysisProcess = (documentId: string) => {
         .update({
           ai_processing_status: 'complete',
           metadata: {
-            ...toSafeSpreadObject(document.metadata),
+            ...toRecord(document.metadata),
             processing_complete: true,
             processing_completed_at: new Date().toISOString()
           }

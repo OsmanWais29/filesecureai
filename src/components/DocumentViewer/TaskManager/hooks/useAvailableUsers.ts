@@ -1,51 +1,57 @@
 
-import { useState, useEffect } from 'react';
-import { useToast } from "@/hooks/use-toast";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { safeString } from '@/utils/typeSafetyUtils';
+import { toast } from "sonner";
+import { toString } from "@/utils/typeSafetyUtils";
 
-export interface AvailableUser {
+export interface User {
   id: string;
-  full_name: string | null;
   email: string;
+  name?: string;
+  avatar_url?: string;
 }
 
 export const useAvailableUsers = () => {
-  const { toast } = useToast();
-  const [availableUsers, setAvailableUsers] = useState<AvailableUser[]>([]);
-
-  const fetchAvailableUsers = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('available_users')
-        .select('*');
-
-      if (error) throw error;
-      
-      if (data && Array.isArray(data)) {
-        const typedUsers: AvailableUser[] = data.map(item => ({
-          id: safeString(item.id, ''),
-          full_name: safeString(item.full_name, null),
-          email: safeString(item.email, '')
-        }));
-        
-        setAvailableUsers(typedUsers);
-      } else {
-        setAvailableUsers([]);
-      }
-    } catch (error) {
-      console.error('Error fetching available users:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to fetch available users"
-      });
-    }
-  };
+  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchAvailableUsers();
+    const fetchUsers = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, email, full_name, avatar_url')
+          .order('full_name');
+
+        if (error) throw error;
+
+        // Map data to strongly typed User objects
+        const users: User[] = (data || []).map(user => ({
+          id: toString(user.id),
+          email: toString(user.email),
+          name: toString(user.full_name),
+          avatar_url: toString(user.avatar_url)
+        }));
+
+        setAvailableUsers(users);
+        setError(null);
+      } catch (err: any) {
+        console.error('Error fetching users:', err);
+        setError(err.message || 'Failed to load users');
+        toast.error('Error loading users');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
   }, []);
 
-  return { availableUsers };
+  return {
+    users: availableUsers,
+    loading,
+    error
+  };
 };

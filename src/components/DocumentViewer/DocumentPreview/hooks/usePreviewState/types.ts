@@ -30,18 +30,13 @@ export interface PreviewState {
   
   // Loading state
   isLoading: boolean;
-  loading: boolean;
   
   // Analysis control
-  bypassAnalysis: boolean;
-  setBypassAnalysis: (bypass: boolean) => void;
   handleAnalyzeDocument: (session?: Session | null) => Promise<void>;
-  isAnalysisStuck: boolean;
+  isAnalysisStuck: { stuck: boolean; minutesStuck: number };
   handleAnalysisRetry: () => void;
   
   // UI helpers
-  handleRefreshPreview: () => void;
-  handleIframeError: () => void;
   checkFile: () => Promise<void>;
   handleFullRecovery: () => Promise<void>;
   forceRefresh: () => Promise<void>;
@@ -55,7 +50,7 @@ export interface PreviewState {
   errorDetails: any;
   
   // Public URL for download/sharing
-  publicUrl: string;
+  publicUrl?: string;
   
   // Document type checks
   isPdfFile: () => boolean;
@@ -74,10 +69,6 @@ export interface PreviewState {
   // References
   iframeRef: RefObject<HTMLIFrameElement>;
   forceReload: number;
-  
-  // Debug options
-  diagnosticsMode?: boolean;
-  toggleDiagnosticsMode?: () => void;
   
   // Session management
   session: Session | null;

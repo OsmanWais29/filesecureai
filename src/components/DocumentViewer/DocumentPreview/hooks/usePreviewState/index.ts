@@ -229,7 +229,7 @@ export const usePreviewState = ({
         return Promise.resolve();
       }
     },
-    isAnalysisStuck,
+    isAnalysisStuck: { stuck: false, minutesStuck: 0 },
     checkFile: handleCheckFile, // Using our wrapper function
     isLoading,
     handleAnalysisRetry: () => {

@@ -1,36 +1,26 @@
 
-import { AnalysisProcessContext, AnalysisResult } from '../types';
-import { toSafeSpreadObject } from '@/utils/typeSafetyUtils';
+import { AnalysisProcessContext } from '../types';
+import { DocumentRecord } from '../../types';
+import { updateAnalysisStatus } from '../documentStatusUpdates';
+import { toRecord } from '@/utils/typeSafetyUtils';
 
 export const useRiskAssessment = async (
-  context: AnalysisProcessContext,
-  documentRecord: any
-): Promise<AnalysisResult> => {
-  try {
-    const { setAnalysisStep, setProgress, setProcessingStage, toast } = context;
-    
-    setAnalysisStep("Assessing document risks");
-    setProgress(80);
-    setProcessingStage("Risk Assessment");
-    
-    // This would be where real risk assessment would happen
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const updatedMetadata = {
-      ...toSafeSpreadObject(documentRecord.metadata),
-      risk_assessment_complete: true,
-      risk_assessment_timestamp: new Date().toISOString()
-    };
-    
-    return {
-      success: true,
-      data: updatedMetadata
-    };
-  } catch (error: any) {
-    console.error("Risk assessment failed:", error);
-    return {
-      success: false,
-      error: error.message || "Risk assessment failed"
-    };
-  }
+  context: AnalysisProcessContext, 
+  document: DocumentRecord
+): Promise<void> => {
+  const { setAnalysisStep, setProgress } = context;
+  
+  setAnalysisStep('Risk assessment');
+  setProgress(75);
+  
+  // Using toRecord for safe object handling
+  const metadata = toRecord(document.metadata);
+  
+  // Detect form types from metadata
+  const isForm47 = Boolean(metadata.formType === 'form-47');
+  const isForm76 = Boolean(metadata.formType === 'form-76');
+  const isForm31 = Boolean(metadata.formType === 'form-31');
+  
+  // Update document with risk assessment status
+  await updateAnalysisStatus(document, 'risk_assessment', 'completed');
 };

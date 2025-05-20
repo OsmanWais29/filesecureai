@@ -142,3 +142,15 @@ export const safeString = (value: unknown): string => {
   }
   return '';
 };
+
+/**
+ * Safely convert an unknown value to a Record<string, unknown>
+ * @param value Value to convert
+ * @returns Record<string, unknown> or empty object
+ */
+export const toSafeRecord = (value: unknown): Record<string, unknown> => {
+  if (value && typeof value === 'object' && value !== null) {
+    return value as Record<string, unknown>;
+  }
+  return {};
+};

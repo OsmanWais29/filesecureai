@@ -1,7 +1,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { toString } from '@/utils/typeSafetyUtils';
+import { toString, toRecord } from '@/utils/typeSafetyUtils';
 
 export interface DocumentRecord {
   id: string;
@@ -34,7 +34,7 @@ export const useAnalysisInitialization = (documentId: string, storagePath: strin
         const record: DocumentRecord = {
           id: toString(data.id),
           title: toString(data.title),
-          metadata: data.metadata || {},
+          metadata: toRecord(data.metadata || {}),
           ai_processing_status: toString(data.ai_processing_status),
           storage_path: toString(data.storage_path),
           updated_at: toString(data.updated_at)
