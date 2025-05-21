@@ -28,7 +28,6 @@ export const VersionHistory: React.FC<VersionHistoryProps> = ({
         
         <div className="space-y-3">
           {versions.map((version, index) => {
-            const changes = version.changes || [];
             const isActive = currentVersion?.id === version.id;
             const previousVersion = index < versions.length - 1 ? versions[index + 1] : null;
             
@@ -42,8 +41,8 @@ export const VersionHistory: React.FC<VersionHistoryProps> = ({
                 <div className="flex items-start justify-between">
                   <div>
                     <h4 className="text-sm font-medium">
-                      Version {version.versionNumber}
-                      {version.isCurrent && (
+                      Version {version.version_number}
+                      {version.is_current && (
                         <span className="ml-2 text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded">
                           Current
                         </span>
@@ -51,7 +50,7 @@ export const VersionHistory: React.FC<VersionHistoryProps> = ({
                     </h4>
                     <p className="text-xs text-muted-foreground flex items-center mt-1">
                       <Clock className="h-3 w-3 mr-1" />
-                      {formatDate(version.createdAt)}
+                      {formatDate(version.created_at)}
                     </p>
                   </div>
                   
@@ -78,8 +77,8 @@ export const VersionHistory: React.FC<VersionHistoryProps> = ({
                   </div>
                 </div>
                 
-                {version.changesSummary && (
-                  <p className="text-xs mt-2">{version.changesSummary}</p>
+                {version.changes_summary && (
+                  <p className="text-xs mt-2">{version.changes_summary}</p>
                 )}
                 
                 {previousVersion && onCompareVersions && (
@@ -90,7 +89,7 @@ export const VersionHistory: React.FC<VersionHistoryProps> = ({
                       className="text-xs h-7"
                       onClick={() => onCompareVersions(version, previousVersion)}
                     >
-                      Compare with v{previousVersion.versionNumber}
+                      Compare with v{previousVersion.version_number}
                     </Button>
                   </div>
                 )}

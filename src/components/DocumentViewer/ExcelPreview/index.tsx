@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from "react";
 import { useExcelPreview } from "./hooks/useExcelPreview";
-import ExcelTable from "./components/ExcelTable"; // Fixed import
-import ExcelHeaderActions from "./components/ExcelHeaderActions"; // Fixed import
-import ExcelErrorDisplay from "./components/ExcelErrorDisplay"; // Fixed import
+import ExcelTable from "./components/ExcelTable"; 
+import ExcelHeaderActions from "./components/ExcelHeaderActions";
+import ExcelErrorDisplay from "./components/ExcelErrorDisplay";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ExcelPreviewProps {
@@ -47,11 +47,25 @@ const ExcelPreview: React.FC<ExcelPreviewProps> = ({ url, documentId, title }) =
   }
 
   if (error) {
-    return <ExcelErrorDisplay error={error} onRefresh={handleRefresh} publicUrl={url} />;
+    return (
+      <ExcelErrorDisplay 
+        error={error} 
+        onRetry={handleRefresh} 
+        onRefresh={handleRefresh}
+        publicUrl={url}
+      />
+    );
   }
 
   if (!excelData || !excelData.metadata?.sheetNames || excelData.metadata.sheetNames.length === 0) {
-    return <ExcelErrorDisplay error="No sheets found in the spreadsheet" onRefresh={handleRefresh} publicUrl={url} />;
+    return (
+      <ExcelErrorDisplay 
+        error="No sheets found in the spreadsheet" 
+        onRetry={handleRefresh}
+        onRefresh={handleRefresh}
+        publicUrl={url}
+      />
+    );
   }
 
   return (
@@ -59,7 +73,14 @@ const ExcelPreview: React.FC<ExcelPreviewProps> = ({ url, documentId, title }) =
       <ExcelHeaderActions 
         title={title} 
         onRefresh={handleRefresh} 
-        publicUrl={url} 
+        publicUrl={url}
+        sheetNames={excelData.metadata.sheetNames}
+        selectedSheet={excelData.metadata.sheetNames[activeSheet] || ''}
+        onSheetSelect={(sheetName) => {
+          const index = excelData.metadata.sheetNames.indexOf(sheetName);
+          if (index !== -1) handleSheetChange(index);
+        }}
+        fileName={excelData.metadata.fileName || title || 'Spreadsheet'}
       />
 
       {excelData.metadata.sheetNames.length > 1 ? (
@@ -84,7 +105,12 @@ const ExcelPreview: React.FC<ExcelPreviewProps> = ({ url, documentId, title }) =
             className="flex-1 overflow-auto p-0 m-0"
           >
             <ExcelTable 
-              data={tableData} 
+              data={tableData}
+              selectedSheet={excelData.metadata.sheetNames[activeSheet] || ''}
+              onSheetSelect={(sheetName) => {
+                const index = excelData.metadata.sheetNames.indexOf(sheetName);
+                if (index !== -1) handleSheetChange(index);
+              }}
               enableSorting={true} 
               enableFiltering={true}
             />
@@ -93,7 +119,9 @@ const ExcelPreview: React.FC<ExcelPreviewProps> = ({ url, documentId, title }) =
       ) : (
         <div className="flex-1 overflow-auto">
           <ExcelTable 
-            data={tableData} 
+            data={tableData}
+            selectedSheet={excelData.metadata.sheetNames[0] || ''}
+            onSheetSelect={() => {}} // No-op as there's only one sheet
             enableSorting={true} 
             enableFiltering={true}
           />

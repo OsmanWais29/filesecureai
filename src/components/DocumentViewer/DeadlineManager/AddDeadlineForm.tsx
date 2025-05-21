@@ -10,6 +10,8 @@ export const AddDeadlineForm: React.FC<AddDeadlineFormProps> = ({ onAdd, onCance
     title: "",
     dueDate: "", // Changed from due_date to dueDate to match the type
     description: "",
+    priority: "medium", // Add default priority
+    status: "pending"  // Add default status
   });
 
   const handleSubmit = (e: React.FormEvent) => {

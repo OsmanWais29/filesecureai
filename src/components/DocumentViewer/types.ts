@@ -1,11 +1,12 @@
+
 // Base document record type
 export interface DocumentRecord {
   id: string;
   title: string;
   storage_path: string;
-  type: string;
-  created_at: string;
-  updated_at: string;
+  type?: string;
+  created_at?: string;
+  updated_at?: string;
   user_id?: string;
   size?: number;
   metadata?: Record<string, unknown>;
@@ -41,6 +42,7 @@ export interface DocumentVersion {
   created_by?: string;
   description?: string;
   is_current?: boolean;
+  changes_summary?: string;
 }
 
 // Task type
@@ -56,6 +58,7 @@ export interface Task {
   due_date?: string;
   severity: string;
   document_id?: string;
+  regulation?: string; // Added to match TaskItem.tsx usage
 }
 
 // Comment type

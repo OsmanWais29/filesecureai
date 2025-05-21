@@ -35,22 +35,20 @@ export const VersionControl: React.FC<VersionControlProps> = ({ documentId }) =>
           // Map the database result to our DocumentVersion type
           const documentVersions: DocumentVersion[] = data.map(item => ({
             id: String(item.id || ''),
-            documentId: String(item.document_id || ''),
-            versionNumber: Number(item.version_number || 0),
-            content: item.content || {},
-            createdAt: String(item.created_at || ''),
-            createdBy: String(item.created_by || ''),
-            isCurrent: Boolean(item.is_current || false),
+            document_id: String(item.document_id || ''),
+            version_number: Number(item.version_number || 0),
+            storage_path: String(item.storage_path || ''),
+            created_at: String(item.created_at || ''),
+            created_by: String(item.created_by || ''),
+            is_current: Boolean(item.is_current || false),
             description: String(item.description || ''),
-            changesSummary: String(item.changes_summary || ''),
-            metadata: toSafeSpreadObject(item.metadata) || {},
-            changes: Array.isArray(item.changes) ? item.changes : []
+            changes_summary: String(item.changes_summary || '')
           }));
           
           setVersions(documentVersions);
           
           // Set the current version
-          const current = documentVersions.find(v => v.isCurrent) || (documentVersions[0] || null);
+          const current = documentVersions.find(v => v.is_current) || (documentVersions[0] || null);
           setCurrentVersion(current);
         }
       } catch (err: any) {
@@ -80,7 +78,7 @@ export const VersionControl: React.FC<VersionControlProps> = ({ documentId }) =>
     // Implementation for downloading a specific version
     console.log('Download version:', version);
     // Actual download implementation would go here
-    alert(`Downloading version ${version.versionNumber}`);
+    alert(`Downloading version ${version.version_number}`);
   };
 
   if (loading) {

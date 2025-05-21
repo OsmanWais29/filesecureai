@@ -52,7 +52,7 @@ export const documentIngestion = async (
       const typedDocument: DocumentRecord = {
         id: String(documentByTitle.id),
         title: String(documentByTitle.title || ''),
-        metadata: toSafeSpreadObject(documentByTitle.metadata),
+        metadata: documentByTitle.metadata ? toSafeSpreadObject(documentByTitle.metadata) || {} : {},
         ai_processing_status: documentByTitle.ai_processing_status ? String(documentByTitle.ai_processing_status) : undefined,
         storage_path: documentByTitle.storage_path ? String(documentByTitle.storage_path) : undefined
       };
@@ -85,7 +85,7 @@ export const documentIngestion = async (
   const typedDocumentRecord: DocumentRecord = {
     id: String(documentRecord.id),
     title: String(documentRecord.title || ''),
-    metadata: toSafeSpreadObject(documentRecord.metadata),
+    metadata: documentRecord.metadata ? toSafeSpreadObject(documentRecord.metadata) || {} : {},
     ai_processing_status: documentRecord.ai_processing_status ? String(documentRecord.ai_processing_status) : undefined,
     storage_path: documentRecord.storage_path ? String(documentRecord.storage_path) : undefined
   };
