@@ -15,10 +15,9 @@ export function useCreateFolderStructure(documents: Document[]) {
           id: doc.id,
           name: doc.title,
           type: (doc.folder_type as FolderStructure['type']) || 'folder',
-          level: 0,
           children: [],
           metadata: doc.metadata,
-          parent_id: doc.parent_folder_id,
+          parentId: doc.parent_folder_id || undefined,
           is_folder: true,
           folder_type: doc.folder_type
         };
@@ -28,12 +27,11 @@ export function useCreateFolderStructure(documents: Document[]) {
 
     // Build hierarchy
     folderMap.forEach(folder => {
-      if (folder.parent_id) {
-        const parent = folderMap.get(folder.parent_id);
+      if (folder.parentId) {
+        const parent = folderMap.get(folder.parentId);
         if (parent) {
           parent.children = parent.children || [];
           parent.children.push(folder);
-          folder.level = parent.level + 1;
         } else {
           rootFolders.push(folder);
         }

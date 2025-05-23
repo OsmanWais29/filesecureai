@@ -55,7 +55,7 @@ export const FolderItem = ({
       >
         <FolderIcon 
           isExpanded={isExpanded}
-          type={folder.folder_type}
+          type={folder.type}
         />
         
         {isEditing ? (

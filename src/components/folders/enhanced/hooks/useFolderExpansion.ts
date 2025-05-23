@@ -27,7 +27,7 @@ export function useFolderExpansion(
           const folder = findFolderById(folders, parentId);
           if (folder?.children) {
             folder.children.forEach(child => {
-              if (child.parent_id === parentId) {
+              if (child.parentId === parentId) {
                 newState[child.id] = false;
                 collapseChildren(child.id);
               }

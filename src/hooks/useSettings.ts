@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { safeStringCast } from '@/utils/typeGuards';
 
-interface UserSettings {
+export interface UserSettings {
   timeZone: string;
   setTimeZone: (value: string) => void;
   language: string;
@@ -71,8 +71,8 @@ export const useSettings = () => {
         throw error;
       }
 
-      if (data && data.settings) {
-        const settings = data.settings as any;
+      if (data && data.settings && typeof data.settings === 'object') {
+        const settings = data.settings as Record<string, any>;
         setTimeZone(safeStringCast(settings.timeZone) || "UTC");
         setLanguage(safeStringCast(settings.language) || "en");
         setAutoSave(settings.autoSave !== undefined ? Boolean(settings.autoSave) : true);
