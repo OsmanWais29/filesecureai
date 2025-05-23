@@ -26,6 +26,28 @@ export function ensureClientType(data: any): Client {
   };
 }
 
+// Extended Document interface to include missing properties
+interface ExtendedDocument {
+  id: string;
+  title: string;
+  type?: string;
+  created_at: string;
+  updated_at: string;
+  storage_path?: string;
+  size?: number;
+  metadata?: any;
+  parent_folder_id?: string;
+  user_id?: string;
+  is_folder?: boolean;
+  folder_type?: string;
+  deadlines?: any[];
+  status?: string;
+  ai_processing_status?: string;
+  tasks?: any[];
+  description?: string;
+  url?: string;
+}
+
 import { Document as DocumentListDocument } from "@/components/DocumentList/types";
 import { Document as ClientDocument } from "@/types/client";
 import { MeetingData } from "@/types/client";
@@ -176,7 +198,6 @@ export function safeBooleanCast(value: unknown): boolean {
   return false;
 }
 
-// Add the missing safeObjectCast function
 export function safeObjectCast(value: unknown): Record<string, any> {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     return value as Record<string, any>;
