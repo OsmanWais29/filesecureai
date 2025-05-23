@@ -1,6 +1,4 @@
-
-import { Document } from "@/components/DocumentList/types";
-import { FolderStructure } from "@/types/folders";
+import { Document } from '@/types/client';
 
 /**
  * Creates a hierarchical document structure with clients, estates, forms, and documents
@@ -245,3 +243,17 @@ export function isDocumentLocked(document: Document): boolean {
   
   return false;
 }
+
+export const getDocumentTaskCount = (document: Document): number => {
+  if (!document.tasks || !Array.isArray(document.tasks)) {
+    return 0;
+  }
+  return document.tasks.length;
+};
+
+export const getDocumentPendingTasks = (document: Document): number => {
+  if (!document.tasks || !Array.isArray(document.tasks)) {
+    return 0;
+  }
+  return document.tasks.filter(task => task.status === 'pending' || task.status === 'in_progress').length;
+};

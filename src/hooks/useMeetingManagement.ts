@@ -1,9 +1,12 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { withFreshToken } from "@/utils/jwt/tokenManager";
 import { MeetingData } from '@/types/client';
 import { ensureMeetingType } from '@/utils/typeGuards';
+
+export { MeetingData };
 
 export function useMeetingManagement() {
   const [meetings, setMeetings] = useState<MeetingData[]>([]);

@@ -3,24 +3,10 @@ import logger from "@/utils/logger";
 import { supabase } from "@/lib/supabase";
 import { logAIRequest } from "@/utils/aiRequestMonitor";
 import { FileInfo } from '@/types/client';
-import { ensureSpreadableObject } from '@/utils/typeGuards';
 import { toast } from 'sonner';
-
-// Type guard for ensuring object is spreadable
-const ensureSpreadableObject = (obj: unknown): Record<string, any> => {
-  if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
-    return obj as Record<string, any>;
-  }
-  return {};
-};
 
 /**
  * Simulates the processing stages of a document upload
- * @param isSpecialForm Whether the document is a special form that requires analysis
- * @param isExcel Whether the document is an Excel file
- * @param setUploadProgress Function to set the upload progress
- * @param setUploadStep Function to set the upload step message
- * @returns A promise that resolves when the simulation is complete
  */
 export const simulateProcessingStages = (
   isSpecialForm: boolean,
@@ -60,11 +46,6 @@ export const simulateProcessingStages = (
 
 /**
  * Creates a document record in the database
- * @param file The file to create a record for
- * @param userId The user ID
- * @param parentFolderId Optional parent folder ID
- * @param isSpecialForm Whether the document is a special form
- * @returns The created document record
  */
 export const createDocumentRecord = async (
   file: File, 
@@ -114,10 +95,6 @@ export const createDocumentRecord = async (
 
 /**
  * Uploads a file to storage
- * @param file The file to upload
- * @param userId The user ID
- * @param filePath The path to store the file at
- * @returns The result of the upload operation
  */
 export const uploadToStorage = async (file: File, userId: string, filePath: string) => {
   try {
@@ -146,9 +123,6 @@ export const uploadToStorage = async (file: File, userId: string, filePath: stri
 
 /**
  * Triggers document analysis through the edge function
- * @param documentId The document ID to analyze
- * @param fileName The file name (for type detection)
- * @param shouldAnalyze Whether the document should be analyzed
  */
 export const triggerDocumentAnalysis = async (documentId: string, fileName: string, shouldAnalyze: boolean = false): Promise<void> => {
   try {
@@ -301,13 +275,6 @@ export const triggerDocumentAnalysis = async (documentId: string, fileName: stri
 
 /**
  * Creates a notification
- * @param userId The user ID
- * @param title The notification title
- * @param message The notification message
- * @param type The notification type
- * @param documentId Optional document ID
- * @param fileName Optional file name
- * @param category Optional notification category
  */
 export const createNotification = async (
   userId: string,
@@ -347,8 +314,6 @@ export const createNotification = async (
 
 /**
  * Determines if a document requires analysis based on its file name
- * @param fileName The file name to check
- * @returns Whether the document requires analysis
  */
 const requiresAnalysis = (fileName: string): boolean => {
   const lowerFileName = fileName.toLowerCase();
@@ -381,10 +346,7 @@ const requiresAnalysis = (fileName: string): boolean => {
 };
 
 /**
- * Processes uploaded files
- * @param files The files to process
- * @param parentFolderId Optional parent folder ID
- * @returns An object containing success status and uploaded files
+ * Processes uploaded files with proper type safety
  */
 export const processUploadedFiles = async (
   files: FileInfo[],
@@ -394,15 +356,12 @@ export const processUploadedFiles = async (
     const uploadResults = await Promise.all(
       files.map(async (file) => {
         try {
-          // Upload file to storage
           const { data: storageData, error: storageError } = await supabase.storage
             .from('documents')
             .upload(`${Date.now()}_${file.name}`, file.file);
 
           if (storageError) throw storageError;
 
-          // Create document record - ensure we have a proper object to spread
-          const safeFileData = ensureSpreadableObject(file);
           const documentData = {
             title: file.name,
             type: file.file.type,
@@ -411,8 +370,7 @@ export const processUploadedFiles = async (
             size: file.file.size,
             metadata: {
               original_name: file.name,
-              upload_timestamp: new Date().toISOString(),
-              ...safeFileData
+              upload_timestamp: new Date().toISOString()
             }
           };
 

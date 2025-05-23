@@ -1,40 +1,50 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { UserSettings } from '@/types/settings';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
+import { safeStringConvert, safeBooleanConvert } from '@/utils/typeGuards';
 
-// Type guard to safely convert unknown to string
-const safeStringConvert = (value: unknown, defaultValue: string): string => {
-  return typeof value === 'string' ? value : defaultValue;
-};
+interface UserSettings {
+  timeZone: string;
+  language: string;
+  autoSave: boolean;
+  compactView: boolean;
+  documentSync: boolean;
+  defaultCurrency: string;
+  twoFactorEnabled: boolean;
+  sessionTimeout: string;
+  ipWhitelisting: boolean;
+  loginNotifications: boolean;
+  documentEncryption: boolean;
+  passwordExpiry: string;
+}
 
-// Type guard to safely convert unknown to boolean
-const safeBooleanConvert = (value: unknown, defaultValue: boolean): boolean => {
-  return typeof value === 'boolean' ? value : defaultValue;
-};
-
-export const useSettings = () => {
+export function useSettings() {
   const [timeZone, setTimeZone] = useState('UTC');
   const [language, setLanguage] = useState('en');
-  const [defaultCurrency, setDefaultCurrency] = useState('CAD');
   const [autoSave, setAutoSave] = useState(true);
   const [compactView, setCompactView] = useState(false);
   const [documentSync, setDocumentSync] = useState(true);
+  const [defaultCurrency, setDefaultCurrency] = useState('CAD');
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [sessionTimeout, setSessionTimeout] = useState('30');
   const [ipWhitelisting, setIpWhitelisting] = useState(false);
   const [loginNotifications, setLoginNotifications] = useState(true);
   const [documentEncryption, setDocumentEncryption] = useState(true);
   const [passwordExpiry, setPasswordExpiry] = useState('90');
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadSettings();
-  }, []);
+  const { toast } = useToast();
 
   const loadSettings = async () => {
     try {
+      setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      
+      if (!user) {
+        setLoading(false);
+        return;
+      }
 
       const { data, error } = await supabase
         .from('user_settings')
@@ -43,78 +53,107 @@ export const useSettings = () => {
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        throw error;
+        console.error('Error loading settings:', error);
+        setLoading(false);
+        return;
       }
 
-      if (data?.settings) {
-        const settings = data.settings as Record<string, unknown>;
-        setTimeZone(safeStringConvert(settings.timeZone, 'UTC'));
-        setLanguage(safeStringConvert(settings.language, 'en'));
-        setDefaultCurrency(safeStringConvert(settings.defaultCurrency, 'CAD'));
-        setAutoSave(safeBooleanConvert(settings.autoSave, true));
-        setCompactView(safeBooleanConvert(settings.compactView, false));
-        setDocumentSync(safeBooleanConvert(settings.documentSync, true));
-        setTwoFactorEnabled(safeBooleanConvert(settings.twoFactorEnabled, false));
-        setSessionTimeout(safeStringConvert(settings.sessionTimeout, '30'));
-        setIpWhitelisting(safeBooleanConvert(settings.ipWhitelisting, false));
-        setLoginNotifications(safeBooleanConvert(settings.loginNotifications, true));
-        setDocumentEncryption(safeBooleanConvert(settings.documentEncryption, true));
-        setPasswordExpiry(safeStringConvert(settings.passwordExpiry, '90'));
+      if (data) {
+        setTimeZone(safeStringConvert(data.time_zone, 'UTC'));
+        setLanguage(safeStringConvert(data.language, 'en'));
+        setDefaultCurrency(safeStringConvert(data.default_currency, 'CAD'));
+        setAutoSave(safeBooleanConvert(data.auto_save, true));
+        setCompactView(safeBooleanConvert(data.compact_view, false));
+        setDocumentSync(safeBooleanConvert(data.document_sync, true));
+        setTwoFactorEnabled(safeBooleanConvert(data.two_factor_enabled, false));
+        setSessionTimeout(safeStringConvert(data.session_timeout, '30'));
+        setIpWhitelisting(safeBooleanConvert(data.ip_whitelisting, false));
+        setLoginNotifications(safeBooleanConvert(data.login_notifications, true));
+        setDocumentEncryption(safeBooleanConvert(data.document_encryption, true));
+        setPasswordExpiry(safeStringConvert(data.password_expiry, '90'));
       }
     } catch (error) {
       console.error('Error loading settings:', error);
-      toast.error('Failed to load settings');
+    } finally {
+      setLoading(false);
     }
   };
 
   const save = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to save settings.",
+          variant: "destructive"
+        });
+        return;
+      }
 
-      const settings: UserSettings = {
-        timeZone,
-        language,
-        defaultCurrency,
-        autoSave,
-        compactView,
-        documentSync,
-        twoFactorEnabled,
-        sessionTimeout,
-        ipWhitelisting,
-        loginNotifications,
-        documentEncryption,
-        passwordExpiry,
+      const settingsData = {
+        user_id: user.id,
+        time_zone: timeZone,
+        language: language,
+        default_currency: defaultCurrency,
+        auto_save: autoSave,
+        compact_view: compactView,
+        document_sync: documentSync,
+        two_factor_enabled: twoFactorEnabled,
+        session_timeout: sessionTimeout,
+        ip_whitelisting: ipWhitelisting,
+        login_notifications: loginNotifications,
+        document_encryption: documentEncryption,
+        password_expiry: passwordExpiry,
+        updated_at: new Date().toISOString()
       };
 
       const { error } = await supabase
         .from('user_settings')
-        .upsert({ user_id: user.id, settings }, { onConflict: 'user_id' });
+        .upsert(settingsData, {
+          onConflict: 'user_id'
+        });
 
       if (error) {
         throw error;
       }
 
-      toast.success('Settings saved successfully');
+      toast({
+        title: "Settings saved",
+        description: "Your preferences have been updated successfully.",
+      });
     } catch (error) {
       console.error('Error saving settings:', error);
-      toast.error('Failed to save settings');
+      toast({
+        title: "Error saving settings",
+        description: "There was a problem updating your preferences.",
+        variant: "destructive"
+      });
+      throw error;
     }
   };
 
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
   return {
+    // General settings
     timeZone,
     setTimeZone,
     language,
     setLanguage,
-    defaultCurrency,
-    setDefaultCurrency,
     autoSave,
     setAutoSave,
     compactView,
     setCompactView,
     documentSync,
     setDocumentSync,
+    defaultCurrency,
+    setDefaultCurrency,
+    
+    // Security settings
     twoFactorEnabled,
     setTwoFactorEnabled,
     sessionTimeout,
@@ -127,6 +166,9 @@ export const useSettings = () => {
     setDocumentEncryption,
     passwordExpiry,
     setPasswordExpiry,
+    
+    // Actions
     save,
+    loading
   };
-};
+}

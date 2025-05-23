@@ -19,7 +19,7 @@ export const ensureDocumentType = (doc: unknown): Document => {
     deadlines: docObj.deadlines || [],
     status: docObj.status ? String(docObj.status) : undefined,
     ai_processing_status: docObj.ai_processing_status ? String(docObj.ai_processing_status) : undefined,
-    tasks: docObj.tasks || [],
+    tasks: Array.isArray(docObj.tasks) ? docObj.tasks.map(ensureTaskType) : [],
     description: docObj.description ? String(docObj.description) : undefined,
     url: docObj.url ? String(docObj.url) : undefined
   };
@@ -27,12 +27,15 @@ export const ensureDocumentType = (doc: unknown): Document => {
 
 export const ensureTaskType = (task: unknown): Task => {
   const taskObj = task as Record<string, any>;
+  const validStatuses = ['pending', 'in_progress', 'completed', 'cancelled'];
+  const validPriorities = ['low', 'medium', 'high'];
+  
   return {
     id: String(taskObj.id || ''),
     title: String(taskObj.title || 'Untitled Task'),
     description: taskObj.description ? String(taskObj.description) : undefined,
-    status: ['pending', 'in_progress', 'completed', 'cancelled'].includes(taskObj.status) ? taskObj.status : 'pending',
-    priority: ['low', 'medium', 'high'].includes(taskObj.priority) ? taskObj.priority : 'medium',
+    status: validStatuses.includes(taskObj.status) ? taskObj.status : 'pending',
+    priority: validPriorities.includes(taskObj.priority) ? taskObj.priority : 'medium',
     due_date: taskObj.due_date ? String(taskObj.due_date) : undefined,
     client_id: taskObj.client_id ? String(taskObj.client_id) : undefined,
     assigned_to: taskObj.assigned_to ? String(taskObj.assigned_to) : undefined,
@@ -44,12 +47,14 @@ export const ensureTaskType = (task: unknown): Task => {
 
 export const ensureClientType = (client: unknown): Client => {
   const clientObj = client as Record<string, any>;
+  const validStatuses = ['active', 'inactive', 'pending'];
+  
   return {
     id: String(clientObj.id || ''),
     name: String(clientObj.name || 'Unknown'),
     email: clientObj.email ? String(clientObj.email) : undefined,
     phone: clientObj.phone ? String(clientObj.phone) : undefined,
-    status: ['active', 'inactive', 'pending'].includes(clientObj.status) ? clientObj.status : 'pending',
+    status: validStatuses.includes(clientObj.status) ? clientObj.status : 'pending',
     location: clientObj.location ? String(clientObj.location) : undefined,
     address: clientObj.address ? String(clientObj.address) : undefined,
     city: clientObj.city ? String(clientObj.city) : undefined,
@@ -74,6 +79,8 @@ export const ensureClientType = (client: unknown): Client => {
 
 export const ensureMeetingType = (meeting: unknown): MeetingData => {
   const meetingObj = meeting as Record<string, any>;
+  const validStatuses = ['scheduled', 'in_progress', 'completed', 'cancelled'];
+  
   return {
     id: String(meetingObj.id || ''),
     title: String(meetingObj.title || 'Untitled Meeting'),
@@ -82,7 +89,7 @@ export const ensureMeetingType = (meeting: unknown): MeetingData => {
     end_time: String(meetingObj.end_time || new Date().toISOString()),
     client_id: meetingObj.client_id ? String(meetingObj.client_id) : undefined,
     attendees: meetingObj.attendees || [],
-    status: ['scheduled', 'in_progress', 'completed', 'cancelled'].includes(meetingObj.status) ? meetingObj.status : 'scheduled',
+    status: validStatuses.includes(meetingObj.status) ? meetingObj.status : 'scheduled',
     meeting_type: meetingObj.meeting_type ? String(meetingObj.meeting_type) : undefined,
     location: meetingObj.location ? String(meetingObj.location) : undefined,
     metadata: meetingObj.metadata || {},
@@ -92,15 +99,26 @@ export const ensureMeetingType = (meeting: unknown): MeetingData => {
 };
 
 export const safeStringConvert = (value: unknown, defaultValue: string = ''): string => {
-  return typeof value === 'string' ? value : defaultValue;
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number') return String(value);
+  if (typeof value === 'boolean') return String(value);
+  return defaultValue;
 };
 
 export const safeBooleanConvert = (value: unknown, defaultValue: boolean = false): boolean => {
-  return typeof value === 'boolean' ? value : defaultValue;
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') return value.toLowerCase() === 'true';
+  if (typeof value === 'number') return value > 0;
+  return defaultValue;
 };
 
 export const safeNumberConvert = (value: unknown, defaultValue: number = 0): number => {
-  return typeof value === 'number' ? value : defaultValue;
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? defaultValue : parsed;
+  }
+  return defaultValue;
 };
 
 export const ensureSpreadableObject = (obj: unknown): Record<string, any> => {
