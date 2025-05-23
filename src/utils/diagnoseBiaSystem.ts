@@ -1,5 +1,6 @@
 
 import { supabase } from "@/lib/supabase";
+import { safeStringCast, safeObjectCast } from "@/utils/typeGuards";
 
 /**
  * Runs comprehensive diagnostics on the Bankruptcy & Insolvency Act (BIA) system
@@ -71,7 +72,7 @@ export const runFullSystemDiagnostics = async (documentId: string) => {
         try {
           const { data, error: storageError } = await supabase.storage
             .from('documents')
-            .download(document.storage_path);
+            .download(safeStringCast(document.storage_path));
           
           if (storageError) {
             results.storagePathValid = false;
@@ -126,15 +127,18 @@ export const runFullSystemDiagnostics = async (documentId: string) => {
           results.success = false;
           results.message = "Analysis exists but content is empty";
         } else {
+          const content = safeObjectCast(analysis.content);
+          
           // Check extracted_info
-          if (!analysis.content.extracted_info) {
+          if (!content.extracted_info) {
             results.analysisStatus = "incomplete";
             results.success = false;
             results.message = "Analysis missing extracted_info";
           }
           
           // Check summary (either directly or in extracted_info)
-          const summary = analysis.content.summary || analysis.content.extracted_info?.summary;
+          const extractedInfo = safeObjectCast(content.extracted_info);
+          const summary = content.summary || extractedInfo.summary;
           if (!summary) {
             if (results.analysisStatus === "incomplete") {
               results.message += " and summary";
@@ -148,7 +152,7 @@ export const runFullSystemDiagnostics = async (documentId: string) => {
           }
           
           // Check risks
-          if (!analysis.content.risks || !Array.isArray(analysis.content.risks)) {
+          if (!content.risks || !Array.isArray(content.risks)) {
             if (results.analysisStatus === "incomplete") {
               results.message += " and risks";
             } else {
@@ -157,7 +161,7 @@ export const runFullSystemDiagnostics = async (documentId: string) => {
               results.message = "Analysis missing risks array";
             }
           } else {
-            results.details.riskCount = analysis.content.risks.length;
+            results.details.riskCount = content.risks.length;
           }
         }
         

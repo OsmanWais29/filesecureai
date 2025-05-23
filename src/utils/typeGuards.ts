@@ -34,21 +34,21 @@ export function convertDocumentListToClientDocument(doc: DocumentListDocument): 
   return {
     id: doc.id,
     title: doc.title,
-    type: doc.type || 'document', // Ensure type is always present
+    type: doc.type || 'document',
     created_at: doc.created_at,
     updated_at: doc.updated_at,
     storage_path: doc.storage_path,
     size: doc.size,
     metadata: doc.metadata || {},
     parent_folder_id: doc.parent_folder_id,
-    user_id: doc.user_id,
+    user_id: doc.user_id || '',
     is_folder: doc.is_folder || false,
     folder_type: doc.folder_type,
     deadlines: doc.deadlines || [],
-    status: doc.status,
+    status: doc.status || 'pending',
     ai_processing_status: doc.ai_processing_status || 'pending',
     tasks: doc.tasks || [],
-    description: doc.description,
+    description: doc.description || '',
     url: doc.url
   };
 }
@@ -85,14 +85,14 @@ export function convertToClientDocument(data: unknown): ClientDocument {
     size: doc.size,
     metadata: doc.metadata || {},
     parent_folder_id: doc.parent_folder_id,
-    user_id: doc.user_id,
+    user_id: doc.user_id || '',
     is_folder: doc.is_folder || false,
     folder_type: doc.folder_type,
     deadlines: doc.deadlines || [],
-    status: doc.status,
+    status: doc.status || 'pending',
     ai_processing_status: doc.ai_processing_status || 'pending',
     tasks: doc.tasks || [],
-    description: doc.description,
+    description: doc.description || '',
     url: doc.url
   };
 }
@@ -174,4 +174,12 @@ export function safeBooleanCast(value: unknown): boolean {
   if (value === 'true') return true;
   if (value === 'false') return false;
   return false;
+}
+
+// Add the missing safeObjectCast function
+export function safeObjectCast(value: unknown): Record<string, any> {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, any>;
+  }
+  return {};
 }
