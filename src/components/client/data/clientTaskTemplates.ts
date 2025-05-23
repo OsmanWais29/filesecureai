@@ -1,69 +1,87 @@
 
-import { Task } from "../types";
-import { getDateFromDaysAgo } from "./clientDocumentHelpers";
+import { Task } from '../types';
 
-// All static tasks for each client
+const currentTimestamp = new Date().toISOString();
+
 export const getClientTasks = (clientId: string): Task[] => {
-  switch (clientId) {
-    case 'jane-smith':
-      return [
-        {
-          id: "jane-task-1",
-          title: "Review financial statement",
-          dueDate: getDateFromDaysAgo(0),
-          status: 'pending',
-          priority: 'high'
-        },
-        {
-          id: "jane-task-2",
-          title: "Schedule quarterly meeting",
-          dueDate: getDateFromDaysAgo(-7),
-          status: 'pending',
-          priority: 'medium'
-        }
-      ];
-    case 'robert-johnson':
-      return [
-        {
-          id: "robert-task-1",
-          title: "Complete Form 32 processing",
-          dueDate: getDateFromDaysAgo(2),
-          status: 'overdue',
-          priority: 'high'
-        },
-        {
-          id: "robert-task-2",
-          title: "Request updated bank statements",
-          dueDate: getDateFromDaysAgo(-3),
-          status: 'pending',
-          priority: 'medium'
-        },
-        {
-          id: "robert-task-3",
-          title: "Prepare monthly report",
-          dueDate: getDateFromDaysAgo(-10),
-          status: 'pending',
-          priority: 'low'
-        }
-      ];
-    case 'maria-garcia':
-      return [
-        {
-          id: "maria-task-1",
-          title: "Follow up on missing documents",
-          dueDate: getDateFromDaysAgo(1),
-          status: 'pending',
-          priority: 'high'
-        },
-        {
-          id: "maria-task-2",
-          title: "Process debt consolidation agreement",
-          dueDate: getDateFromDaysAgo(-5),
-          status: 'pending',
-          priority: 'high'
-        }
-      ];
-    default:
-      return [];
-  }
+  const taskTemplates: Record<string, Task[]> = {
+    'josh-hart': [
+      {
+        id: 'task-1',
+        title: 'Review Financial Statements',
+        dueDate: '2024-02-15',
+        status: 'pending',
+        priority: 'high',
+        created_at: currentTimestamp,
+        updated_at: currentTimestamp,
+        created_by: 'system'
+      },
+      {
+        id: 'task-2',
+        title: 'Complete Form 47 Validation',
+        dueDate: '2024-02-20',
+        status: 'in-progress',
+        priority: 'medium',
+        created_at: currentTimestamp,
+        updated_at: currentTimestamp,
+        created_by: 'system'
+      }
+    ],
+    'sarah-johnson': [
+      {
+        id: 'task-3',
+        title: 'Asset Valuation Assessment',
+        dueDate: '2024-02-10',
+        status: 'completed',
+        priority: 'low',
+        created_at: currentTimestamp,
+        updated_at: currentTimestamp,
+        created_by: 'system'
+      },
+      {
+        id: 'task-4',
+        title: 'Creditor Meeting Schedule',
+        dueDate: '2024-02-25',
+        status: 'pending',
+        priority: 'high',
+        created_at: currentTimestamp,
+        updated_at: currentTimestamp,
+        created_by: 'system'
+      },
+      {
+        id: 'task-5',
+        title: 'Documentation Review',
+        dueDate: '2024-02-18',
+        status: 'in-progress',
+        priority: 'medium',
+        created_at: currentTimestamp,
+        updated_at: currentTimestamp,
+        created_by: 'system'
+      }
+    ],
+    'michael-chen': [
+      {
+        id: 'task-6',
+        title: 'Consumer Proposal Draft',
+        dueDate: '2024-02-28',
+        status: 'pending',
+        priority: 'medium',
+        created_at: currentTimestamp,
+        updated_at: currentTimestamp,
+        created_by: 'system'
+      },
+      {
+        id: 'task-7',
+        title: 'Income Verification',
+        dueDate: '2024-02-22',
+        status: 'in-progress',
+        priority: 'high',
+        created_at: currentTimestamp,
+        updated_at: currentTimestamp,
+        created_by: 'system'
+      }
+    ]
+  };
+
+  return taskTemplates[clientId] || [];
 };

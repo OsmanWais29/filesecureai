@@ -1,67 +1,64 @@
 
-import React from "react";
-import { ClientInfoPanel } from "../ClientInfo";
-import { DocumentGrid } from "../../../DocumentList/components/DocumentGrid";
-import { FilePreview } from "../FilePreview/FilePreviewPanel";
-import { Client, Document } from "../../types";
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DocumentGrid } from '../DocumentGrid/DocumentGrid';
+import { FilePreview } from './FilePreview/FilePreviewPanel';
+import { Client, Document } from '../../types';
 
 interface MobileTabletViewProps {
   client: Client;
   documents: Document[];
   selectedDocumentId: string;
-  onClientUpdate: (updatedClient: Client) => void;
   onDocumentSelect: (documentId: string) => void;
-  onDocumentOpen: (documentId: string) => void;
 }
 
 export const MobileTabletView: React.FC<MobileTabletViewProps> = ({
   client,
   documents,
   selectedDocumentId,
-  onClientUpdate,
-  onDocumentSelect,
-  onDocumentOpen,
+  onDocumentSelect
 }) => {
   const selectedDocument = documents.find(doc => doc.id === selectedDocumentId);
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Client Info Panel - Compact for mobile */}
-      <div className="flex-shrink-0 border-b">
-        <ClientInfoPanel
-          client={client}
-          tasks={[]}
-          documentCount={documents.length}
-          lastActivityDate={client.last_activity || new Date().toISOString()}
-          documents={documents}
-          onClientUpdate={onClientUpdate}
-          onDocumentSelect={onDocumentSelect}
-          selectedDocumentId={selectedDocumentId}
-        />
-      </div>
-
-      {/* Documents Section */}
-      <div className="flex-1 p-4 overflow-auto">
-        {selectedDocument ? (
-          <FilePreview 
-            document={selectedDocument}
-            onDocumentOpen={onDocumentOpen}
-          />
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {documents.map(doc => (
-              <div 
-                key={doc.id}
-                className="border rounded-lg p-4 cursor-pointer hover:bg-muted/50"
-                onClick={() => onDocumentSelect(doc.id)}
-              >
-                <h3 className="font-medium">{doc.title}</h3>
-                <p className="text-sm text-muted-foreground">{doc.type}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+    <div className="p-4">
+      <Tabs defaultValue="documents" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="documents">Documents</TabsTrigger>
+          <TabsTrigger value="preview">Preview</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="documents" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>{client.name} - Documents</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DocumentGrid 
+                documents={documents}
+                onDocumentSelect={onDocumentSelect}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="preview" className="space-y-4">
+          {selectedDocument ? (
+            <FilePreview 
+              fileName={selectedDocument.title}
+              fileType={selectedDocument.type || 'document'}
+              fileSize={selectedDocument.size || 0}
+            />
+          ) : (
+            <Card>
+              <CardContent className="p-6 text-center text-muted-foreground">
+                Select a document to preview
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

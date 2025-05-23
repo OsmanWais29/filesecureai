@@ -1,6 +1,22 @@
 import { supabase } from "@/lib/supabase";
 import { IncomeExpenseData } from "../../types";
-import { toString } from '@/utils/typeSafetyUtils';
+import { toString, toNumber, safeObjectCast } from '@/utils/typeSafetyUtils';
+
+export interface ProcessedFinancialData {
+  id: string;
+  client_name: string;
+  monthly_income: number;
+  monthly_expenses: number;
+  surplus_income: number;
+  submission_date: string;
+  period_type: string;
+  status: string;
+  metadata: {
+    source: string;
+    row_index: number;
+    original_data: Record<string, unknown>;
+  };
+}
 
 export const fetchLatestExcelData = async (clientId: string): Promise<IncomeExpenseData | null> => {
   try {
@@ -20,10 +36,10 @@ export const fetchLatestExcelData = async (clientId: string): Promise<IncomeExpe
     }
 
     // Map the Excel data to IncomeExpenseData structure
-    // This is a placeholder implementation
+    const metadata = safeObjectCast(data.metadata);
     return {
       // Map Excel data to form fields
-      full_name: data.metadata?.client_name || "",
+      full_name: toString(metadata.client_name) || "",
       // Initialize all other fields with empty values
       residential_address: "",
       phone_home: "",
@@ -144,14 +160,14 @@ export const processExcelData = (data: unknown[]): ProcessedFinancialData[] => {
   }
 
   return data.map((row, index) => {
-    const rowData = row as Record<string, unknown>;
+    const rowData = safeObjectCast(row);
     
     return {
       id: `row-${index}`,
       client_name: toString(rowData.client_name || rowData.name || rowData.Client || rowData.Name),
-      monthly_income: parseFloat(toString(rowData.monthly_income || rowData.income || '0')) || 0,
-      monthly_expenses: parseFloat(toString(rowData.monthly_expenses || rowData.expenses || '0')) || 0,
-      surplus_income: parseFloat(toString(rowData.surplus_income || rowData.surplus || '0')) || 0,
+      monthly_income: toNumber(rowData.monthly_income || rowData.income || 0),
+      monthly_expenses: toNumber(rowData.monthly_expenses || rowData.expenses || 0),
+      surplus_income: toNumber(rowData.surplus_income || rowData.surplus || 0),
       submission_date: toString(rowData.submission_date || new Date().toISOString()),
       period_type: toString(rowData.period_type || 'current'),
       status: toString(rowData.status || 'pending_review'),

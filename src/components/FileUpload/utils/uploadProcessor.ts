@@ -3,7 +3,8 @@ import logger from "@/utils/logger";
 import { supabase } from "@/lib/supabase";
 import { logAIRequest } from "@/utils/aiRequestMonitor";
 import { FileInfo } from '@/components/client/types';
-import { toSafeSpreadObject } from '@/utils/typeSafetyUtils';
+import { toSafeSpreadObject, toString } from '@/utils/typeSafetyUtils';
+import { toast } from 'sonner';
 
 /**
  * Simulates the processing stages of a document upload
@@ -416,7 +417,7 @@ export const processUploadedFiles = async (
 
           return {
             ...file,
-            documentId: docData.id,
+            documentId: toString(docData.id),
             status: 'completed'
           };
         } catch (error) {

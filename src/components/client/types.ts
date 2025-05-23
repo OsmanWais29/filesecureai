@@ -92,7 +92,7 @@ export interface FileInfo {
   file: File;
   status: string;
   progress: number;
-  documentId: string;
+  documentId?: string;
   error?: string;
 }
 
