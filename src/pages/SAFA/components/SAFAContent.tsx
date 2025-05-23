@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,6 +28,16 @@ const SAFAContent = () => {
       handleSendMessage(inputMessage);
       setInputMessage("");
     }
+  };
+
+  // Convert client messages to match ConversationView expectations
+  const getMessagesForTab = (tab: string) => {
+    const messages = categoryMessages[tab] || [];
+    return messages.map(msg => ({
+      ...msg,
+      type: 'text' as const,
+      module: tab
+    }));
   };
 
   return (
@@ -70,7 +81,7 @@ const SAFAContent = () => {
           <CardContent className="p-0 h-[calc(100%-3rem)]">
             <TabsContent value="document" className="mt-0 h-full">
               <ConversationView
-                messages={categoryMessages.document || []}
+                messages={getMessagesForTab('document')}
                 inputMessage={inputMessage}
                 setInputMessage={setInputMessage}
                 handleSendMessage={handleSend}
@@ -81,7 +92,7 @@ const SAFAContent = () => {
             
             <TabsContent value="legal" className="mt-0 h-full">
               <ConversationView
-                messages={categoryMessages.legal || []}
+                messages={getMessagesForTab('legal')}
                 inputMessage={inputMessage}
                 setInputMessage={setInputMessage}
                 handleSendMessage={handleSend}
@@ -92,7 +103,7 @@ const SAFAContent = () => {
             
             <TabsContent value="help" className="mt-0 h-full">
               <ConversationView
-                messages={categoryMessages.help || []}
+                messages={getMessagesForTab('help')}
                 inputMessage={inputMessage}
                 setInputMessage={setInputMessage}
                 handleSendMessage={handleSend}

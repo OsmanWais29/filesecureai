@@ -11,11 +11,15 @@ interface UseConversationsResult {
   sendMessage: (content: string, category: string) => Promise<void>;
   loadConversation: (category: string) => Promise<void>;
   clearConversation: (category: string) => void;
+  handleSendMessage: (content: string) => Promise<void>;
+  isProcessing: boolean;
+  loadConversationHistory: (category: string) => Promise<void>;
 }
 
-export const useConversations = (): UseConversationsResult => {
+export const useConversations = (activeTab?: string): UseConversationsResult => {
   const [categoryMessages, setCategoryMessages] = useState<Record<string, ChatMessage[]>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadConversation = useCallback(async (category: string) => {
@@ -29,9 +33,9 @@ export const useConversations = (): UseConversationsResult => {
         .eq('type', category)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (fetchError && fetchError.code !== 'PGRST116') {
+      if (fetchError) {
         throw fetchError;
       }
 
@@ -62,7 +66,7 @@ export const useConversations = (): UseConversationsResult => {
 
   const sendMessage = useCallback(async (content: string, category: string) => {
     try {
-      setIsLoading(true);
+      setIsProcessing(true);
       setError(null);
 
       const userMessage: ChatMessage = {
@@ -93,9 +97,19 @@ export const useConversations = (): UseConversationsResult => {
       console.error('Error sending message:', err);
       setError('Failed to send message');
     } finally {
-      setIsLoading(false);
+      setIsProcessing(false);
     }
   }, [categoryMessages]);
+
+  const handleSendMessage = useCallback(async (content: string) => {
+    if (activeTab) {
+      await sendMessage(content, activeTab);
+    }
+  }, [activeTab, sendMessage]);
+
+  const loadConversationHistory = useCallback(async (category: string) => {
+    await loadConversation(category);
+  }, [loadConversation]);
 
   const clearConversation = useCallback((category: string) => {
     setCategoryMessages(prev => ({
@@ -110,6 +124,9 @@ export const useConversations = (): UseConversationsResult => {
     error,
     sendMessage,
     loadConversation,
-    clearConversation
+    clearConversation,
+    handleSendMessage,
+    isProcessing,
+    loadConversationHistory
   };
 };

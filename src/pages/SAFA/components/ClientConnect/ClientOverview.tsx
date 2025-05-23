@@ -1,22 +1,33 @@
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { UserCircle, Phone, Mail, Calendar, ChevronRight } from "lucide-react";
-import { Client } from "../../types/client";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/lib/supabase";
-import { convertClientArray } from "@/utils/typeGuards";
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
+import { convertClientArray } from '@/utils/typeGuards';
+import { Client as ClientType } from '@/types/client';
 
-interface ClientOverviewProps {
-  onSelectClient: (client: Client) => void;
+// Convert client type from /types/client to SAFA client type
+interface SAFAClient {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  status: string;
+  last_interaction: Date;
+  engagement_score: number;
 }
 
-export const ClientOverview = ({ onSelectClient }: ClientOverviewProps) => {
-  const [clients, setClients] = useState<Client[]>([]);
+const convertToSAFAClient = (client: ClientType): SAFAClient => ({
+  id: client.id,
+  name: client.name,
+  email: client.email,
+  phone: client.phone,
+  status: client.status,
+  last_interaction: client.last_interaction ? new Date(client.last_interaction) : new Date(),
+  engagement_score: client.engagement_score || 0
+});
+
+export const ClientOverview = () => {
+  const [clients, setClients] = useState<SAFAClient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
 
   useEffect(() => {
     loadClients();
@@ -30,78 +41,54 @@ export const ClientOverview = ({ onSelectClient }: ClientOverviewProps) => {
         .order('last_interaction', { ascending: false });
 
       if (error) throw error;
-
+      
+      // Safe conversion from unknown data
       const safeClients = convertClientArray(data || []);
-      setClients(safeClients);
+      const safaClients = safeClients.map(convertToSAFAClient);
+      setClients(safaClients);
     } catch (error) {
       console.error('Error loading clients:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load client list."
-      });
+      setClients([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-semibold">Clients</h2>
-        <Button variant="outline">Add New Client</Button>
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg">Loading clients...</div>
       </div>
+    );
+  }
+
+  return (
+    <div className="p-6">
+      <h2 className="text-2xl font-bold mb-6">Client Overview</h2>
       
-      <ScrollArea className="h-[calc(100vh-200px)]">
-        <div className="space-y-4">
-          {clients.map((client) => (
-            <Card 
-              key={client.id}
-              className="p-4 hover:bg-accent/50 cursor-pointer transition-colors"
-              onClick={() => onSelectClient(client)}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="bg-primary/10 p-2 rounded-full">
-                    <UserCircle className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium">{client.name}</h3>
-                    <div className="flex items-center text-sm text-muted-foreground space-x-4">
-                      {client.email && (
-                        <div className="flex items-center">
-                          <Mail className="h-4 w-4 mr-1" />
-                          {client.email}
-                        </div>
-                      )}
-                      {client.phone && (
-                        <div className="flex items-center">
-                          <Phone className="h-4 w-4 mr-1" />
-                          {client.phone}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <div className="text-right">
-                    <div className="text-sm font-medium">
-                      Engagement Score: {client.engagement_score.toFixed(1)}
-                    </div>
-                    {client.last_interaction && (
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <Calendar className="h-4 w-4 mr-1" />
-                        {new Date(client.last_interaction).toLocaleDateString()}
-                      </div>
-                    )}
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                </div>
-              </div>
-            </Card>
+      {clients.length === 0 ? (
+        <div className="text-center text-muted-foreground">
+          No clients found.
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {clients.map(client => (
+            <div key={client.id} className="p-4 border rounded-lg hover:bg-muted/50">
+              <h3 className="font-medium">{client.name}</h3>
+              <p className="text-sm text-muted-foreground">Status: {client.status}</p>
+              {client.email && (
+                <p className="text-sm text-muted-foreground">Email: {client.email}</p>
+              )}
+              {client.phone && (
+                <p className="text-sm text-muted-foreground">Phone: {client.phone}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Last interaction: {client.last_interaction.toLocaleDateString()}
+              </p>
+            </div>
           ))}
         </div>
-      </ScrollArea>
+      )}
     </div>
   );
 };

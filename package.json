@@ -46,6 +46,7 @@
     "@testing-library/react": "^16.2.0",
     "@types/jest": "^29.5.14",
     "@types/pdfjs-dist": "^2.10.378",
+    "@types/react-color": "^3.0.13",
     "@types/uuid": "^10.0.0",
     "@types/xlsx": "^0.0.36",
     "class-variance-authority": "^0.7.1",
