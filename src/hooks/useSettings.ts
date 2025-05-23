@@ -2,9 +2,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
-import { safeStringConvert, safeBooleanConvert } from '@/utils/typeGuards';
 
-interface UserSettings {
+interface Settings {
   timeZone: string;
   language: string;
   autoSave: boolean;
@@ -19,32 +18,35 @@ interface UserSettings {
   passwordExpiry: string;
 }
 
-export function useSettings() {
-  const [timeZone, setTimeZone] = useState('UTC');
-  const [language, setLanguage] = useState('en');
-  const [autoSave, setAutoSave] = useState(true);
-  const [compactView, setCompactView] = useState(false);
-  const [documentSync, setDocumentSync] = useState(true);
-  const [defaultCurrency, setDefaultCurrency] = useState('CAD');
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
-  const [sessionTimeout, setSessionTimeout] = useState('30');
-  const [ipWhitelisting, setIpWhitelisting] = useState(false);
-  const [loginNotifications, setLoginNotifications] = useState(true);
-  const [documentEncryption, setDocumentEncryption] = useState(true);
-  const [passwordExpiry, setPasswordExpiry] = useState('90');
-  const [loading, setLoading] = useState(true);
+const defaultSettings: Settings = {
+  timeZone: 'UTC',
+  language: 'en',
+  autoSave: true,
+  compactView: false,
+  documentSync: true,
+  defaultCurrency: 'CAD',
+  twoFactorEnabled: false,
+  sessionTimeout: '30',
+  ipWhitelisting: false,
+  loginNotifications: true,
+  documentEncryption: true,
+  passwordExpiry: '90'
+};
 
+export function useSettings() {
+  const [settings, setSettings] = useState<Settings>(defaultSettings);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
 
   const loadSettings = async () => {
     try {
-      setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        setLoading(false);
-        return;
-      }
+      if (!user) return;
 
       const { data, error } = await supabase
         .from('user_settings')
@@ -53,122 +55,110 @@ export function useSettings() {
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('Error loading settings:', error);
-        setLoading(false);
-        return;
+        throw error;
       }
 
       if (data) {
-        setTimeZone(safeStringConvert(data.time_zone, 'UTC'));
-        setLanguage(safeStringConvert(data.language, 'en'));
-        setDefaultCurrency(safeStringConvert(data.default_currency, 'CAD'));
-        setAutoSave(safeBooleanConvert(data.auto_save, true));
-        setCompactView(safeBooleanConvert(data.compact_view, false));
-        setDocumentSync(safeBooleanConvert(data.document_sync, true));
-        setTwoFactorEnabled(safeBooleanConvert(data.two_factor_enabled, false));
-        setSessionTimeout(safeStringConvert(data.session_timeout, '30'));
-        setIpWhitelisting(safeBooleanConvert(data.ip_whitelisting, false));
-        setLoginNotifications(safeBooleanConvert(data.login_notifications, true));
-        setDocumentEncryption(safeBooleanConvert(data.document_encryption, true));
-        setPasswordExpiry(safeStringConvert(data.password_expiry, '90'));
+        setSettings({
+          timeZone: data.time_zone || defaultSettings.timeZone,
+          language: data.language || defaultSettings.language,
+          autoSave: data.auto_save ?? defaultSettings.autoSave,
+          compactView: data.compact_view ?? defaultSettings.compactView,
+          documentSync: data.document_sync ?? defaultSettings.documentSync,
+          defaultCurrency: data.default_currency || defaultSettings.defaultCurrency,
+          twoFactorEnabled: data.two_factor_enabled ?? defaultSettings.twoFactorEnabled,
+          sessionTimeout: data.session_timeout || defaultSettings.sessionTimeout,
+          ipWhitelisting: data.ip_whitelisting ?? defaultSettings.ipWhitelisting,
+          loginNotifications: data.login_notifications ?? defaultSettings.loginNotifications,
+          documentEncryption: data.document_encryption ?? defaultSettings.documentEncryption,
+          passwordExpiry: data.password_expiry || defaultSettings.passwordExpiry
+        });
       }
     } catch (error) {
       console.error('Error loading settings:', error);
+      toast({
+        title: "Error loading settings",
+        description: "Using default settings",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const saveSettings = async () => {
+  const save = async () => {
     try {
+      setSaving(true);
       const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        toast({
-          title: "Error",
-          description: "You must be logged in to save settings.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      const settingsData = {
-        user_id: user.id,
-        time_zone: timeZone,
-        language: language,
-        default_currency: defaultCurrency,
-        auto_save: autoSave,
-        compact_view: compactView,
-        document_sync: documentSync,
-        two_factor_enabled: twoFactorEnabled,
-        session_timeout: sessionTimeout,
-        ip_whitelisting: ipWhitelisting,
-        login_notifications: loginNotifications,
-        document_encryption: documentEncryption,
-        password_expiry: passwordExpiry,
-        updated_at: new Date().toISOString()
-      };
+      if (!user) throw new Error('Not authenticated');
 
       const { error } = await supabase
         .from('user_settings')
-        .upsert(settingsData, {
-          onConflict: 'user_id'
+        .upsert({
+          user_id: user.id,
+          time_zone: settings.timeZone,
+          language: settings.language,
+          auto_save: settings.autoSave,
+          compact_view: settings.compactView,
+          document_sync: settings.documentSync,
+          default_currency: settings.defaultCurrency,
+          two_factor_enabled: settings.twoFactorEnabled,
+          session_timeout: settings.sessionTimeout,
+          ip_whitelisting: settings.ipWhitelisting,
+          login_notifications: settings.loginNotifications,
+          document_encryption: settings.documentEncryption,
+          password_expiry: settings.passwordExpiry,
+          updated_at: new Date().toISOString()
         });
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       toast({
         title: "Settings saved",
-        description: "Your preferences have been updated successfully.",
+        description: "Your preferences have been updated successfully"
       });
     } catch (error) {
       console.error('Error saving settings:', error);
       toast({
         title: "Error saving settings",
-        description: "There was a problem updating your preferences.",
+        description: "Please try again",
         variant: "destructive"
       });
-      throw error;
+    } finally {
+      setSaving(false);
     }
   };
 
-  useEffect(() => {
-    loadSettings();
-  }, []);
-
   return {
-    // General settings
-    timeZone,
-    setTimeZone,
-    language,
-    setLanguage,
-    autoSave,
-    setAutoSave,
-    compactView,
-    setCompactView,
-    documentSync,
-    setDocumentSync,
-    defaultCurrency,
-    setDefaultCurrency,
+    // Settings values
+    timeZone: settings.timeZone,
+    setTimeZone: (value: string) => setSettings(prev => ({ ...prev, timeZone: value })),
+    language: settings.language,
+    setLanguage: (value: string) => setSettings(prev => ({ ...prev, language: value })),
+    autoSave: settings.autoSave,
+    setAutoSave: (value: boolean) => setSettings(prev => ({ ...prev, autoSave: value })),
+    compactView: settings.compactView,
+    setCompactView: (value: boolean) => setSettings(prev => ({ ...prev, compactView: value })),
+    documentSync: settings.documentSync,
+    setDocumentSync: (value: boolean) => setSettings(prev => ({ ...prev, documentSync: value })),
+    defaultCurrency: settings.defaultCurrency,
+    setDefaultCurrency: (value: string) => setSettings(prev => ({ ...prev, defaultCurrency: value })),
+    twoFactorEnabled: settings.twoFactorEnabled,
+    setTwoFactorEnabled: (value: boolean) => setSettings(prev => ({ ...prev, twoFactorEnabled: value })),
+    sessionTimeout: settings.sessionTimeout,
+    setSessionTimeout: (value: string) => setSettings(prev => ({ ...prev, sessionTimeout: value })),
+    ipWhitelisting: settings.ipWhitelisting,
+    setIpWhitelisting: (value: boolean) => setSettings(prev => ({ ...prev, ipWhitelisting: value })),
+    loginNotifications: settings.loginNotifications,
+    setLoginNotifications: (value: boolean) => setSettings(prev => ({ ...prev, loginNotifications: value })),
+    documentEncryption: settings.documentEncryption,
+    setDocumentEncryption: (value: boolean) => setSettings(prev => ({ ...prev, documentEncryption: value })),
+    passwordExpiry: settings.passwordExpiry,
+    setPasswordExpiry: (value: string) => setSettings(prev => ({ ...prev, passwordExpiry: value })),
     
-    // Security settings
-    twoFactorEnabled,
-    setTwoFactorEnabled,
-    sessionTimeout,
-    setSessionTimeout,
-    ipWhitelisting,
-    setIpWhitelisting,
-    loginNotifications,
-    setLoginNotifications,
-    documentEncryption,
-    setDocumentEncryption,
-    passwordExpiry,
-    setPasswordExpiry,
-    
-    // Actions
-    saveSettings, // This function now exists and works!
-    loading
+    // Methods
+    save,
+    loading,
+    saving
   };
 }

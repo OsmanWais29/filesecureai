@@ -171,7 +171,7 @@ export function MeetingFormDialog({
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
               <Select
-                onValueChange={(value) => setValue("status", value as 'scheduled' | 'completed' | 'cancelled' | 'rescheduled')}
+                onValueChange={(value) => setValue("status", value as 'scheduled' | 'completed' | 'cancelled' | 'in_progress')}
                 defaultValue={meeting?.status || 'scheduled'}
               >
                 <SelectTrigger>
@@ -179,9 +179,9 @@ export function MeetingFormDialog({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="scheduled">Scheduled</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
-                  <SelectItem value="rescheduled">Rescheduled</SelectItem>
                 </SelectContent>
               </Select>
             </div>
