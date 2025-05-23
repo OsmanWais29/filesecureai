@@ -13,6 +13,8 @@ export const createClientData = (
   lastInteraction?: string,
   engagementScore?: number
 ): Client => {
+  const currentTimestamp = new Date().toISOString();
+  
   return {
     id,
     name,
@@ -29,12 +31,14 @@ export const createClientData = (
     notes: '',
     company: '',
     occupation: '',
+    created_at: currentTimestamp,
+    updated_at: currentTimestamp,
     metrics: {
       openTasks: 0,
       pendingDocuments: 0,
       urgentDeadlines: 0
     },
-    last_interaction: lastInteraction || new Date().toISOString(),
+    last_interaction: lastInteraction || currentTimestamp,
     engagement_score: engagementScore || 85
   };
 };

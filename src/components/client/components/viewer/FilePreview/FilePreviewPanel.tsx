@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { File, FileText, Image, Spreadsheet } from 'lucide-react';
+import { File, FileText, Image, Sheet } from 'lucide-react';
 
 interface FilePreviewProps {
   fileName: string;
@@ -16,7 +16,7 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
 }) => {
   const getFileIcon = (type: string) => {
     if (type.includes('image')) return <Image className="h-8 w-8" />;
-    if (type.includes('spreadsheet') || type.includes('excel')) return <Spreadsheet className="h-8 w-8" />;
+    if (type.includes('spreadsheet') || type.includes('excel')) return <Sheet className="h-8 w-8" />;
     if (type.includes('pdf') || type.includes('document')) return <FileText className="h-8 w-8" />;
     return <File className="h-8 w-8" />;
   };

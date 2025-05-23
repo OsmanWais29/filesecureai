@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useClientFetching } from "./clientData/useClientFetching";
 import { useClientTabs } from "./clientData/useClientTabs";
@@ -43,6 +44,8 @@ export const useClientData = (clientId: string, onBack: () => void) => {
     if (clientId === 'josh-hart' && isLoading && !client) {
       console.log("useClientData: Setting fallback data for Josh Hart");
       
+      const currentTimestamp = new Date().toISOString();
+      
       // Create fallback client data with properties that match the Client type
       const fallbackClient: Client = {
         id: 'josh-hart',
@@ -51,12 +54,14 @@ export const useClientData = (clientId: string, onBack: () => void) => {
         phone: '(555) 123-4567',
         status: 'active',
         location: 'Ontario',
+        created_at: currentTimestamp,
+        updated_at: currentTimestamp,
         metrics: {
           openTasks: 3,
           pendingDocuments: 2,
           urgentDeadlines: 1
         },
-        last_interaction: new Date().toISOString(),
+        last_interaction: currentTimestamp,
         engagement_score: 85
       };
       
@@ -66,8 +71,8 @@ export const useClientData = (clientId: string, onBack: () => void) => {
           id: 'form-47-doc',
           title: 'Form 47 - Consumer Proposal',
           type: 'form-47',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          created_at: currentTimestamp,
+          updated_at: currentTimestamp,
           storage_path: 'fallback-documents/form-47.pdf',
           size: 2048,
           metadata: {
@@ -79,8 +84,8 @@ export const useClientData = (clientId: string, onBack: () => void) => {
           id: 'bank-statement',
           title: 'Bank Statement - March 2023',
           type: 'financial',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          created_at: currentTimestamp,
+          updated_at: currentTimestamp,
           storage_path: 'fallback-documents/bank-statement.pdf',
           size: 1536,
           metadata: {

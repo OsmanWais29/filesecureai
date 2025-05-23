@@ -1,3 +1,4 @@
+
 import { supabase } from "@/lib/supabase";
 import { IncomeExpenseData } from "../../types";
 import { toString, toNumber, safeObjectCast } from '@/utils/typeSafetyUtils';
@@ -37,9 +38,11 @@ export const fetchLatestExcelData = async (clientId: string): Promise<IncomeExpe
 
     // Map the Excel data to IncomeExpenseData structure
     const metadata = safeObjectCast(data.metadata);
+    const clientName = toString(metadata.client_name) || "";
+    
     return {
       // Map Excel data to form fields
-      full_name: toString(metadata.client_name) || "",
+      full_name: clientName,
       // Initialize all other fields with empty values
       residential_address: "",
       phone_home: "",

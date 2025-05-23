@@ -35,14 +35,20 @@ export const DesktopView = ({
       title: "Review client documents",
       dueDate: new Date().toISOString(),
       status: 'pending',
-      priority: 'medium'
+      priority: 'medium',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      created_by: 'system'
     },
     {
       id: "task-2",
       title: "Follow up on deadlines",
       dueDate: new Date(Date.now() + 86400000 * 2).toISOString(),
       status: 'pending',
-      priority: 'high'
+      priority: 'high',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      created_by: 'system'
     }
   ];
 

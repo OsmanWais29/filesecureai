@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { File, FileText, Image, Spreadsheet } from 'lucide-react';
+import { File, FileText, Image, Sheet } from 'lucide-react';
 import { Document } from '../../../types';
 
 interface DocumentGridProps {
@@ -15,7 +15,7 @@ export const DocumentGrid: React.FC<DocumentGridProps> = ({
 }) => {
   const getFileIcon = (type: string) => {
     if (type.includes('image')) return <Image className="h-6 w-6" />;
-    if (type.includes('spreadsheet') || type.includes('excel')) return <Spreadsheet className="h-6 w-6" />;
+    if (type.includes('spreadsheet') || type.includes('excel')) return <Sheet className="h-6 w-6" />;
     if (type.includes('pdf') || type.includes('document')) return <FileText className="h-6 w-6" />;
     return <File className="h-6 w-6" />;
   };

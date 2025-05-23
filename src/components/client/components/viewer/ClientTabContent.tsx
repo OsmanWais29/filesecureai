@@ -52,14 +52,20 @@ export const ClientTabContent = ({
       title: "Review client information",
       dueDate: new Date().toISOString(),
       status: 'pending',
-      priority: 'medium'
+      priority: 'medium',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      created_by: 'system'
     },
     {
       id: "task-2",
       title: "Schedule follow-up meeting",
       dueDate: new Date(Date.now() + 86400000 * 3).toISOString(),
       status: 'pending',
-      priority: 'low'
+      priority: 'low',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      created_by: 'system'
     }
   ];
 

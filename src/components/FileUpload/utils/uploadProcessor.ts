@@ -1,3 +1,4 @@
+
 import { simulateUploadProgress } from "./progressSimulator";
 import logger from "@/utils/logger";
 import { supabase } from "@/lib/supabase";
@@ -393,18 +394,19 @@ export const processUploadedFiles = async (
 
           if (storageError) throw storageError;
 
-          // Create document record
+          // Create document record - ensure we have a proper object to spread
+          const safeFileData = toSafeSpreadObject(file);
           const documentData = {
             title: file.name,
             type: file.file.type,
             storage_path: storageData.path,
             parent_folder_id: parentFolderId,
             size: file.file.size,
-            metadata: toSafeSpreadObject({
+            metadata: {
               original_name: file.name,
               upload_timestamp: new Date().toISOString(),
-              ...file
-            })
+              ...safeFileData
+            }
           };
 
           const { data: docData, error: docError } = await supabase
@@ -418,13 +420,13 @@ export const processUploadedFiles = async (
           return {
             ...file,
             documentId: toString(docData.id),
-            status: 'completed'
+            status: 'completed' as const
           };
         } catch (error) {
           console.error('Error processing file:', error);
           return {
             ...file,
-            status: 'error',
+            status: 'error' as const,
             error: error instanceof Error ? error.message : 'Upload failed'
           };
         }
