@@ -73,20 +73,24 @@ export const getBrowserStorageInfo = (): {
   }
 };
 
+interface StorageTestResult {
+  available: boolean;
+  writeable: boolean;
+  error?: string;
+}
+
+interface CookieTestResult {
+  enabled: boolean;
+  error?: string;
+}
+
 /**
  * Run comprehensive storage diagnostics
  * Tests browser storage capabilities and restrictions
  */
 export const runStorageDiagnostics = async (): Promise<{
-  localStorage: {
-    available: boolean;
-    writeable: boolean;
-    error?: string;
-  };
-  cookies: {
-    enabled: boolean;
-    error?: string;
-  };
+  localStorage: StorageTestResult;
+  cookies: CookieTestResult;
   privateMode: {
     isPrivate: boolean;
     confidence: number;
@@ -99,10 +103,10 @@ export const runStorageDiagnostics = async (): Promise<{
     localStorage: {
       available: false,
       writeable: false,
-    },
+    } as StorageTestResult,
     cookies: {
       enabled: false,
-    },
+    } as CookieTestResult,
     privateMode: {
       isPrivate: false,
       confidence: 0,
@@ -160,18 +164,20 @@ export const runStorageDiagnostics = async (): Promise<{
   }
   
   // Check for private browsing mode
-  // This is a best-effort detection, not 100% reliable
   try {
     // Test storage quota - private mode often has severe limitations
     const quota = (navigator as any)?.storage?.estimate ? 
       await (navigator as any).storage.estimate() : 
       undefined;
       
+    // Check for Safari's specific private mode detection
+    const hasSafariPrivateMode = (window as any).safari && (window as any).safari.pushNotification;
+      
     // Common private browsing indicators
     const indicators = {
       limitedQuota: quota && quota.quota && quota.quota < 120000000, // Less than 120MB often indicates private mode
       noIndexedDB: !window.indexedDB,
-      safariPrivateMode: !!window.safari && !!window.safari.pushNotification,
+      safariPrivateMode: !!hasSafariPrivateMode,
       cookiesRestricted: !result.cookies.enabled,
       localStorageRestricted: !result.localStorage.writeable,
     };

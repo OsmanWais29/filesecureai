@@ -1,4 +1,5 @@
 
+
 export interface FolderStructure {
   id: string;
   name: string;
@@ -16,6 +17,7 @@ export interface FolderOperationResult {
   success: boolean;
   message: string;
   folderId?: string;
+  error?: string;
 }
 
 export type UserRole = 'admin' | 'manager' | 'user' | 'trustee' | 'client' | 'administrator';

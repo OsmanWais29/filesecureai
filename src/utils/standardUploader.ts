@@ -1,32 +1,46 @@
 
-import { supabase } from "@/lib/supabase";
-import type { FileUploadResult } from "./jwtDiagnosticsTypes";
+import { supabase } from '@/lib/supabase';
+import { FileUploadResult } from './jwtDiagnosticsTypes';
 
-// Attempt standard upload with optional retry
-export async function tryStandardUpload(
-  bucket: string, 
-  path: string, 
-  file: File, 
-  isPdf: boolean, 
-  maxRetries: number = 3
-): Promise<{ result: FileUploadResult, lastError: any }> {
-  let lastError: any = null;
-  for (let attempt = 1; attempt <= maxRetries; ++attempt) {
-    const { data, error } = await supabase.storage.from(bucket).upload(
-      path, 
-      file, 
-      { upsert: true, contentType: isPdf ? 'application/pdf' : file.type }
-    );
-    if (!error) {
-      return { result: {
-        success: true,
-        method: attempt === 1 ? "standard" : `standard-retry-${attempt}`,
-        data
-      }, lastError: null };
+export const standardUploader = async (
+  file: File,
+  storagePath: string
+): Promise<FileUploadResult> => {
+  try {
+    console.log('Using standard uploader for:', storagePath);
+    
+    const { data, error } = await supabase.storage
+      .from('documents')
+      .upload(storagePath, file, {
+        cacheControl: '3600',
+        upsert: true
+      });
+
+    if (error) {
+      console.error('Standard upload error:', error);
+      return {
+        success: false,
+        error: error.message,
+        details: error
+      };
     }
-    lastError = error;
-    if (!(error.message?.includes('5'))) break;
-    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from('documents')
+      .getPublicUrl(storagePath);
+
+    return {
+      success: true,
+      url: urlData.publicUrl,
+      details: data
+    };
+  } catch (error) {
+    console.error('Standard uploader exception:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      details: error
+    };
   }
-  return { result: { success: false, method: "standard", error: lastError }, lastError };
-}
+};

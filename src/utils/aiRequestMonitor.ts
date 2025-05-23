@@ -1,6 +1,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { safeObjectCast, safeStringCast } from '@/utils/typeGuards';
 
 // Interface for AI request logs
 interface AIRequestLog {
@@ -81,13 +82,16 @@ export const triggerManualAnalysis = async (documentId: string): Promise<void> =
     
     console.log(`Found document with storage path: ${document.storage_path}`);
     
+    // Safely cast metadata
+    const safeMetadata = safeObjectCast(document.metadata);
+    
     // Mark document as pending analysis
     await supabase
       .from('documents')
       .update({
         ai_processing_status: 'pending',
         metadata: {
-          ...(document.metadata || {}),
+          ...safeMetadata,
           analysis_requested_at: new Date().toISOString(),
           analysis_status: 'pending'
         }
@@ -143,7 +147,7 @@ export const triggerManualAnalysis = async (documentId: string): Promise<void> =
       .update({
         ai_processing_status: analysisData ? 'complete' : 'failed',
         metadata: {
-          ...(document.metadata || {}),
+          ...safeMetadata,
           analysis_completed_at: new Date().toISOString(),
           analysis_status: analysisData ? 'complete' : 'failed',
           has_analysis: !!analysisData

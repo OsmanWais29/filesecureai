@@ -1,25 +1,57 @@
 
-import { supabase } from "@/lib/supabase";
-import type { FileUploadResult } from "./jwtDiagnosticsTypes";
+import { supabase } from '@/lib/supabase';
+import { FileUploadResult } from './jwtDiagnosticsTypes';
 
-// Handles large PDF uploads via signed URL
-export async function uploadViaSignedUrl(bucket: string, path: string, file: File): Promise<FileUploadResult> {
-  const { data, error: urlError } = await supabase.storage.from(bucket).createSignedUploadUrl(path);
-  if (urlError) {
-    return { success: false, method: "signed-url", error: urlError };
-  }
+export const signedUrlUploader = async (
+  file: File,
+  storagePath: string
+): Promise<FileUploadResult> => {
   try {
-    const response = await fetch(data.signedUrl, {
+    console.log('Using signed URL uploader for:', storagePath);
+    
+    // Create a signed upload URL
+    const { data: signedUrlData, error: urlError } = await supabase.storage
+      .from('documents')
+      .createSignedUploadUrl(storagePath);
+
+    if (urlError) {
+      console.error('Signed URL creation error:', urlError);
+      return {
+        success: false,
+        error: urlError.message,
+        details: urlError
+      };
+    }
+
+    // Upload using the signed URL
+    const response = await fetch(signedUrlData.signedUrl, {
       method: 'PUT',
       body: file,
-      headers: { 'Content-Type': file.type }
+      headers: {
+        'Content-Type': file.type,
+      },
     });
-    if (response.ok) {
-      return { success: true, method: "signed-url-pdf", data: { path } };
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return {
+        success: false,
+        error: `Upload failed: ${response.status} ${response.statusText}`,
+        details: { status: response.status, statusText: response.statusText, errorText }
+      };
     }
-    const errorText = await response.text();
-    return { success: false, method: "signed-url", error: { message: errorText, status: response.status } };
-  } catch (e) {
-    return { success: false, method: "signed-url", error: e };
+
+    return {
+      success: true,
+      url: signedUrlData.signedUrl,
+      details: { path: signedUrlData.path }
+    };
+  } catch (error) {
+    console.error('Signed URL uploader exception:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      details: error
+    };
   }
-}
+};

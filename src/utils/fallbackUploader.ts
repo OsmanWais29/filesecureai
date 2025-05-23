@@ -1,27 +1,40 @@
 
-import { testDirectUpload } from "./storageDiagnostics";
-import type { FileUploadResult } from "./jwtDiagnosticsTypes";
+import { supabase } from '@/lib/supabase';
+import { FileUploadResult } from './jwtDiagnosticsTypes';
 
-export async function handleDirectUploadFallback(file: File, bucket: string, path: string): Promise<FileUploadResult> {
+export const fallbackUploader = async (
+  file: File,
+  storagePath: string
+): Promise<FileUploadResult> => {
   try {
-    const directResult = await testDirectUpload(file, bucket, path);
-    if (directResult.success) {
+    console.log('Using fallback uploader for:', storagePath);
+    
+    const { data, error } = await supabase.storage
+      .from('documents')
+      .upload(storagePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (error) {
+      console.error('Fallback upload error:', error);
       return {
-        success: true,
-        method: "direct-upload-fallback",
-        data: directResult.data,
+        success: false,
+        error: error.message,
+        details: error
       };
     }
+
     return {
-      success: false,
-      method: "direct-upload-fallback",
-      error: directResult.error,
+      success: true,
+      details: data
     };
-  } catch (directError) {
+  } catch (error) {
+    console.error('Fallback uploader exception:', error);
     return {
       success: false,
-      method: "direct-upload-fallback",
-      error: directError,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      details: error
     };
   }
-}
+};

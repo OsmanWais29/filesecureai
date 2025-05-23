@@ -1,204 +1,243 @@
-import { supabase } from "@/lib/supabase";
-import { FolderOperationResult } from "@/types/folders";
 
-/**
- * Creates client folders if they don't exist
- */
-export const createClientFolder = async (
-  clientName: string,
-  userId: string
+import { supabase } from '@/lib/supabase';
+import { FolderOperationResult } from '@/types/folders';
+import { safeStringCast, safeObjectCast } from '@/utils/typeGuards';
+
+export const createDocumentFolder = async (
+  folderName: string,
+  parentId?: string,
+  folderType: string = 'folder'
 ): Promise<FolderOperationResult> => {
   try {
-    // Check if client folder already exists
-    const { data: existingFolders } = await supabase
-      .from('documents')
-      .select('id, title')
-      .eq('is_folder', true)
-      .eq('folder_type', 'client')
-      .ilike('title', clientName)
-      .limit(1);
-      
-    if (existingFolders && existingFolders.length > 0) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
       return {
-        success: true,
-        message: "Client folder already exists",
-        folderId: existingFolders[0].id
+        success: false,
+        message: 'User not authenticated'
       };
     }
-    
-    // Create new client folder
-    const { data: newFolder, error } = await supabase
+
+    const folderData = {
+      title: safeStringCast(folderName),
+      is_folder: true,
+      folder_type: folderType,
+      parent_folder_id: parentId || null,
+      user_id: user.id,
+      metadata: {}
+    };
+
+    const { data, error } = await supabase
       .from('documents')
-      .insert({
-        title: clientName,
-        type: 'folder',
-        is_folder: true,
-        folder_type: 'client',
-        metadata: {
-          level: 0,
-          created_by: userId,
-          created_at: new Date().toISOString()
-        },
-        user_id: userId
-      })
+      .insert(folderData)
       .select()
       .single();
-      
-    if (error) throw error;
-    
-    // Create standard subfolders: Forms and Financial Sheets
-    const subfolders = [
-      { name: 'Forms', type: 'form' },
-      { name: 'Financial Sheets', type: 'financial' }
-    ];
-    
-    for (const subfolder of subfolders) {
-      await supabase
-        .from('documents')
-        .insert({
-          title: subfolder.name,
-          type: 'folder',
-          is_folder: true,
-          folder_type: subfolder.type,
-          parent_folder_id: newFolder.id,
-          metadata: {
-            level: 1,
-            created_by: userId,
-            created_at: new Date().toISOString()
-          },
-          user_id: userId
-        });
+
+    if (error) {
+      return {
+        success: false,
+        message: error.message
+      };
     }
-    
+
     return {
       success: true,
-      message: "Client folder created successfully",
-      folderId: newFolder.id
+      message: 'Folder created successfully',
+      folderId: safeStringCast(data?.id)
     };
   } catch (error) {
-    console.error("Error creating client folder:", error);
+    console.error('Error creating folder:', error);
     return {
       success: false,
-      message: "Failed to create client folder",
-      error: error instanceof Error ? error.message : String(error)
+      message: 'Failed to create folder'
     };
   }
 };
 
-/**
- * Organizes a document into the appropriate folder
- */
-export const organizeDocumentIntoFolders = async (
+export const getFolderStructure = async (parentId?: string): Promise<any[]> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    let query = supabase
+      .from('documents')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('is_folder', true);
+
+    if (parentId) {
+      query = query.eq('parent_folder_id', parentId);
+    } else {
+      query = query.is('parent_folder_id', null);
+    }
+
+    const { data, error } = await query.order('title');
+
+    if (error) {
+      console.error('Error fetching folder structure:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error in getFolderStructure:', error);
+    return [];
+  }
+};
+
+export const deleteFolder = async (folderId: string): Promise<FolderOperationResult> => {
+  try {
+    // Check if folder has children
+    const { data: children, error: childrenError } = await supabase
+      .from('documents')
+      .select('id')
+      .eq('parent_folder_id', folderId);
+
+    if (childrenError) {
+      return {
+        success: false,
+        message: childrenError.message
+      };
+    }
+
+    if (children && children.length > 0) {
+      return {
+        success: false,
+        message: 'Cannot delete folder that contains documents or subfolders'
+      };
+    }
+
+    const { error } = await supabase
+      .from('documents')
+      .delete()
+      .eq('id', folderId);
+
+    if (error) {
+      return {
+        success: false,
+        message: error.message
+      };
+    }
+
+    return {
+      success: true,
+      message: 'Folder deleted successfully'
+    };
+  } catch (error) {
+    console.error('Error deleting folder:', error);
+    return {
+      success: false,
+      message: 'Failed to delete folder'
+    };
+  }
+};
+
+export const moveDocument = async (
   documentId: string,
-  userId: string,
-  clientName: string,
-  documentType: "Form" | "Excel" | "PDF" | "Document"
+  newParentId: string | null
 ): Promise<FolderOperationResult> => {
   try {
-    // First create/get client folder
-    const clientFolderResult = await createClientFolder(clientName, userId);
-    
-    if (!clientFolderResult.success || !clientFolderResult.folderId) {
-      throw new Error(clientFolderResult.message);
-    }
-    
-    // Get appropriate subfolder based on document type
-    const subfolderType = documentType === "Excel" ? "financial" : "form";
-    
-    const { data: subfolders } = await supabase
+    const { error } = await supabase
       .from('documents')
-      .select('id, title')
-      .eq('is_folder', true)
-      .eq('folder_type', subfolderType)
-      .eq('parent_folder_id', clientFolderResult.folderId);
-      
-    let subfolderId: string | undefined;
-    
-    if (subfolders && subfolders.length > 0) {
-      subfolderId = subfolders[0].id;
-    } else {
-      // Create subfolder if it doesn't exist
-      const subfolderName = documentType === "Excel" ? "Financial Sheets" : "Forms";
-      
-      const { data: newSubfolder, error } = await supabase
-        .from('documents')
-        .insert({
-          title: subfolderName,
-          type: 'folder',
-          is_folder: true,
-          folder_type: subfolderType,
-          parent_folder_id: clientFolderResult.folderId,
-          metadata: {
-            level: 1,
-            created_by: userId,
-            created_at: new Date().toISOString()
-          },
-          user_id: userId
-        })
-        .select()
-        .single();
-        
-      if (error) throw error;
-      
-      subfolderId = newSubfolder.id;
-    }
-    
-    // Update document to be in the appropriate subfolder
-    const { error: updateError } = await supabase
-      .from('documents')
-      .update({ 
-        parent_folder_id: subfolderId,
-        metadata: {
-          organized_at: new Date().toISOString(),
-          organized_by: userId,
-          client_name: clientName,
-          document_type: documentType,
-          processing_complete: true
-        }
-      })
+      .update({ parent_folder_id: newParentId })
       .eq('id', documentId);
-      
-    if (updateError) throw updateError;
-    
+
+    if (error) {
+      return {
+        success: false,
+        message: error.message
+      };
+    }
+
     return {
       success: true,
-      message: "Document organized successfully",
-      folderId: subfolderId
+      message: 'Document moved successfully'
     };
   } catch (error) {
-    console.error("Error organizing document:", error);
+    console.error('Error moving document:', error);
     return {
       success: false,
-      message: "Failed to organize document",
-      error: error instanceof Error ? error.message : String(error)
+      message: 'Failed to move document'
     };
   }
 };
 
-/**
- * Gets the complete path for a folder
- */
-export const getFolderPath = async (folderId: string): Promise<string[]> => {
+export const renameFolder = async (
+  folderId: string,
+  newName: string
+): Promise<FolderOperationResult> => {
   try {
-    const path: string[] = [];
-    let currentFolderId = folderId;
-    
-    while (currentFolderId) {
-      const { data: folder } = await supabase
-        .from('documents')
-        .select('id, title, parent_folder_id')
-        .eq('id', currentFolderId)
-        .single();
-        
-      if (!folder) break;
-      
-      path.unshift(folder.title);
-      currentFolderId = folder.parent_folder_id || '';
+    const { error } = await supabase
+      .from('documents')
+      .update({ title: safeStringCast(newName) })
+      .eq('id', folderId);
+
+    if (error) {
+      return {
+        success: false,
+        message: error.message
+      };
     }
-    
-    return path;
+
+    return {
+      success: true,
+      message: 'Folder renamed successfully'
+    };
   } catch (error) {
-    console.error("Error getting folder path:", error);
+    console.error('Error renaming folder:', error);
+    return {
+      success: false,
+      message: 'Failed to rename folder'
+    };
+  }
+};
+
+export const getFolderDocuments = async (folderId: string): Promise<any[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('documents')
+      .select('*')
+      .eq('parent_folder_id', folderId)
+      .eq('is_folder', false)
+      .order('title');
+
+    if (error) {
+      console.error('Error fetching folder documents:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error in getFolderDocuments:', error);
     return [];
+  }
+};
+
+export const updateFolderMetadata = async (
+  folderId: string,
+  metadata: Record<string, any>
+): Promise<FolderOperationResult> => {
+  try {
+    const { error } = await supabase
+      .from('documents')
+      .update({ metadata: safeObjectCast(metadata) })
+      .eq('id', folderId);
+
+    if (error) {
+      return {
+        success: false,
+        message: error.message
+      };
+    }
+
+    return {
+      success: true,
+      message: 'Folder metadata updated successfully'
+    };
+  } catch (error) {
+    console.error('Error updating folder metadata:', error);
+    return {
+      success: false,
+      message: 'Failed to update folder metadata'
+    };
   }
 };
