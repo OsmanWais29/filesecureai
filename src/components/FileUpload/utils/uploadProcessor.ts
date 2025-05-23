@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { logAIRequest } from "@/utils/aiRequestMonitor";
 import { FileInfo } from '@/types/client';
 import { toast } from 'sonner';
+import { ensureSpreadableObject } from '@/utils/typeGuards';
 
 /**
  * Simulates the processing stages of a document upload
@@ -57,6 +58,9 @@ export const createDocumentRecord = async (
   try {
     logger.info(`Creating document record for ${file.name}`);
     
+    // Ensure metadata is a proper object before spreading
+    const safeAdditionalMetadata = ensureSpreadableObject(additionalMetadata);
+    
     const documentMetadata = {
       originalFileName: file.name,
       fileType: file.type,
@@ -64,7 +68,7 @@ export const createDocumentRecord = async (
       uploadedAt: new Date().toISOString(),
       analyzed: isSpecialForm ? false : undefined,
       requiresAnalysis: isSpecialForm,
-      ...additionalMetadata
+      ...safeAdditionalMetadata
     };
 
     const { data, error } = await supabase
@@ -133,18 +137,20 @@ export const triggerDocumentAnalysis = async (documentId: string, fileName: stri
     
     logger.info(`Triggering analysis for document ${documentId}`);
     
+    const safeMetadata = {
+      analysis_initiated: true,
+      analysis_initiated_at: new Date().toISOString(),
+      analysis_status: 'processing',
+      processing_monitor: 'v2',
+      attempts: 1
+    };
+    
     // Update document status to processing
     const { error: updateError } = await supabase
       .from('documents')
       .update({
         ai_processing_status: 'processing',
-        metadata: {
-          analysis_initiated: true,
-          analysis_initiated_at: new Date().toISOString(),
-          analysis_status: 'processing',
-          processing_monitor: 'v2',  // Mark that we're using the enhanced processing monitor
-          attempts: 1
-        }
+        metadata: safeMetadata
       })
       .eq('id', documentId);
       
@@ -242,12 +248,13 @@ export const triggerDocumentAnalysis = async (documentId: string, fileName: stri
     });
     
     // Update document with completed status
+    const currentMetadata = ensureSpreadableObject(docData.metadata);
     await supabase
       .from('documents')
       .update({
         ai_processing_status: 'complete',
         metadata: {
-          ...(docData.metadata || {}),
+          ...currentMetadata,
           analysis_completed_at: new Date().toISOString(),
           analysis_status: 'complete',
           has_analysis: true

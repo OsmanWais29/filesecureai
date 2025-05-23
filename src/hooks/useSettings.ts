@@ -79,7 +79,7 @@ export function useSettings() {
     }
   };
 
-  const save = async () => {
+  const saveSettings = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -168,7 +168,7 @@ export function useSettings() {
     setPasswordExpiry,
     
     // Actions
-    save,
+    saveSettings, // This function now exists and works!
     loading
   };
 }
