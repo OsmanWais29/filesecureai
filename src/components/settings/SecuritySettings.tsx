@@ -1,69 +1,74 @@
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, Shield, Clock, Globe, Bell } from "lucide-react";
-import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { UserSettings } from "@/hooks/useSettings";
 
 interface SecuritySettingsProps {
-  settings: {
-    twoFactorEnabled: boolean;
-    setTwoFactorEnabled: (value: boolean) => void;
-    sessionTimeout: string;
-    setSessionTimeout: (value: string) => void;
-    ipWhitelisting: boolean;
-    setIpWhitelisting: (value: boolean) => void;
-    loginNotifications: boolean;
-    setLoginNotifications: (value: boolean) => void;
-    documentEncryption: boolean;
-    setDocumentEncryption: (value: boolean) => void;
-    passwordExpiry: string;
-    setPasswordExpiry: (value: string) => void;
-  };
+  settings: UserSettings;
   onSave: () => void;
   isLoading: boolean;
 }
 
 export const SecuritySettings = ({ settings, onSave, isLoading }: SecuritySettingsProps) => {
+  const handleTwoFactorToggle = (enabled: boolean) => {
+    settings.setTwoFactorEnabled(enabled);
+    if (enabled) {
+      console.log('Two-factor authentication enabled');
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Authentication */}
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary" />
-            <CardTitle>Authentication</CardTitle>
-          </div>
-          <CardDescription>
-            Configure your account security and authentication preferences
-          </CardDescription>
+          <CardTitle>Authentication</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Two-Factor Authentication</Label>
-              <CardDescription>
+              <Label htmlFor="two-factor">Two-Factor Authentication</Label>
+              <p className="text-sm text-muted-foreground">
                 Add an extra layer of security to your account
-              </CardDescription>
+              </p>
             </div>
             <Switch
+              id="two-factor"
               checked={settings.twoFactorEnabled}
-              onCheckedChange={settings.setTwoFactorEnabled}
+              onCheckedChange={handleTwoFactorToggle}
             />
           </div>
 
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="login-notifications">Login Notifications</Label>
+              <p className="text-sm text-muted-foreground">
+                Get notified of new login attempts
+              </p>
+            </div>
+            <Switch
+              id="login-notifications"
+              checked={settings.loginNotifications}
+              onCheckedChange={settings.setLoginNotifications}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Session Management */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Session Management</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Session Timeout</Label>
-            <CardDescription className="mb-2">
-              Automatically log out after a period of inactivity
-            </CardDescription>
-            <Select
-              value={settings.sessionTimeout}
-              onValueChange={settings.setSessionTimeout}
-            >
+            <Label htmlFor="session-timeout">Session Timeout</Label>
+            <Select value={settings.sessionTimeout} onValueChange={settings.setSessionTimeout}>
               <SelectTrigger>
-                <SelectValue placeholder="Select timeout duration" />
+                <SelectValue placeholder="Select timeout" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="15">15 minutes</SelectItem>
@@ -73,68 +78,10 @@ export const SecuritySettings = ({ settings, onSave, isLoading }: SecuritySettin
               </SelectContent>
             </Select>
           </div>
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Globe className="h-5 w-5 text-primary" />
-            <CardTitle>Access Control</CardTitle>
-          </div>
-          <CardDescription>
-            Manage IP restrictions and access settings
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>IP Whitelisting</Label>
-              <CardDescription>
-                Restrict access to specific IP addresses
-              </CardDescription>
-            </div>
-            <Switch
-              checked={settings.ipWhitelisting}
-              onCheckedChange={settings.setIpWhitelisting}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Login Notifications</Label>
-              <CardDescription>
-                Receive alerts for new login attempts
-              </CardDescription>
-            </div>
-            <Switch
-              checked={settings.loginNotifications}
-              onCheckedChange={settings.setLoginNotifications}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-primary" />
-            <CardTitle>Password Policy</CardTitle>
-          </div>
-          <CardDescription>
-            Configure password expiration and security policies
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
           <div className="space-y-2">
-            <Label>Password Expiry</Label>
-            <CardDescription className="mb-2">
-              Require password changes after a specific period
-            </CardDescription>
-            <Select
-              value={settings.passwordExpiry}
-              onValueChange={settings.setPasswordExpiry}
-            >
+            <Label htmlFor="password-expiry">Password Expiry</Label>
+            <Select value={settings.passwordExpiry} onValueChange={settings.setPasswordExpiry}>
               <SelectTrigger>
                 <SelectValue placeholder="Select expiry period" />
               </SelectTrigger>
@@ -149,21 +96,53 @@ export const SecuritySettings = ({ settings, onSave, isLoading }: SecuritySettin
         </CardContent>
       </Card>
 
-      <div className="flex justify-end">
-        <Button onClick={onSave} disabled={isLoading}>
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            <>
-              <Save className="mr-2 h-4 w-4" />
-              Save Changes
-            </>
-          )}
-        </Button>
-      </div>
+      {/* Document Security */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Document Security</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="document-encryption">Document Encryption</Label>
+              <p className="text-sm text-muted-foreground">
+                Encrypt sensitive documents for enhanced security
+              </p>
+            </div>
+            <Switch
+              id="document-encryption"
+              checked={settings.documentEncryption}
+              onCheckedChange={settings.setDocumentEncryption}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Access Control */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Access Control</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="ip-whitelisting">IP Whitelisting</Label>
+              <p className="text-sm text-muted-foreground">
+                Restrict access to specific IP addresses
+              </p>
+            </div>
+            <Switch
+              id="ip-whitelisting"
+              checked={settings.ipWhitelisting}
+              onCheckedChange={settings.setIpWhitelisting}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Button onClick={onSave} disabled={isLoading} className="w-full">
+        {isLoading ? "Saving..." : "Save Security Settings"}
+      </Button>
     </div>
   );
 };

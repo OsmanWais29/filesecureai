@@ -5,7 +5,7 @@ import { safeStringCast } from '@/utils/typeGuards';
 
 export interface CreateFolderRequest {
   name: string;
-  type?: string;
+  type?: 'form' | 'document' | 'client' | 'folder' | 'estate';
   parentId?: string;
   metadata?: Record<string, any>;
 }
@@ -25,7 +25,7 @@ export const folderService = {
       const folderData = {
         title: request.name,
         is_folder: true,
-        folder_type: request.type || 'general',
+        folder_type: request.type || 'folder' as const,
         parent_folder_id: request.parentId || null,
         user_id: user.id,
         metadata: request.metadata || {}
@@ -42,7 +42,7 @@ export const folderService = {
       return {
         id: safeStringCast(data.id),
         name: safeStringCast(data.title),
-        type: safeStringCast(data.folder_type),
+        type: (data.folder_type as 'form' | 'document' | 'client' | 'folder' | 'estate') || 'folder',
         parentId: data.parent_folder_id ? safeStringCast(data.parent_folder_id) : undefined,
         children: [],
         metadata: data.metadata || {}
@@ -127,7 +127,7 @@ export const folderService = {
       return (data || []).map((item): FolderStructure => ({
         id: safeStringCast(item.id),
         name: safeStringCast(item.title),
-        type: safeStringCast(item.folder_type),
+        type: (item.folder_type as 'form' | 'document' | 'client' | 'folder' | 'estate') || 'folder',
         parentId: item.parent_folder_id ? safeStringCast(item.parent_folder_id) : undefined,
         children: [],
         metadata: item.metadata || {}

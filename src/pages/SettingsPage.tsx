@@ -58,20 +58,7 @@ const SettingsPage = () => {
             </CardHeader>
             <CardContent>
               <GeneralSettings 
-                settings={{
-                  timeZone: settings.timeZone,
-                  setTimeZone: settings.setTimeZone,
-                  language: settings.language,
-                  setLanguage: settings.setLanguage,
-                  autoSave: settings.autoSave,
-                  setAutoSave: settings.setAutoSave,
-                  compactView: settings.compactView,
-                  setCompactView: settings.setCompactView,
-                  documentSync: settings.documentSync,
-                  setDocumentSync: settings.setDocumentSync,
-                  defaultCurrency: settings.defaultCurrency,
-                  setDefaultCurrency: settings.setDefaultCurrency,
-                }}
+                settings={settings}
                 onSave={handleSaveGeneral}
                 isLoading={loading}
               />
@@ -87,20 +74,7 @@ const SettingsPage = () => {
             </CardHeader>
             <CardContent>
               <SecuritySettings 
-                settings={{
-                  twoFactorEnabled: settings.twoFactorEnabled,
-                  setTwoFactorEnabled: settings.setTwoFactorEnabled,
-                  sessionTimeout: settings.sessionTimeout,
-                  setSessionTimeout: settings.setSessionTimeout,
-                  ipWhitelisting: settings.ipWhitelisting,
-                  setIpWhitelisting: settings.setIpWhitelisting,
-                  loginNotifications: settings.loginNotifications,
-                  setLoginNotifications: settings.setLoginNotifications,
-                  documentEncryption: settings.documentEncryption,
-                  setDocumentEncryption: settings.setDocumentEncryption,
-                  passwordExpiry: settings.passwordExpiry,
-                  setPasswordExpiry: settings.setPasswordExpiry,
-                }}
+                settings={settings}
                 onSave={handleSaveSecurity}
                 isLoading={loading}
               />

@@ -72,6 +72,12 @@ export function FolderNavigation({
   // Filter folders based on selected client using our utility function
   const filteredFolders = filterFoldersByClient(folders, filteredDocuments, selectedClientId);
 
+  // Handle document rename with proper implementation
+  const handleRenameDocument = (document: Document) => {
+    // This would typically update the document in the backend
+    console.log('Renaming document:', document);
+  };
+
   return (
     <div className="flex h-full">
       {/* Document Tree */}
@@ -87,6 +93,7 @@ export function FolderNavigation({
           onFolderSelect={onFolderSelect}
           onDocumentSelect={onDocumentSelect}
           onDocumentOpen={onDocumentOpen}
+          onRenameDocument={handleRenameDocument}
           toggleFolder={toggleFolder}
           handleDragStart={handleDragStart}
           handleDragOver={handleDragOver}
