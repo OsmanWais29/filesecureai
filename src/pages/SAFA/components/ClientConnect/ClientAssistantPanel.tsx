@@ -35,8 +35,10 @@ export const ClientAssistantPanel: React.FC<ClientAssistantPanelProps> = ({
 
   // Convert client messages to match ConversationView expectations
   const clientMessages = (categoryMessages.client || []).map(msg => ({
-    ...msg,
-    type: 'text' as const,
+    id: msg.id,
+    content: msg.content,
+    role: msg.role,
+    timestamp: msg.timestamp,
     module: 'client'
   }));
 

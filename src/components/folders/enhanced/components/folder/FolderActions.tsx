@@ -1,48 +1,43 @@
 
-import { Edit2, MessageCircle } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import React from 'react';
+import { FolderStructure } from '@/types/folders';
+import { Button } from '@/components/ui/button';
+import { MoreHorizontal, Edit, Trash } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface FolderActionsProps {
-  isFolderLocked: boolean;
-  onRenameClick: (e: React.MouseEvent) => void;
-  onCommentClick: (e: React.MouseEvent) => void;
+  folder: FolderStructure;
+  onRename: () => void;
+  onDelete: () => void;
 }
 
-export const FolderActions = ({ isFolderLocked, onRenameClick, onCommentClick }: FolderActionsProps) => {
-  if (isFolderLocked) {
-    return null;
-  }
-
+export const FolderActions: React.FC<FolderActionsProps> = ({ 
+  folder, 
+  onRename, 
+  onDelete 
+}) => {
   return (
-    <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Edit2
-              className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground cursor-pointer"
-              onClick={onRenameClick}
-              aria-label="Rename Folder"
-            />
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Rename Folder</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <MessageCircle
-              className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground cursor-pointer"
-              onClick={onCommentClick}
-              aria-label="Add Comment"
-            />
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Add Comment</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+          <MoreHorizontal className="h-3 w-3" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={onRename}>
+          <Edit className="h-3 w-3 mr-2" />
+          Rename
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={onDelete} className="text-red-600">
+          <Trash className="h-3 w-3 mr-2" />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };

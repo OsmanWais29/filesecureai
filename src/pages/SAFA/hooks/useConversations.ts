@@ -1,6 +1,6 @@
 
-import { useState, useCallback, useEffect } from 'react';
-import { ChatMessage } from '@/types/client';
+import { useState, useCallback } from 'react';
+import { ChatMessage } from '../types';
 import { supabase } from '@/lib/supabase';
 import { safeStringCast } from '@/utils/typeGuards';
 
@@ -43,10 +43,10 @@ export const useConversations = (activeTab?: string): UseConversationsResult => 
       const safeMessages = Array.isArray(messages) ? messages.map((msg: any) => ({
         id: safeStringCast(msg.id),
         content: safeStringCast(msg.content),
-        role: msg.role === 'assistant' ? 'assistant' : 'user',
+        role: (msg.role === 'assistant' ? 'assistant' : 'user') as 'user' | 'assistant',
         timestamp: safeStringCast(msg.timestamp),
         category: safeStringCast(msg.category || category)
-      })) : [];
+      } as ChatMessage)) : [];
 
       setCategoryMessages(prev => ({
         ...prev,

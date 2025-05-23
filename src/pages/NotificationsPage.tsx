@@ -1,62 +1,73 @@
-import React from "react";
-import { MainHeader } from "@/components/header/MainHeader";
-import { MainSidebar } from "@/components/layout/MainSidebar";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bell, FileText, CheckCircle, AlertTriangle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
 
-import { safeStringCast, safeBooleanCast } from '@/utils/typeGuards';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Bell, Check, X } from 'lucide-react';
+import { MainHeader } from '@/components/header/MainHeader';
+import { MainSidebar } from '@/components/layout/MainSidebar';
+
+interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  read: boolean;
+  created_at: string;
+  priority?: string;
+  action_url?: string;
+  icon?: string;
+}
 
 export const NotificationsPage = () => {
-  const mockNotifications = [
-    {
-      id: "1",
-      title: safeStringCast("Document Analysis Complete"),
-      message: safeStringCast("Form 47 analysis completed with 3 recommendations"),
-      type: safeStringCast("info"),
-      priority: safeStringCast("medium"),
-      icon: safeStringCast("FileText"),
-      read: safeBooleanCast(false),
-      action_url: safeStringCast("/documents/form47"),
-      created_at: safeStringCast(new Date().toISOString())
-    },
-    {
-      id: "2",
-      title: safeStringCast("New Task Assigned"),
-      message: safeStringCast("A new task 'Review Client Documents' has been assigned to you"),
-      type: safeStringCast("task"),
-      priority: safeStringCast("high"),
-      icon: safeStringCast("CheckCircle"),
-      read: safeBooleanCast(false),
-      action_url: safeStringCast("/tasks/123"),
-      created_at: safeStringCast(new Date(Date.now() - 86400000).toISOString())
-    },
-    {
-      id: "3",
-      title: safeStringCast("Upcoming Meeting Reminder"),
-      message: safeStringCast("Reminder: Meeting with John Doe is scheduled for tomorrow at 10:00 AM"),
-      type: safeStringCast("meeting"),
-      priority: safeStringCast("medium"),
-      icon: safeStringCast("Calendar"),
-      read: safeBooleanCast(true),
-      action_url: safeStringCast("/meetings/456"),
-      created_at: safeStringCast(new Date(Date.now() - 172800000).toISOString())
-    },
-    {
-      id: "4",
-      title: safeStringCast("Compliance Alert"),
-      message: safeStringCast("Critical compliance risks detected in client file ABC. Immediate action required"),
-      type: safeStringCast("alert"),
-      priority: safeStringCast("critical"),
-      icon: safeStringCast("AlertTriangle"),
-      read: safeBooleanCast(false),
-      action_url: safeStringCast("/compliance/789"),
-      created_at: safeStringCast(new Date(Date.now() - 259200000).toISOString())
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadNotifications();
+  }, []);
+
+  const loadNotifications = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setNotifications(data || []);
+    } catch (error) {
+      console.error('Error loading notifications:', error);
+    } finally {
+      setIsLoading(false);
     }
-  ];
+  };
+
+  const markAsRead = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      setNotifications(prev => 
+        prev.map(notification => 
+          notification.id === id 
+            ? { ...notification, read: true }
+            : notification
+        )
+      );
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -64,37 +75,66 @@ export const NotificationsPage = () => {
       <div className="pl-64">
         <MainHeader />
         <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center">
-              <Bell className="h-5 w-5 mr-2" />
-              <h1 className="text-2xl font-semibold">Notifications</h1>
-            </div>
-            <Button variant="outline" size="sm">Mark all as read</Button>
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-3xl font-bold">Notifications</h1>
+            <Badge variant="secondary">
+              {notifications.filter(n => !n.read).length} unread
+            </Badge>
           </div>
-          <ScrollArea className="h-[calc(100vh-12rem)]">
+
+          {isLoading ? (
+            <div className="text-center">Loading notifications...</div>
+          ) : notifications.length === 0 ? (
+            <Card>
+              <CardContent className="text-center p-8">
+                <Bell className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">No notifications yet</p>
+              </CardContent>
+            </Card>
+          ) : (
             <div className="space-y-4">
-              {mockNotifications.map((notification) => (
-                <Card key={notification.id} className="border-muted">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">{notification.title}</CardTitle>
-                    <Badge variant="secondary">{notification.priority}</Badge>
+              {notifications.map((notification) => (
+                <Card key={notification.id} className={notification.read ? 'opacity-75' : ''}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3">
+                        <Bell className="h-5 w-5 mt-0.5 text-primary" />
+                        <div className="space-y-1">
+                          <CardTitle className="text-base">{notification.title}</CardTitle>
+                          <p className="text-sm text-muted-foreground">
+                            {notification.message}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(notification.created_at).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {notification.priority && (
+                          <Badge variant={notification.priority === 'high' ? 'destructive' : 'secondary'}>
+                            {notification.priority}
+                          </Badge>
+                        )}
+                        {!notification.read && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => markAsRead(notification.id)}
+                          >
+                            <Check className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   </CardHeader>
-                  <CardContent>
-                    <CardDescription className="text-xs text-muted-foreground">
-                      {notification.message}
-                    </CardDescription>
-                  </CardContent>
-                  <div className="flex justify-end p-2">
-                    <Link to={notification.action_url}>
-                      <Button variant="ghost" size="sm">View</Button>
-                    </Link>
-                  </div>
                 </Card>
               ))}
             </div>
-          </ScrollArea>
+          )}
         </div>
       </div>
     </div>
   );
 };
+
+export default NotificationsPage;

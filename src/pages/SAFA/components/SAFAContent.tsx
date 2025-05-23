@@ -30,12 +30,14 @@ const SAFAContent = () => {
     }
   };
 
-  // Convert client messages to match ConversationView expectations
+  // Convert messages to match ConversationView expectations
   const getMessagesForTab = (tab: string) => {
     const messages = categoryMessages[tab] || [];
     return messages.map(msg => ({
-      ...msg,
-      type: 'text' as const,
+      id: msg.id,
+      content: msg.content,
+      type: msg.role as 'user' | 'assistant',
+      timestamp: new Date(msg.timestamp),
       module: tab
     }));
   };

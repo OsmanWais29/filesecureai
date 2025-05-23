@@ -2,9 +2,9 @@
 export interface ChatMessage {
   id: string;
   content: string;
-  type: 'user' | 'assistant';
-  timestamp: Date;
-  module: string;
+  role: 'user' | 'assistant';
+  timestamp: string;
+  category?: string;
 }
 
 export interface MessageProps {

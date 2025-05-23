@@ -7,7 +7,7 @@ interface FolderListProps {
   folders: FolderStructure[];
   onFolderSelect: (folderId: string) => void;
   onDocumentSelect: (documentId: string) => void;
-  onDocumentOpen: (documentId: string) => void;
+  onRenameDocument: (document: any) => void;
   selectedFolderId?: string;
   expandedFolders: Record<string, boolean>;
   toggleFolder: (folderId: string, e: React.MouseEvent) => void;
@@ -23,15 +23,7 @@ export const FolderList = ({
   folders,
   onFolderSelect,
   onDocumentSelect,
-  onDocumentOpen,
-  selectedFolderId,
-  expandedFolders,
-  toggleFolder,
-  handleDragStart,
-  handleDragOver,
-  handleDragLeave,
-  handleDrop,
-  dragOverFolder,
+  onRenameDocument,
   documents = []
 }: FolderListProps) => {
   return (
@@ -43,15 +35,7 @@ export const FolderList = ({
           documents={documents}
           onFolderSelect={onFolderSelect}
           onDocumentSelect={onDocumentSelect}
-          onDocumentOpen={onDocumentOpen}
-          selectedFolderId={selectedFolderId}
-          expandedFolders={expandedFolders}
-          toggleFolder={toggleFolder}
-          handleDragStart={handleDragStart}
-          handleDragOver={handleDragOver}
-          handleDragLeave={handleDragLeave}
-          handleDrop={handleDrop}
-          dragOverFolder={dragOverFolder}
+          onRenameDocument={onRenameDocument}
         />
       ))}
     </>

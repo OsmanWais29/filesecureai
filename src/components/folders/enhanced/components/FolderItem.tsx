@@ -11,7 +11,7 @@ import { DocumentItem } from "./documents/DocumentItem";
 
 interface FolderItemProps {
   folder: FolderStructure;
-  documents: any[]; // Raw documents from API
+  documents: any[];
   onFolderSelect: (folderId: string) => void;
   onDocumentSelect: (documentId: string) => void;
   onRenameDocument: (document: Document) => void;
@@ -42,8 +42,8 @@ export const FolderItem = ({
     onFolderSelect(folder.id);
   };
 
-  const handleDocumentOpen = (document: Document) => {
-    onDocumentSelect(document.id);
+  const handleDocumentOpen = (documentId: string) => {
+    onDocumentSelect(documentId);
   };
 
   const indentLevel = level * 20;
@@ -57,7 +57,6 @@ export const FolderItem = ({
       >
         <FolderIcon 
           isExpanded={isExpanded}
-          hasChildren={(folder.children?.length || 0) > 0 || folderDocuments.length > 0}
           type={folder.folder_type}
         />
         

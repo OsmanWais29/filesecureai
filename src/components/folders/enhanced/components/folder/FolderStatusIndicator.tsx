@@ -1,66 +1,22 @@
 
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import React from 'react';
+import { FolderStructure } from '@/types/folders';
+import { AlertCircle, CheckCircle, Clock } from 'lucide-react';
 
 interface FolderStatusIndicatorProps {
-  status?: string;
+  folder: FolderStructure;
 }
 
-export const FolderStatusIndicator = ({ status }: FolderStatusIndicatorProps) => {
-  if (!status) return null;
+export const FolderStatusIndicator: React.FC<FolderStatusIndicatorProps> = ({ folder }) => {
+  const status = folder.metadata?.status || 'normal';
   
   switch (status) {
-    case 'approved':
-      return (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Approved / No Risks</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      );
-    case 'pending':
-      return (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="h-2.5 w-2.5 rounded-full bg-yellow-500" />
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Pending / Minor Issues</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      );
-    case 'attention':
-      return (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="h-2.5 w-2.5 rounded-full bg-orange-500" />
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Requires Attention</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      );
-    case 'critical':
-      return (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Critical Compliance Risks</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      );
+    case 'error':
+      return <AlertCircle className="h-4 w-4 text-red-500" />;
+    case 'processing':
+      return <Clock className="h-4 w-4 text-yellow-500 animate-spin" />;
+    case 'complete':
+      return <CheckCircle className="h-4 w-4 text-green-500" />;
     default:
       return null;
   }

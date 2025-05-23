@@ -1,30 +1,26 @@
 
-import { supabase } from "@/lib/supabase";
-import { FolderStructure, FolderPermissions } from "@/types/folders";
-import { Document } from "@/types/client";
-import { safeStringCast, convertDocumentArray, convertToClientDocument } from "@/utils/typeGuards";
+import { supabase } from '@/lib/supabase';
+import { FolderStructure } from '@/types/folders';
+import { safeStringCast } from '@/utils/typeGuards';
 
-export const folderService = {
-  async createFolder(name: string, parentId?: string, type: 'client' | 'estate' | 'form' | 'document' | 'folder' = 'folder'): Promise<FolderStructure> {
+export const createFolder = async (name: string, parentId?: string, folderType: string = 'folder'): Promise<FolderStructure> => {
+  try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
+    if (!user) throw new Error('User not authenticated');
 
-    const folderData = {
+    const folder = {
       title: name,
-      is_folder: true,
-      folder_type: type,
-      parent_folder_id: parentId || null,
-      user_id: user.id,
       type: 'folder',
-      metadata: { 
-        created_by: user.id,
-        folder_type: type
-      }
+      user_id: user.id,
+      parent_folder_id: parentId || null,
+      is_folder: true,
+      folder_type: folderType,
+      metadata: { created_by: user.id }
     };
 
     const { data, error } = await supabase
       .from('documents')
-      .insert(folderData)
+      .insert(folder)
       .select()
       .single();
 
@@ -33,162 +29,77 @@ export const folderService = {
     return {
       id: safeStringCast(data.id),
       name: safeStringCast(data.title),
-      type,
+      type: 'folder',
       level: 0,
-      children: [],
-      metadata: data.metadata,
       parent_id: data.parent_folder_id,
       is_folder: true,
-      folder_type: type
+      folder_type: safeStringCast(data.folder_type),
+      metadata: data.metadata || {}
     };
-  },
+  } catch (error) {
+    console.error('Error creating folder:', error);
+    throw error;
+  }
+};
 
-  async getFolderStructure(): Promise<FolderStructure[]> {
+export const getFolders = async (): Promise<FolderStructure[]> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
     const { data, error } = await supabase
       .from('documents')
       .select('*')
+      .eq('user_id', user.id)
       .eq('is_folder', true)
       .order('title');
 
     if (error) throw error;
 
-    const folders = data?.map(item => ({
+    return (data || []).map((item: any) => ({
       id: safeStringCast(item.id),
       name: safeStringCast(item.title),
-      type: (item.folder_type as FolderStructure['type']) || 'folder',
+      type: 'folder',
       level: 0,
-      children: [],
-      metadata: item.metadata,
       parent_id: item.parent_folder_id,
       is_folder: true,
-      folder_type: item.folder_type
-    })) || [];
+      folder_type: safeStringCast(item.folder_type),
+      metadata: item.metadata || {}
+    }));
+  } catch (error) {
+    console.error('Error fetching folders:', error);
+    return [];
+  }
+};
 
-    return this.buildHierarchy(folders);
-  },
-
-  buildHierarchy(folders: FolderStructure[]): FolderStructure[] {
-    const folderMap = new Map<string, FolderStructure>();
-    const rootFolders: FolderStructure[] = [];
-
-    // Create folder map
-    folders.forEach(folder => {
-      folderMap.set(folder.id, { ...folder, children: [] });
-    });
-
-    // Build hierarchy
-    folders.forEach(folder => {
-      const currentFolder = folderMap.get(folder.id);
-      if (!currentFolder) return;
-
-      if (folder.parent_id) {
-        const parent = folderMap.get(folder.parent_id);
-        if (parent) {
-          parent.children = parent.children || [];
-          parent.children.push(currentFolder);
-          currentFolder.level = parent.level + 1;
-        } else {
-          rootFolders.push(currentFolder);
-        }
-      } else {
-        rootFolders.push(currentFolder);
-      }
-    });
-
-    return rootFolders;
-  },
-
-  async moveDocument(documentId: string, targetFolderId: string): Promise<void> {
+export const updateFolder = async (id: string, updates: Partial<FolderStructure>): Promise<void> => {
+  try {
     const { error } = await supabase
       .from('documents')
-      .update({ parent_folder_id: targetFolderId })
-      .eq('id', documentId);
+      .update({
+        title: updates.name,
+        folder_type: updates.folder_type,
+        metadata: updates.metadata
+      })
+      .eq('id', id);
 
     if (error) throw error;
-  },
+  } catch (error) {
+    console.error('Error updating folder:', error);
+    throw error;
+  }
+};
 
-  async getFolderDocuments(folderId: string): Promise<Document[]> {
-    const { data, error } = await supabase
+export const deleteFolder = async (id: string): Promise<void> => {
+  try {
+    const { error } = await supabase
       .from('documents')
-      .select('*')
-      .eq('parent_folder_id', folderId)
-      .eq('is_folder', false);
+      .delete()
+      .eq('id', id);
 
     if (error) throw error;
-
-    return convertDocumentArray(data || []);
-  },
-
-  async searchDocuments(query: string, folderId?: string): Promise<Document[]> {
-    let queryBuilder = supabase
-      .from('documents')
-      .select('*')
-      .eq('is_folder', false)
-      .ilike('title', `%${query}%`);
-
-    if (folderId) {
-      queryBuilder = queryBuilder.eq('parent_folder_id', folderId);
-    }
-
-    const { data, error } = await queryBuilder;
-    if (error) throw error;
-
-    return convertDocumentArray(data || []);
-  },
-
-  async getClientFolders(): Promise<FolderStructure[]> {
-    const { data, error } = await supabase
-      .from('documents')
-      .select('*')
-      .eq('is_folder', true)
-      .eq('folder_type', 'client')
-      .order('title');
-
-    if (error) throw error;
-
-    return data?.map(item => ({
-      id: safeStringCast(item.id),
-      name: safeStringCast(item.title),
-      type: 'client' as const,
-      level: 0,
-      children: [],
-      metadata: item.metadata,
-      parent_id: item.parent_folder_id,
-      is_folder: true,
-      folder_type: 'client'
-    })) || [];
-  },
-
-  async findSimilarClientFolders(clientName: string): Promise<{ folders: FolderStructure[]; suggestions: string[] }> {
-    const cleanName = safeStringCast(clientName).toLowerCase();
-    
-    const { data, error } = await supabase
-      .from('documents')
-      .select('*')
-      .eq('is_folder', true)
-      .eq('folder_type', 'client');
-
-    if (error) throw error;
-
-    const allFolders = data?.map(item => ({
-      id: safeStringCast(item.id),
-      name: safeStringCast(item.title),
-      type: 'client' as const,
-      level: 0,
-      children: [],
-      metadata: item.metadata,
-      parent_id: item.parent_folder_id,
-      is_folder: true,
-      folder_type: 'client'
-    })) || [];
-
-    const similarFolders = allFolders.filter(folder => {
-      const folderName = folder.name.toLowerCase();
-      return folderName.includes(cleanName) || cleanName.includes(folderName);
-    });
-
-    const suggestions = similarFolders.map(f => f.name);
-
-    return { folders: similarFolders, suggestions };
+  } catch (error) {
+    console.error('Error deleting folder:', error);
+    throw error;
   }
 };

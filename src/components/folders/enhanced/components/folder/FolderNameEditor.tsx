@@ -1,42 +1,36 @@
 
-import { useState, useEffect } from "react";
+import React, { useState } from 'react';
+import { Input } from '@/components/ui/input';
 
 interface FolderNameEditorProps {
-  isEditing: boolean;
   name: string;
-  onRename: (newName: string) => void;
-  onCancelEdit: () => void;
+  onSave: (newName: string) => void;
+  onCancel: () => void;
 }
 
-export const FolderNameEditor = ({ isEditing, name, onRename, onCancelEdit }: FolderNameEditorProps) => {
-  const [newName, setNewName] = useState(name);
+export const FolderNameEditor: React.FC<FolderNameEditorProps> = ({ 
+  name, 
+  onSave, 
+  onCancel 
+}) => {
+  const [editName, setEditName] = useState(name);
 
-  useEffect(() => {
-    setNewName(name);
-  }, [name, isEditing]);
-
-  const handleRename = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      onRename(newName);
+      onSave(editName);
     } else if (e.key === 'Escape') {
-      onCancelEdit();
+      onCancel();
     }
   };
 
-  if (!isEditing) {
-    return null;
-  }
-
   return (
-    <input
-      type="text"
-      value={newName}
-      onChange={(e) => setNewName(e.target.value)}
-      onKeyDown={handleRename}
-      onBlur={onCancelEdit}
+    <Input
+      value={editName}
+      onChange={(e) => setEditName(e.target.value)}
+      onKeyDown={handleKeyDown}
+      onBlur={() => onSave(editName)}
+      className="h-6 text-sm"
       autoFocus
-      className="text-sm px-1 py-0.5 border border-primary rounded flex-1 outline-none"
-      onClick={(e) => e.stopPropagation()}
     />
   );
 };

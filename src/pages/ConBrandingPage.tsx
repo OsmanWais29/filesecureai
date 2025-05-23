@@ -166,3 +166,5 @@ export const ConBrandingPage = () => {
     </div>
   );
 };
+
+export default ConBrandingPage;
