@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useDocuments } from "@/components/DocumentList/hooks/useDocuments";
 import { useCreateFolderStructure } from "@/components/folders/enhanced/hooks/useCreateFolderStructure";
 import { useFolderNavigation } from "./useFolderNavigation";
+import { convertDocumentArray } from "@/utils/typeGuards";
 
 interface Client {
   id: string;
@@ -14,13 +15,13 @@ interface Client {
 
 export const useDocumentsPage = () => {
   const { documents, refetch, isLoading } = useDocuments();
-  const { folders } = useCreateFolderStructure(documents || []);
+  const safeDocuments = convertDocumentArray(documents || []);
+  const { folders } = useCreateFolderStructure(safeDocuments);
   
   const [clients, setClients] = useState<Client[]>([]);
   
   const handleClientSelect = (clientId: string) => {
     console.log("Selected client:", clientId);
-    // Implementation would go here in a real app
   };
   
   const {
@@ -29,26 +30,22 @@ export const useDocumentsPage = () => {
     folderPath,
     handleItemSelect: originalHandleItemSelect,
     handleOpenDocument
-  } = useFolderNavigation(documents || []);
+  } = useFolderNavigation(safeDocuments);
   
-  // Create a wrapper function to map between the different type systems
   const handleItemSelect = (id: string, type: "folder" | "file") => {
-    // This ensures consistency across the application
     originalHandleItemSelect(id, type);
   };
 
-  // Extract clients from documents
   useEffect(() => {
-    if (documents && documents.length > 0) {
-      // Extract unique client information from documents
+    if (safeDocuments && safeDocuments.length > 0) {
       const uniqueClients = Array.from(
         new Set(
-          documents
+          safeDocuments
             .filter(doc => doc.metadata && (doc.metadata as any).client_id)
             .map(doc => (doc.metadata as any).client_id)
         )
       ).map(clientId => {
-        const doc = documents.find(d => (d.metadata as any).client_id === clientId);
+        const doc = safeDocuments.find(d => (d.metadata as any).client_id === clientId);
         const metadata = doc?.metadata as any || {};
         
         return {
@@ -60,7 +57,6 @@ export const useDocumentsPage = () => {
         };
       });
 
-      // Add special Josh Hart client for demo purposes
       if (!uniqueClients.some(c => c.id === 'josh-hart')) {
         uniqueClients.push({
           id: 'josh-hart',
@@ -73,24 +69,17 @@ export const useDocumentsPage = () => {
 
       setClients(uniqueClients);
     }
-  }, [documents]);
+  }, [safeDocuments]);
 
   return {
-    // Document data
-    documents: documents || [],
+    documents: safeDocuments,
     refetch,
     isLoading,
     folders,
-    
-    // Navigation state
     selectedItemId,
     selectedItemType,
     folderPath,
-    
-    // Client data
     clients,
-    
-    // Event handlers
     handleItemSelect,
     handleOpenDocument,
     handleClientSelect

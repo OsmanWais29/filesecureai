@@ -1,5 +1,5 @@
 
-import { Document } from "@/components/DocumentList/types";
+import { Document } from "@/types/client";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Circle, AlertCircle, Check, Clock } from "lucide-react";
 import { documentNeedsAttention } from "../../utils/documentUtils";
@@ -13,7 +13,6 @@ export const StatusIndicator = ({ document, className = "" }: StatusIndicatorPro
   const status = document.metadata?.status || 'pending';
   const needsAttention = documentNeedsAttention(document);
   
-  // Make indicator larger and more visible
   const baseClasses = `inline-flex h-4 w-4 items-center justify-center rounded-full ${className}`;
   
   if (needsAttention) {

@@ -1,5 +1,5 @@
 
-import { Document } from "@/components/DocumentList/types";
+import { Document } from "@/types/client";
 import { 
   ContextMenuContent, 
   ContextMenuItem, 

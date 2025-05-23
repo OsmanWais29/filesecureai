@@ -25,17 +25,14 @@ export const FolderActionDropdown = ({
   onRefresh,
 }: FolderActionDropdownProps) => {
   const handleRenameFolderClick = () => {
-    // Implementation would be added in a real app
     console.log("Rename folder", selectedFolderId);
   };
 
   const handleDeleteFolderClick = () => {
-    // Implementation would be added in a real app
     console.log("Delete folder", selectedFolderId);
   };
 
   const handleMoveFolderClick = () => {
-    // Implementation would be added in a real app
     console.log("Move folder", selectedFolderId);
   };
 
@@ -62,7 +59,7 @@ export const FolderActionDropdown = ({
               Move Folder
             </DropdownMenuItem>
             
-            {(userRole === 'admin' || userRole === 'manager') && (
+            {(userRole === 'admin' || userRole === 'administrator') && (
               <DropdownMenuItem onClick={handleDeleteFolderClick}>
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete Folder

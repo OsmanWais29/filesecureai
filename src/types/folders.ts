@@ -1,5 +1,4 @@
 
-
 export interface FolderStructure {
   id: string;
   name: string;
@@ -59,4 +58,10 @@ export interface FolderAIRecommendation {
   createdAt: string;
   suggestedPath: string[];
   reason: string;
+}
+
+export interface FolderPermissionRule {
+  id: string;
+  name: string;
+  permissions: FolderPermissions;
 }

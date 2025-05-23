@@ -1,171 +1,115 @@
 
-import { useState, useEffect } from 'react';
-import { ChatMessage } from '../types';
-import { v4 as uuidv4 } from 'uuid';
+import { useState, useCallback, useEffect } from 'react';
+import { ChatMessage } from '@/types/client';
 import { supabase } from '@/lib/supabase';
-import { useAuthState } from '@/hooks/useAuthState';
-import { useToast } from '@/hooks/use-toast';
+import { safeStringCast } from '@/utils/typeGuards';
 
-// Define initial messages for each module
-const INITIAL_MESSAGES: Record<string, ChatMessage[]> = {
-  document: [{
-    id: '1',
-    content: "Welcome to Document Management. I can help you analyze, organize, and manage your documents. How can I assist you today?",
-    type: 'assistant',
-    timestamp: new Date(),
-    module: 'document'
-  }],
-  legal: [{
-    id: '1',
-    content: "Welcome to Legal Advisory. I can help you with OSB regulations, BIA acts, and legal compliance. How can I assist you?",
-    type: 'assistant',
-    timestamp: new Date(),
-    module: 'legal'
-  }],
-  help: [{
-    id: '1',
-    content: "Welcome to Training & Help. I can provide guidance on using the system and best practices. What would you like to learn about?",
-    type: 'assistant',
-    timestamp: new Date(),
-    module: 'help'
-  }],
-  client: [{
-    id: '1',
-    content: "Welcome to AI Client Assistant. How can I help you connect with and understand your clients better today?",
-    type: 'assistant',
-    timestamp: new Date(),
-    module: 'client'
-  }]
-};
+interface UseConversationsResult {
+  categoryMessages: Record<string, ChatMessage[]>;
+  isLoading: boolean;
+  error: string | null;
+  sendMessage: (content: string, category: string) => Promise<void>;
+  loadConversation: (category: string) => Promise<void>;
+  clearConversation: (category: string) => void;
+}
 
-export const useConversations = (initialActiveModule: string) => {
-  const [categoryMessages, setCategoryMessages] = useState<Record<string, ChatMessage[]>>(INITIAL_MESSAGES);
-  const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  const { user } = useAuthState();
-  const { toast } = useToast();
+export const useConversations = (): UseConversationsResult => {
+  const [categoryMessages, setCategoryMessages] = useState<Record<string, ChatMessage[]>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Load conversations from localStorage or database on component mount
-  useEffect(() => {
-    const loadSavedMessages = () => {
-      const savedMessages: Record<string, ChatMessage[]> = {...INITIAL_MESSAGES};
-      
-      Object.keys(INITIAL_MESSAGES).forEach(module => {
-        const key = `${module}_messages`;
-        const saved = localStorage.getItem(key);
-        if (saved) {
-          try {
-            savedMessages[module] = JSON.parse(saved);
-          } catch (e) {
-            console.error(`Error parsing saved messages for ${module}:`, e);
-            // If there's an error parsing, use the initial messages
-          }
-        }
-      });
-      
-      setCategoryMessages(savedMessages);
-    };
-    
-    loadSavedMessages();
-  }, []);
-
-  // Function to load conversation history from the database
-  const loadConversationHistory = async (conversationId: string, moduleType: string = initialActiveModule) => {
+  const loadConversation = useCallback(async (category: string) => {
     try {
-      const { data, error } = await supabase
+      setIsLoading(true);
+      setError(null);
+
+      const { data, error: fetchError } = await supabase
         .from('conversations')
-        .select('*')
-        .eq('id', conversationId)
+        .select('messages')
+        .eq('type', category)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .single();
 
-      if (error) throw error;
-      
-      if (data && data.messages && Array.isArray(data.messages)) {
-        // Update the specific module's messages with the conversation history
-        setCategoryMessages(prev => ({
-          ...prev,
-          [moduleType]: data.messages
-        }));
-        return data.messages;
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        throw fetchError;
       }
-      
-      return [];
-    } catch (error) {
-      console.error('Error loading conversation history:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load conversation history."
-      });
-      return [];
-    }
-  };
 
-  // Function to handle sending a message
-  const handleSendMessage = async (content: string, moduleOverride?: string) => {
-    if (!content.trim() || isProcessing) return;
-    
-    const module = moduleOverride || initialActiveModule;
-    setIsProcessing(true);
-    
-    const newUserMessage: ChatMessage = {
-      id: uuidv4(),
-      content: content,
-      type: 'user',
-      timestamp: new Date(),
-      module: module
-    };
-    
-    // Update messages with user input
-    const updatedMessages = {
-      ...categoryMessages,
-      [module]: [...(categoryMessages[module] || []), newUserMessage]
-    };
-    
-    setCategoryMessages(updatedMessages);
-    
-    try {
-      // In a real app, you would call an AI service here
-      // This is a placeholder for the actual API call
-      setTimeout(() => {
-        const assistantMessage: ChatMessage = {
-          id: uuidv4(),
-          content: `I understand your query about "${content}". As this is a demo version, I can provide basic assistance. In the full version, I would give a detailed response based on the ${module} module.`,
-          type: 'assistant',
-          timestamp: new Date(),
-          module: module
-        };
-        
-        const finalMessages = {
-          ...updatedMessages,
-          [module]: [...(updatedMessages[module] || []), assistantMessage]
-        };
-        
-        setCategoryMessages(finalMessages);
-        
-        // Save to localStorage
-        try {
-          localStorage.setItem(`${module}_messages`, JSON.stringify(finalMessages[module]));
-        } catch (e) {
-          console.error(`Error saving messages to localStorage for ${module}:`, e);
-        }
-        
-        setIsProcessing(false);
-      }, 1000);
-    } catch (error) {
-      console.error('Error processing message:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to process your request. Please try again."
-      });
-      setIsProcessing(false);
+      const messages = data?.messages || [];
+      const safeMessages = Array.isArray(messages) ? messages.map((msg: any) => ({
+        id: safeStringCast(msg.id),
+        content: safeStringCast(msg.content),
+        role: msg.role === 'assistant' ? 'assistant' : 'user',
+        timestamp: safeStringCast(msg.timestamp),
+        category: safeStringCast(msg.category || category)
+      })) : [];
+
+      setCategoryMessages(prev => ({
+        ...prev,
+        [category]: safeMessages
+      }));
+    } catch (err) {
+      console.error('Error loading conversation:', err);
+      setError('Failed to load conversation');
+      setCategoryMessages(prev => ({
+        ...prev,
+        [category]: []
+      }));
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, []);
+
+  const sendMessage = useCallback(async (content: string, category: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const userMessage: ChatMessage = {
+        id: `user-${Date.now()}`,
+        content,
+        role: 'user',
+        timestamp: new Date().toISOString(),
+        category
+      };
+
+      setCategoryMessages(prev => ({
+        ...prev,
+        [category]: [...(prev[category] || []), userMessage]
+      }));
+
+      // Save to database
+      const updatedMessages = [...(categoryMessages[category] || []), userMessage];
+      
+      await supabase
+        .from('conversations')
+        .upsert({
+          type: category,
+          messages: updatedMessages,
+          updated_at: new Date().toISOString()
+        });
+
+    } catch (err) {
+      console.error('Error sending message:', err);
+      setError('Failed to send message');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [categoryMessages]);
+
+  const clearConversation = useCallback((category: string) => {
+    setCategoryMessages(prev => ({
+      ...prev,
+      [category]: []
+    }));
+  }, []);
 
   return {
     categoryMessages,
-    handleSendMessage,
-    isProcessing,
-    loadConversationHistory
+    isLoading,
+    error,
+    sendMessage,
+    loadConversation,
+    clearConversation
   };
 };

@@ -162,3 +162,16 @@ export function convertToUserSettings(data: unknown): any {
     passwordExpiry: typeof settings?.password_expiry === 'string' ? settings.password_expiry : '90'
   };
 }
+
+export function safeStringCast(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (value === null || value === undefined) return '';
+  return String(value);
+}
+
+export function safeBooleanCast(value: unknown): boolean {
+  if (typeof value === 'boolean') return value;
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  return false;
+}

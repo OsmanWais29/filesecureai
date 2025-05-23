@@ -1,5 +1,5 @@
 
-import { Document } from "@/components/DocumentList/types";
+import { Document } from "@/types/client";
 import { Edit2, Eye, History } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { isDocumentLocked } from "../../utils/documentUtils";

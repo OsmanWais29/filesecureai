@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +9,7 @@ import { uploadDocument } from "@/utils/documentOperations";
 import logger from "@/utils/logger";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
+import { safeStringCast } from '@/utils/typeGuards';
 
 export const RecentlyAccessedPage = () => {
   const navigate = useNavigate();
@@ -173,8 +173,8 @@ export const RecentlyAccessedPage = () => {
                 user_id: user.id,
                 document_id: documentData.id,
                 accessed_at: new Date().toISOString(),
-                access_source: 'upload',
-                session_id: Math.random().toString(36).substring(2, 15) // Simple session ID
+                session_id: generateSessionId(),
+                access_source: 'upload'
               });
           }
         } catch (error) {
@@ -199,6 +199,31 @@ export const RecentlyAccessedPage = () => {
         setUploadProgress(0);
       }, 2000);
     }
+  };
+
+  const trackDocumentAccess = async (documentId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('document_access_history')
+        .insert({
+          document_id: documentId,
+          user_id: user.id,
+          accessed_at: new Date().toISOString(),
+          session_id: generateSessionId(),
+          access_source: 'web'
+        });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error tracking access:', error);
+    }
+  };
+
+  const generateSessionId = (): string => {
+    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   };
 
   return (

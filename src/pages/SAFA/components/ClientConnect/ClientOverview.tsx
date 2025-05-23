@@ -7,6 +7,7 @@ import { UserCircle, Phone, Mail, Calendar, ChevronRight } from "lucide-react";
 import { Client } from "../../types/client";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { convertClientArray } from "@/utils/typeGuards";
 
 interface ClientOverviewProps {
   onSelectClient: (client: Client) => void;
@@ -30,7 +31,8 @@ export const ClientOverview = ({ onSelectClient }: ClientOverviewProps) => {
 
       if (error) throw error;
 
-      setClients(data || []);
+      const safeClients = convertClientArray(data || []);
+      setClients(safeClients);
     } catch (error) {
       console.error('Error loading clients:', error);
       toast({
