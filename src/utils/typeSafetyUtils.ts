@@ -107,3 +107,28 @@ export const toDate = (value: unknown): Date | null => {
   }
   return null;
 };
+
+/**
+ * Safely cast an object to a specific type, with default values
+ * @param obj Object to cast
+ * @param defaultValues Default values to use if properties are missing
+ * @returns A safely cast object
+ */
+export const safeObjectCast = <T>(obj: unknown, defaultValues: Partial<T> = {}): T => {
+  if (!obj || typeof obj !== 'object') {
+    return defaultValues as T;
+  }
+  return { ...defaultValues, ...obj } as T;
+};
+
+/**
+ * Safely converts an unknown value to an array
+ * @param value The value to convert
+ * @returns An array, or empty array if not convertible
+ */
+export const toArray = <T>(value: unknown): T[] => {
+  if (Array.isArray(value)) {
+    return value as T[];
+  }
+  return [];
+};

@@ -3,15 +3,16 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AddDeadlineFormProps } from "./types";
 
 export const AddDeadlineForm: React.FC<AddDeadlineFormProps> = ({ onAdd, onCancel }) => {
   const [deadline, setDeadline] = useState({
     title: "",
-    dueDate: "", // Changed from due_date to dueDate to match the type
+    dueDate: "", 
     description: "",
-    priority: "medium", // Add default priority
-    status: "pending"  // Add default status
+    priority: "medium",
+    status: "pending"
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -34,6 +35,7 @@ export const AddDeadlineForm: React.FC<AddDeadlineFormProps> = ({ onAdd, onCance
           required
         />
       </div>
+      
       <div>
         <Input
           type="datetime-local"
@@ -42,6 +44,7 @@ export const AddDeadlineForm: React.FC<AddDeadlineFormProps> = ({ onAdd, onCance
           required
         />
       </div>
+      
       <div>
         <Textarea
           placeholder="Description (optional)"
@@ -50,6 +53,23 @@ export const AddDeadlineForm: React.FC<AddDeadlineFormProps> = ({ onAdd, onCance
           rows={3}
         />
       </div>
+      
+      <div>
+        <Select 
+          value={deadline.priority}
+          onValueChange={(value) => setDeadline({ ...deadline, priority: value })}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select priority" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="low">Low</SelectItem>
+            <SelectItem value="medium">Medium</SelectItem>
+            <SelectItem value="high">High</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      
       <div className="flex justify-end space-x-2">
         <Button type="button" variant="outline" size="sm" onClick={onCancel}>
           Cancel

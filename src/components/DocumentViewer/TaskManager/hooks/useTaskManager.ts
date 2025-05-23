@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Task } from '../../types';
-import { safeObjectCast } from '@/utils/typeSafetyUtils';
+import { toRecord, toString } from '@/utils/typeSafetyUtils';
 
 export const useTaskManager = (documentId: string) => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -27,12 +27,15 @@ export const useTaskManager = (documentId: string) => {
           title: String(task.title || ''),
           description: task.description ? String(task.description) : undefined,
           status: task.status ? String(task.status) : 'pending',
-          severity: task.severity ? String(task.severity) : undefined,
+          severity: task.severity ? String(task.severity) : 'medium',
           assigned_to: task.assigned_to ? String(task.assigned_to) : undefined,
           document_id: task.document_id ? String(task.document_id) : undefined,
           due_date: task.due_date ? String(task.due_date) : undefined,
-          created_at: task.created_at ? String(task.created_at) : undefined,
-          updated_at: task.updated_at ? String(task.updated_at) : undefined,
+          created_at: task.created_at ? String(task.created_at) : new Date().toISOString(),
+          updated_at: task.updated_at ? String(task.updated_at) : new Date().toISOString(),
+          created_by: task.created_by ? String(task.created_by) : 'system',
+          regulation: task.regulation ? String(task.regulation) : undefined,
+          solution: task.solution ? String(task.solution) : undefined,
         }));
         
         setTasks(typedTasks as Task[]);
@@ -60,17 +63,20 @@ export const useTaskManager = (documentId: string) => {
       if (error) throw error;
       
       // Convert the returned data to a Task
-      const newTask = {
+      const newTask: Task = {
         id: String(data.id),
         title: String(data.title),
         description: data.description ? String(data.description) : undefined,
         status: data.status ? String(data.status) : 'pending',
-        severity: data.severity ? String(data.severity) : undefined,
+        severity: data.severity ? String(data.severity) : 'medium',
         assigned_to: data.assigned_to ? String(data.assigned_to) : undefined,
         document_id: documentId,
         due_date: data.due_date ? String(data.due_date) : undefined,
-        created_at: data.created_at ? String(data.created_at) : undefined,
-        updated_at: data.updated_at ? String(data.updated_at) : undefined,
+        created_at: data.created_at ? String(data.created_at) : new Date().toISOString(),
+        updated_at: data.updated_at ? String(data.updated_at) : new Date().toISOString(),
+        created_by: data.created_by ? String(data.created_by) : 'system',
+        regulation: data.regulation ? String(data.regulation) : undefined,
+        solution: data.solution ? String(data.solution) : undefined,
       };
       
       setTasks(prevTasks => [newTask, ...prevTasks]);

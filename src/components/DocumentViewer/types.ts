@@ -58,7 +58,8 @@ export interface Task {
   due_date?: string;
   severity: string;
   document_id?: string;
-  regulation?: string; // Added to match TaskItem.tsx usage
+  regulation?: string;
+  solution?: string;
 }
 
 // Comment type

@@ -98,9 +98,19 @@ export const processExcelData = async (
     // Only take first 99 rows for preview
     const rows = rawJson.slice(1, 100) as any[][];
     
+    // Create metadata object
+    const metadata = {
+      fileName: storagePath.split('/').pop() || 'excel-file',
+      sheetNames: fullWorkbook.SheetNames,
+      totalSheets: fullWorkbook.SheetNames.length,
+      totalRows: rows.length,
+      totalColumns: headers.length
+    };
+    
     const excelData: ExcelData = {
       headers,
-      rows
+      rows,
+      metadata
     };
     
     // Cache the extracted data
@@ -112,7 +122,8 @@ export const processExcelData = async (
           extracted_metadata: {
             excel_data: {
               headers,
-              rows: rows.slice(0, 50) // Only cache first 50 rows to keep size small
+              rows: rows.slice(0, 50), // Only cache first 50 rows to keep size small
+              metadata
             },
             client_name: extractedClientName,
             last_processed: new Date().toISOString()

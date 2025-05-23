@@ -6,15 +6,25 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface ExcelErrorDisplayProps {
   error: string;
-  onRefresh: () => void;
+  onRetry: () => void;
+  onRefresh?: () => void;
   publicUrl?: string;
 }
 
 export const ExcelErrorDisplay: React.FC<ExcelErrorDisplayProps> = ({
   error,
+  onRetry,
   onRefresh,
   publicUrl
 }) => {
+  const handleOnRetry = () => {
+    if (onRefresh) {
+      onRefresh();
+    } else {
+      onRetry();
+    }
+  };
+
   const handleOpenOriginal = () => {
     if (publicUrl) {
       window.open(publicUrl, '_blank');
@@ -30,7 +40,7 @@ export const ExcelErrorDisplay: React.FC<ExcelErrorDisplayProps> = ({
       </Alert>
       
       <div className="flex flex-col sm:flex-row gap-2">
-        <Button variant="default" onClick={onRefresh}>
+        <Button variant="default" onClick={handleOnRetry}>
           <RefreshCw className="h-4 w-4 mr-2" />
           Retry Loading
         </Button>
