@@ -143,3 +143,143 @@ export const requestDocumentAnalysis = async (
     };
   }
 };
+
+export const monitorAnalysisProgress = async (documentId: string) => {
+  try {
+    const { data: document, error } = await supabase
+      .from('documents')
+      .select('*')
+      .eq('id', documentId)
+      .single();
+
+    if (error || !document) {
+      return {
+        status: 'failed',
+        progress: 0,
+        error: 'Document not found',
+        lastUpdate: null
+      };
+    }
+
+    const metadata = safeObjectCast(document.metadata);
+    const aiStatus = safeStringCast(document.ai_processing_status);
+    const processingSteps = metadata.processing_steps_completed || 0;
+    
+    let progress = 0;
+    let status = aiStatus || 'pending';
+    
+    if (status === 'complete') {
+      progress = 100;
+    } else if (status === 'processing') {
+      progress = Math.min(processingSteps * 25, 75);
+    }
+
+    return {
+      status,
+      progress,
+      error: metadata.analysis_error ? safeStringCast(metadata.analysis_error) : null,
+      lastUpdate: document.updated_at
+    };
+
+  } catch (error) {
+    return {
+      status: 'failed',
+      progress: 0,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      lastUpdate: null
+    };
+  }
+};
+
+export const triggerDocumentAnalysis = async (documentId: string, storagePath: string, title: string) => {
+  return requestDocumentAnalysis({
+    documentId,
+    storagePath,
+    title,
+    includeRegulatory: true,
+    includeClientExtraction: true
+  });
+};
+
+export const saveAnalysisResults = async (documentId: string, analysisData: any) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { error } = await supabase
+      .from('document_analysis')
+      .upsert({
+        document_id: documentId,
+        user_id: user.id,
+        content: analysisData,
+        updated_at: new Date().toISOString()
+      });
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
+  }
+};
+
+export const updateDocumentStatus = async (documentId: string, status: string) => {
+  try {
+    const { error } = await supabase
+      .from('documents')
+      .update({ 
+        ai_processing_status: status,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', documentId);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
+  }
+};
+
+export const createClientIfNotExists = async (clientName: string) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Check if client exists
+    const { data: existingClient } = await supabase
+      .from('clients')
+      .select('id')
+      .eq('name', clientName)
+      .single();
+
+    if (existingClient) {
+      return { success: true, clientId: existingClient.id };
+    }
+
+    // Create new client
+    const { data: newClient, error } = await supabase
+      .from('clients')
+      .insert({
+        name: clientName,
+        status: 'active',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select('id')
+      .single();
+
+    if (error) throw error;
+
+    return { success: true, clientId: newClient.id };
+  } catch (error) {
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
+  }
+};

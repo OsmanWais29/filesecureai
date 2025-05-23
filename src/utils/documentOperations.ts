@@ -92,3 +92,53 @@ export const getDocumentAnalysis = async (documentId: string) => {
     };
   }
 };
+
+export const uploadDocument = async (file: File, metadata?: Record<string, any>) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}.${fileExt}`;
+    const filePath = `${user.id}/${fileName}`;
+
+    // Upload file to storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('documents')
+      .upload(filePath, file);
+
+    if (uploadError) throw uploadError;
+
+    // Create document record
+    const { data: document, error: docError } = await supabase
+      .from('documents')
+      .insert({
+        title: file.name,
+        type: file.type,
+        size: file.size,
+        storage_path: uploadData.path,
+        user_id: user.id,
+        metadata: metadata || {},
+        ai_processing_status: 'pending'
+      })
+      .select()
+      .single();
+
+    if (docError) throw docError;
+
+    return {
+      success: true,
+      document,
+      message: 'Document uploaded successfully'
+    };
+
+  } catch (error) {
+    console.error('Error uploading document:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+};

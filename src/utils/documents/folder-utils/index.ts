@@ -1,4 +1,4 @@
 
-export { createFolderIfNotExists } from './createFolder';
+export { createClientFolder, createFolderIfNotExists } from './createFolder';
 export { mergeFinancialFolders } from './mergeFinancialFolders';
-export { organizeDocumentIntoFolders } from './organizeDocuments';
+export { organizeDocumentsByClient, organizeDocumentIntoFolders } from './organizeDocuments';
