@@ -37,7 +37,7 @@ const SAFAContent = () => {
       id: msg.id,
       content: msg.content,
       role: msg.role,
-      timestamp: new Date(msg.timestamp),
+      timestamp: msg.timestamp,
       module: tab
     }));
   };

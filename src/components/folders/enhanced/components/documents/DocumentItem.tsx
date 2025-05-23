@@ -43,7 +43,7 @@ export const DocumentItem = ({
     setIsEditing(false);
   };
 
-  const handleDragStart = (e: React.DragEvent) => {
+  const onDragStart = (e: React.DragEvent) => {
     if (handleDragStart) {
       handleDragStart(document.id, 'document');
     }
@@ -74,7 +74,7 @@ export const DocumentItem = ({
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
       draggable={!!handleDragStart}
-      onDragStart={handleDragStart ? handleDragStart : undefined}
+      onDragStart={handleDragStart ? onDragStart : undefined}
     >
       {/* Render indentation elements */}
       {indentation.map((indent, index) => (

@@ -17,6 +17,7 @@ interface DocumentTreeProps {
   onFolderSelect: (folderId: string) => void;
   onDocumentSelect: (documentId: string) => void;
   onDocumentOpen: (documentId: string) => void;
+  onRenameDocument: (document: Document) => void;
   toggleFolder: (folderId: string, e: React.MouseEvent) => void;
   handleDragStart: (id: string, type: 'folder' | 'document') => void;
   handleDragOver: (e: React.DragEvent, folderId: string) => void;
@@ -35,6 +36,7 @@ export const DocumentTree = ({
   onFolderSelect,
   onDocumentSelect,
   onDocumentOpen,
+  onRenameDocument,
   toggleFolder,
   handleDragStart,
   handleDragOver,
@@ -50,6 +52,7 @@ export const DocumentTree = ({
             onFolderSelect={onFolderSelect}
             onDocumentSelect={onDocumentSelect}
             onDocumentOpen={onDocumentOpen}
+            onRenameDocument={onRenameDocument}
             selectedFolderId={selectedFolderId}
             expandedFolders={expandedFolders}
             toggleFolder={toggleFolder}

@@ -8,30 +8,30 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 const SettingsPage = () => {
-  const settings = useSettings();
-  const [isLoading, setIsLoading] = useState(false);
+  const { settings, saveSettings, isLoading } = useSettings();
+  const [loading, setLoading] = useState(false);
 
   const handleSaveGeneral = async () => {
-    setIsLoading(true);
+    setLoading(true);
     try {
-      await settings.save();
+      await saveSettings();
       toast.success("General settings saved successfully");
     } catch (error) {
       toast.error("Failed to save general settings");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   const handleSaveSecurity = async () => {
-    setIsLoading(true);
+    setLoading(true);
     try {
-      await settings.save();
+      await saveSettings();
       toast.success("Security settings saved successfully");
     } catch (error) {
       toast.error("Failed to save security settings");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
@@ -73,7 +73,7 @@ const SettingsPage = () => {
                   setDefaultCurrency: settings.setDefaultCurrency,
                 }}
                 onSave={handleSaveGeneral}
-                isLoading={isLoading}
+                isLoading={loading}
               />
             </CardContent>
           </Card>
@@ -102,7 +102,7 @@ const SettingsPage = () => {
                   setPasswordExpiry: settings.setPasswordExpiry,
                 }}
                 onSave={handleSaveSecurity}
-                isLoading={isLoading}
+                isLoading={loading}
               />
             </CardContent>
           </Card>

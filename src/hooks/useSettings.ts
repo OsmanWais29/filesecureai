@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
+import { safeStringCast } from '@/utils/typeGuards';
 
 interface UserSettings {
   timeZone: string;
@@ -70,20 +71,20 @@ export const useSettings = () => {
         throw error;
       }
 
-      if (data) {
-        const settings = data.settings || {};
-        setTimeZone(settings.timeZone || "UTC");
-        setLanguage(settings.language || "en");
-        setAutoSave(settings.autoSave !== undefined ? settings.autoSave : true);
-        setCompactView(settings.compactView !== undefined ? settings.compactView : false);
-        setDocumentSync(settings.documentSync !== undefined ? settings.documentSync : true);
-        setDefaultCurrency(settings.defaultCurrency || "CAD");
-        setTwoFactorEnabled(settings.twoFactorEnabled !== undefined ? settings.twoFactorEnabled : false);
-        setSessionTimeout(settings.sessionTimeout || "30");
-        setIpWhitelisting(settings.ipWhitelisting !== undefined ? settings.ipWhitelisting : false);
-        setLoginNotifications(settings.loginNotifications !== undefined ? settings.loginNotifications : true);
-        setDocumentEncryption(settings.documentEncryption !== undefined ? settings.documentEncryption : true);
-        setPasswordExpiry(settings.passwordExpiry || "90");
+      if (data && data.settings) {
+        const settings = data.settings as any;
+        setTimeZone(safeStringCast(settings.timeZone) || "UTC");
+        setLanguage(safeStringCast(settings.language) || "en");
+        setAutoSave(settings.autoSave !== undefined ? Boolean(settings.autoSave) : true);
+        setCompactView(settings.compactView !== undefined ? Boolean(settings.compactView) : false);
+        setDocumentSync(settings.documentSync !== undefined ? Boolean(settings.documentSync) : true);
+        setDefaultCurrency(safeStringCast(settings.defaultCurrency) || "CAD");
+        setTwoFactorEnabled(settings.twoFactorEnabled !== undefined ? Boolean(settings.twoFactorEnabled) : false);
+        setSessionTimeout(safeStringCast(settings.sessionTimeout) || "30");
+        setIpWhitelisting(settings.ipWhitelisting !== undefined ? Boolean(settings.ipWhitelisting) : false);
+        setLoginNotifications(settings.loginNotifications !== undefined ? Boolean(settings.loginNotifications) : true);
+        setDocumentEncryption(settings.documentEncryption !== undefined ? Boolean(settings.documentEncryption) : true);
+        setPasswordExpiry(safeStringCast(settings.passwordExpiry) || "90");
       }
     } catch (error) {
       console.error('Error loading settings:', error);

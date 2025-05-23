@@ -9,6 +9,7 @@ interface DocumentListItemProps {
   indentationLevel: number;
   onDocumentSelect: (documentId: string) => void;
   onDocumentOpen: (documentId: string) => void;
+  onRenameDocument: (document: Document) => void;
   handleDragStart: (id: string, type: 'folder' | 'document') => void;
 }
 
@@ -17,6 +18,7 @@ export const DocumentListItem = ({
   indentationLevel,
   onDocumentSelect,
   onDocumentOpen,
+  onRenameDocument,
   handleDragStart
 }: DocumentListItemProps) => {
   // Create indentation based on level
@@ -46,6 +48,7 @@ export const DocumentListItem = ({
           indentation={indentation}
           onSelect={onDocumentSelect}
           onOpen={onDocumentOpen}
+          onRename={onRenameDocument}
           handleDragStart={handleDragStart}
         />
       ))}
