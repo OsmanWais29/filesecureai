@@ -1,4 +1,5 @@
 
+
 export const safeStringCast = (value: any): string => {
   return typeof value === 'string' ? value : String(value ?? '');
 };
@@ -116,7 +117,8 @@ export const convertToClientProfile = (profile: any): import('@/types/client').C
     status: safeClientStatusCast(profile.status),
     created_at: safeStringCast(profile.created_at || new Date().toISOString()),
     updated_at: safeStringCast(profile.updated_at || new Date().toISOString()),
-    metadata: safeObjectCast(profile.metadata)
+    metadata: safeObjectCast(profile.metadata),
+    engagement_score: safeNumberCast(profile.engagement_score) || 0
   };
 };
 
@@ -195,7 +197,6 @@ export const ensureTaskType = (task: any): import('@/types/client').Task => {
     created_at: safeStringCast(task.created_at || new Date().toISOString()),
     updated_at: safeStringCast(task.updated_at || new Date().toISOString()),
     client_id: task.client_id ? safeStringCast(task.client_id) : undefined,
-    document_id: task.document_id ? safeStringCast(task.document_id) : undefined,
     metadata: safeObjectCast(task.metadata)
   };
 };
@@ -205,3 +206,4 @@ export const convertClientArray = (clients: any[]): import('@/types/client').Cli
   if (!Array.isArray(clients)) return [];
   return clients.map(convertToClientProfile).filter(client => client.id && client.name);
 };
+
