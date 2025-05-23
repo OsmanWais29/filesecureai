@@ -1,117 +1,86 @@
-import { useState, useEffect, useCallback } from 'react';
+
+import { useState, useEffect } from 'react';
+import { DocumentDetails } from '../types';
 import { supabase } from '@/lib/supabase';
-import { DocumentDetails } from '../../types';
-import { useToast } from "@/hooks/use-toast";
-import { useSession } from '@/hooks/use-session';
-import { useNetworkStatus } from './useNetworkStatus';
-import { toString } from '@/utils/typeSafetyUtils';
 
 interface DocumentState {
   document: DocumentDetails | null;
   loading: boolean;
-  loadingError: string | null;
-  handleRefresh: () => void;
-  isNetworkError: boolean;
+  error: string | null;
+  isOnline: boolean;
 }
 
-export const useDocumentState = (documentId: string): DocumentState => {
-  const [document, setDocument] = useState<DocumentDetails | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadingError, setLoadingError] = useState<string | null>(null);
-  const { toast } = useToast();
-  const { session } = useSession();
-  const { isOnline } = useNetworkStatus();
-
-  const fetchDocument = useCallback(async () => {
-    setLoading(true);
-    setLoadingError(null);
-    try {
-      const { data, error } = await supabase
-        .from('documents')
-        .select(`
-          *,
-          comments (*),
-          tasks (*),
-          versions (*)
-        `)
-        .eq('id', documentId)
-        .single();
-
-      if (error) {
-        console.error("Supabase error fetching document:", error);
-        setLoadingError(`Failed to load document: ${error.message}`);
-        return;
-      }
-
-      if (!data) {
-        setLoadingError("Document not found");
-        return;
-      }
-
-      // Format the document details
-      const formattedDocument = formatDocumentDetail(data);
-      setDocument(formattedDocument);
-      console.log("Document loaded successfully:", formattedDocument.id);
-
-    } catch (error: any) {
-      console.error("Error fetching document:", error);
-      setLoadingError(`Error loading document: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  }, [documentId]);
+export const useDocumentState = (documentId: string) => {
+  const [state, setState] = useState<DocumentState>({
+    document: null,
+    loading: true,
+    error: null,
+    isOnline: navigator.onLine
+  });
 
   useEffect(() => {
+    const fetchDocument = async () => {
+      try {
+        setState(prev => ({ ...prev, loading: true, error: null }));
+        
+        const { data, error } = await supabase
+          .from('documents')
+          .select('*')
+          .eq('id', documentId)
+          .single();
+
+        if (error) throw error;
+
+        const documentDetails: DocumentDetails = {
+          id: data.id,
+          title: data.title || 'Untitled Document',
+          type: data.type || 'document',
+          storage_path: data.storage_path || '',
+          created_at: data.created_at,
+          updated_at: data.updated_at,
+          metadata: data.metadata || {},
+          parent_folder_id: data.parent_folder_id,
+          ai_processing_status: data.ai_processing_status,
+          ai_processing_stage: data.ai_processing_stage,
+          deadlines: data.deadlines || [],
+          analysis: [],
+          comments: [],
+          tasks: [],
+          versions: []
+        };
+
+        setState(prev => ({ 
+          ...prev, 
+          document: documentDetails, 
+          loading: false 
+        }));
+      } catch (err: any) {
+        setState(prev => ({ 
+          ...prev, 
+          error: err.message, 
+          loading: false 
+        }));
+      }
+    };
+
     if (documentId) {
       fetchDocument();
     }
-  }, [documentId, fetchDocument, isOnline, session]);
+  }, [documentId]);
 
-  const handleRefresh = useCallback(() => {
-    fetchDocument();
-    toast({
-      title: "Refreshing Document",
-      description: "Document data is being reloaded.",
-    });
-  }, [fetchDocument, toast]);
+  // Handle online/offline status
+  useEffect(() => {
+    const handleOnline = () => setState(prev => ({ ...prev, isOnline: true }));
+    const handleOffline = () => setState(prev => ({ ...prev, isOnline: false }));
 
-  const isNetworkError = !isOnline && loading;
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
 
-  return {
-    document,
-    loading,
-    loadingError,
-    handleRefresh,
-    isNetworkError,
-  };
-};
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
-const formatDocumentDetail = (document: any): DocumentDetails => {
-  if (!document) {
-    throw new Error("Document is null or undefined");
-  }
-
-  if (!document.id) {
-    console.warn("Document ID is missing:", document);
-    throw new Error("Document ID is missing");
-  }
-
-  const formattedId = toString(document.id);
-
-  return {
-    id: formattedId,
-    title: document.title || 'Untitled Document',
-    type: document.type || 'Unknown Type',
-    storage_path: document.storage_path || '',
-    created_at: document.created_at || new Date().toISOString(),
-    updated_at: document.updated_at || new Date().toISOString(),
-    analysis: document.analysis || [],
-    comments: document.comments || [],
-    tasks: document.tasks || [],
-    versions: document.versions || [],
-    metadata: document.metadata || {},
-    parent_folder_id: document.parent_folder_id || null,
-    ai_processing_status: document.ai_processing_status || 'not_started',
-    ai_processing_stage: document.ai_processing_stage || null,
-  };
+  return state;
 };

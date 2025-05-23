@@ -12,6 +12,7 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { useTaskManager } from './hooks/useTaskManager';
+import { supabase } from '@/lib/supabase';
 
 interface TaskFormProps {
   documentId: string;
@@ -33,12 +34,19 @@ export const TaskForm: React.FC<TaskFormProps> = ({ documentId, onTaskCreated, o
     
     setIsSubmitting(true);
     try {
+      // Get current user for created_by field
+      const { data: { user } } = await supabase.auth.getUser();
+      const currentTime = new Date().toISOString();
+      
       await createTask({
         title,
         description,
         severity,
         status: 'pending',
         document_id: documentId,
+        created_by: user?.id || 'system',
+        created_at: currentTime,
+        updated_at: currentTime,
       });
       
       setTitle('');

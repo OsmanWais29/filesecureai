@@ -1,80 +1,59 @@
 
-import { useState } from "react";
-import { Client, Document } from "../../types";
-import { ClientTabs } from "./ClientTabs";
+import React from "react";
 import { ClientInfoPanel } from "../ClientInfo";
-import { DocumentsPanel } from "../DocumentsPanel";
-import { ClientActivityLog } from "../ClientActivityLog";
-import { ClientHeader } from "./ClientHeader";
+import { DocumentGrid } from "../DocumentGrid";
+import { FilePreview } from "../FilePreview";
+import { Client, Document } from "../../types";
 
 interface MobileTabletViewProps {
   client: Client;
   documents: Document[];
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
-  onBack?: () => void;
-  onDocumentOpen?: (documentId: string) => void;
-  onClientUpdate?: (updatedClient: Client) => void;
+  selectedDocumentId: string;
+  onClientUpdate: (updatedClient: Client) => void;
+  onDocumentSelect: (documentId: string) => void;
+  onDocumentOpen: (documentId: string) => void;
 }
 
-export const MobileTabletView = ({
+export const MobileTabletView: React.FC<MobileTabletViewProps> = ({
   client,
   documents,
-  activeTab,
-  setActiveTab,
-  onBack,
+  selectedDocumentId,
+  onClientUpdate,
+  onDocumentSelect,
   onDocumentOpen,
-  onClientUpdate
-}: MobileTabletViewProps) => {
-  // Add this state for document selection
-  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
-  
-  const handleDocumentSelect = (documentId: string) => {
-    setSelectedDocumentId(documentId);
-  };
-
-  const handleDocumentOpen = (documentId: string) => {
-    if (onDocumentOpen) {
-      onDocumentOpen(documentId);
-    }
-  };
+}) => {
+  const selectedDocument = documents.find(doc => doc.id === selectedDocumentId);
 
   return (
-    <div className="h-full flex flex-col bg-background">
-      <ClientHeader client={client} onBack={onBack} />
-      
-      <div className="mt-4 flex-1 overflow-hidden flex flex-col px-4">
-        <ClientTabs activeTab={activeTab} setActiveTab={setActiveTab} />
-        
-        <div className="mt-4 flex-1 overflow-auto">
-          {activeTab === "info" && (
-            <ClientInfoPanel 
-              client={client}
-              documents={documents}
-              onClientUpdate={onClientUpdate}
-              onDocumentSelect={handleDocumentSelect}
-              selectedDocumentId={selectedDocumentId}
-            />
-          )}
-          
-          {activeTab === "documents" && (
-            <DocumentsPanel 
-              documents={documents}
-              activeTab="all"
-              setActiveTab={() => {}}
-              onDocumentOpen={handleDocumentOpen}
-              onDocumentSelect={handleDocumentSelect}
-              selectedDocumentId={selectedDocumentId}
-            />
-          )}
-          
-          {activeTab === "activity" && (
-            <ClientActivityLog 
-              client={client}
-              documents={documents}
-            />
-          )}
-        </div>
+    <div className="flex flex-col h-full">
+      {/* Client Info Panel - Compact for mobile */}
+      <div className="flex-shrink-0 border-b">
+        <ClientInfoPanel
+          client={client}
+          tasks={[]} // Add empty tasks array
+          documentCount={documents.length} // Add document count
+          lastActivityDate={client.last_activity || new Date().toISOString()} // Add last activity date
+          documents={documents}
+          onClientUpdate={onClientUpdate}
+          onDocumentSelect={onDocumentSelect}
+          selectedDocumentId={selectedDocumentId}
+        />
+      </div>
+
+      {/* Documents Section */}
+      <div className="flex-1 p-4 overflow-auto">
+        {selectedDocument ? (
+          <FilePreview 
+            document={selectedDocument}
+            onDocumentOpen={onDocumentOpen}
+          />
+        ) : (
+          <DocumentGrid 
+            documents={documents}
+            onDocumentSelect={onDocumentSelect}
+            selectedDocumentId={selectedDocumentId}
+          />
+        )}
       </div>
     </div>
   );

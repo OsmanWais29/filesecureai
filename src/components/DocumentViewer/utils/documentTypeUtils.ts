@@ -1,128 +1,118 @@
 
-/**
- * Utility for detecting document types
- */
+import { toString } from '@/utils/typeSafetyUtils';
 
-import { DocumentDetails } from "../types";
-import { Document } from "@/components/DocumentList/types";
-
-/**
- * Check if a document is a Form 47 (Consumer Proposal)
- */
-export const isDocumentForm47 = (document: DocumentDetails | Document): boolean => {
-  // Check if document title contains form 47 or consumer proposal
-  if (document.title?.toLowerCase().includes('form 47') || 
-      document.title?.toLowerCase().includes('consumer proposal')) {
-    return true;
-  }
-
-  // Check if document ID is form47
-  if ('id' in document && document.id === 'form47') {
-    return true;
-  }
+export const getDocumentType = (document: any): string => {
+  const storagePath = toString(document?.storage_path);
+  const title = toString(document?.title);
+  const type = toString(document?.type);
   
-  // Check for form type in metadata
-  const metadata = document.metadata as Record<string, any> || {};
-  if (metadata.formType?.toLowerCase().includes('consumer') || 
-      metadata.formType?.toLowerCase().includes('proposal') ||
-      metadata.formType?.toLowerCase() === 'form-47') {
-    return true;
-  }
-  
-  // Check for form number in metadata
-  if (metadata.formNumber === '47') {
-    return true;
+  if (!storagePath && !title && !type) {
+    return 'unknown';
   }
 
-  // Check for form type in analysis extracted_info (if available)
-  if ('analysis' in document && Array.isArray(document.analysis)) {
-    const formType = document.analysis?.[0]?.content?.extracted_info?.formType;
-    if (formType?.toLowerCase().includes('consumer') || 
-        formType?.toLowerCase().includes('proposal') ||
-        formType?.toLowerCase() === 'form-47') {
-      return true;
-    }
-    
-    // Check for form number in extracted info
-    const formNumber = document.analysis?.[0]?.content?.extracted_info?.formNumber;
-    if (formNumber === '47') {
-      return true;
+  // Check file extension first
+  if (storagePath) {
+    const extension = storagePath.toLowerCase().split('.').pop();
+    switch (extension) {
+      case 'pdf':
+        return 'pdf';
+      case 'xlsx':
+      case 'xls':
+        return 'excel';
+      case 'docx':
+      case 'doc':
+        return 'word';
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+        return 'image';
+      default:
+        break;
     }
   }
 
-  return false;
+  // Check title for form indicators
+  const titleLower = title.toLowerCase();
+  const typeUrl = type.toLowerCase();
+  
+  if (titleLower.includes('form') || typeUrl.includes('form')) {
+    if (titleLower.includes('47') || typeUrl.includes('47')) {
+      return 'form-47';
+    }
+    return 'form';
+  }
+
+  // Return the explicit type if available, otherwise 'document'
+  return type || 'document';
 };
 
-/**
- * Check if a document is a Form 76 (Monthly Income Statement)
- */
-export const isDocumentForm76 = (document: DocumentDetails | Document): boolean => {
-  // Check if document title contains form 76
-  if (document.title?.toLowerCase().includes('form 76') || 
-      document.title?.toLowerCase().includes('monthly income statement')) {
-    return true;
-  }
-
-  // Check for form type in metadata
-  const metadata = document.metadata as Record<string, any> || {};
-  if (metadata.formType?.toLowerCase().includes('income') || 
-      metadata.formType === 'form-76') {
-    return true;
-  }
-  
-  // Check for form number in metadata
-  if (metadata.formNumber === '76') {
-    return true;
-  }
-
-  // Check for form type in analysis extracted_info (if available)
-  if ('analysis' in document && Array.isArray(document.analysis)) {
-    const formType = document.analysis?.[0]?.content?.extracted_info?.formType;
-    if (formType?.toLowerCase().includes('income') || 
-        formType?.toLowerCase() === 'form-76') {
-      return true;
-    }
-    
-    // Check for form number in extracted info
-    const formNumber = document.analysis?.[0]?.content?.extracted_info?.formNumber;
-    if (formNumber === '76') {
-      return true;
-    }
-  }
-
-  return false;
+export const isFormDocument = (document: any): boolean => {
+  const docType = getDocumentType(document);
+  return docType.startsWith('form');
 };
 
-/**
- * Extract client name from document with improved reliability
- */
-export const extractClientNameFromDocument = (document: DocumentDetails | Document): string | null => {
-  // Check in metadata first (most reliable source)
-  const metadata = document.metadata as Record<string, any> || {};
-  const clientName = metadata.client_name || metadata.clientName;
-  if (clientName) return clientName;
+export const getFormNumber = (document: any): string | null => {
+  const title = toString(document?.title);
+  const type = toString(document?.type);
   
-  // Check in analysis data if available
-  if ('analysis' in document && Array.isArray(document.analysis)) {
-    const extractedClientName = document.analysis?.[0]?.content?.extracted_info?.clientName;
-    if (extractedClientName) return extractedClientName;
+  // Look for form number patterns
+  const formNumberPattern = /form[\s-]?(\d+)/i;
+  
+  let match = title.match(formNumberPattern);
+  if (match) {
+    return match[1];
   }
   
-  // Check in document title for form-specific patterns
-  if (document.title) {
-    // For Form 76, client name is often part of the filename
-    if (isDocumentForm76(document)) {
-      const form76NameMatch = document.title.match(/form[- ]?76[- ]?(.+?)(?:\.|$)/i);
-      if (form76NameMatch && form76NameMatch[1]) {
-        return form76NameMatch[1].trim();
-      }
-    }
-    
-    // For Form 47, it's often associated with Josh Hart in this system
-    if (isDocumentForm47(document)) {
-      return "Josh Hart";
-    }
+  match = type.match(formNumberPattern);
+  if (match) {
+    return match[1];
   }
   
   return null;
+};
+
+export const getDocumentIcon = (document: any): string => {
+  const docType = getDocumentType(document);
+  
+  switch (docType) {
+    case 'pdf':
+      return '📄';
+    case 'excel':
+      return '📊';
+    case 'word':
+      return '📝';
+    case 'image':
+      return '🖼️';
+    case 'form-47':
+      return '📋';
+    case 'form':
+      return '📑';
+    default:
+      return '📄';
+  }
+};
+
+export const validateFormDocument = (document: any): { isValid: boolean; errors: string[] } => {
+  const errors: string[] = [];
+  const title = toString(document?.title);
+  const storagePath = toString(document?.storage_path);
+  
+  if (!title) {
+    errors.push('Document title is required');
+  }
+  
+  if (!storagePath) {
+    errors.push('Document storage path is required');
+  }
+  
+  const formNumber = getFormNumber(document);
+  if (isFormDocument(document) && !formNumber) {
+    errors.push('Form number could not be determined');
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
 };

@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { PDFViewerEmbed } from "./PDFViewerEmbed";
 import { supabase } from "@/lib/supabase";
+import { toString } from "@/utils/typeSafetyUtils";
 
 // Define the proper props interface matching the parent component's usage
 export interface DocumentPreviewTabProps {
@@ -31,7 +32,7 @@ export const DocumentPreviewTab: React.FC<DocumentPreviewTabProps> = ({
   const [fetchingUrl, setFetchingUrl] = useState<boolean>(false);
   
   // Extract storage path and check if it's a PDF
-  const storagePath = document.metadata?.storage_path || null;
+  const storagePath = toString(document.metadata?.storage_path);
   const isPdf = storagePath?.toLowerCase().endsWith('.pdf') || false;
   
   // When component mounts, try to get the PDF URL
@@ -229,10 +230,10 @@ export const DocumentPreviewTab: React.FC<DocumentPreviewTabProps> = ({
               <div className="text-muted-foreground">ID:</div>
               <div className="truncate" title={document.id}>{document.id}</div>
               
-              {document.metadata && document.metadata.formNumber && (
+              {document.metadata && toString(document.metadata.formNumber) && (
                 <>
                   <div className="text-muted-foreground">Form Number:</div>
-                  <div>{document.metadata.formNumber}</div>
+                  <div>{toString(document.metadata.formNumber)}</div>
                 </>
               )}
             </div>
