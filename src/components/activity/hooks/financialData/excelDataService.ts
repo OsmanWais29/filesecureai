@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { IncomeExpenseData } from "../../types";
+import { toString } from '@/utils/typeSafetyUtils';
 
 export const fetchLatestExcelData = async (clientId: string): Promise<IncomeExpenseData | null> => {
   try {
@@ -135,4 +136,30 @@ export const fetchLatestExcelData = async (clientId: string): Promise<IncomeExpe
     console.error("Error in fetchLatestExcelData:", error);
     return null;
   }
+};
+
+export const processExcelData = (data: unknown[]): ProcessedFinancialData[] => {
+  if (!Array.isArray(data)) {
+    return [];
+  }
+
+  return data.map((row, index) => {
+    const rowData = row as Record<string, unknown>;
+    
+    return {
+      id: `row-${index}`,
+      client_name: toString(rowData.client_name || rowData.name || rowData.Client || rowData.Name),
+      monthly_income: parseFloat(toString(rowData.monthly_income || rowData.income || '0')) || 0,
+      monthly_expenses: parseFloat(toString(rowData.monthly_expenses || rowData.expenses || '0')) || 0,
+      surplus_income: parseFloat(toString(rowData.surplus_income || rowData.surplus || '0')) || 0,
+      submission_date: toString(rowData.submission_date || new Date().toISOString()),
+      period_type: toString(rowData.period_type || 'current'),
+      status: toString(rowData.status || 'pending_review'),
+      metadata: {
+        source: 'excel_import',
+        row_index: index,
+        original_data: rowData
+      }
+    };
+  });
 };

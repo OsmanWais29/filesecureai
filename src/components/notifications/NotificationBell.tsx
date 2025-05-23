@@ -1,168 +1,255 @@
 
-import { useState, useEffect, useRef } from 'react';
-import { BellRing, X } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
-import { Badge } from '@/components/ui/badge';
-import { Notification, NotificationCategory } from '@/types/notifications';
-import { categoryConfig } from '@/lib/notifications/categoryConfig';
-import { 
-  Popover,
-  PopoverContent,
-  PopoverTrigger
-} from "@/components/ui/popover";
+import React, { useState, useEffect } from 'react';
+import { Bell, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { NotificationsList } from './NotificationsList';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { toString } from '@/utils/typeSafetyUtils';
 
-export const NotificationBell = () => {
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  created_at: string;
+  read: boolean;
+  priority?: string;
+  action_url?: string;
+  icon?: string;
+  metadata?: Record<string, unknown>;
+  category: NotificationCategory;
+}
+
+type NotificationCategory = 'file' | 'security' | 'task' | 'subscription' | 'reminder';
+
+export const NotificationBell: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isOpen, setIsOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchNotifications = async () => {
-      setIsLoading(true);
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-          setIsLoading(false);
-          return;
-        }
-
-        const { data, error } = await supabase
-          .from('notifications')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('read', false)
-          .order('created_at', { ascending: false })
-          .limit(5);
-
-        if (error) throw error;
-
-        // Transform database notifications to UI notifications
-        const transformedNotifications: Notification[] = data.map(dbNotification => {
-          // Extract category from metadata, defaulting to 'file_activity'
-          const category = (dbNotification.metadata?.category as NotificationCategory) || 'file_activity';
-          
-          return {
-            id: dbNotification.id,
-            title: dbNotification.title,
-            message: dbNotification.message,
-            type: dbNotification.type,
-            created_at: dbNotification.created_at,
-            read: dbNotification.read,
-            priority: dbNotification.priority || 'normal',
-            action_url: dbNotification.action_url || '',
-            icon: dbNotification.icon || '',
-            metadata: dbNotification.metadata || {},
-            category: category
-          };
-        });
-
-        setNotifications(transformedNotifications);
-        setUnreadCount(transformedNotifications.length);
-      } catch (error) {
-        console.error('Error fetching notifications:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchNotifications();
-
-    // Set up real-time subscription for new notifications
-    const subscription = supabase
-      .channel('notifications')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'notifications'
-      }, async (payload) => {
-        // Get the full notification object
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user && payload.new.user_id === user.id) {
-          const newDbNotification = payload.new;
-          const category = (newDbNotification.metadata?.category as NotificationCategory) || 'file_activity';
-          
-          // Create a notification with the correct structure
-          const newNotification: Notification = {
-            id: newDbNotification.id,
-            title: newDbNotification.title,
-            message: newDbNotification.message,
-            type: newDbNotification.type,
-            created_at: newDbNotification.created_at,
-            read: newDbNotification.read,
-            priority: newDbNotification.priority || 'normal',
-            action_url: newDbNotification.action_url || '',
-            icon: newDbNotification.icon || '',
-            metadata: newDbNotification.metadata || {},
-            category: category
-          };
-          
-          setNotifications(prev => [newNotification, ...prev]);
-          setUnreadCount(prev => prev + 1);
-        }
-      })
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
   }, []);
 
-  const handleMarkAsRead = async (notificationId: string) => {
+  const fetchNotifications = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      setLoading(true);
+      
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
 
-      // Update the notification in the database
-      await supabase
+      if (error) throw error;
+
+      const processedNotifications: Notification[] = (data || []).map((item: any) => ({
+        id: toString(item.id),
+        title: toString(item.title),
+        message: toString(item.message),
+        type: toString(item.type),
+        created_at: toString(item.created_at),
+        read: Boolean(item.read),
+        priority: toString(item.priority),
+        action_url: toString(item.action_url),
+        icon: toString(item.icon),
+        metadata: item.metadata || {},
+        category: getCategoryFromType(toString(item.type))
+      }));
+
+      setNotifications(processedNotifications);
+      setUnreadCount(processedNotifications.filter(n => !n.read).length);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      toast.error('Failed to load notifications');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getCategoryFromType = (type: string): NotificationCategory => {
+    if (type.includes('file') || type.includes('document')) return 'file';
+    if (type.includes('security') || type.includes('breach')) return 'security';
+    if (type.includes('task') || type.includes('assignment')) return 'task';
+    if (type.includes('subscription') || type.includes('trial')) return 'subscription';
+    if (type.includes('reminder') || type.includes('deadline')) return 'reminder';
+    return 'file'; // default
+  };
+
+  const markAsRead = async (notificationId: string) => {
+    try {
+      const { error } = await supabase
         .from('notifications')
         .update({ read: true })
         .eq('id', notificationId);
 
-      // Update local state
+      if (error) throw error;
+
       setNotifications(prev => 
-        prev.map(notification => 
-          notification.id === notificationId 
-            ? { ...notification, read: true } 
-            : notification
-        )
+        prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
       );
-      
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
       console.error('Error marking notification as read:', error);
-      toast("Failed to mark notification as read");
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
+      
+      if (unreadIds.length === 0) return;
+
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .in('id', unreadIds);
+
+      if (error) throw error;
+
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setUnreadCount(0);
+      toast.success('All notifications marked as read');
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      toast.error('Failed to mark notifications as read');
+    }
+  };
+
+  const getCategoryIcon = (category: NotificationCategory) => {
+    const icons = {
+      file: '📁',
+      security: '🛡️',
+      task: '✅',
+      subscription: '💳',
+      reminder: '⏰'
+    };
+    return icons[category] || '📬';
+  };
+
+  const getPriorityColor = (priority?: string) => {
+    switch (priority) {
+      case 'high': return 'border-l-red-500 bg-red-50';
+      case 'medium': return 'border-l-yellow-500 bg-yellow-50';
+      case 'low': return 'border-l-green-500 bg-green-50';
+      default: return 'border-l-blue-500 bg-blue-50';
     }
   };
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverTrigger asChild>
+    <Sheet open={isOpen} onOpenChange={setIsOpen}>
+      <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
-          <div className="relative p-1.5 rounded-full bg-primary/10 hover:bg-primary/20 transition-colors">
-            <BellRing className="h-5 w-5 text-primary" />
-          </div>
+          <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <Badge 
-              className="absolute -top-1.5 -right-1.5 px-1.5 h-5 min-w-5 flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-xs font-semibold shadow-sm"
-              variant="destructive"
+              variant="destructive" 
+              className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex items-center justify-center"
             >
-              {unreadCount > 9 ? '9+' : unreadCount}
+              {unreadCount > 99 ? '99+' : unreadCount}
             </Badge>
           )}
         </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
-        <NotificationsList 
-          notifications={notifications} 
-          isLoading={isLoading} 
-          onMarkAsRead={handleMarkAsRead}
-        />
-      </PopoverContent>
-    </Popover>
+      </SheetTrigger>
+      
+      <SheetContent side="right" className="w-full sm:w-96 p-0">
+        <div className="flex flex-col h-full">
+          <div className="p-4 border-b">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Notifications</h2>
+              {unreadCount > 0 && (
+                <Button variant="outline" size="sm" onClick={markAllAsRead}>
+                  Mark all read
+                </Button>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {unreadCount} unread notifications
+            </p>
+          </div>
+          
+          <ScrollArea className="flex-1">
+            {loading ? (
+              <div className="p-4 text-center text-muted-foreground">
+                Loading notifications...
+              </div>
+            ) : notifications.length === 0 ? (
+              <div className="p-4 text-center text-muted-foreground">
+                No notifications yet
+              </div>
+            ) : (
+              <div className="p-4 space-y-3">
+                {notifications.map((notification) => (
+                  <Card 
+                    key={notification.id} 
+                    className={`cursor-pointer transition-all hover:shadow-md border-l-4 ${
+                      !notification.read ? getPriorityColor(notification.priority) : 'border-l-gray-200'
+                    }`}
+                    onClick={() => !notification.read && markAsRead(notification.id)}
+                  >
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">
+                            {notification.icon || getCategoryIcon(notification.category)}
+                          </span>
+                          <CardTitle className="text-sm font-medium">
+                            {notification.title}
+                          </CardTitle>
+                        </div>
+                        {!notification.read && (
+                          <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />
+                        )}
+                      </div>
+                    </CardHeader>
+                    
+                    <CardContent className="pt-0">
+                      <CardDescription className="text-sm mb-2">
+                        {notification.message}
+                      </CardDescription>
+                      
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>
+                          {new Date(notification.created_at).toLocaleDateString()} at{' '}
+                          {new Date(notification.created_at).toLocaleTimeString([], { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
+                        </span>
+                        
+                        {notification.priority && (
+                          <Badge variant="outline" className="text-xs">
+                            {notification.priority}
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      {notification.action_url && (
+                        <Button 
+                          variant="link" 
+                          size="sm" 
+                          className="p-0 mt-2 h-auto text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(notification.action_url, '_blank');
+                          }}
+                        >
+                          View Details →
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 };

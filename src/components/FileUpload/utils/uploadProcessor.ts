@@ -2,6 +2,8 @@ import { simulateUploadProgress } from "./progressSimulator";
 import logger from "@/utils/logger";
 import { supabase } from "@/lib/supabase";
 import { logAIRequest } from "@/utils/aiRequestMonitor";
+import { FileInfo } from '@/components/client/types';
+import { toSafeSpreadObject } from '@/utils/typeSafetyUtils';
 
 /**
  * Simulates the processing stages of a document upload
@@ -367,4 +369,88 @@ const requiresAnalysis = (fileName: string): boolean => {
          lowerFileName.includes('notice of intention') ||
          lowerFileName.includes('bankruptcy') ||
          lowerFileName.includes('insolvency');
+};
+
+/**
+ * Processes uploaded files
+ * @param files The files to process
+ * @param parentFolderId Optional parent folder ID
+ * @returns An object containing success status and uploaded files
+ */
+export const processUploadedFiles = async (
+  files: FileInfo[],
+  parentFolderId?: string
+): Promise<{ success: boolean; uploadedFiles: FileInfo[] }> => {
+  try {
+    const uploadResults = await Promise.all(
+      files.map(async (file) => {
+        try {
+          // Upload file to storage
+          const { data: storageData, error: storageError } = await supabase.storage
+            .from('documents')
+            .upload(`${Date.now()}_${file.name}`, file.file);
+
+          if (storageError) throw storageError;
+
+          // Create document record
+          const documentData = {
+            title: file.name,
+            type: file.file.type,
+            storage_path: storageData.path,
+            parent_folder_id: parentFolderId,
+            size: file.file.size,
+            metadata: toSafeSpreadObject({
+              original_name: file.name,
+              upload_timestamp: new Date().toISOString(),
+              ...file
+            })
+          };
+
+          const { data: docData, error: docError } = await supabase
+            .from('documents')
+            .insert(documentData)
+            .select()
+            .single();
+
+          if (docError) throw docError;
+
+          return {
+            ...file,
+            documentId: docData.id,
+            status: 'completed'
+          };
+        } catch (error) {
+          console.error('Error processing file:', error);
+          return {
+            ...file,
+            status: 'error',
+            error: error instanceof Error ? error.message : 'Upload failed'
+          };
+        }
+      })
+    );
+
+    const successfulUploads = uploadResults.filter(file => file.status === 'completed');
+    const failedUploads = uploadResults.filter(file => file.status === 'error');
+
+    if (failedUploads.length > 0) {
+      toast.error(`${failedUploads.length} files failed to upload`);
+    }
+
+    if (successfulUploads.length > 0) {
+      toast.success(`${successfulUploads.length} files uploaded successfully`);
+    }
+
+    return {
+      success: failedUploads.length === 0,
+      uploadedFiles: uploadResults
+    };
+  } catch (error) {
+    console.error('Error in processUploadedFiles:', error);
+    toast.error('Failed to process uploaded files');
+    return {
+      success: false,
+      uploadedFiles: []
+    };
+  }
 };
