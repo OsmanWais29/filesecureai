@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,8 +8,28 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { MainHeader } from "@/components/header/MainHeader";
 import { MainSidebar } from "@/components/layout/MainSidebar";
-import { ChromePicker } from 'react-color';
 import { safeStringCast } from '@/utils/typeGuards';
+
+// Simple color picker component as fallback
+const SimpleColorPicker = ({ color, onChange }: { color: string; onChange: (color: string) => void }) => {
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        type="color"
+        value={color}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-12 h-10 rounded border border-input cursor-pointer"
+      />
+      <Input
+        type="text"
+        value={color}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="#000000"
+        className="flex-1"
+      />
+    </div>
+  );
+};
 
 export const ConBrandingPage = () => {
   const [logoUrl, setLogoUrl] = useState("");
@@ -142,17 +163,17 @@ export const ConBrandingPage = () => {
             <div>
               <div className="mb-4">
                 <Label>Primary Color</Label>
-                <ChromePicker
+                <SimpleColorPicker
                   color={primaryColor}
-                  onChangeComplete={(color) => setPrimaryColor(color.hex)}
+                  onChange={setPrimaryColor}
                 />
               </div>
 
               <div className="mb-4">
                 <Label>Secondary Color</Label>
-                <ChromePicker
+                <SimpleColorPicker
                   color={secondaryColor}
-                  onChangeComplete={(color) => setSecondaryColor(color.hex)}
+                  onChange={setSecondaryColor}
                 />
               </div>
             </div>
