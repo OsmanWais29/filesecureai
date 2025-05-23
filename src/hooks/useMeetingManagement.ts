@@ -1,24 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { withFreshToken } from "@/utils/jwt/tokenManager";
-
-export interface MeetingData {
-  id: string;
-  title: string;
-  description?: string;
-  start_time: string;
-  end_time: string;
-  client_id?: string;
-  attendees?: any[];
-  meeting_type?: string;
-  status: 'scheduled' | 'completed' | 'cancelled' | 'rescheduled';
-  location?: string;
-  created_at?: string;
-  updated_at?: string;
-  metadata?: Record<string, any>;
-}
+import { MeetingData } from '@/types/client';
+import { ensureMeetingType } from '@/utils/typeGuards';
 
 export function useMeetingManagement() {
   const [meetings, setMeetings] = useState<MeetingData[]>([]);
@@ -26,9 +11,9 @@ export function useMeetingManagement() {
   const [stats, setStats] = useState({
     total: 0,
     scheduled: 0,
+    in_progress: 0,
     completed: 0,
-    cancelled: 0,
-    rescheduled: 0
+    cancelled: 0
   });
   const { toast } = useToast();
 
@@ -47,15 +32,16 @@ export function useMeetingManagement() {
         }
         
         if (data) {
-          setMeetings(data as MeetingData[]);
+          const typedMeetings = data.map(ensureMeetingType);
+          setMeetings(typedMeetings);
           
           // Calculate stats
           const newStats = {
-            total: data.length,
-            scheduled: data.filter(meeting => meeting.status === 'scheduled').length,
-            completed: data.filter(meeting => meeting.status === 'completed').length,
-            cancelled: data.filter(meeting => meeting.status === 'cancelled').length,
-            rescheduled: data.filter(meeting => meeting.status === 'rescheduled').length
+            total: typedMeetings.length,
+            scheduled: typedMeetings.filter(meeting => meeting.status === 'scheduled').length,
+            in_progress: typedMeetings.filter(meeting => meeting.status === 'in_progress').length,
+            completed: typedMeetings.filter(meeting => meeting.status === 'completed').length,
+            cancelled: typedMeetings.filter(meeting => meeting.status === 'cancelled').length
           };
           
           setStats(newStats);
@@ -85,22 +71,23 @@ export function useMeetingManagement() {
       if (error) throw error;
       
       if (data && data.length > 0) {
-        setMeetings(prevMeetings => [data[0], ...prevMeetings]);
+        const newMeeting = ensureMeetingType(data[0]);
+        setMeetings(prevMeetings => [newMeeting, ...prevMeetings]);
         fetchMeetings(); // Refresh all meetings to update stats
         
         toast({
-          title: "Meeting scheduled",
+          title: "Meeting added",
           description: `${meetingData.title} has been scheduled successfully.`,
         });
         
-        return data[0];
+        return newMeeting;
       }
       
       return null;
     } catch (error) {
       console.error('Error adding meeting:', error);
       toast({
-        title: "Failed to schedule meeting",
+        title: "Failed to add meeting",
         description: "There was a problem scheduling the meeting.",
         variant: "destructive"
       });

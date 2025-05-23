@@ -1,3 +1,4 @@
+
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useAuthState } from "@/hooks/useAuthState";
@@ -176,7 +177,7 @@ function App() {
       } />
       <Route path="/trustee/dashboard" element={
         <AuthRoleGuard requiredRole="trustee" redirectPath="/login">
-          <CRMPage />
+          <Index />
         </AuthRoleGuard>
       } />
       <Route path="/documents" element={
@@ -184,17 +185,17 @@ function App() {
           <DocumentsPage />
         </AuthRoleGuard>
       } />
-      <Route path="/document-viewer/:documentId" element={
+      <Route path="/document/:id" element={
         <AuthRoleGuard requiredRole="trustee" redirectPath="/login">
           <DocumentViewerPage />
         </AuthRoleGuard>
       } />
-      <Route path="/client-viewer/:clientId" element={
+      <Route path="/client/:id" element={
         <AuthRoleGuard requiredRole="trustee" redirectPath="/login">
           <ClientViewerPage />
         </AuthRoleGuard>
       } />
-      <Route path="/calendar-fullscreen" element={
+      <Route path="/calendar" element={
         <AuthRoleGuard requiredRole="trustee" redirectPath="/login">
           <CalendarFullscreenPage />
         </AuthRoleGuard>
@@ -209,29 +210,14 @@ function App() {
           <AnalyticsPage />
         </AuthRoleGuard>
       } />
-      <Route path="/converter" element={
-        <AuthRoleGuard requiredRole="trustee" redirectPath="/login">
-          <ConverterPage />
-        </AuthRoleGuard>
-      } />
       <Route path="/e-filing" element={
         <AuthRoleGuard requiredRole="trustee" redirectPath="/login">
           <EFilingPage />
         </AuthRoleGuard>
       } />
-      <Route path="/notifications" element={
-        <AuthRoleGuard requiredRole="trustee" redirectPath="/login">
-          <NotificationsPage />
-        </AuthRoleGuard>
-      } />
       <Route path="/profile" element={
         <AuthRoleGuard requiredRole="trustee" redirectPath="/login">
           <ProfilePage />
-        </AuthRoleGuard>
-      } />
-      <Route path="/settings" element={
-        <AuthRoleGuard requiredRole="trustee" redirectPath="/login">
-          <SettingsPage />
         </AuthRoleGuard>
       } />
       <Route path="/support" element={
@@ -244,9 +230,29 @@ function App() {
           <NewSupportTicket />
         </AuthRoleGuard>
       } />
-      <Route path="/support/:postId" element={
+      <Route path="/support/post/:id" element={
         <AuthRoleGuard requiredRole="trustee" redirectPath="/login">
           <SupportPostDetail />
+        </AuthRoleGuard>
+      } />
+      <Route path="/settings" element={
+        <AuthRoleGuard requiredRole="trustee" redirectPath="/login">
+          <SettingsPage />
+        </AuthRoleGuard>
+      } />
+      <Route path="/notifications" element={
+        <AuthRoleGuard requiredRole="trustee" redirectPath="/login">
+          <NotificationsPage />
+        </AuthRoleGuard>
+      } />
+      <Route path="/con-branding" element={
+        <AuthRoleGuard requiredRole="trustee" redirectPath="/login">
+          <ConBrandingPage />
+        </AuthRoleGuard>
+      } />
+      <Route path="/converter" element={
+        <AuthRoleGuard requiredRole="trustee" redirectPath="/login">
+          <ConverterPage />
         </AuthRoleGuard>
       } />
       <Route path="/meetings" element={
@@ -254,12 +260,12 @@ function App() {
           <MeetingsPage />
         </AuthRoleGuard>
       } />
-      <Route path="/SAFA" element={
+      <Route path="/safa" element={
         <AuthRoleGuard requiredRole="trustee" redirectPath="/login">
           <SAFAPage />
         </AuthRoleGuard>
       } />
-
+      
       {/* 404 catch-all route */}
       <Route path="*" element={<NotFound />} />
     </Routes>

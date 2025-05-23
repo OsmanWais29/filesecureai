@@ -2,8 +2,8 @@ import { simulateUploadProgress } from "./progressSimulator";
 import logger from "@/utils/logger";
 import { supabase } from "@/lib/supabase";
 import { logAIRequest } from "@/utils/aiRequestMonitor";
-import { FileInfo } from '@/components/client/types';
-import { toSafeSpreadObject, toString } from '@/utils/typeSafetyUtils';
+import { FileInfo } from '@/types/client';
+import { ensureSpreadableObject } from '@/utils/typeGuards';
 import { toast } from 'sonner';
 
 // Type guard for ensuring object is spreadable

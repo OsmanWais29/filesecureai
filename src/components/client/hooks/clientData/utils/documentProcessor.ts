@@ -1,6 +1,6 @@
 
 import { toast } from "sonner";
-import { Client, Document } from "../../../types";
+import { Client, Document } from "@/types/client";
 import { 
   fetchClientDocuments, 
   fetchForm47Documents, 
@@ -12,30 +12,7 @@ import {
   standardizeClientName, 
   getOrCreateClientRecord 
 } from "@/utils/documents/clientUtils";
-
-// Type guard to ensure proper Document type
-const ensureDocumentType = (doc: unknown): Document => {
-  const docObj = doc as Record<string, any>;
-  return {
-    id: String(docObj.id || ''),
-    title: String(docObj.title || 'Untitled'),
-    type: String(docObj.type || 'document'),
-    created_at: String(docObj.created_at || new Date().toISOString()),
-    updated_at: String(docObj.updated_at || new Date().toISOString()),
-    storage_path: docObj.storage_path ? String(docObj.storage_path) : undefined,
-    size: typeof docObj.size === 'number' ? docObj.size : undefined,
-    metadata: docObj.metadata || {},
-    parent_folder_id: docObj.parent_folder_id ? String(docObj.parent_folder_id) : undefined,
-    user_id: docObj.user_id ? String(docObj.user_id) : undefined,
-    is_folder: Boolean(docObj.is_folder),
-    folder_type: docObj.folder_type ? String(docObj.folder_type) : undefined,
-    deadlines: docObj.deadlines || [],
-    status: docObj.status ? String(docObj.status) : undefined,
-    ai_processing_status: docObj.ai_processing_status ? String(docObj.ai_processing_status) : undefined,
-    tasks: docObj.tasks || [],
-    description: docObj.description ? String(docObj.description) : undefined
-  };
-};
+import { ensureDocumentType } from "@/utils/typeGuards";
 
 /**
  * Processes client documents and returns client data and documents
