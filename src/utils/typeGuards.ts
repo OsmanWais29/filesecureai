@@ -196,8 +196,7 @@ export const ensureTaskType = (task: any): import('@/types/client').Task => {
     due_date: task.due_date ? safeStringCast(task.due_date) : undefined,
     created_at: safeStringCast(task.created_at || new Date().toISOString()),
     updated_at: safeStringCast(task.updated_at || new Date().toISOString()),
-    client_id: task.client_id ? safeStringCast(task.client_id) : undefined,
-    metadata: safeObjectCast(task.metadata)
+    client_id: task.client_id ? safeStringCast(task.client_id) : undefined
   };
 };
 
@@ -206,4 +205,3 @@ export const convertClientArray = (clients: any[]): import('@/types/client').Cli
   if (!Array.isArray(clients)) return [];
   return clients.map(convertToClientProfile).filter(client => client.id && client.name);
 };
-
