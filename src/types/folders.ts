@@ -1,4 +1,5 @@
 
+
 export interface FolderStructure {
   id: string;
   name: string;
@@ -39,6 +40,11 @@ export interface FolderRecommendation {
   description: string;
   confidence: number;
   action: () => void;
+  documentId: string;
+  suggestedFolderId: string;
+  documentTitle: string;
+  folderPath: string[];
+  reason: string;
 }
 
 export interface FolderAIRecommendation {
@@ -51,4 +57,6 @@ export interface FolderAIRecommendation {
   suggestedAction: string;
   confidence: number;
   createdAt: string;
+  suggestedPath: string[];
+  reason: string;
 }

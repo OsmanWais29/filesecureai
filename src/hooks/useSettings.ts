@@ -1,7 +1,9 @@
 
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
+import { convertToUserSettings } from '@/utils/typeGuards';
 
 interface Settings {
   timeZone: string;
@@ -59,20 +61,8 @@ export function useSettings() {
       }
 
       if (data) {
-        setSettings({
-          timeZone: data.time_zone || defaultSettings.timeZone,
-          language: data.language || defaultSettings.language,
-          autoSave: data.auto_save ?? defaultSettings.autoSave,
-          compactView: data.compact_view ?? defaultSettings.compactView,
-          documentSync: data.document_sync ?? defaultSettings.documentSync,
-          defaultCurrency: data.default_currency || defaultSettings.defaultCurrency,
-          twoFactorEnabled: data.two_factor_enabled ?? defaultSettings.twoFactorEnabled,
-          sessionTimeout: data.session_timeout || defaultSettings.sessionTimeout,
-          ipWhitelisting: data.ip_whitelisting ?? defaultSettings.ipWhitelisting,
-          loginNotifications: data.login_notifications ?? defaultSettings.loginNotifications,
-          documentEncryption: data.document_encryption ?? defaultSettings.documentEncryption,
-          passwordExpiry: data.password_expiry || defaultSettings.passwordExpiry
-        });
+        const safeSettings = convertToUserSettings(data);
+        setSettings(safeSettings);
       }
     } catch (error) {
       console.error('Error loading settings:', error);

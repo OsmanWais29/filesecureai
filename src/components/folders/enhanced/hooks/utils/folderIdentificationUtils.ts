@@ -140,3 +140,87 @@ export function generateFolderSuggestions(documents: Document[]): string[] {
   
   return suggestions.slice(0, 10); // Limit to top 10 suggestions
 }
+
+// Additional utility functions for folder recommendations
+export function isDocumentForm47(document: Document, analysisData?: any): boolean {
+  const title = document.title?.toLowerCase() || '';
+  const metadata = document.metadata || {};
+  const formType = metadata.form_type || '';
+  
+  return title.includes('form 47') || 
+         title.includes('consumer proposal') ||
+         formType.includes('form-47') ||
+         formType.includes('consumer-proposal');
+}
+
+export function isDocumentForm76(document: Document, analysisData?: any): boolean {
+  const title = document.title?.toLowerCase() || '';
+  const metadata = document.metadata || {};
+  const formType = metadata.form_type || '';
+  
+  return title.includes('form 76') || 
+         title.includes('statement of affairs') ||
+         formType.includes('form-76') ||
+         formType.includes('statement-affairs');
+}
+
+export function isFinancialDocument(document: Document): boolean {
+  const title = document.title?.toLowerCase() || '';
+  const financialKeywords = [
+    'financial', 'budget', 'income', 'expense', 'bank', 'statement',
+    'receipt', 'invoice', 'tax', 'payroll', 'salary', 'wage'
+  ];
+  
+  return financialKeywords.some(keyword => title.includes(keyword));
+}
+
+export function findAppropriateSubfolder(
+  clientFolder: any, 
+  isForm47: boolean, 
+  isForm76: boolean, 
+  isFinancial: boolean
+): { targetFolderId: string; folderPath: string[]; suggestedSubfolderName?: string } {
+  const basePath = [clientFolder.name];
+  
+  if (isForm47) {
+    return {
+      targetFolderId: clientFolder.id,
+      folderPath: [...basePath, 'Forms', 'Form 47 - Consumer Proposal'],
+      suggestedSubfolderName: 'Form 47 - Consumer Proposal'
+    };
+  }
+  
+  if (isForm76) {
+    return {
+      targetFolderId: clientFolder.id,
+      folderPath: [...basePath, 'Forms', 'Form 76 - Statement of Affairs'],
+      suggestedSubfolderName: 'Form 76 - Statement of Affairs'
+    };
+  }
+  
+  if (isFinancial) {
+    return {
+      targetFolderId: clientFolder.id,
+      folderPath: [...basePath, 'Financial Documents'],
+      suggestedSubfolderName: 'Financial Documents'
+    };
+  }
+  
+  return {
+    targetFolderId: clientFolder.id,
+    folderPath: basePath
+  };
+}
+
+export function generateFolderRecommendations(document: Document, availableFolders: any[]): any {
+  // Implementation for generating folder recommendations
+  const clientName = extractClientName(document.title);
+  
+  return {
+    documentId: document.id,
+    documentTitle: document.title,
+    suggestedFolderId: availableFolders[0]?.id || '',
+    folderPath: [clientName || 'Unknown Client'],
+    reason: 'Based on document content analysis'
+  };
+}
