@@ -98,13 +98,22 @@ export const convertToClientDocument = (doc: any): import('@/types/client').Docu
   };
 };
 
+// Safe status casting with fallback to default values
+const safeClientStatusCast = (value: any): "active" | "inactive" | "pending" => {
+  const stringValue = safeStringCast(value);
+  if (stringValue === "active" || stringValue === "inactive" || stringValue === "pending") {
+    return stringValue;
+  }
+  return "active"; // Default fallback
+};
+
 export const convertToClientProfile = (profile: any): import('@/types/client').Client => {
   return {
     id: safeStringCast(profile.id || ''),
     name: safeStringCast(profile.name || ''),
     email: profile.email ? safeStringCast(profile.email) : undefined,
     phone: profile.phone ? safeStringCast(profile.phone) : undefined,
-    status: safeStringCast(profile.status || 'active'),
+    status: safeClientStatusCast(profile.status),
     created_at: safeStringCast(profile.created_at || new Date().toISOString()),
     updated_at: safeStringCast(profile.updated_at || new Date().toISOString()),
     metadata: safeObjectCast(profile.metadata)
@@ -122,6 +131,15 @@ export const convertDocumentListToClientDocument = (doc: any): import('@/types/c
   return convertToClientDocument(doc);
 };
 
+// Safe meeting status casting
+const safeMeetingStatusCast = (value: any): "scheduled" | "in_progress" | "completed" | "cancelled" => {
+  const stringValue = safeStringCast(value);
+  if (stringValue === "scheduled" || stringValue === "in_progress" || stringValue === "completed" || stringValue === "cancelled") {
+    return stringValue;
+  }
+  return "scheduled"; // Default fallback
+};
+
 // Meeting type conversion
 export const ensureMeetingType = (meeting: any): import('@/types/client').MeetingData => {
   return {
@@ -129,7 +147,7 @@ export const ensureMeetingType = (meeting: any): import('@/types/client').Meetin
     title: safeStringCast(meeting.title || ''),
     start_time: safeStringCast(meeting.start_time || new Date().toISOString()),
     end_time: safeStringCast(meeting.end_time || new Date().toISOString()),
-    status: safeStringCast(meeting.status || 'scheduled'),
+    status: safeMeetingStatusCast(meeting.status),
     client_id: meeting.client_id ? safeStringCast(meeting.client_id) : undefined,
     description: meeting.description ? safeStringCast(meeting.description) : undefined,
     meeting_type: meeting.meeting_type ? safeStringCast(meeting.meeting_type) : undefined,
@@ -146,14 +164,31 @@ export const ensureClientType = (client: any): import('@/types/client').Client =
   return convertToClientProfile(client);
 };
 
+// Safe task status and priority casting
+const safeTaskStatusCast = (value: any): "pending" | "in_progress" | "completed" | "cancelled" => {
+  const stringValue = safeStringCast(value);
+  if (stringValue === "pending" || stringValue === "in_progress" || stringValue === "completed" || stringValue === "cancelled") {
+    return stringValue;
+  }
+  return "pending"; // Default fallback
+};
+
+const safeTaskPriorityCast = (value: any): "low" | "medium" | "high" => {
+  const stringValue = safeStringCast(value);
+  if (stringValue === "low" || stringValue === "medium" || stringValue === "high") {
+    return stringValue;
+  }
+  return "medium"; // Default fallback
+};
+
 // Task type conversion
 export const ensureTaskType = (task: any): import('@/types/client').Task => {
   return {
     id: safeStringCast(task.id || ''),
     title: safeStringCast(task.title || ''),
     description: task.description ? safeStringCast(task.description) : undefined,
-    status: safeStringCast(task.status || 'pending'),
-    priority: safeStringCast(task.priority || 'medium'),
+    status: safeTaskStatusCast(task.status),
+    priority: safeTaskPriorityCast(task.priority),
     assigned_to: task.assigned_to ? safeStringCast(task.assigned_to) : undefined,
     created_by: task.created_by ? safeStringCast(task.created_by) : undefined,
     due_date: task.due_date ? safeStringCast(task.due_date) : undefined,
