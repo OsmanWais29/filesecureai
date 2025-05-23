@@ -14,6 +14,7 @@ interface FolderItemProps {
   documents: any[];
   onFolderSelect: (folderId: string) => void;
   onDocumentSelect: (documentId: string) => void;
+  onDocumentOpen: (documentId: string) => void;
   onRenameDocument: (document: Document) => void;
   level?: number;
 }
@@ -23,6 +24,7 @@ export const FolderItem = ({
   documents, 
   onFolderSelect, 
   onDocumentSelect, 
+  onDocumentOpen,
   onRenameDocument, 
   level = 0 
 }: FolderItemProps) => {
@@ -40,10 +42,6 @@ export const FolderItem = ({
   const handleToggle = () => {
     setIsExpanded(!isExpanded);
     onFolderSelect(folder.id);
-  };
-
-  const handleDocumentOpen = (documentId: string) => {
-    onDocumentSelect(documentId);
   };
 
   const indentLevel = level * 20;
@@ -98,6 +96,7 @@ export const FolderItem = ({
               documents={safeDocuments}
               onFolderSelect={onFolderSelect}
               onDocumentSelect={onDocumentSelect}
+              onDocumentOpen={onDocumentOpen}
               onRenameDocument={onRenameDocument}
               level={level + 1}
             />
@@ -108,7 +107,7 @@ export const FolderItem = ({
             <DocumentItem
               key={document.id}
               document={document}
-              onOpen={handleDocumentOpen}
+              onOpen={onDocumentOpen}
               onRename={onRenameDocument}
               level={level + 1}
             />

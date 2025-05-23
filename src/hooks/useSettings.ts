@@ -1,45 +1,55 @@
 
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
-import { convertToUserSettings } from '@/utils/typeGuards';
 
-interface Settings {
+interface UserSettings {
   timeZone: string;
+  setTimeZone: (value: string) => void;
   language: string;
+  setLanguage: (value: string) => void;
   autoSave: boolean;
+  setAutoSave: (value: boolean) => void;
   compactView: boolean;
+  setCompactView: (value: boolean) => void;
   documentSync: boolean;
+  setDocumentSync: (value: boolean) => void;
   defaultCurrency: string;
+  setDefaultCurrency: (value: string) => void;
   twoFactorEnabled: boolean;
+  setTwoFactorEnabled: (value: boolean) => void;
   sessionTimeout: string;
+  setSessionTimeout: (value: string) => void;
   ipWhitelisting: boolean;
+  setIpWhitelisting: (value: boolean) => void;
   loginNotifications: boolean;
+  setLoginNotifications: (value: boolean) => void;
   documentEncryption: boolean;
+  setDocumentEncryption: (value: boolean) => void;
   passwordExpiry: string;
+  setPasswordExpiry: (value: string) => void;
 }
 
-const defaultSettings: Settings = {
-  timeZone: 'UTC',
-  language: 'en',
-  autoSave: true,
-  compactView: false,
-  documentSync: true,
-  defaultCurrency: 'CAD',
-  twoFactorEnabled: false,
-  sessionTimeout: '30',
-  ipWhitelisting: false,
-  loginNotifications: true,
-  documentEncryption: true,
-  passwordExpiry: '90'
-};
-
-export function useSettings() {
-  const [settings, setSettings] = useState<Settings>(defaultSettings);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+export const useSettings = () => {
   const { toast } = useToast();
+  
+  // General Settings
+  const [timeZone, setTimeZone] = useState("UTC");
+  const [language, setLanguage] = useState("en");
+  const [autoSave, setAutoSave] = useState(true);
+  const [compactView, setCompactView] = useState(false);
+  const [documentSync, setDocumentSync] = useState(true);
+  const [defaultCurrency, setDefaultCurrency] = useState("CAD");
+  
+  // Security Settings
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [sessionTimeout, setSessionTimeout] = useState("30");
+  const [ipWhitelisting, setIpWhitelisting] = useState(false);
+  const [loginNotifications, setLoginNotifications] = useState(true);
+  const [documentEncryption, setDocumentEncryption] = useState(true);
+  const [passwordExpiry, setPasswordExpiry] = useState("90");
+  
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadSettings();
@@ -61,8 +71,19 @@ export function useSettings() {
       }
 
       if (data) {
-        const safeSettings = convertToUserSettings(data);
-        setSettings(safeSettings);
+        const settings = data.settings || {};
+        setTimeZone(settings.timeZone || "UTC");
+        setLanguage(settings.language || "en");
+        setAutoSave(settings.autoSave !== undefined ? settings.autoSave : true);
+        setCompactView(settings.compactView !== undefined ? settings.compactView : false);
+        setDocumentSync(settings.documentSync !== undefined ? settings.documentSync : true);
+        setDefaultCurrency(settings.defaultCurrency || "CAD");
+        setTwoFactorEnabled(settings.twoFactorEnabled !== undefined ? settings.twoFactorEnabled : false);
+        setSessionTimeout(settings.sessionTimeout || "30");
+        setIpWhitelisting(settings.ipWhitelisting !== undefined ? settings.ipWhitelisting : false);
+        setLoginNotifications(settings.loginNotifications !== undefined ? settings.loginNotifications : true);
+        setDocumentEncryption(settings.documentEncryption !== undefined ? settings.documentEncryption : true);
+        setPasswordExpiry(settings.passwordExpiry || "90");
       }
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -72,32 +93,35 @@ export function useSettings() {
         variant: "destructive"
       });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const save = async () => {
+  const saveSettings = async () => {
     try {
-      setSaving(true);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      if (!user) return;
+
+      const settings = {
+        timeZone,
+        language,
+        autoSave,
+        compactView,
+        documentSync,
+        defaultCurrency,
+        twoFactorEnabled,
+        sessionTimeout,
+        ipWhitelisting,
+        loginNotifications,
+        documentEncryption,
+        passwordExpiry
+      };
 
       const { error } = await supabase
         .from('user_settings')
         .upsert({
           user_id: user.id,
-          time_zone: settings.timeZone,
-          language: settings.language,
-          auto_save: settings.autoSave,
-          compact_view: settings.compactView,
-          document_sync: settings.documentSync,
-          default_currency: settings.defaultCurrency,
-          two_factor_enabled: settings.twoFactorEnabled,
-          session_timeout: settings.sessionTimeout,
-          ip_whitelisting: settings.ipWhitelisting,
-          login_notifications: settings.loginNotifications,
-          document_encryption: settings.documentEncryption,
-          password_expiry: settings.passwordExpiry,
+          settings,
           updated_at: new Date().toISOString()
         });
 
@@ -114,41 +138,39 @@ export function useSettings() {
         description: "Please try again",
         variant: "destructive"
       });
-    } finally {
-      setSaving(false);
     }
   };
 
-  return {
-    // Settings values
-    timeZone: settings.timeZone,
-    setTimeZone: (value: string) => setSettings(prev => ({ ...prev, timeZone: value })),
-    language: settings.language,
-    setLanguage: (value: string) => setSettings(prev => ({ ...prev, language: value })),
-    autoSave: settings.autoSave,
-    setAutoSave: (value: boolean) => setSettings(prev => ({ ...prev, autoSave: value })),
-    compactView: settings.compactView,
-    setCompactView: (value: boolean) => setSettings(prev => ({ ...prev, compactView: value })),
-    documentSync: settings.documentSync,
-    setDocumentSync: (value: boolean) => setSettings(prev => ({ ...prev, documentSync: value })),
-    defaultCurrency: settings.defaultCurrency,
-    setDefaultCurrency: (value: string) => setSettings(prev => ({ ...prev, defaultCurrency: value })),
-    twoFactorEnabled: settings.twoFactorEnabled,
-    setTwoFactorEnabled: (value: boolean) => setSettings(prev => ({ ...prev, twoFactorEnabled: value })),
-    sessionTimeout: settings.sessionTimeout,
-    setSessionTimeout: (value: string) => setSettings(prev => ({ ...prev, sessionTimeout: value })),
-    ipWhitelisting: settings.ipWhitelisting,
-    setIpWhitelisting: (value: boolean) => setSettings(prev => ({ ...prev, ipWhitelisting: value })),
-    loginNotifications: settings.loginNotifications,
-    setLoginNotifications: (value: boolean) => setSettings(prev => ({ ...prev, loginNotifications: value })),
-    documentEncryption: settings.documentEncryption,
-    setDocumentEncryption: (value: boolean) => setSettings(prev => ({ ...prev, documentEncryption: value })),
-    passwordExpiry: settings.passwordExpiry,
-    setPasswordExpiry: (value: string) => setSettings(prev => ({ ...prev, passwordExpiry: value })),
-    
-    // Methods
-    save,
-    loading,
-    saving
+  const userSettings: UserSettings = {
+    timeZone,
+    setTimeZone,
+    language,
+    setLanguage,
+    autoSave,
+    setAutoSave,
+    compactView,
+    setCompactView,
+    documentSync,
+    setDocumentSync,
+    defaultCurrency,
+    setDefaultCurrency,
+    twoFactorEnabled,
+    setTwoFactorEnabled,
+    sessionTimeout,
+    setSessionTimeout,
+    ipWhitelisting,
+    setIpWhitelisting,
+    loginNotifications,
+    setLoginNotifications,
+    documentEncryption,
+    setDocumentEncryption,
+    passwordExpiry,
+    setPasswordExpiry
   };
-}
+
+  return {
+    settings: userSettings,
+    saveSettings,
+    isLoading
+  };
+};

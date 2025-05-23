@@ -7,6 +7,7 @@ interface FolderListProps {
   folders: FolderStructure[];
   onFolderSelect: (folderId: string) => void;
   onDocumentSelect: (documentId: string) => void;
+  onDocumentOpen: (documentId: string) => void;
   onRenameDocument: (document: any) => void;
   selectedFolderId?: string;
   expandedFolders: Record<string, boolean>;
@@ -23,6 +24,7 @@ export const FolderList = ({
   folders,
   onFolderSelect,
   onDocumentSelect,
+  onDocumentOpen,
   onRenameDocument,
   documents = []
 }: FolderListProps) => {
@@ -35,6 +37,7 @@ export const FolderList = ({
           documents={documents}
           onFolderSelect={onFolderSelect}
           onDocumentSelect={onDocumentSelect}
+          onDocumentOpen={onDocumentOpen}
           onRenameDocument={onRenameDocument}
         />
       ))}

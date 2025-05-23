@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Bell, Check, X } from 'lucide-react';
 import { MainHeader } from '@/components/header/MainHeader';
 import { MainSidebar } from '@/components/layout/MainSidebar';
+import { safeStringCast } from '@/utils/typeGuards';
 
 interface Notification {
   id: string;
@@ -40,7 +41,21 @@ export const NotificationsPage = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setNotifications(data || []);
+      
+      // Transform raw data to Notification type with type safety
+      const transformedNotifications: Notification[] = (data || []).map((item): Notification => ({
+        id: safeStringCast(item.id),
+        title: safeStringCast(item.title),
+        message: safeStringCast(item.message),
+        type: safeStringCast(item.type),
+        read: Boolean(item.read),
+        created_at: safeStringCast(item.created_at),
+        priority: item.priority ? safeStringCast(item.priority) : undefined,
+        action_url: item.action_url ? safeStringCast(item.action_url) : undefined,
+        icon: item.icon ? safeStringCast(item.icon) : undefined
+      }));
+      
+      setNotifications(transformedNotifications);
     } catch (error) {
       console.error('Error loading notifications:', error);
     } finally {

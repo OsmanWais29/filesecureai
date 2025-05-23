@@ -9,19 +9,29 @@ interface DocumentItemProps {
   onOpen: (documentId: string) => void;
   onRename: (document: Document) => void;
   level?: number;
+  onSelect?: (documentId: string) => void;
+  handleDragStart?: (id: string, type: 'folder' | 'document') => void;
+  indentation?: React.ReactElement[];
 }
 
 export const DocumentItem = ({
   document,
   onOpen,
   onRename,
-  level = 0
+  level = 0,
+  onSelect,
+  handleDragStart,
+  indentation = []
 }: DocumentItemProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [newName, setNewName] = useState(document.title);
 
   const handleClick = () => {
-    onOpen(document.id);
+    if (onSelect) {
+      onSelect(document.id);
+    } else {
+      onOpen(document.id);
+    }
   };
 
   const handleDoubleClick = () => {
@@ -31,6 +41,12 @@ export const DocumentItem = ({
   const handleRename = () => {
     onRename({ ...document, title: newName });
     setIsEditing(false);
+  };
+
+  const handleDragStart = (e: React.DragEvent) => {
+    if (handleDragStart) {
+      handleDragStart(document.id, 'document');
+    }
   };
 
   const getStatusIcon = () => {
@@ -57,7 +73,14 @@ export const DocumentItem = ({
       style={{ paddingLeft: `${indentLevel + 8}px` }}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
+      draggable={!!handleDragStart}
+      onDragStart={handleDragStart ? handleDragStart : undefined}
     >
+      {/* Render indentation elements */}
+      {indentation.map((indent, index) => (
+        <React.Fragment key={index}>{indent}</React.Fragment>
+      ))}
+
       <div className="flex-shrink-0 mr-3">
         {getStatusIcon()}
       </div>

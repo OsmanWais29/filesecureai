@@ -11,7 +11,7 @@ interface ChatMessageProps {
 }
 
 export const ChatMessage = ({ message }: ChatMessageProps) => {
-  const isUser = message.type === "user";
+  const isUser = message.role === "user";
   const timestamp = typeof message.timestamp === 'string' 
     ? new Date(message.timestamp) 
     : message.timestamp;

@@ -36,7 +36,7 @@ const SAFAContent = () => {
     return messages.map(msg => ({
       id: msg.id,
       content: msg.content,
-      type: msg.role as 'user' | 'assistant',
+      role: msg.role,
       timestamp: new Date(msg.timestamp),
       module: tab
     }));
