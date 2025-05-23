@@ -2,7 +2,7 @@
 import React from "react";
 import { ClientInfoPanel } from "../ClientInfo";
 import { DocumentGrid } from "../../../DocumentList/components/DocumentGrid";
-import { FilePreview } from "../FilePreview";
+import { FilePreview } from "../FilePreview/FilePreviewPanel";
 import { Client, Document } from "../../types";
 
 interface MobileTabletViewProps {

@@ -107,3 +107,35 @@ export const isValidString = (value: unknown): value is string => {
 export const isValidNumber = (value: unknown): value is number => {
   return typeof value === 'number' && !isNaN(value);
 };
+
+// Additional utility functions needed by the codebase
+export const toRecord = (value: unknown): Record<string, unknown> => {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return {};
+};
+
+export const toSafeSpreadArray = <T>(value: unknown): T[] => {
+  if (Array.isArray(value)) {
+    return [...value] as T[];
+  }
+  return [];
+};
+
+export const toSafeSpreadObject = (value: unknown): Record<string, unknown> => {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return { ...value as Record<string, unknown> };
+  }
+  return {};
+};
+
+export const toStringArray = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value.map(item => toString(item));
+  }
+  if (typeof value === 'string') {
+    return [value];
+  }
+  return [];
+};
