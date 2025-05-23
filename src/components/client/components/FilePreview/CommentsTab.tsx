@@ -18,7 +18,7 @@ export const CommentsTab: React.FC<CommentsTabProps> = ({
         id: effectiveDocumentId,
         title: document.title,
         type: document.type || 'document',
-        storage_path: toString(document.metadata?.storage_path),
+        storage_path: toString(document.metadata?.storage_path || document.storage_path),
         comments: [],
         // Add the missing required properties
         created_at: document.created_at,

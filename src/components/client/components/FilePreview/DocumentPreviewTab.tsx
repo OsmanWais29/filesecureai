@@ -32,7 +32,7 @@ export const DocumentPreviewTab: React.FC<DocumentPreviewTabProps> = ({
   const [fetchingUrl, setFetchingUrl] = useState<boolean>(false);
   
   // Extract storage path and check if it's a PDF
-  const storagePath = toString(document.metadata?.storage_path);
+  const storagePath = toString(document.metadata?.storage_path || document.storage_path);
   const isPdf = storagePath?.toLowerCase().endsWith('.pdf') || false;
   
   // When component mounts, try to get the PDF URL
@@ -97,6 +97,10 @@ export const DocumentPreviewTab: React.FC<DocumentPreviewTabProps> = ({
       toast.error("Download URL not available");
     }
   };
+
+  // Get form number if available
+  const formNumber = toString(document.metadata?.formNumber);
+  const formInfo = formNumber ? `Form ${formNumber}` : 'Document';
 
   return (
     <>
@@ -230,16 +234,16 @@ export const DocumentPreviewTab: React.FC<DocumentPreviewTabProps> = ({
               <div className="text-muted-foreground">ID:</div>
               <div className="truncate" title={document.id}>{document.id}</div>
               
-              {document.metadata && toString(document.metadata.formNumber) && (
+              {formNumber && (
                 <>
                   <div className="text-muted-foreground">Form Number:</div>
-                  <div>{toString(document.metadata.formNumber)}</div>
+                  <div>{formNumber}</div>
                 </>
               )}
             </div>
             
             <p className="mt-3">
-              This document appears to be a {document.type || 'standard document'} related to client {document.title.includes('Form') ? 'financial information' : 'case details'}.
+              This document appears to be a {formInfo} related to client {document.title.includes('Form') ? 'financial information' : 'case details'}.
             </p>
             <p className="mt-2 text-muted-foreground text-xs">AI summary is a preview feature and may not be accurate.</p>
           </CardContent>

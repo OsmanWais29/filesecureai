@@ -33,8 +33,8 @@ export const getDocumentType = (document: any): string => {
   }
 
   // Check title for form indicators
-  const titleLower = title.toLowerCase();
-  const typeUrl = type.toLowerCase();
+  const titleLower = toString(title).toLowerCase();
+  const typeUrl = toString(type).toLowerCase();
   
   if (titleLower.includes('form') || typeUrl.includes('form')) {
     if (titleLower.includes('47') || typeUrl.includes('47')) {
@@ -50,6 +50,11 @@ export const getDocumentType = (document: any): string => {
 export const isFormDocument = (document: any): boolean => {
   const docType = getDocumentType(document);
   return docType.startsWith('form');
+};
+
+export const isDocumentForm47 = (document: any): boolean => {
+  const docType = getDocumentType(document);
+  return docType === 'form-47';
 };
 
 export const getFormNumber = (document: any): string | null => {

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { DocumentDetails } from '../types';
 import { supabase } from '@/lib/supabase';
+import { toString, toNumber } from '@/utils/typeSafetyUtils';
 
 interface DocumentState {
   document: DocumentDetails | null;
@@ -32,17 +33,17 @@ export const useDocumentState = (documentId: string) => {
         if (error) throw error;
 
         const documentDetails: DocumentDetails = {
-          id: data.id,
-          title: data.title || 'Untitled Document',
-          type: data.type || 'document',
-          storage_path: data.storage_path || '',
-          created_at: data.created_at,
-          updated_at: data.updated_at,
-          metadata: data.metadata || {},
-          parent_folder_id: data.parent_folder_id,
-          ai_processing_status: data.ai_processing_status,
-          ai_processing_stage: data.ai_processing_stage,
-          deadlines: data.deadlines || [],
+          id: toString(data.id),
+          title: toString(data.title) || 'Untitled Document',
+          type: toString(data.type) || 'document',
+          storage_path: toString(data.storage_path) || '',
+          created_at: toString(data.created_at),
+          updated_at: toString(data.updated_at),
+          metadata: (data.metadata as Record<string, unknown>) || {},
+          parent_folder_id: toString(data.parent_folder_id),
+          ai_processing_status: toString(data.ai_processing_status),
+          ai_processing_stage: toString(data.ai_processing_stage),
+          deadlines: Array.isArray(data.deadlines) ? data.deadlines : [],
           analysis: [],
           comments: [],
           tasks: [],

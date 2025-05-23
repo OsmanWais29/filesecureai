@@ -1,7 +1,7 @@
 
 import React from "react";
 import { ClientInfoPanel } from "../ClientInfo";
-import { DocumentGrid } from "../DocumentGrid";
+import { DocumentGrid } from "../../../DocumentList/components/DocumentGrid";
 import { FilePreview } from "../FilePreview";
 import { Client, Document } from "../../types";
 
@@ -30,9 +30,9 @@ export const MobileTabletView: React.FC<MobileTabletViewProps> = ({
       <div className="flex-shrink-0 border-b">
         <ClientInfoPanel
           client={client}
-          tasks={[]} // Add empty tasks array
-          documentCount={documents.length} // Add document count
-          lastActivityDate={client.last_activity || new Date().toISOString()} // Add last activity date
+          tasks={[]}
+          documentCount={documents.length}
+          lastActivityDate={client.last_activity || new Date().toISOString()}
           documents={documents}
           onClientUpdate={onClientUpdate}
           onDocumentSelect={onDocumentSelect}
@@ -48,11 +48,18 @@ export const MobileTabletView: React.FC<MobileTabletViewProps> = ({
             onDocumentOpen={onDocumentOpen}
           />
         ) : (
-          <DocumentGrid 
-            documents={documents}
-            onDocumentSelect={onDocumentSelect}
-            selectedDocumentId={selectedDocumentId}
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {documents.map(doc => (
+              <div 
+                key={doc.id}
+                className="border rounded-lg p-4 cursor-pointer hover:bg-muted/50"
+                onClick={() => onDocumentSelect(doc.id)}
+              >
+                <h3 className="font-medium">{doc.title}</h3>
+                <p className="text-sm text-muted-foreground">{doc.type}</p>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>
