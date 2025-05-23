@@ -1,3 +1,4 @@
+
 import { toast } from "sonner";
 import { Client, Document } from "../../../types";
 import { 
@@ -11,6 +12,30 @@ import {
   standardizeClientName, 
   getOrCreateClientRecord 
 } from "@/utils/documents/clientUtils";
+
+// Type guard to ensure proper Document type
+const ensureDocumentType = (doc: unknown): Document => {
+  const docObj = doc as Record<string, any>;
+  return {
+    id: String(docObj.id || ''),
+    title: String(docObj.title || 'Untitled'),
+    type: String(docObj.type || 'document'),
+    created_at: String(docObj.created_at || new Date().toISOString()),
+    updated_at: String(docObj.updated_at || new Date().toISOString()),
+    storage_path: docObj.storage_path ? String(docObj.storage_path) : undefined,
+    size: typeof docObj.size === 'number' ? docObj.size : undefined,
+    metadata: docObj.metadata || {},
+    parent_folder_id: docObj.parent_folder_id ? String(docObj.parent_folder_id) : undefined,
+    user_id: docObj.user_id ? String(docObj.user_id) : undefined,
+    is_folder: Boolean(docObj.is_folder),
+    folder_type: docObj.folder_type ? String(docObj.folder_type) : undefined,
+    deadlines: docObj.deadlines || [],
+    status: docObj.status ? String(docObj.status) : undefined,
+    ai_processing_status: docObj.ai_processing_status ? String(docObj.ai_processing_status) : undefined,
+    tasks: docObj.tasks || [],
+    description: docObj.description ? String(docObj.description) : undefined
+  };
+};
 
 /**
  * Processes client documents and returns client data and documents
@@ -29,17 +54,13 @@ export const processClientDocuments = async (
     // First try to get client documents
     let clientDocs: Document[] = [];
     try {
-      clientDocs = await fetchClientDocuments(clientId, searchClientId);
+      const rawClientDocs = await fetchClientDocuments(clientId, searchClientId);
+      clientDocs = Array.isArray(rawClientDocs) ? rawClientDocs.map(ensureDocumentType) : [];
       
       // Improve organization of retrieved documents
       if (clientDocs && clientDocs.length > 0) {
         // Extract proper client name from first document if possible
-        // Convert client document to DocumentList type for compatibility
-        const documentForExtraction = {
-          ...clientDocs[0],
-          storage_path: clientDocs[0].storage_path || "",
-          size: clientDocs[0].size || 0
-        };
+        const documentForExtraction = clientDocs[0];
         
         const extractedName = extractClientName(documentForExtraction);
         if (extractedName) {
@@ -48,13 +69,14 @@ export const processClientDocuments = async (
           // If the extracted name differs from the search name, try again with standardized name
           if (standardized.toLowerCase().replace(/\s+/g, '-') !== searchClientId) {
             console.log("Trying with standardized client name:", standardized);
-            const additionalDocs = await fetchClientDocuments(
+            const rawAdditionalDocs = await fetchClientDocuments(
               standardized,
               standardized.toLowerCase().replace(/\s+/g, '-')
             );
             
             // Merge document results, avoiding duplicates
-            if (additionalDocs && additionalDocs.length > 0) {
+            if (rawAdditionalDocs && rawAdditionalDocs.length > 0) {
+              const additionalDocs = Array.isArray(rawAdditionalDocs) ? rawAdditionalDocs.map(ensureDocumentType) : [];
               const existingIds = new Set(clientDocs.map(doc => doc.id));
               const uniqueAdditionalDocs = additionalDocs.filter(doc => !existingIds.has(doc.id));
               
@@ -84,9 +106,10 @@ export const processClientDocuments = async (
       console.log("No exact matches found, looking for Form 47 documents");
       
       try {
-        const form47Docs = await fetchForm47Documents();
+        const rawForm47Docs = await fetchForm47Documents();
         
-        if (form47Docs && form47Docs.length > 0) {
+        if (rawForm47Docs && rawForm47Docs.length > 0) {
+          const form47Docs = Array.isArray(rawForm47Docs) ? rawForm47Docs.map(ensureDocumentType) : [];
           console.log(`Found ${form47Docs.length} Form 47 documents`);
           
           // For Josh Hart, we know this is the correct client for Form 47
@@ -115,8 +138,8 @@ export const processClientDocuments = async (
       
       if (metadata.client_id && metadata.client_name) {
         // Update client with standardized name from document
-        client.id = metadata.client_id;
-        client.name = standardizeClientName(metadata.client_name);
+        client.id = String(metadata.client_id);
+        client.name = standardizeClientName(String(metadata.client_name));
       }
       
       return { client, documents: clientDocs };

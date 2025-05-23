@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -17,6 +16,17 @@ interface Document {
   status: string;
   created_at: string;
 }
+
+// Type guard to ensure proper Document type
+const ensureDocumentType = (doc: unknown): Document => {
+  const docObj = doc as Record<string, any>;
+  return {
+    id: String(docObj.id || ''),
+    title: String(docObj.title || 'Untitled'),
+    status: String(docObj.status || 'pending'),
+    created_at: String(docObj.created_at || new Date().toISOString())
+  };
+};
 
 export const DocumentVault = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -37,7 +47,8 @@ export const DocumentVault = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setDocuments(data || []);
+      const typedDocuments = (data || []).map(ensureDocumentType);
+      setDocuments(typedDocuments);
     } catch (error) {
       console.error('Error fetching documents:', error);
       toast({

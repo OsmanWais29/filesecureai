@@ -18,6 +18,24 @@ export interface TaskData {
   updated_at?: string;
 }
 
+// Type guard to ensure proper TaskData type
+const ensureTaskDataType = (data: unknown): TaskData => {
+  const task = data as Record<string, any>;
+  return {
+    id: String(task.id || ''),
+    title: String(task.title || 'Untitled Task'),
+    description: task.description ? String(task.description) : undefined,
+    status: ['pending', 'in_progress', 'completed', 'cancelled'].includes(task.status) ? task.status : 'pending',
+    priority: ['low', 'medium', 'high'].includes(task.priority) ? task.priority : 'medium',
+    due_date: task.due_date ? String(task.due_date) : undefined,
+    client_id: task.client_id ? String(task.client_id) : undefined,
+    assigned_to: task.assigned_to ? String(task.assigned_to) : undefined,
+    created_by: task.created_by ? String(task.created_by) : undefined,
+    created_at: task.created_at ? String(task.created_at) : undefined,
+    updated_at: task.updated_at ? String(task.updated_at) : undefined
+  };
+};
+
 export function useTaskManagement() {
   const [tasks, setTasks] = useState<TaskData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -45,15 +63,16 @@ export function useTaskManagement() {
         }
         
         if (data) {
-          setTasks(data as TaskData[]);
+          const typedTasks = data.map(ensureTaskDataType);
+          setTasks(typedTasks);
           
           // Calculate stats
           const newStats = {
-            total: data.length,
-            pending: data.filter(task => task.status === 'pending').length,
-            in_progress: data.filter(task => task.status === 'in_progress').length,
-            completed: data.filter(task => task.status === 'completed').length,
-            cancelled: data.filter(task => task.status === 'cancelled').length
+            total: typedTasks.length,
+            pending: typedTasks.filter(task => task.status === 'pending').length,
+            in_progress: typedTasks.filter(task => task.status === 'in_progress').length,
+            completed: typedTasks.filter(task => task.status === 'completed').length,
+            cancelled: typedTasks.filter(task => task.status === 'cancelled').length
           };
           
           setStats(newStats);
@@ -83,7 +102,8 @@ export function useTaskManagement() {
       if (error) throw error;
       
       if (data && data.length > 0) {
-        setTasks(prevTasks => [data[0], ...prevTasks]);
+        const newTask = ensureTaskDataType(data[0]);
+        setTasks(prevTasks => [newTask, ...prevTasks]);
         fetchTasks(); // Refresh all tasks to update stats
         
         toast({
@@ -91,7 +111,7 @@ export function useTaskManagement() {
           description: `${taskData.title} has been added successfully.`,
         });
         
-        return data[0];
+        return newTask;
       }
       
       return null;

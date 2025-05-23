@@ -25,6 +25,24 @@ export interface ClientStats {
   pending: number;
 }
 
+// Type guard to ensure proper ClientData type
+const ensureClientDataType = (data: unknown): ClientData => {
+  const client = data as Record<string, any>;
+  return {
+    id: String(client.id || ''),
+    name: String(client.name || 'Unknown'),
+    company: client.company ? String(client.company) : undefined,
+    email: client.email ? String(client.email) : undefined,
+    phone: client.phone ? String(client.phone) : undefined,
+    status: ['active', 'inactive', 'pending'].includes(client.status) ? client.status : 'pending',
+    last_interaction: client.last_interaction ? String(client.last_interaction) : undefined,
+    engagement_score: typeof client.engagement_score === 'number' ? client.engagement_score : 0,
+    created_at: client.created_at ? String(client.created_at) : undefined,
+    updated_at: client.updated_at ? String(client.updated_at) : undefined,
+    metadata: client.metadata || {}
+  };
+};
+
 export function useClientManagement() {
   const [clients, setClients] = useState<ClientData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,14 +65,15 @@ export function useClientManagement() {
         }
         
         if (data) {
-          setClients(data as ClientData[]);
+          const typedClients = data.map(ensureClientDataType);
+          setClients(typedClients);
           
           // Calculate stats
           const newStats = {
-            total: data.length,
-            active: data.filter(client => client.status === 'active').length,
-            inactive: data.filter(client => client.status === 'inactive').length,
-            pending: data.filter(client => client.status === 'pending').length
+            total: typedClients.length,
+            active: typedClients.filter(client => client.status === 'active').length,
+            inactive: typedClients.filter(client => client.status === 'inactive').length,
+            pending: typedClients.filter(client => client.status === 'pending').length
           };
           
           setStats(newStats);
@@ -85,7 +104,8 @@ export function useClientManagement() {
       if (error) throw error;
       
       if (data && data.length > 0) {
-        setClients(prevClients => [data[0], ...prevClients]);
+        const newClient = ensureClientDataType(data[0]);
+        setClients(prevClients => [newClient, ...prevClients]);
         fetchClients(); // Refresh all clients to update stats
         
         toast({
@@ -93,7 +113,7 @@ export function useClientManagement() {
           description: `${clientData.name} has been added successfully.`,
         });
         
-        return data[0];
+        return newClient;
       }
       
       return null;

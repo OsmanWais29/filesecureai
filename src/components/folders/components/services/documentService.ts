@@ -25,7 +25,7 @@ export const documentService = {
       return null;
     }
 
-    return data?.title || null;
+    return data?.title ? String(data.title) : null;
   },
 
   async deleteItem(itemId: string, itemType: "folder" | "file") {
@@ -52,7 +52,7 @@ export const documentService = {
       if (document?.storage_path) {
         await supabase.storage
           .from('documents')
-          .remove([document.storage_path]);
+          .remove([String(document.storage_path)]);
       }
     }
 
@@ -98,19 +98,20 @@ export const documentService = {
       
       // First, create a map of folder names for easy lookup
       folders.forEach(folder => {
-        folderNames[folder.id] = folder.title;
+        folderNames[String(folder.id)] = String(folder.title);
       });
       
       // Then, organize folders into mergeable groups
       folders.forEach(mainFolder => {
-        if (!clientFolderGroups[mainFolder.id]) {
+        const mainFolderId = String(mainFolder.id);
+        if (!clientFolderGroups[mainFolderId]) {
           const similarFolders = folders.filter(otherFolder => 
-            otherFolder.id !== mainFolder.id && 
-            this.areSimilarClientFolders(mainFolder.title, otherFolder.title)
-          ).map(folder => folder.id);
+            String(otherFolder.id) !== mainFolderId && 
+            this.areSimilarClientFolders(String(mainFolder.title), String(otherFolder.title))
+          ).map(folder => String(folder.id));
           
           if (similarFolders.length > 0) {
-            clientFolderGroups[mainFolder.id] = similarFolders;
+            clientFolderGroups[mainFolderId] = similarFolders;
           }
         }
       });

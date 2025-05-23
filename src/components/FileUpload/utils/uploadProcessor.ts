@@ -1,4 +1,3 @@
-
 import { simulateUploadProgress } from "./progressSimulator";
 import logger from "@/utils/logger";
 import { supabase } from "@/lib/supabase";
@@ -6,6 +5,14 @@ import { logAIRequest } from "@/utils/aiRequestMonitor";
 import { FileInfo } from '@/components/client/types';
 import { toSafeSpreadObject, toString } from '@/utils/typeSafetyUtils';
 import { toast } from 'sonner';
+
+// Type guard for ensuring object is spreadable
+const ensureSpreadableObject = (obj: unknown): Record<string, any> => {
+  if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+    return obj as Record<string, any>;
+  }
+  return {};
+};
 
 /**
  * Simulates the processing stages of a document upload
@@ -395,7 +402,7 @@ export const processUploadedFiles = async (
           if (storageError) throw storageError;
 
           // Create document record - ensure we have a proper object to spread
-          const safeFileData = toSafeSpreadObject(file);
+          const safeFileData = ensureSpreadableObject(file);
           const documentData = {
             title: file.name,
             type: file.file.type,
@@ -419,7 +426,7 @@ export const processUploadedFiles = async (
 
           return {
             ...file,
-            documentId: toString(docData.id),
+            documentId: String(docData.id),
             status: 'completed' as const
           };
         } catch (error) {
