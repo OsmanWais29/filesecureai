@@ -1,5 +1,5 @@
 
-import { Document } from "@/components/DocumentList/types";
+import { Document } from "@/types/client";
 import { useState } from "react";
 import { DocumentItem } from "./documents/DocumentItem";
 import { isForm47or76 } from "../utils/documentUtils";

@@ -3,13 +3,13 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { withFreshToken } from "@/utils/jwt/tokenManager";
-import { MeetingData } from '@/types/client';
 import { ensureMeetingType } from '@/utils/typeGuards';
 
-export { MeetingData };
+// Use export type for isolatedModules compatibility
+export type { MeetingData } from '@/types/client';
 
 export function useMeetingManagement() {
-  const [meetings, setMeetings] = useState<MeetingData[]>([]);
+  const [meetings, setMeetings] = useState<import('@/types/client').MeetingData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
     total: 0,
@@ -62,7 +62,7 @@ export function useMeetingManagement() {
     }
   };
 
-  const addMeeting = async (meetingData: Omit<MeetingData, 'id' | 'created_at' | 'updated_at'>) => {
+  const addMeeting = async (meetingData: Omit<import('@/types/client').MeetingData, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       const { data, error } = await supabase
         .from('meetings')
@@ -98,7 +98,7 @@ export function useMeetingManagement() {
     }
   };
 
-  const updateMeeting = async (id: string, meetingData: Partial<MeetingData>) => {
+  const updateMeeting = async (id: string, meetingData: Partial<import('@/types/client').MeetingData>) => {
     try {
       const { error } = await supabase
         .from('meetings')

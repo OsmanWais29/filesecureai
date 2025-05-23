@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { FolderStructure } from "@/types/folders";
-import { Document } from "@/components/DocumentList/types";
+import { Document } from "@/types/client";
 import { useFolderDragDrop } from "./hooks/useFolderDragDrop";
 import { useFolderExpansion } from "./hooks/useFolderExpansion";
 import { DocumentTree } from "./components/DocumentTree";
@@ -39,7 +39,7 @@ export function FolderNavigation({
   expandedFolders,
   setExpandedFolders
 }: FolderNavigationProps) {
-  // Process documents to create hierarchy
+  // Process documents to create hierarchy - ensure they're already converted
   const processedDocuments = createDocumentHierarchy(documents || []);
   
   // Get drag and drop functionality from hook

@@ -1,12 +1,14 @@
 
 import React, { useState } from 'react';
-import { Document } from '@/components/DocumentList/types';
 import { FolderNavigation } from './FolderNavigation';
 import { useCreateFolderStructure } from './hooks/useCreateFolderStructure';
 import { createDocumentHierarchy } from './utils/documentUtils';
+import { convertDocumentListToClientDocument } from '@/utils/typeGuards';
+import { Document as DocumentListDocument } from '@/components/DocumentList/types';
+import { Document } from '@/types/client';
 
 interface EnhancedFolderTabProps {
-  documents: Document[];
+  documents: DocumentListDocument[];
   onDocumentOpen: (documentId: string) => void;
   onRefresh?: () => void;
 }
@@ -16,8 +18,11 @@ export const EnhancedFolderTab = ({
   onDocumentOpen,
   onRefresh
 }: EnhancedFolderTabProps) => {
+  // Convert DocumentList documents to client documents
+  const convertedDocuments: Document[] = documents.map(convertDocumentListToClientDocument);
+  
   // Setup hierarchy for the document tree
-  const processedDocuments = createDocumentHierarchy(documents);
+  const processedDocuments = createDocumentHierarchy(convertedDocuments);
   const { folders } = useCreateFolderStructure(processedDocuments);
   
   const [selectedFolderId, setSelectedFolderId] = useState<string | undefined>();

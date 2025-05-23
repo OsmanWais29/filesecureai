@@ -128,12 +128,25 @@ export const ensureSpreadableObject = (obj: unknown): Record<string, any> => {
   return {};
 };
 
-// Fix document conversion from different sources
+// Enhanced conversion functions with strict type validation
 export const convertToClientDocument = (doc: any): Document => {
+  return ensureDocumentType(doc);
+};
+
+export const convertToClientTask = (task: any): Task => {
+  return ensureTaskType(task);
+};
+
+export const convertToClientProfile = (client: any): Client => {
+  return ensureClientType(client);
+};
+
+// Document type converter from DocumentList types to client types
+export const convertDocumentListToClientDocument = (doc: any): Document => {
   return {
     id: String(doc.id || ''),
     title: String(doc.title || 'Untitled'),
-    type: String(doc.type || 'document'), // Ensure this is always present
+    type: String(doc.type || 'document'), // Ensure type is always present
     created_at: String(doc.created_at || new Date().toISOString()),
     updated_at: String(doc.updated_at || new Date().toISOString()),
     storage_path: doc.storage_path ? String(doc.storage_path) : undefined,
@@ -149,55 +162,5 @@ export const convertToClientDocument = (doc: any): Document => {
     tasks: Array.isArray(doc.tasks) ? doc.tasks.map(ensureTaskType) : [],
     description: doc.description ? String(doc.description) : undefined,
     url: doc.url ? String(doc.url) : undefined
-  };
-};
-
-export const convertToClientTask = (task: any): Task => {
-  const validStatuses = ['pending', 'in_progress', 'completed', 'cancelled'];
-  const validPriorities = ['low', 'medium', 'high'];
-  
-  return {
-    id: String(task.id || ''),
-    title: String(task.title || 'Untitled Task'),
-    description: task.description ? String(task.description) : undefined,
-    status: validStatuses.includes(task.status) ? task.status : 'pending',
-    priority: validPriorities.includes(task.priority) ? task.priority : 'medium',
-    due_date: task.due_date ? String(task.due_date) : undefined,
-    client_id: task.client_id ? String(task.client_id) : undefined,
-    assigned_to: task.assigned_to ? String(task.assigned_to) : undefined,
-    created_by: String(task.created_by || ''),
-    created_at: String(task.created_at || new Date().toISOString()),
-    updated_at: String(task.updated_at || new Date().toISOString())
-  };
-};
-
-export const convertToClientProfile = (client: any): Client => {
-  const validStatuses = ['active', 'inactive', 'pending'];
-  
-  return {
-    id: String(client.id || ''),
-    name: String(client.name || 'Unknown'),
-    email: client.email ? String(client.email) : undefined,
-    phone: client.phone ? String(client.phone) : undefined,
-    status: validStatuses.includes(client.status) ? client.status : 'pending',
-    location: client.location ? String(client.location) : undefined,
-    address: client.address ? String(client.address) : undefined,
-    city: client.city ? String(client.city) : undefined,
-    province: client.province ? String(client.province) : undefined,
-    postalCode: client.postalCode ? String(client.postalCode) : undefined,
-    company: client.company ? String(client.company) : undefined,
-    occupation: client.occupation ? String(client.occupation) : undefined,
-    mobilePhone: client.mobilePhone ? String(client.mobilePhone) : undefined,
-    notes: client.notes ? String(client.notes) : undefined,
-    last_interaction: client.last_interaction ? String(client.last_interaction) : undefined,
-    engagement_score: typeof client.engagement_score === 'number' ? client.engagement_score : 0,
-    created_at: String(client.created_at || new Date().toISOString()),
-    updated_at: String(client.updated_at || new Date().toISOString()),
-    metadata: client.metadata || {},
-    metrics: client.metrics || {
-      openTasks: 0,
-      pendingDocuments: 0,
-      urgentDeadlines: 0
-    }
   };
 };

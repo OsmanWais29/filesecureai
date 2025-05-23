@@ -1,4 +1,6 @@
+
 import { Document } from '@/types/client';
+import { FolderStructure } from '@/types/folders';
 
 /**
  * Creates a hierarchical document structure with clients, estates, forms, and documents
@@ -198,7 +200,7 @@ export function documentNeedsAttention(document: Document): boolean {
   // Documents with pending tasks need attention
   if (document.tasks && document.tasks.length > 0) {
     const hasPendingTasks = document.tasks.some(task => 
-      task.status === 'pending' || task.status === 'overdue'
+      task.status === 'pending' || task.status === 'in_progress'
     );
     if (hasPendingTasks) return true;
   }
