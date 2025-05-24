@@ -104,6 +104,45 @@ export type Database = {
           },
         ]
       }
+      branding: {
+        Row: {
+          company_name: string | null
+          created_at: string
+          custom_domain: string | null
+          description: string | null
+          id: string
+          logo_url: string | null
+          primary_color: string | null
+          secondary_color: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_name?: string | null
+          created_at?: string
+          custom_domain?: string | null
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_name?: string | null
+          created_at?: string
+          custom_domain?: string | null
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       client_interactions: {
         Row: {
           client_id: string | null
@@ -1183,6 +1222,60 @@ export type Database = {
           created_at?: string
           dark_mode?: boolean | null
           email_notifications?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          auto_save: boolean | null
+          compact_view: boolean | null
+          created_at: string
+          default_currency: string | null
+          document_encryption: boolean | null
+          document_sync: boolean | null
+          ip_whitelisting: boolean | null
+          language: string | null
+          login_notifications: boolean | null
+          password_expiry: string | null
+          session_timeout: string | null
+          time_zone: string | null
+          two_factor_enabled: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_save?: boolean | null
+          compact_view?: boolean | null
+          created_at?: string
+          default_currency?: string | null
+          document_encryption?: boolean | null
+          document_sync?: boolean | null
+          ip_whitelisting?: boolean | null
+          language?: string | null
+          login_notifications?: boolean | null
+          password_expiry?: string | null
+          session_timeout?: string | null
+          time_zone?: string | null
+          two_factor_enabled?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_save?: boolean | null
+          compact_view?: boolean | null
+          created_at?: string
+          default_currency?: string | null
+          document_encryption?: boolean | null
+          document_sync?: boolean | null
+          ip_whitelisting?: boolean | null
+          language?: string | null
+          login_notifications?: boolean | null
+          password_expiry?: string | null
+          session_timeout?: string | null
+          time_zone?: string | null
+          two_factor_enabled?: boolean | null
           updated_at?: string
           user_id?: string
         }

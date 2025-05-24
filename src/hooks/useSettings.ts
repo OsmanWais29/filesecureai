@@ -71,20 +71,19 @@ export const useSettings = () => {
         throw error;
       }
 
-      if (data && data.settings && typeof data.settings === 'object') {
-        const settings = data.settings as Record<string, any>;
-        setTimeZone(safeStringCast(settings.timeZone) || "UTC");
-        setLanguage(safeStringCast(settings.language) || "en");
-        setAutoSave(settings.autoSave !== undefined ? Boolean(settings.autoSave) : true);
-        setCompactView(settings.compactView !== undefined ? Boolean(settings.compactView) : false);
-        setDocumentSync(settings.documentSync !== undefined ? Boolean(settings.documentSync) : true);
-        setDefaultCurrency(safeStringCast(settings.defaultCurrency) || "CAD");
-        setTwoFactorEnabled(settings.twoFactorEnabled !== undefined ? Boolean(settings.twoFactorEnabled) : false);
-        setSessionTimeout(safeStringCast(settings.sessionTimeout) || "30");
-        setIpWhitelisting(settings.ipWhitelisting !== undefined ? Boolean(settings.ipWhitelisting) : false);
-        setLoginNotifications(settings.loginNotifications !== undefined ? Boolean(settings.loginNotifications) : true);
-        setDocumentEncryption(settings.documentEncryption !== undefined ? Boolean(settings.documentEncryption) : true);
-        setPasswordExpiry(safeStringCast(settings.passwordExpiry) || "90");
+      if (data) {
+        setTimeZone(safeStringCast(data.time_zone) || "UTC");
+        setLanguage(safeStringCast(data.language) || "en");
+        setAutoSave(data.auto_save !== undefined ? Boolean(data.auto_save) : true);
+        setCompactView(data.compact_view !== undefined ? Boolean(data.compact_view) : false);
+        setDocumentSync(data.document_sync !== undefined ? Boolean(data.document_sync) : true);
+        setDefaultCurrency(safeStringCast(data.default_currency) || "CAD");
+        setTwoFactorEnabled(data.two_factor_enabled !== undefined ? Boolean(data.two_factor_enabled) : false);
+        setSessionTimeout(safeStringCast(data.session_timeout) || "30");
+        setIpWhitelisting(data.ip_whitelisting !== undefined ? Boolean(data.ip_whitelisting) : false);
+        setLoginNotifications(data.login_notifications !== undefined ? Boolean(data.login_notifications) : true);
+        setDocumentEncryption(data.document_encryption !== undefined ? Boolean(data.document_encryption) : true);
+        setPasswordExpiry(safeStringCast(data.password_expiry) || "90");
       }
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -103,28 +102,26 @@ export const useSettings = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const settings = {
-        timeZone,
+      const settingsData = {
+        user_id: user.id,
+        time_zone: timeZone,
         language,
-        autoSave,
-        compactView,
-        documentSync,
-        defaultCurrency,
-        twoFactorEnabled,
-        sessionTimeout,
-        ipWhitelisting,
-        loginNotifications,
-        documentEncryption,
-        passwordExpiry
+        auto_save: autoSave,
+        compact_view: compactView,
+        document_sync: documentSync,
+        default_currency: defaultCurrency,
+        two_factor_enabled: twoFactorEnabled,
+        session_timeout: sessionTimeout,
+        ip_whitelisting: ipWhitelisting,
+        login_notifications: loginNotifications,
+        document_encryption: documentEncryption,
+        password_expiry: passwordExpiry,
+        updated_at: new Date().toISOString()
       };
 
       const { error } = await supabase
         .from('user_settings')
-        .upsert({
-          user_id: user.id,
-          settings,
-          updated_at: new Date().toISOString()
-        });
+        .upsert(settingsData);
 
       if (error) throw error;
 

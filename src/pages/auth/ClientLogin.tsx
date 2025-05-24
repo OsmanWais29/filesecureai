@@ -1,5 +1,6 @@
+
 import { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { ClientPortalForm } from '@/components/auth/ClientPortalForm';
 import { ConfirmationSentScreen } from '@/components/auth/ConfirmationSentScreen';
@@ -12,39 +13,16 @@ const ClientLogin = () => {
   const [confirmationSent, setConfirmationSent] = useState(false);
   const [confirmationEmail, setConfirmationEmail] = useState('');
   const navigate = useNavigate();
-  const location = useLocation();
   const { user, loading, initialized, subdomain, isClient } = useAuthState();
-  const [isClientSubdomain, setIsClientSubdomain] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
-  const [authStarted, setAuthStarted] = useState(false);
 
-  // Record the time the component mounted for debugging
-  useEffect(() => {
-    console.log(`ClientLogin: Component mounted at ${new Date().toISOString()}`);
-    
-    // Set a flag indicating auth flow has started
-    setAuthStarted(true);
-    
-    return () => {
-      console.log(`ClientLogin: Component unmounted at ${new Date().toISOString()}`);
-    };
-  }, []);
+  // Check if we're on client subdomain
+  const isOnClientSubdomain = subdomain === 'client';
 
-  // Check if we're on the client subdomain based on our hook data
+  // Redirect if not on client subdomain
   useEffect(() => {
-    if (!subdomain && !loading) {
-      console.log("ClientLogin: No subdomain detected yet, waiting...");
-      return;
-    }
-    
-    const clientSubdomain = subdomain === 'client';
-    setIsClientSubdomain(clientSubdomain);
-    
-    console.log(`ClientLogin: Subdomain check - detected: ${subdomain}, isClientSubdomain: ${clientSubdomain}`);
-    
-    if (!clientSubdomain) {
-      // If we're on trustee subdomain but accessing client login, redirect
-      console.log("ClientLogin: Not on client subdomain, redirecting to trustee login");
+    if (subdomain && subdomain !== 'client') {
+      console.log("Not on client subdomain, redirecting to trustee login");
       toast.error("Please use the trustee portal for trustee login");
       setRedirecting(true);
       
@@ -53,40 +31,23 @@ const ClientLogin = () => {
         if (hostname === 'localhost') {
           window.location.href = window.location.origin + '?subdomain=trustee';
         } else {
-          const hostParts = hostname.split('.');
-          if (hostParts.length > 2) {
-            hostParts[0] = 'trustee';
-            window.location.href = `https://${hostParts.join('.')}/login`;
-          } else {
-            window.location.href = `https://trustee.${hostname}/login`;
-          }
+          window.location.href = `https://trustee.${hostname.split('.').slice(-2).join('.')}/login`;
         }
       }, 100);
     }
-  }, [subdomain, loading]);
+  }, [subdomain]);
 
-  // Redirect if user is already authenticated as a client
+  // Redirect if already authenticated as client
   useEffect(() => {
-    if (!loading && initialized && user && authStarted) {
+    if (!loading && initialized && user && isOnClientSubdomain && !redirecting) {
       const userType = user.user_metadata?.user_type;
-      console.log('ClientLogin: User authenticated as:', userType, 'on client subdomain:', isClientSubdomain);
       
-      // Prevent multiple redirects
-      if (redirecting) {
-        return;
-      }
-      
-      if (userType === 'client' && isClientSubdomain) {
-        console.log('ClientLogin: User already authenticated as client, redirecting to client portal');
+      if (userType === 'client') {
+        console.log('User already authenticated as client, redirecting to portal');
         setRedirecting(true);
-        
-        // Use timeout to ensure we don't interrupt the current render cycle
-        setTimeout(() => {
-          navigate('/portal', { replace: true });
-        }, 150);
-      } else if (userType === 'trustee' && isClientSubdomain) {
-        // If user is a trustee on client subdomain, redirect them
-        console.log('ClientLogin: Trustee account detected on client subdomain');
+        navigate('/portal', { replace: true });
+      } else if (userType === 'trustee') {
+        console.log('Trustee account on client subdomain, redirecting');
         toast.error("Please use the trustee portal for trustee accounts");
         setRedirecting(true);
         
@@ -95,18 +56,12 @@ const ClientLogin = () => {
           if (hostname === 'localhost') {
             window.location.href = window.location.origin + '?subdomain=trustee';
           } else {
-            const hostParts = hostname.split('.');
-            if (hostParts.length > 2) {
-              hostParts[0] = 'trustee';
-              window.location.href = `https://${hostParts.join('.')}`;
-            } else {
-              window.location.href = `https://trustee.${hostname}`;
-            }
+            window.location.href = `https://trustee.${hostname.split('.').slice(-2).join('.')}`;
           }
         }, 100);
       }
     }
-  }, [user, loading, navigate, isClientSubdomain, initialized, redirecting, authStarted]);
+  }, [user, loading, navigate, isOnClientSubdomain, initialized, redirecting]);
 
   const handleConfirmationSent = (email: string) => {
     setConfirmationEmail(email);
@@ -118,28 +73,18 @@ const ClientLogin = () => {
   };
 
   const handleSwitchToTrusteePortal = () => {
-    // Redirect to trustee subdomain
     setRedirecting(true);
     
     setTimeout(() => {
       const hostname = window.location.hostname;
       if (hostname === 'localhost') {
-        // For localhost testing
         window.location.href = window.location.origin + '?subdomain=trustee';
       } else {
-        // For actual domain
-        const hostParts = hostname.split('.');
-        if (hostParts.length > 2) {
-          hostParts[0] = 'trustee';
-          window.location.href = `https://${hostParts.join('.')}`;
-        } else {
-          window.location.href = `https://trustee.${hostname}`;
-        }
+        window.location.href = `https://trustee.${hostname.split('.').slice(-2).join('.')}`;
       }
     }, 100);
   };
 
-  // Show loading state while checking authentication or redirecting
   if (loading || redirecting) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center">
@@ -147,19 +92,15 @@ const ClientLogin = () => {
         <p className="mt-4 text-muted-foreground">
           {redirecting ? 'Redirecting...' : 'Loading...'}
         </p>
-        <p className="text-xs text-muted-foreground mt-2">
-          {subdomain ? `Domain: ${subdomain}` : 'Detecting domain...'}
-        </p>
       </div>
     );
   }
 
-  // If not on client subdomain, show minimal content that will redirect
-  if (!isClientSubdomain) {
+  if (!isOnClientSubdomain) {
     return (
       <AuthLayout isClientPortal={true}>
         <div className="text-center p-8 text-white">
-          Redirecting to appropriate login page...
+          Redirecting to trustee portal...
         </div>
       </AuthLayout>
     );
@@ -175,12 +116,10 @@ const ClientLogin = () => {
               onBackToSignIn={handleBackToSignIn}
             />
           ) : (
-            <div className="space-y-4">
-              <ClientPortalForm 
-                onConfirmationSent={handleConfirmationSent}
-                onSwitchToTrusteePortal={handleSwitchToTrusteePortal}
-              />
-            </div>
+            <ClientPortalForm 
+              onConfirmationSent={handleConfirmationSent}
+              onSwitchToTrusteePortal={handleSwitchToTrusteePortal}
+            />
           )}
         </div>
         

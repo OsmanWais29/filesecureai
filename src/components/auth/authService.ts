@@ -11,18 +11,18 @@ interface SignUpData {
   metadata?: Record<string, any>;
 }
 
-// Helper function to detect subdomain
+// Simplified subdomain detection
 const getSubdomain = (): string | null => {
-  const hostParts = window.location.hostname.split('.');
+  const hostname = window.location.hostname;
   
   // For localhost testing
-  if (hostParts.includes('localhost')) {
+  if (hostname === 'localhost') {
     const urlParams = new URLSearchParams(window.location.search);
-    const subdomain = urlParams.get('subdomain');
-    return subdomain;
+    return urlParams.get('subdomain');
   }
   
   // For actual domain with subdomains
+  const hostParts = hostname.split('.');
   if (hostParts.length > 2) {
     return hostParts[0];
   }
@@ -30,55 +30,42 @@ const getSubdomain = (): string | null => {
   return null;
 };
 
-// Helper function to validate trustee email domains
+// Simplified email validation for trustees
 const isTrusteeEmail = (email: string): boolean => {
-  // List of allowed domains for trustees - expanded to include more for testing
-  const allowedDomains = [
-    'trustee.com',
-    'securefilesai.com',
-    'example.com',
-    'gmail.com',     // For testing purposes
-    'hotmail.com',   // For testing purposes
-    'yahoo.com',     // For testing purposes
-    'outlook.com',   // For testing purposes
-    'test.com',      // Additional testing domain
-    'ai',            // Additional testing domain
-    'me.com',        // Additional testing domain
-    'live.com',      // Additional testing domain
-    'mail.com',      // Additional testing domain
-    'proton.me',     // Additional testing domain
-    'icloud.com',    // Additional testing domain
-    'aol.com'        // Additional testing domain
-  ];
-  
-  // For development/testing purposes, allow all emails
+  // For development, allow all emails
   if (window.location.hostname === 'localhost') {
-    console.log("Development environment detected, allowing all email domains");
     return true;
   }
   
-  const emailDomain = email.split('@')[1]?.toLowerCase();
-  console.log("Checking email domain:", emailDomain);
+  // In production, you can add specific domain validation here
+  const allowedDomains = [
+    'trustee.com',
+    'securefilesai.com',
+    'gmail.com', // For testing
+    'outlook.com',
+    'hotmail.com'
+  ];
   
+  const emailDomain = email.split('@')[1]?.toLowerCase();
   return allowedDomains.includes(emailDomain);
 };
 
 export const authService = {
   async signUp({ email, password, fullName, userId, avatarUrl, userType, metadata = {} }: SignUpData) {
-    // If userType isn't explicitly provided, infer it from the subdomain
+    // Auto-detect user type from subdomain if not provided
     if (!userType) {
       const subdomain = getSubdomain();
       userType = subdomain === 'client' ? 'client' : 'trustee';
     }
     
-    console.log(`Initiating signup for ${email} as ${userType}`);
+    console.log(`Signing up ${email} as ${userType}`);
     
-    // Validate email domain for trustees
+    // Validate email domain for trustees (simplified)
     if (userType === 'trustee' && !isTrusteeEmail(email)) {
-      throw new Error("This email domain is not authorized for trustee accounts. Please use an approved email address.");
+      throw new Error("This email domain is not authorized for trustee accounts.");
     }
     
-    // Combine all metadata fields
+    // Prepare user metadata
     const userData = {
       full_name: fullName,
       user_id: userId,
@@ -87,24 +74,20 @@ export const authService = {
       ...metadata
     };
     
-    console.log("Creating user with metadata:", userData);
-    
-    // First, sign up the user
+    // Sign up the user
     const { error: signUpError, data } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: userData,
-        emailRedirectTo: `${window.location.origin}/login`,
       }
     });
     
     if (signUpError) throw signUpError;
 
-    // Only create profile if we have a user
+    // Create profile if user was created
     if (data?.user) {
       try {
-        // Create profile for the user even though they haven't confirmed email yet
         const { error: profileError } = await supabase
           .from('profiles')
           .upsert({
@@ -114,7 +97,6 @@ export const authService = {
             avatar_url: avatarUrl,
             email: email,
             user_type: userType,
-            // Add additional profile data if present in metadata
             phone: metadata?.phone,
             address: metadata?.address,
             occupation: metadata?.occupation,
@@ -127,7 +109,6 @@ export const authService = {
         }
       } catch (profileError) {
         console.error("Failed to create profile:", profileError);
-        // We don't throw here to ensure signup still completes
       }
     }
 
@@ -135,73 +116,59 @@ export const authService = {
   },
 
   async signIn(email: string, password: string, userType?: 'trustee' | 'client') {
-    // If userType isn't explicitly provided, infer it from the subdomain
+    // Auto-detect user type from subdomain if not provided
     if (!userType) {
       const subdomain = getSubdomain();
       userType = subdomain === 'client' ? 'client' : 'trustee';
     }
     
-    console.log(`Attempting signin for ${email} as ${userType}`);
+    console.log(`Signing in ${email} as ${userType}`);
     
-    // For localhost/testing, bypass email domain validation
-    if (window.location.hostname !== 'localhost') {
-      // For trustee logins, verify email domain is allowed
-      if (userType === 'trustee' && !isTrusteeEmail(email)) {
-        console.log(`Email domain not authorized for trustee: ${email}`);
-        throw new Error("This email is not authorized to access the Trustee Portal. Please use an approved email address.");
-      }
-    }
-    
+    // Sign in
     const { error, data } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     
     if (error) {
-      console.error("Sign in error:", error);
       throw error;
     }
     
-    console.log("Sign in successful, checking user type...");
+    // Check user type after successful login
     const userMetadataType = data.user?.user_metadata?.user_type;
-    console.log("User type from metadata:", userMetadataType);
     
-    // If no user_type in metadata, set it
     if (!userMetadataType) {
-      console.log("No user type found in metadata, setting to:", userType);
+      // If no user type in metadata, update it
+      console.log("No user type found, setting to:", userType);
       try {
         await supabase.auth.updateUser({
           data: { user_type: userType }
         });
         
-        // Re-fetch the user to get updated metadata
-        const { data: updatedData } = await supabase.auth.getUser();
-        console.log("Updated user metadata:", updatedData?.user?.user_metadata);
-        
-        // Update the session data with the new metadata
-        data.user.user_metadata = {
-          ...data.user.user_metadata,
-          user_type: userType
-        };
+        // Update the returned data
+        if (data.user) {
+          data.user.user_metadata = {
+            ...data.user.user_metadata,
+            user_type: userType
+          };
+        }
       } catch (updateError) {
         console.error("Failed to update user metadata:", updateError);
       }
-    }
-    // Verify user type matches to prevent clients accessing trustee portal and vice versa
-    else if (userMetadataType !== userType) {
+    } else if (userMetadataType !== userType) {
+      // User type mismatch
       console.log(`User type mismatch: expected ${userType}, got ${userMetadataType}`);
       await supabase.auth.signOut();
-      throw new Error(`This account cannot access the ${userType === 'trustee' ? 'Trustee' : 'Client'} Portal. Please use the correct portal for your account type.`);
+      throw new Error(`This account cannot access the ${userType === 'trustee' ? 'Trustee' : 'Client'} Portal.`);
     }
     
-    console.log(`User type verified as ${userType}`);
     return data;
   },
 
   async signOut() {
     console.log("Signing out user...");
     
-    // Clean up local storage and session storage
+    // Clear storage
     try {
       localStorage.removeItem('supabase.auth.token');
       sessionStorage.clear();
@@ -209,20 +176,11 @@ export const authService = {
       console.log('Error clearing storage:', e);
     }
     
-    // Call Supabase signOut method
+    // Sign out
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
     
     console.log("Sign out successful");
-    
-    // Redirect based on subdomain
-    const subdomain = getSubdomain();
-    if (subdomain === 'client') {
-      window.location.href = '/login';
-    } else {
-      window.location.href = '/login';
-    }
-    
     return true;
   }
 };
