@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuthState } from '@/hooks/useAuthState';
 import { supabase } from '@/lib/supabase';
@@ -104,7 +103,7 @@ export const AuditTrail = () => {
             user_name,
             user_email,
             document_title
-          };
+          } as AuditLogEntry;
         })
       );
 

@@ -77,7 +77,7 @@ export const MessagingSystem = ({ isClientView = false }: MessagingSystemProps) 
             ...message,
             sender_name: profile?.full_name || 'Unknown User',
             sender_email: profile?.email || ''
-          };
+          } as Message;
         })
       );
 
