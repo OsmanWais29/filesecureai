@@ -129,6 +129,19 @@ const Settings = () => {
     setDocumentSync,
     defaultCurrency,
     setDefaultCurrency,
+    // Include security settings to match UserSettings interface
+    twoFactorEnabled,
+    setTwoFactorEnabled,
+    sessionTimeout,
+    setSessionTimeout,
+    ipWhitelisting,
+    setIpWhitelisting,
+    loginNotifications,
+    setLoginNotifications,
+    documentEncryption,
+    setDocumentEncryption,
+    passwordExpiry,
+    setPasswordExpiry,
   };
 
   const securitySettings = {
@@ -144,6 +157,19 @@ const Settings = () => {
     setDocumentEncryption,
     passwordExpiry,
     setPasswordExpiry,
+    // Include general settings to match UserSettings interface  
+    timeZone,
+    setTimeZone,
+    language,
+    setLanguage,
+    autoSave,
+    setAutoSave,
+    compactView,
+    setCompactView,
+    documentSync,
+    setDocumentSync,
+    defaultCurrency,
+    setDefaultCurrency,
   };
 
   return (

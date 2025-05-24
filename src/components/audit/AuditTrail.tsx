@@ -80,8 +80,8 @@ export const AuditTrail = () => {
               .single();
             
             if (profile) {
-              user_name = profile.full_name || 'Unknown User';
-              user_email = profile.email || '';
+              user_name = (profile.full_name as string) || 'Unknown User';
+              user_email = (profile.email as string) || '';
             }
           }
 
@@ -94,7 +94,7 @@ export const AuditTrail = () => {
               .single();
             
             if (doc) {
-              document_title = doc.title;
+              document_title = (doc.title as string) || '';
             }
           }
 
