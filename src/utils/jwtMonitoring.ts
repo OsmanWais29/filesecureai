@@ -1,5 +1,5 @@
 
-import { refreshSession } from "@/hooks/useAuthState";
+import { useAuthState } from "@/hooks/useAuthState";
 import { toast } from "sonner";
 
 let monitoringIntervalId: number | null = null;
@@ -10,7 +10,9 @@ const MONITORING_INTERVAL = 5 * 60 * 1000; // 5 minutes
  */
 export const checkAndRefreshToken = async (): Promise<{ isValid: boolean; reason?: string }> => {
   try {
-    const refreshed = await refreshSession();
+    // Import refreshSession dynamically to avoid circular dependency
+    const { refreshToken } = await import('@/utils/jwt/tokenManager');
+    const refreshed = await refreshToken();
     if (refreshed) {
       console.log('JWT token refreshed successfully');
       return { isValid: true };

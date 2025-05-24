@@ -1,179 +1,113 @@
 
-import { supabase } from "@/lib/supabase";
-import { logError } from "./debugMode";
-import { testDirectUpload } from "./storageDiagnostics";
-import { authenticatedStorageOperation } from "@/hooks/useAuthenticatedFetch";
-import { verifyJwtToken } from "./jwtVerifier";
-import { ensureValidToken } from "@/utils/jwt/tokenManager";
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
+import { ensureValidToken } from '@/utils/jwt/tokenManager';
 
-// Define an extended StorageError type to handle potential properties
-interface ExtendedStorageError {
-  message: string;
-  statusCode?: number;
+interface UploadOptions {
+  diagnostics?: boolean;
+  onProgress?: (progress: number) => void;
+}
+
+interface UploadResult {
+  data?: { path: string; fullPath: string };
   error?: string;
 }
 
-/**
- * Uploads a file to Supabase storage with comprehensive JWT error handling
- * and diagnostic capabilities
- */
-export async function uploadFile(
+export const uploadFile = async (
   file: File,
   bucket: string,
-  filePath: string,
-  options: { contentType?: string; upsert?: boolean; diagnostics?: boolean } = {}
-) {
-  // Enable diagnostics if requested
-  if (options.diagnostics) {
-    console.log("🔍 Running JWT diagnostics before upload...");
-    await verifyJwtToken();
-  }
-
-  return authenticatedStorageOperation(async () => {
-    // Try to upload with the standard Supabase client
-    const { data, error } = await supabase.storage
-      .from(bucket)
-      .upload(filePath, file, {
-        upsert: options.upsert ?? true,
-        contentType: options.contentType || file.type,
-      });
-    
-    if (error) {
-      console.error("Storage upload error:", error);
-      
-      // If we still get an error that looks like a JWT issue, try direct upload
-      // Use type-safe error handling to check for JWT-related errors
-      const storageError = error as ExtendedStorageError;
-      const isJwtError = 
-        storageError.message?.includes('JWT') || 
-        storageError.message?.includes('token') ||
-        storageError?.statusCode === 400 || 
-        storageError?.error === 'InvalidJWT';
-        
-      if (isJwtError) {
-        console.log("🔄 JWT error detected, verifying token status...");
-        const tokenStatus = await verifyJwtToken();
-        
-        if (!tokenStatus.isValid) {
-          console.error(`JWT verification failed: ${tokenStatus.reason}`);
-        }
-        
-        console.log("Attempting direct upload as fallback strategy...");
-        return directStorageUpload(file, bucket, filePath, options);
-      }
-      
-      throw error;
-    }
-    
-    return data;
-  });
-}
-
-/**
- * Fallback direct upload method when standard Supabase client fails
- */
-async function directStorageUpload(
-  file: File,
-  bucket: string,
-  filePath: string,
-  options: { contentType?: string; upsert?: boolean; diagnostics?: boolean } = {}
-) {
-  // Ensure fresh token
-  const tokenRefreshed = await ensureValidToken();
-  
-  if (!tokenRefreshed) {
-    console.warn("Failed to refresh token before direct upload");
-    // Try one more approach - running direct upload test with diagnostics
-    console.log("Attempting direct upload test with diagnostics...");
-    const directTest = await testDirectUpload(file, bucket, filePath);
-    
-    if (directTest.success) {
-      return directTest.data;
-    } else {
-      throw new Error(`Direct upload failed: ${JSON.stringify(directTest.error)}`);
-    }
-  }
-  
-  // Get fresh session
-  const { data: { session } } = await supabase.auth.getSession();
-  
-  if (!session) {
-    throw new Error("No authenticated session available");
-  }
-  
-  // Create form data
-  const formData = new FormData();
-  formData.append('file', file);
-  
-  // Create URL query parameters
-  const queryParams = new URLSearchParams();
-  if (options.upsert !== false) {
-    queryParams.append('upsert', 'true');
-  }
-  
-  // Make direct call to storage API
-  const response = await fetch(
-    `https://plxuyxacefgttimodrbp.supabase.co/storage/v1/object/${bucket}/${filePath}?${queryParams.toString()}`,
-    {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${session.access_token}`,
-        // No Content-Type header - it will be set by the browser for multipart/form-data
-      },
-      body: formData
-    }
-  );
-  
-  if (!response.ok) {
-    const responseText = await response.text();
-    let responseData;
-    
-    try {
-      responseData = JSON.parse(responseText);
-    } catch (e) {
-      responseData = responseText;
-    }
-    
-    throw new Error(`Upload failed: ${response.status} ${responseData?.message || responseText}`);
-  }
-  
-  // Parse and return response data
-  const responseData = await response.json();
-  return responseData;
-}
-
-/**
- * Downloads a file from storage with comprehensive error handling
- */
-export async function downloadFile(bucket: string, filePath: string) {
-  return authenticatedStorageOperation(async () => {
-    const { data, error } = await supabase.storage
-      .from(bucket)
-      .download(filePath);
-    
-    if (error) {
-      throw error;
-    }
-    
-    return data;
-  });
-}
-
-/**
- * Gets a public URL for a file with error handling
- */
-export async function getFileUrl(bucket: string, filePath: string) {
+  path: string,
+  options: UploadOptions = {}
+): Promise<UploadResult> => {
   try {
-    // Ensure fresh token first (for private buckets)
-    await ensureValidToken();
-    
-    const { data } = supabase.storage
+    // Ensure we have a valid token before attempting upload
+    const tokenValid = await ensureValidToken();
+    if (!tokenValid) {
+      throw new Error('Authentication token is invalid or expired');
+    }
+
+    if (options.diagnostics) {
+      console.log(`Starting upload: ${file.name} to ${bucket}/${path}`);
+    }
+
+    const { data, error } = await supabase.storage
       .from(bucket)
-      .getPublicUrl(filePath);
-    
-    return data.publicUrl;
+      .upload(path, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (error) {
+      console.error('Upload error:', error);
+      throw error;
+    }
+
+    if (options.diagnostics) {
+      console.log('Upload successful:', data);
+    }
+
+    return {
+      data: {
+        path: data.path,
+        fullPath: data.fullPath
+      }
+    };
   } catch (error) {
-    console.error("Error getting file URL:", error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : 'Unknown upload error';
+    console.error('Upload failed:', errorMessage);
+    
+    if (options.diagnostics) {
+      toast.error(`Upload failed: ${errorMessage}`);
+    }
+    
+    return { error: errorMessage };
   }
-}
+};
+
+export const downloadFile = async (bucket: string, path: string): Promise<Blob | null> => {
+  try {
+    const tokenValid = await ensureValidToken();
+    if (!tokenValid) {
+      throw new Error('Authentication token is invalid or expired');
+    }
+
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .download(path);
+
+    if (error) throw error;
+
+    return data;
+  } catch (error) {
+    console.error('Download failed:', error);
+    return null;
+  }
+};
+
+export const deleteFile = async (bucket: string, path: string): Promise<boolean> => {
+  try {
+    const tokenValid = await ensureValidToken();
+    if (!tokenValid) {
+      throw new Error('Authentication token is invalid or expired');
+    }
+
+    const { error } = await supabase.storage
+      .from(bucket)
+      .remove([path]);
+
+    if (error) throw error;
+
+    return true;
+  } catch (error) {
+    console.error('Delete failed:', error);
+    return false;
+  }
+};
+
+export const getPublicUrl = (bucket: string, path: string): string => {
+  const { data } = supabase.storage
+    .from(bucket)
+    .getPublicUrl(path);
+
+  return data.publicUrl;
+};

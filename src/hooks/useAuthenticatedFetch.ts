@@ -1,6 +1,6 @@
 
 import { supabase } from "@/lib/supabase";
-import { withFreshToken } from "@/utils/jwt/tokenManager";
+import { withFreshToken, ensureValidToken, startTokenMonitoring, stopTokenMonitoring } from "@/utils/jwt/tokenManager";
 
 // Utility for making authenticated API requests, auto-refreshing tokens if needed
 export async function authenticatedFetch(url: string, options: any = {}) {

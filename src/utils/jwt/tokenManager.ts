@@ -43,3 +43,39 @@ export const refreshToken = async (): Promise<boolean> => {
     return false;
   }
 };
+
+export const ensureValidToken = async (): Promise<boolean> => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      console.log('No session found');
+      return false;
+    }
+    
+    // Check if token is close to expiry (within 5 minutes)
+    const expiresAt = session.expires_at;
+    if (expiresAt) {
+      const now = Math.floor(Date.now() / 1000);
+      const timeUntilExpiry = expiresAt - now;
+      
+      if (timeUntilExpiry < 300) { // Less than 5 minutes
+        console.log('Token close to expiry, refreshing...');
+        return await refreshToken();
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error checking token validity:', error);
+    return false;
+  }
+};
+
+export const withFreshToken = async <T>(operation: () => Promise<T>): Promise<T> => {
+  const isValid = await ensureValidToken();
+  if (!isValid) {
+    throw new Error('Unable to ensure valid authentication token');
+  }
+  
+  return await operation();
+};
