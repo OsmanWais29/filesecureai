@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuthState } from "@/hooks/useAuthState";
 import { supabase } from "@/lib/supabase";
@@ -40,13 +41,13 @@ export const ClientTasks = () => {
       
       // Properly type cast the data with fallback values
       const typedTasks: ClientTask[] = (data || []).map(item => ({
-        id: item.id || '',
-        title: item.title || '',
-        description: item.description || '',
+        id: String(item.id || ''),
+        title: String(item.title || ''),
+        description: String(item.description || ''),
         status: (item.status as 'pending' | 'in_progress' | 'completed') || 'pending',
         priority: (item.priority as 'low' | 'medium' | 'high') || 'medium',
-        due_date: item.due_date || '',
-        created_at: item.created_at || ''
+        due_date: String(item.due_date || ''),
+        created_at: String(item.created_at || '')
       }));
       
       setTasks(typedTasks);

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuthState } from "@/hooks/useAuthState";
 import { supabase } from "@/lib/supabase";
@@ -42,14 +43,14 @@ export const ClientAppointments = () => {
       
       // Properly type cast the data with fallback values
       const typedAppointments: Appointment[] = (data || []).map(item => ({
-        id: item.id || '',
-        title: item.title || '',
-        description: item.description || '',
-        start_time: item.start_time || '',
-        end_time: item.end_time || '',
-        location: item.location || '',
-        meeting_type: item.meeting_type || 'in-person',
-        status: item.status || 'scheduled',
+        id: String(item.id || ''),
+        title: String(item.title || ''),
+        description: String(item.description || ''),
+        start_time: String(item.start_time || ''),
+        end_time: String(item.end_time || ''),
+        location: String(item.location || ''),
+        meeting_type: String(item.meeting_type || 'in-person'),
+        status: String(item.status || 'scheduled'),
         metadata: item.metadata || {}
       }));
       
