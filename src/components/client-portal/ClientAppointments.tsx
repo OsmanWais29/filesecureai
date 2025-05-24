@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuthState } from "@/hooks/useAuthState";
 import { supabase } from "@/lib/supabase";
@@ -40,7 +39,21 @@ export const ClientAppointments = () => {
         .order('start_time', { ascending: true });
 
       if (error) throw error;
-      setAppointments(data || []);
+      
+      // Properly type cast the data with fallback values
+      const typedAppointments: Appointment[] = (data || []).map(item => ({
+        id: item.id || '',
+        title: item.title || '',
+        description: item.description || '',
+        start_time: item.start_time || '',
+        end_time: item.end_time || '',
+        location: item.location || '',
+        meeting_type: item.meeting_type || 'in-person',
+        status: item.status || 'scheduled',
+        metadata: item.metadata || {}
+      }));
+      
+      setAppointments(typedAppointments);
     } catch (error) {
       console.error('Error fetching appointments:', error);
       toast.error('Failed to load appointments');

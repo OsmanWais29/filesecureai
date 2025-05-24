@@ -61,16 +61,16 @@ export const ClientSettings = () => {
 
       if (data) {
         setProfile({
-          full_name: data.full_name || '',
-          email: data.email || user?.email || '',
-          phone: data.phone || '',
-          address: data.address || '',
-          preferred_contact: data.preferred_contact || 'email',
-          notifications_enabled: data.notifications_enabled ?? true,
-          email_notifications: data.email_notifications ?? true,
-          sms_notifications: data.sms_notifications ?? false,
-          language: data.language || 'en',
-          timezone: data.timezone || 'EST'
+          full_name: String(data.full_name || ''),
+          email: String(data.email || user?.email || ''),
+          phone: String(data.phone || ''),
+          address: String(data.address || ''),
+          preferred_contact: (data.preferred_contact as 'email' | 'phone' | 'both') || 'email',
+          notifications_enabled: Boolean(data.notifications_enabled ?? true),
+          email_notifications: Boolean(data.email_notifications ?? true),
+          sms_notifications: Boolean(data.sms_notifications ?? false),
+          language: String(data.language || 'en'),
+          timezone: String(data.timezone || 'EST')
         });
       } else {
         // Set defaults with user email

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuthState } from "@/hooks/useAuthState";
 import { supabase } from "@/lib/supabase";
@@ -38,7 +37,19 @@ export const ClientTasks = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setTasks(data || []);
+      
+      // Properly type cast the data with fallback values
+      const typedTasks: ClientTask[] = (data || []).map(item => ({
+        id: item.id || '',
+        title: item.title || '',
+        description: item.description || '',
+        status: (item.status as 'pending' | 'in_progress' | 'completed') || 'pending',
+        priority: (item.priority as 'low' | 'medium' | 'high') || 'medium',
+        due_date: item.due_date || '',
+        created_at: item.created_at || ''
+      }));
+      
+      setTasks(typedTasks);
     } catch (error) {
       console.error('Error fetching tasks:', error);
       toast.error('Failed to load tasks');
