@@ -5,6 +5,7 @@ import { AuthLayout } from '@/components/auth/AuthLayout';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { ConfirmationSentScreen } from '@/components/auth/ConfirmationSentScreen';
 import { useAuthState } from '@/hooks/useAuthState';
+import { redirectToSubdomain } from '@/utils/subdomain';
 import { toast } from 'sonner';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
@@ -12,33 +13,22 @@ const TrusteeLogin = () => {
   const [confirmationSent, setConfirmationSent] = useState(false);
   const [confirmationEmail, setConfirmationEmail] = useState('');
   const navigate = useNavigate();
-  const { user, loading, initialized, subdomain, isTrustee } = useAuthState();
+  const { user, loading, initialized, isClient, isTrustee } = useAuthState();
   const [redirecting, setRedirecting] = useState(false);
 
-  // Check if we're on the right subdomain
-  const isOnTrusteeSubdomain = subdomain !== 'client';
-
-  // Redirect if not on trustee subdomain
+  // Redirect if on client subdomain
   useEffect(() => {
-    if (subdomain === 'client') {
+    if (isClient) {
       console.log("On client subdomain, redirecting to client login");
       toast.error("Please use the client portal for client login");
       setRedirecting(true);
-      
-      setTimeout(() => {
-        const hostname = window.location.hostname;
-        if (hostname === 'localhost') {
-          window.location.href = window.location.origin + '?subdomain=client';
-        } else {
-          window.location.href = `https://client.${hostname.split('.').slice(-2).join('.')}/login`;
-        }
-      }, 100);
+      redirectToSubdomain('client', '/login');
     }
-  }, [subdomain]);
+  }, [isClient]);
 
   // Redirect if already authenticated as trustee
   useEffect(() => {
-    if (!loading && initialized && user && isOnTrusteeSubdomain && !redirecting) {
+    if (!loading && initialized && user && isTrustee && !redirecting) {
       const userType = user.user_metadata?.user_type;
       
       if (userType === 'trustee') {
@@ -49,18 +39,10 @@ const TrusteeLogin = () => {
         console.log('Client account on trustee subdomain, redirecting');
         toast.error("Please use the client portal for client accounts");
         setRedirecting(true);
-        
-        setTimeout(() => {
-          const hostname = window.location.hostname;
-          if (hostname === 'localhost') {
-            window.location.href = window.location.origin + '?subdomain=client';
-          } else {
-            window.location.href = `https://client.${hostname.split('.').slice(-2).join('.')}`;
-          }
-        }, 100);
+        redirectToSubdomain('client');
       }
     }
-  }, [user, loading, navigate, isOnTrusteeSubdomain, initialized, redirecting]);
+  }, [user, loading, navigate, isTrustee, initialized, redirecting]);
 
   const handleConfirmationSent = (email: string) => {
     setConfirmationEmail(email);
@@ -73,15 +55,7 @@ const TrusteeLogin = () => {
 
   const handleSwitchToClientPortal = () => {
     setRedirecting(true);
-    
-    setTimeout(() => {
-      const hostname = window.location.hostname;
-      if (hostname === 'localhost') {
-        window.location.href = window.location.origin + '?subdomain=client';
-      } else {
-        window.location.href = `https://client.${hostname.split('.').slice(-2).join('.')}`;
-      }
-    }, 100);
+    redirectToSubdomain('client');
   };
 
   if (loading || redirecting) {
@@ -95,7 +69,7 @@ const TrusteeLogin = () => {
     );
   }
 
-  if (!isOnTrusteeSubdomain) {
+  if (isClient) {
     return (
       <AuthLayout isClientPortal={false}>
         <div className="text-center p-8">

@@ -40,7 +40,7 @@ import "./App.css";
 
 // Improved home page resolver that respects authentication status
 function HomePageResolver() {
-  const { user, loading, isClient, isTrustee, redirectInProgress, subdomain } = useAuthState();
+  const { user, loading, isClient, isTrustee, subdomain } = useAuthState();
   
   useEffect(() => {
     logRoutingEvent(`HomePageResolver: Initialized with user: ${!!user}, isClient: ${isClient}, isTrustee: ${isTrustee}, subdomain: ${subdomain}`);
@@ -53,12 +53,12 @@ function HomePageResolver() {
   }, [user, isClient, isTrustee, subdomain]);
   
   // Prevent multiple renders/redirects while checking auth
-  if (loading || redirectInProgress) {
+  if (loading) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center">
         <LoadingSpinner size="large" />
         <p className="mt-4 text-muted-foreground">
-          {redirectInProgress ? "Redirecting..." : "Loading authentication state..."}
+          Loading authentication state...
         </p>
       </div>
     );

@@ -3,28 +3,10 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { startTokenMonitoring, stopTokenMonitoring, refreshToken } from '@/utils/jwt/tokenManager';
+import { detectSubdomain } from '@/utils/subdomain';
 
 /**
- * Simplified subdomain detection
- */
-export function getSubdomain(): string | null {
-  const hostname = window.location.hostname;
-  
-  if (hostname === 'localhost') {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('subdomain');
-  }
-  
-  const hostParts = hostname.split('.');
-  if (hostParts.length > 2) {
-    return hostParts[0];
-  }
-  
-  return null;
-}
-
-/**
- * Simplified auth state hook
+ * Simplified and robust auth state hook with subdomain detection
  */
 export function useAuthState() {
   const [user, setUser] = useState(null);
@@ -32,10 +14,10 @@ export function useAuthState() {
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
 
-  // Memoized values to avoid recalculation
-  const subdomain = useMemo(() => getSubdomain(), []);
-  const isClient = useMemo(() => subdomain === 'client', [subdomain]);
-  const isTrustee = useMemo(() => user?.user_metadata?.user_type === 'trustee', [user]);
+  // Use the robust subdomain detection
+  const subdomainInfo = useMemo(() => detectSubdomain(), []);
+  
+  const { subdomain, isClient, isTrustee } = subdomainInfo;
 
   // Initialize auth state
   useEffect(() => {
@@ -46,7 +28,7 @@ export function useAuthState() {
         // Set up auth listener first
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           (event, newSession) => {
-            console.log(`Auth event: ${event}`);
+            console.log(`Auth event: ${event}`, { subdomain });
             
             if (isMounted) {
               setSession(newSession);
@@ -93,7 +75,7 @@ export function useAuthState() {
       isMounted = false;
       stopTokenMonitoring();
     };
-  }, []);
+  }, [subdomain]);
 
   const refreshSession = useCallback(async (): Promise<boolean> => {
     return refreshToken();
@@ -109,7 +91,7 @@ export function useAuthState() {
       
       toast.success('Signed out successfully');
       
-      // Simple redirect based on subdomain
+      // Simple redirect to login
       setTimeout(() => {
         window.location.href = '/login';
       }, 100);

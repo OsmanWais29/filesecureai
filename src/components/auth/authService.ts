@@ -1,5 +1,6 @@
 
 import { supabase } from '@/lib/supabase';
+import { detectSubdomain } from '@/utils/subdomain';
 
 interface SignUpData {
   email: string;
@@ -11,29 +12,12 @@ interface SignUpData {
   metadata?: Record<string, any>;
 }
 
-// Simplified subdomain detection
-const getSubdomain = (): string | null => {
-  const hostname = window.location.hostname;
-  
-  // For localhost testing
-  if (hostname === 'localhost') {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('subdomain');
-  }
-  
-  // For actual domain with subdomains
-  const hostParts = hostname.split('.');
-  if (hostParts.length > 2) {
-    return hostParts[0];
-  }
-  
-  return null;
-};
-
 // Simplified email validation for trustees
 const isTrusteeEmail = (email: string): boolean => {
+  const { isDevelopment } = detectSubdomain();
+  
   // For development, allow all emails
-  if (window.location.hostname === 'localhost') {
+  if (isDevelopment) {
     return true;
   }
   
@@ -52,15 +36,16 @@ const isTrusteeEmail = (email: string): boolean => {
 
 export const authService = {
   async signUp({ email, password, fullName, userId, avatarUrl, userType, metadata = {} }: SignUpData) {
+    const { isClient } = detectSubdomain();
+    
     // Auto-detect user type from subdomain if not provided
     if (!userType) {
-      const subdomain = getSubdomain();
-      userType = subdomain === 'client' ? 'client' : 'trustee';
+      userType = isClient ? 'client' : 'trustee';
     }
     
-    console.log(`Signing up ${email} as ${userType}`);
+    console.log(`Signing up ${email} as ${userType} on subdomain: ${detectSubdomain().subdomain}`);
     
-    // Validate email domain for trustees (simplified)
+    // Validate email domain for trustees
     if (userType === 'trustee' && !isTrusteeEmail(email)) {
       throw new Error("This email domain is not authorized for trustee accounts.");
     }
@@ -116,13 +101,14 @@ export const authService = {
   },
 
   async signIn(email: string, password: string, userType?: 'trustee' | 'client') {
+    const { isClient } = detectSubdomain();
+    
     // Auto-detect user type from subdomain if not provided
     if (!userType) {
-      const subdomain = getSubdomain();
-      userType = subdomain === 'client' ? 'client' : 'trustee';
+      userType = isClient ? 'client' : 'trustee';
     }
     
-    console.log(`Signing in ${email} as ${userType}`);
+    console.log(`Signing in ${email} as ${userType} on subdomain: ${detectSubdomain().subdomain}`);
     
     // Sign in
     const { error, data } = await supabase.auth.signInWithPassword({
@@ -138,7 +124,7 @@ export const authService = {
     const userMetadataType = data.user?.user_metadata?.user_type;
     
     if (!userMetadataType) {
-      // If no user type in metadata, update it
+      // If no user type in metadata, set it based on subdomain
       console.log("No user type found, setting to:", userType);
       try {
         await supabase.auth.updateUser({
@@ -156,10 +142,9 @@ export const authService = {
         console.error("Failed to update user metadata:", updateError);
       }
     } else if (userMetadataType !== userType) {
-      // User type mismatch
-      console.log(`User type mismatch: expected ${userType}, got ${userMetadataType}`);
-      await supabase.auth.signOut();
-      throw new Error(`This account cannot access the ${userType === 'trustee' ? 'Trustee' : 'Client'} Portal.`);
+      // User type mismatch - allow but warn
+      console.warn(`User type mismatch: expected ${userType}, got ${userMetadataType}`);
+      // Don't sign out, just log the mismatch
     }
     
     return data;
