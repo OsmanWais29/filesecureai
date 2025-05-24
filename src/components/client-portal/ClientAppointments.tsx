@@ -5,18 +5,19 @@ import { supabase } from "@/lib/supabase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, MapPin, Video, Phone } from "lucide-react";
+import { Calendar, Clock, MapPin, Video, Phone, AlertCircle, CalendarCheck } from "lucide-react";
 import { toast } from "sonner";
 
 interface Appointment {
   id: string;
   title: string;
-  description: string;
+  description: string | null;
   start_time: string;
   end_time: string;
-  location: string;
+  location: string | null;
   meeting_type: string;
   status: string;
+  trustee_id: string | null;
   metadata: any;
 }
 
@@ -24,6 +25,7 @@ export const ClientAppointments = () => {
   const { user } = useAuthState();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -32,31 +34,28 @@ export const ClientAppointments = () => {
   }, [user]);
 
   const fetchAppointments = async () => {
+    if (!user) return;
+    
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('meetings')
         .select('*')
-        .eq('client_id', user?.id)
+        .eq('client_id', user.id)
         .order('start_time', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching appointments:', error);
+        setError(error.message);
+        toast.error('Failed to load appointments');
+        return;
+      }
       
-      // Properly type cast the data with fallback values
-      const typedAppointments: Appointment[] = (data || []).map(item => ({
-        id: String(item.id || ''),
-        title: String(item.title || ''),
-        description: String(item.description || ''),
-        start_time: String(item.start_time || ''),
-        end_time: String(item.end_time || ''),
-        location: String(item.location || ''),
-        meeting_type: String(item.meeting_type || 'in-person'),
-        status: String(item.status || 'scheduled'),
-        metadata: item.metadata || {}
-      }));
-      
-      setAppointments(typedAppointments);
-    } catch (error) {
-      console.error('Error fetching appointments:', error);
+      setAppointments(data || []);
+      setError(null);
+    } catch (err) {
+      console.error('Error in fetchAppointments:', err);
+      setError('Failed to load appointments');
       toast.error('Failed to load appointments');
     } finally {
       setLoading(false);
@@ -74,23 +73,36 @@ export const ClientAppointments = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmed': return 'default';
-      case 'pending': return 'secondary';
+      case 'scheduled': return 'secondary';
       case 'cancelled': return 'destructive';
-      case 'completed': return 'secondary';
-      default: return 'default';
+      case 'completed': return 'outline';
+      default: return 'secondary';
     }
   };
 
   const formatDateTime = (dateTime: string) => {
-    const date = new Date(dateTime);
-    return {
-      date: date.toLocaleDateString(),
-      time: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
+    try {
+      const date = new Date(dateTime);
+      return {
+        date: date.toLocaleDateString(),
+        time: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+    } catch {
+      return { date: 'Invalid date', time: 'Invalid time' };
+    }
   };
 
   const isUpcoming = (startTime: string) => {
-    return new Date(startTime) > new Date();
+    try {
+      return new Date(startTime) > new Date();
+    } catch {
+      return false;
+    }
+  };
+
+  const requestAppointment = () => {
+    toast.success('Appointment request feature coming soon!');
+    // TODO: Implement appointment request functionality
   };
 
   if (loading) {
@@ -99,10 +111,29 @@ export const ClientAppointments = () => {
         <div className="animate-pulse space-y-4">
           {[1, 2, 3].map(i => (
             <Card key={i}>
-              <CardHeader className="h-24 bg-muted"></CardHeader>
+              <CardHeader className="h-24 bg-muted rounded"></CardHeader>
             </Card>
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center py-8">
+              <AlertCircle className="h-12 w-12 mx-auto text-destructive mb-4" />
+              <h3 className="text-lg font-medium mb-2">Error Loading Appointments</h3>
+              <p className="text-muted-foreground mb-4">{error}</p>
+              <Button onClick={fetchAppointments} variant="outline">
+                Try Again
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -126,12 +157,12 @@ export const ClientAppointments = () => {
           <Card>
             <CardContent className="pt-6">
               <div className="text-center py-6">
-                <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <CalendarCheck className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                 <h3 className="text-lg font-medium mb-2">No upcoming appointments</h3>
                 <p className="text-muted-foreground mb-4">
                   You don't have any scheduled appointments. Contact your trustee to schedule a meeting.
                 </p>
-                <Button variant="outline">
+                <Button onClick={requestAppointment} variant="outline">
                   Request Appointment
                 </Button>
               </div>
@@ -149,7 +180,9 @@ export const ClientAppointments = () => {
                     <div className="flex items-start justify-between">
                       <div>
                         <CardTitle className="text-lg">{appointment.title}</CardTitle>
-                        <CardDescription>{appointment.description}</CardDescription>
+                        {appointment.description && (
+                          <CardDescription>{appointment.description}</CardDescription>
+                        )}
                       </div>
                       <Badge variant={getStatusColor(appointment.status)}>
                         {appointment.status}
@@ -177,11 +210,13 @@ export const ClientAppointments = () => {
                     </div>
 
                     <div className="flex gap-2 pt-2">
-                      <Button size="sm">
+                      <Button size="sm" disabled>
                         Join Meeting
+                        <span className="text-xs ml-1">(Coming Soon)</span>
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" disabled>
                         Reschedule
+                        <span className="text-xs ml-1">(Coming Soon)</span>
                       </Button>
                     </div>
                   </CardContent>
@@ -218,6 +253,11 @@ export const ClientAppointments = () => {
                 </Card>
               );
             })}
+            {pastAppointments.length > 5 && (
+              <p className="text-sm text-muted-foreground text-center">
+                Showing 5 most recent appointments
+              </p>
+            )}
           </div>
         </div>
       )}

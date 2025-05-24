@@ -5,23 +5,26 @@ import { supabase } from "@/lib/supabase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Clock, AlertCircle, Calendar } from "lucide-react";
+import { CheckCircle2, Clock, AlertCircle, Calendar, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 interface ClientTask {
   id: string;
   title: string;
-  description: string;
-  status: 'pending' | 'in_progress' | 'completed';
+  description: string | null;
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
   priority: 'low' | 'medium' | 'high';
-  due_date: string;
+  due_date: string | null;
   created_at: string;
+  assigned_to: string | null;
+  created_by: string | null;
 }
 
 export const ClientTasks = () => {
   const { user } = useAuthState();
   const [tasks, setTasks] = useState<ClientTask[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -30,29 +33,28 @@ export const ClientTasks = () => {
   }, [user]);
 
   const fetchTasks = async () => {
+    if (!user) return;
+    
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('client_tasks')
         .select('*')
-        .eq('client_id', user?.id)
+        .eq('client_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching tasks:', error);
+        setError(error.message);
+        toast.error('Failed to load tasks');
+        return;
+      }
       
-      // Properly type cast the data with fallback values
-      const typedTasks: ClientTask[] = (data || []).map(item => ({
-        id: String(item.id || ''),
-        title: String(item.title || ''),
-        description: String(item.description || ''),
-        status: (item.status as 'pending' | 'in_progress' | 'completed') || 'pending',
-        priority: (item.priority as 'low' | 'medium' | 'high') || 'medium',
-        due_date: String(item.due_date || ''),
-        created_at: String(item.created_at || '')
-      }));
-      
-      setTasks(typedTasks);
-    } catch (error) {
-      console.error('Error fetching tasks:', error);
+      setTasks(data || []);
+      setError(null);
+    } catch (err) {
+      console.error('Error in fetchTasks:', err);
+      setError('Failed to load tasks');
       toast.error('Failed to load tasks');
     } finally {
       setLoading(false);
@@ -63,13 +65,21 @@ export const ClientTasks = () => {
     try {
       const { error } = await supabase
         .from('client_tasks')
-        .update({ status: 'completed' })
-        .eq('id', taskId);
+        .update({ 
+          status: 'completed',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', taskId)
+        .eq('client_id', user?.id); // Extra security check
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating task:', error);
+        toast.error('Failed to update task');
+        return;
+      }
       
       setTasks(tasks.map(task => 
-        task.id === taskId ? { ...task, status: 'completed' } : task
+        task.id === taskId ? { ...task, status: 'completed' as const } : task
       ));
       
       toast.success('Task marked as complete');
@@ -92,7 +102,17 @@ export const ClientTasks = () => {
     switch (status) {
       case 'completed': return <CheckCircle2 className="h-4 w-4 text-green-500" />;
       case 'in_progress': return <Clock className="h-4 w-4 text-blue-500" />;
+      case 'cancelled': return <AlertCircle className="h-4 w-4 text-gray-500" />;
       default: return <AlertCircle className="h-4 w-4 text-orange-500" />;
+    }
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return null;
+    try {
+      return new Date(dateString).toLocaleDateString();
+    } catch {
+      return null;
     }
   };
 
@@ -102,10 +122,29 @@ export const ClientTasks = () => {
         <div className="animate-pulse space-y-4">
           {[1, 2, 3].map(i => (
             <Card key={i}>
-              <CardHeader className="h-20 bg-muted"></CardHeader>
+              <CardHeader className="h-20 bg-muted rounded"></CardHeader>
             </Card>
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center py-8">
+              <AlertCircle className="h-12 w-12 mx-auto text-destructive mb-4" />
+              <h3 className="text-lg font-medium mb-2">Error Loading Tasks</h3>
+              <p className="text-muted-foreground mb-4">{error}</p>
+              <Button onClick={fetchTasks} variant="outline">
+                Try Again
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -123,10 +162,10 @@ export const ClientTasks = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="text-center py-8">
-              <CheckCircle2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">No tasks assigned</h3>
               <p className="text-muted-foreground">
-                You're all caught up! New tasks will appear here when assigned.
+                You're all caught up! New tasks will appear here when assigned by your trustee.
               </p>
             </div>
           </CardContent>
@@ -134,7 +173,7 @@ export const ClientTasks = () => {
       ) : (
         <div className="space-y-4">
           {tasks.map((task) => (
-            <Card key={task.id}>
+            <Card key={task.id} className={task.status === 'completed' ? 'opacity-75' : ''}>
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
@@ -152,21 +191,24 @@ export const ClientTasks = () => {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <CardDescription>{task.description}</CardDescription>
+                {task.description && (
+                  <CardDescription>{task.description}</CardDescription>
+                )}
                 
                 {task.due_date && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Calendar className="h-4 w-4" />
-                    Due: {new Date(task.due_date).toLocaleDateString()}
+                    <span>Due: {formatDate(task.due_date)}</span>
                   </div>
                 )}
                 
-                {task.status !== 'completed' && (
+                {task.status !== 'completed' && task.status !== 'cancelled' && (
                   <Button 
                     onClick={() => markTaskComplete(task.id)}
                     size="sm"
                     className="w-full"
                   >
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
                     Mark as Complete
                   </Button>
                 )}

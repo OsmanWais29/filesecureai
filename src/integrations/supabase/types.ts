@@ -914,6 +914,7 @@ export type Database = {
           start_time: string
           status: string | null
           title: string
+          trustee_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -929,6 +930,7 @@ export type Database = {
           start_time: string
           status?: string | null
           title: string
+          trustee_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -944,6 +946,7 @@ export type Database = {
           start_time?: string
           status?: string | null
           title?: string
+          trustee_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
