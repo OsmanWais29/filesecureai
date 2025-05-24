@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuthState } from "@/hooks/useAuthState";
 import { supabase } from "@/lib/supabase";
@@ -42,7 +41,7 @@ export const ClientDocuments = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('documents')
-        .select('*')
+        .select('id, title, type, size, created_at, storage_path, url, metadata')
         .eq('user_id', user.id)
         .eq('is_folder', false)
         .order('created_at', { ascending: false });
@@ -53,7 +52,19 @@ export const ClientDocuments = () => {
         return;
       }
       
-      setDocuments(data || []);
+      // Transform data to match Document interface
+      const formattedDocuments: Document[] = (data || []).map(doc => ({
+        id: doc.id,
+        title: doc.title || 'Untitled Document',
+        type: doc.type || 'application/octet-stream',
+        size: doc.size || 0,
+        created_at: doc.created_at,
+        storage_path: doc.storage_path || '',
+        url: doc.url || '',
+        metadata: doc.metadata || {}
+      }));
+      
+      setDocuments(formattedDocuments);
       setError(null);
     } catch (err) {
       console.error('Error in fetchDocuments:', err);
@@ -129,12 +140,12 @@ export const ClientDocuments = () => {
 
       // Create download link
       const url = URL.createObjectURL(data);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = document.title;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      const link = window.document.createElement('a');
+      link.href = url;
+      link.download = document.title;
+      window.document.body.appendChild(link);
+      link.click();
+      window.document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
       // Log the download
@@ -234,7 +245,7 @@ export const ClientDocuments = () => {
             accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
           />
           <Button
-            onClick={() => document.getElementById('file-upload')?.click()}
+            onClick={() => window.document.getElementById('file-upload')?.click()}
             disabled={uploading}
             className="flex items-center gap-2"
           >

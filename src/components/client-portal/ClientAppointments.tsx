@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuthState } from "@/hooks/useAuthState";
 import { supabase } from "@/lib/supabase";
@@ -46,7 +45,15 @@ export const ClientAppointments = () => {
       const { data, error } = await supabase
         .from('meetings')
         .select(`
-          *,
+          id,
+          title,
+          description,
+          start_time,
+          end_time,
+          location,
+          meeting_type,
+          status,
+          metadata,
           profiles!meetings_trustee_id_fkey (
             full_name,
             email,
@@ -62,9 +69,22 @@ export const ClientAppointments = () => {
         return;
       }
       
-      const formattedMeetings = (data || []).map(meeting => ({
-        ...meeting,
-        trustee: meeting.profiles || {
+      // Transform the data to match our Meeting interface
+      const formattedMeetings: Meeting[] = (data || []).map(meeting => ({
+        id: meeting.id,
+        title: meeting.title || 'Untitled Meeting',
+        description: meeting.description || '',
+        start_time: meeting.start_time,
+        end_time: meeting.end_time,
+        location: meeting.location || '',
+        meeting_type: meeting.meeting_type || 'in-person',
+        status: meeting.status || 'scheduled',
+        metadata: meeting.metadata || {},
+        trustee: meeting.profiles ? {
+          full_name: meeting.profiles.full_name || 'Unknown Trustee',
+          email: meeting.profiles.email || '',
+          phone: meeting.profiles.phone || ''
+        } : {
           full_name: 'Unknown Trustee',
           email: '',
           phone: ''
