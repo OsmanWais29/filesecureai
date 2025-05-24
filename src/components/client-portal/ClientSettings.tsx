@@ -6,9 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { User, Bell, Shield, Globe } from "lucide-react";
+import { AlertCircle, Save, User, Bell, Shield, Globe } from "lucide-react";
 import { toast } from "sonner";
 
 interface ClientProfile {
@@ -16,122 +18,168 @@ interface ClientProfile {
   email: string;
   phone: string;
   address: string;
-  preferred_contact: 'email' | 'phone' | 'both';
-  notifications_enabled: boolean;
-  email_notifications: boolean;
-  sms_notifications: boolean;
+  date_of_birth: string;
+  emergency_contact_name: string;
+  emergency_contact_phone: string;
+  occupation: string;
+  income: number;
+  preferred_contact: string;
   language: string;
   timezone: string;
 }
 
+interface NotificationSettings {
+  email_notifications: boolean;
+  sms_notifications: boolean;
+}
+
 export const ClientSettings = () => {
   const { user } = useAuthState();
-  const [profile, setProfile] = useState<ClientProfile>({
-    full_name: '',
-    email: '',
-    phone: '',
-    address: '',
-    preferred_contact: 'email',
-    notifications_enabled: true,
+  const [profile, setProfile] = useState<Partial<ClientProfile>>({});
+  const [notifications, setNotifications] = useState<NotificationSettings>({
     email_notifications: true,
-    sms_notifications: false,
-    language: 'en',
-    timezone: 'EST'
+    sms_notifications: false
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
-      loadProfile();
+      fetchClientData();
     }
   }, [user]);
 
-  const loadProfile = async () => {
+  const fetchClientData = async () => {
+    if (!user) return;
+    
     try {
-      const { data, error } = await supabase
+      setLoading(true);
+      
+      // Fetch profile data
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', user?.id)
+        .eq('id', user.id)
         .single();
 
-      if (error && error.code !== 'PGRST116') {
-        throw error;
+      if (profileError && profileError.code !== 'PGRST116') {
+        throw profileError;
       }
 
-      if (data) {
+      if (profileData) {
         setProfile({
-          full_name: String(data.full_name || ''),
-          email: String(data.email || user?.email || ''),
-          phone: String(data.phone || ''),
-          address: String(data.address || ''),
-          preferred_contact: (data.preferred_contact as 'email' | 'phone' | 'both') || 'email',
-          notifications_enabled: Boolean(data.notifications_enabled ?? true),
-          email_notifications: Boolean(data.email_notifications ?? true),
-          sms_notifications: Boolean(data.sms_notifications ?? false),
-          language: String(data.language || 'en'),
-          timezone: String(data.timezone || 'EST')
+          full_name: profileData.full_name || '',
+          email: profileData.email || user.email || '',
+          phone: profileData.phone || '',
+          address: profileData.address || '',
+          date_of_birth: profileData.date_of_birth || '',
+          emergency_contact_name: profileData.emergency_contact_name || '',
+          emergency_contact_phone: profileData.emergency_contact_phone || '',
+          occupation: profileData.occupation || '',
+          income: profileData.income || 0,
+          preferred_contact: profileData.preferred_contact || 'email',
+          language: profileData.language || 'en',
+          timezone: profileData.timezone || 'EST'
+        });
+
+        setNotifications({
+          email_notifications: profileData.email_notifications ?? true,
+          sms_notifications: profileData.sms_notifications ?? false
         });
       } else {
-        // Set defaults with user email
-        setProfile(prev => ({
-          ...prev,
-          email: user?.email || ''
-        }));
+        // Create default profile if none exists
+        setProfile({
+          full_name: user.user_metadata?.full_name || '',
+          email: user.email || '',
+          phone: '',
+          address: '',
+          date_of_birth: '',
+          emergency_contact_name: '',
+          emergency_contact_phone: '',
+          occupation: '',
+          income: 0,
+          preferred_contact: 'email',
+          language: 'en',
+          timezone: 'EST'
+        });
       }
-    } catch (error) {
-      console.error('Error loading profile:', error);
-      toast.error('Failed to load profile');
+      
+      setError(null);
+    } catch (err: any) {
+      console.error('Error fetching client data:', err);
+      setError('Failed to load settings');
+      toast.error('Failed to load settings');
     } finally {
       setLoading(false);
     }
   };
 
-  const saveProfile = async () => {
+  const handleSave = async () => {
     if (!user) return;
-
+    
     try {
       setSaving(true);
-
-      const { error } = await supabase
+      
+      // Update profile
+      const { error: profileError } = await supabase
         .from('profiles')
         .upsert({
           id: user.id,
-          full_name: profile.full_name,
-          email: profile.email,
-          phone: profile.phone,
-          address: profile.address,
-          preferred_contact: profile.preferred_contact,
-          notifications_enabled: profile.notifications_enabled,
-          email_notifications: profile.email_notifications,
-          sms_notifications: profile.sms_notifications,
-          language: profile.language,
-          timezone: profile.timezone,
+          ...profile,
+          ...notifications,
           updated_at: new Date().toISOString()
         });
 
-      if (error) throw error;
+      if (profileError) throw profileError;
 
-      toast.success('Profile updated successfully');
-    } catch (error) {
-      console.error('Error saving profile:', error);
-      toast.error('Failed to save profile');
+      toast.success('Settings saved successfully');
+      setError(null);
+    } catch (err: any) {
+      console.error('Error saving settings:', err);
+      setError('Failed to save settings');
+      toast.error('Failed to save settings');
     } finally {
       setSaving(false);
     }
+  };
+
+  const updateProfile = (field: keyof ClientProfile, value: any) => {
+    setProfile(prev => ({ ...prev, [field]: value }));
   };
 
   if (loading) {
     return (
       <div className="p-6">
         <div className="animate-pulse space-y-6">
-          {[1, 2, 3].map(i => (
-            <Card key={i}>
-              <CardHeader className="h-20 bg-muted"></CardHeader>
-              <CardContent className="h-40 bg-muted"></CardContent>
-            </Card>
-          ))}
+          <div className="h-8 bg-muted rounded w-1/3"></div>
+          <div className="space-y-4">
+            {[1, 2, 3].map(i => (
+              <Card key={i}>
+                <CardHeader className="h-20 bg-muted rounded"></CardHeader>
+              </Card>
+            ))}
+          </div>
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center py-8">
+              <AlertCircle className="h-12 w-12 mx-auto text-destructive mb-4" />
+              <h3 className="text-lg font-medium mb-2">Error Loading Settings</h3>
+              <p className="text-muted-foreground mb-4">{error}</p>
+              <Button onClick={fetchClientData} variant="outline">
+                Try Again
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -139,223 +187,263 @@ export const ClientSettings = () => {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Account Settings</h1>
+        <h1 className="text-2xl font-bold">Settings</h1>
         <p className="text-muted-foreground">
           Manage your profile and preferences
         </p>
       </div>
 
-      {/* Profile Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Profile Information
-          </CardTitle>
-          <CardDescription>
-            Update your personal information and contact details
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="full_name">Full Name</Label>
-              <Input
-                id="full_name"
-                value={profile.full_name}
-                onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-                placeholder="Enter your full name"
-              />
+      <div className="space-y-6">
+        {/* Personal Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Personal Information
+            </CardTitle>
+            <CardDescription>
+              Update your personal details and contact information
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="full_name">Full Name</Label>
+                <Input
+                  id="full_name"
+                  value={profile.full_name || ''}
+                  onChange={(e) => updateProfile('full_name', e.target.value)}
+                  placeholder="Enter your full name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={profile.email || ''}
+                  onChange={(e) => updateProfile('email', e.target.value)}
+                  placeholder="Enter your email"
+                />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="email">Email Address</Label>
-              <Input
-                id="email"
-                type="email"
-                value={profile.email}
-                onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                placeholder="Enter your email"
-              />
-            </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                id="phone"
-                value={profile.phone}
-                onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                placeholder="Enter your phone number"
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input
+                  id="phone"
+                  value={profile.phone || ''}
+                  onChange={(e) => updateProfile('phone', e.target.value)}
+                  placeholder="Enter your phone number"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="date_of_birth">Date of Birth</Label>
+                <Input
+                  id="date_of_birth"
+                  type="date"
+                  value={profile.date_of_birth || ''}
+                  onChange={(e) => updateProfile('date_of_birth', e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="address">Address</Label>
+              <Textarea
+                id="address"
+                value={profile.address || ''}
+                onChange={(e) => updateProfile('address', e.target.value)}
+                placeholder="Enter your address"
+                rows={3}
               />
             </div>
-            <div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="occupation">Occupation</Label>
+                <Input
+                  id="occupation"
+                  value={profile.occupation || ''}
+                  onChange={(e) => updateProfile('occupation', e.target.value)}
+                  placeholder="Enter your occupation"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="income">Annual Income</Label>
+                <Input
+                  id="income"
+                  type="number"
+                  value={profile.income || ''}
+                  onChange={(e) => updateProfile('income', parseFloat(e.target.value) || 0)}
+                  placeholder="Enter your annual income"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Emergency Contact */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Emergency Contact</CardTitle>
+            <CardDescription>
+              Person to contact in case of emergency
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="emergency_contact_name">Contact Name</Label>
+                <Input
+                  id="emergency_contact_name"
+                  value={profile.emergency_contact_name || ''}
+                  onChange={(e) => updateProfile('emergency_contact_name', e.target.value)}
+                  placeholder="Enter emergency contact name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="emergency_contact_phone">Contact Phone</Label>
+                <Input
+                  id="emergency_contact_phone"
+                  value={profile.emergency_contact_phone || ''}
+                  onChange={(e) => updateProfile('emergency_contact_phone', e.target.value)}
+                  placeholder="Enter emergency contact phone"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Communication Preferences */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5" />
+              Communication Preferences
+            </CardTitle>
+            <CardDescription>
+              Choose how you'd like to receive updates and notifications
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
               <Label htmlFor="preferred_contact">Preferred Contact Method</Label>
-              <select
-                id="preferred_contact"
-                className="w-full mt-1 p-2 border rounded-md"
-                value={profile.preferred_contact}
-                onChange={(e) => setProfile({ ...profile, preferred_contact: e.target.value as any })}
+              <Select 
+                value={profile.preferred_contact || 'email'} 
+                onValueChange={(value) => updateProfile('preferred_contact', value)}
               >
-                <option value="email">Email</option>
-                <option value="phone">Phone</option>
-                <option value="both">Both</option>
-              </select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select preferred contact method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="email">Email</SelectItem>
+                  <SelectItem value="phone">Phone</SelectItem>
+                  <SelectItem value="text">Text Message</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </div>
 
-          <div>
-            <Label htmlFor="address">Address</Label>
-            <Input
-              id="address"
-              value={profile.address}
-              onChange={(e) => setProfile({ ...profile, address: e.target.value })}
-              placeholder="Enter your address"
-            />
-          </div>
-        </CardContent>
-      </Card>
+            <Separator />
 
-      {/* Notification Preferences */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5" />
-            Notification Preferences
-          </CardTitle>
-          <CardDescription>
-            Choose how you want to receive updates and notifications
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="notifications_enabled">Enable Notifications</Label>
-              <p className="text-sm text-muted-foreground">
-                Receive updates about your case and appointments
-              </p>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="email_notifications">Email Notifications</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Receive updates and reminders via email
+                  </p>
+                </div>
+                <Switch
+                  id="email_notifications"
+                  checked={notifications.email_notifications}
+                  onCheckedChange={(checked) => 
+                    setNotifications(prev => ({ ...prev, email_notifications: checked }))
+                  }
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="sms_notifications">SMS Notifications</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Receive urgent updates via text message
+                  </p>
+                </div>
+                <Switch
+                  id="sms_notifications"
+                  checked={notifications.sms_notifications}
+                  onCheckedChange={(checked) => 
+                    setNotifications(prev => ({ ...prev, sms_notifications: checked }))
+                  }
+                />
+              </div>
             </div>
-            <Switch
-              id="notifications_enabled"
-              checked={profile.notifications_enabled}
-              onCheckedChange={(checked) => 
-                setProfile({ ...profile, notifications_enabled: checked })
-              }
-            />
-          </div>
+          </CardContent>
+        </Card>
 
-          <Separator />
+        {/* Regional Preferences */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Globe className="h-5 w-5" />
+              Regional Preferences
+            </CardTitle>
+            <CardDescription>
+              Set your language and timezone preferences
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="language">Language</Label>
+                <Select 
+                  value={profile.language || 'en'} 
+                  onValueChange={(value) => updateProfile('language', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="fr">Français</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="email_notifications">Email Notifications</Label>
-              <p className="text-sm text-muted-foreground">
-                Receive notifications via email
-              </p>
+              <div className="space-y-2">
+                <Label htmlFor="timezone">Timezone</Label>
+                <Select 
+                  value={profile.timezone || 'EST'} 
+                  onValueChange={(value) => updateProfile('timezone', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select timezone" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="EST">Eastern Time (EST)</SelectItem>
+                    <SelectItem value="CST">Central Time (CST)</SelectItem>
+                    <SelectItem value="MST">Mountain Time (MST)</SelectItem>
+                    <SelectItem value="PST">Pacific Time (PST)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <Switch
-              id="email_notifications"
-              checked={profile.email_notifications}
-              disabled={!profile.notifications_enabled}
-              onCheckedChange={(checked) => 
-                setProfile({ ...profile, email_notifications: checked })
-              }
-            />
-          </div>
+          </CardContent>
+        </Card>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="sms_notifications">SMS Notifications</Label>
-              <p className="text-sm text-muted-foreground">
-                Receive notifications via text message
-              </p>
-            </div>
-            <Switch
-              id="sms_notifications"
-              checked={profile.sms_notifications}
-              disabled={!profile.notifications_enabled}
-              onCheckedChange={(checked) => 
-                setProfile({ ...profile, sms_notifications: checked })
-              }
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Regional Preferences */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Globe className="h-5 w-5" />
-            Regional Preferences
-          </CardTitle>
-          <CardDescription>
-            Set your language and timezone preferences
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="language">Language</Label>
-              <select
-                id="language"
-                className="w-full mt-1 p-2 border rounded-md"
-                value={profile.language}
-                onChange={(e) => setProfile({ ...profile, language: e.target.value })}
-              >
-                <option value="en">English</option>
-                <option value="fr">French</option>
-                <option value="es">Spanish</option>
-              </select>
-            </div>
-            <div>
-              <Label htmlFor="timezone">Timezone</Label>
-              <select
-                id="timezone"
-                className="w-full mt-1 p-2 border rounded-md"
-                value={profile.timezone}
-                onChange={(e) => setProfile({ ...profile, timezone: e.target.value })}
-              >
-                <option value="EST">Eastern Time (EST)</option>
-                <option value="CST">Central Time (CST)</option>
-                <option value="MST">Mountain Time (MST)</option>
-                <option value="PST">Pacific Time (PST)</option>
-              </select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Security Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Security
-          </CardTitle>
-          <CardDescription>
-            Manage your account security settings
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Button variant="outline" className="w-full">
-            Change Password
+        {/* Save Button */}
+        <div className="flex justify-end">
+          <Button 
+            onClick={handleSave} 
+            disabled={saving}
+            className="flex items-center gap-2"
+          >
+            <Save className="h-4 w-4" />
+            {saving ? 'Saving...' : 'Save Changes'}
           </Button>
-          <Button variant="outline" className="w-full">
-            Download My Data
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <Button 
-          onClick={saveProfile}
-          disabled={saving}
-          size="lg"
-        >
-          {saving ? 'Saving...' : 'Save Changes'}
-        </Button>
+        </div>
       </div>
     </div>
   );

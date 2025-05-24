@@ -231,6 +231,42 @@ export type Database = {
           },
         ]
       }
+      client_trustee_relationships: {
+        Row: {
+          assigned_date: string | null
+          client_id: string | null
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          notes: string | null
+          status: string | null
+          trustee_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_date?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          status?: string | null
+          trustee_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_date?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          status?: string | null
+          trustee_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           created_at: string | null
@@ -322,6 +358,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "fk_document_id"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_access_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          document_id: string | null
+          id: string
+          ip_address: unknown | null
+          metadata: Json | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          document_id?: string | null
+          id?: string
+          ip_address?: unknown | null
+          metadata?: Json | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          document_id?: string | null
+          id?: string
+          ip_address?: unknown | null
+          metadata?: Json | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_access_logs_document_id_fkey"
             columns: ["document_id"]
             isOneToOne: false
             referencedRelation: "documents"
@@ -1006,12 +1083,17 @@ export type Database = {
           address: string | null
           avatar_url: string | null
           created_at: string | null
+          date_of_birth: string | null
           email: string
           email_notifications: boolean | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
           full_name: string | null
           id: string
+          income: number | null
           language: string | null
           notifications_enabled: boolean | null
+          occupation: string | null
           phone: string | null
           preferred_contact: string | null
           sms_notifications: boolean | null
@@ -1023,12 +1105,17 @@ export type Database = {
           address?: string | null
           avatar_url?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
           email: string
           email_notifications?: boolean | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
           full_name?: string | null
           id: string
+          income?: number | null
           language?: string | null
           notifications_enabled?: boolean | null
+          occupation?: string | null
           phone?: string | null
           preferred_contact?: string | null
           sms_notifications?: boolean | null
@@ -1040,12 +1127,17 @@ export type Database = {
           address?: string | null
           avatar_url?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
           email?: string
           email_notifications?: boolean | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
           full_name?: string | null
           id?: string
+          income?: number | null
           language?: string | null
           notifications_enabled?: boolean | null
+          occupation?: string | null
           phone?: string | null
           preferred_contact?: string | null
           sms_notifications?: boolean | null
@@ -1227,6 +1319,45 @@ export type Database = {
           metadata?: Json | null
           module?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_notifications: {
+        Row: {
+          action_url: string | null
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          message: string
+          metadata: Json | null
+          read: boolean | null
+          title: string
+          type: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_url?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          message: string
+          metadata?: Json | null
+          read?: boolean | null
+          title: string
+          type?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_url?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          message?: string
+          metadata?: Json | null
+          read?: boolean | null
+          title?: string
+          type?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
