@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useLocation, useNavigate, Routes, Route } from "react-router-dom";
 import { Auth } from "@/components/Auth";
 import { useAuthState } from "@/hooks/useAuthState";
+import { useUserRole } from "@/hooks/useUserRole";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { AuthErrorDisplay } from "@/components/auth/AuthErrorDisplay";
 import { ClientPortalLayout } from "@/components/client-portal/ClientPortalLayout";
@@ -24,14 +25,16 @@ const ClientPortal = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
-  const { user, session, loading: isLoading, signOut } = useAuthState();
+  const { user, session, loading: authLoading, signOut } = useAuthState();
+  const { role, loading: roleLoading, isClient, isTrustee } = useUserRole();
+
+  const isLoading = authLoading || roleLoading;
 
   // Check if we're on the client subdomain
   useEffect(() => {
     const hostname = window.location.hostname;
     const isLocalhost = hostname === 'localhost';
     
-    // For localhost testing
     if (isLocalhost) {
       const urlParams = new URLSearchParams(window.location.search);
       const subdomain = urlParams.get('subdomain');
@@ -39,7 +42,6 @@ const ClientPortal = () => {
       setIsClientSubdomain(isClient);
       console.log("ClientPortal: On localhost with subdomain:", subdomain, "isClient:", isClient);
     } else {
-      // For actual domain with subdomains
       const hostParts = hostname.split('.');
       const isClient = hostParts.length > 2 && hostParts[0] === 'client';
       setIsClientSubdomain(isClient);
@@ -50,13 +52,11 @@ const ClientPortal = () => {
   // Check if user is authenticated and has correct role
   useEffect(() => {
     if (!isLoading) {
-      console.log("ClientPortal: Auth state loaded, user:", user?.id, "role:", user?.user_metadata?.user_type);
+      console.log("ClientPortal: Auth state loaded, user:", user?.id, "role:", role);
       
-      if (user) {
-        const userType = user?.user_metadata?.user_type;
-        
+      if (user && role) {
         // Redirect trustees to main app if they try to access client portal
-        if (userType === 'trustee' && isClientSubdomain) {
+        if (isTrustee && isClientSubdomain) {
           console.log("ClientPortal: Trustee account detected but on client subdomain");
           toast.error("Trustee accounts cannot access the client portal");
           // Redirect to trustee subdomain
@@ -70,16 +70,16 @@ const ClientPortal = () => {
               window.location.href = `https://${hostParts.join('.')}`;
             }
           }
-        } else if (userType === 'client') {
+        } else if (isClient) {
           console.log("ClientPortal: Authenticated as client, accessing client portal");
         } else {
-          console.log("ClientPortal: User has unknown role:", userType);
+          console.log("ClientPortal: User has unknown role:", role);
         }
       } else {
-        console.log("ClientPortal: No authenticated user");
+        console.log("ClientPortal: No authenticated user or role not loaded");
       }
     }
-  }, [user, isLoading, navigate, isClientSubdomain]);
+  }, [user, role, isLoading, navigate, isClientSubdomain, isClient, isTrustee]);
 
   // Handler for signing out
   const handleSignOut = async () => {
@@ -114,8 +114,8 @@ const ClientPortal = () => {
   }
 
   // Check if user has client role
-  if (user?.user_metadata?.user_type !== 'client') {
-    console.log("ClientPortal: User doesn't have client role:", user?.user_metadata?.user_type);
+  if (!isClient) {
+    console.log("ClientPortal: User doesn't have client role:", role);
     toast.error("Access denied. This portal is for clients only.");
     return <Auth isClientPortal={true} />;
   }

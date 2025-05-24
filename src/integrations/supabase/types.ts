@@ -1000,29 +1000,53 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address: string | null
           avatar_url: string | null
           created_at: string | null
           email: string
+          email_notifications: boolean | null
           full_name: string | null
           id: string
+          language: string | null
+          notifications_enabled: boolean | null
+          phone: string | null
+          preferred_contact: string | null
+          sms_notifications: boolean | null
+          timezone: string | null
           updated_at: string | null
           user_id: string | null
         }
         Insert: {
+          address?: string | null
           avatar_url?: string | null
           created_at?: string | null
           email: string
+          email_notifications?: boolean | null
           full_name?: string | null
           id: string
+          language?: string | null
+          notifications_enabled?: boolean | null
+          phone?: string | null
+          preferred_contact?: string | null
+          sms_notifications?: boolean | null
+          timezone?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
         Update: {
+          address?: string | null
           avatar_url?: string | null
           created_at?: string | null
           email?: string
+          email_notifications?: boolean | null
           full_name?: string | null
           id?: string
+          language?: string | null
+          notifications_enabled?: boolean | null
+          phone?: string | null
+          preferred_contact?: string | null
+          sms_notifications?: boolean | null
+          timezone?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -1227,6 +1251,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_settings: {
         Row: {
           auto_save: boolean | null
@@ -1286,10 +1334,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { user_id: string }
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
     }
     Enums: {
       integration_status: "active" | "inactive" | "pending"
+      user_role: "client" | "trustee" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1406,6 +1458,7 @@ export const Constants = {
   public: {
     Enums: {
       integration_status: ["active", "inactive", "pending"],
+      user_role: ["client", "trustee", "admin"],
     },
   },
 } as const
