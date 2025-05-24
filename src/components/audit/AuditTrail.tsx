@@ -18,13 +18,9 @@ interface AuditLogEntry {
   document_id?: string;
   metadata: any;
   created_at: string;
-  user_profile?: {
-    full_name: string;
-    email: string;
-  };
-  document?: {
-    title: string;
-  };
+  user_name?: string;
+  user_email?: string;
+  document_title?: string;
 }
 
 export const AuditTrail = () => {
@@ -34,7 +30,6 @@ export const AuditTrail = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [actionFilter, setActionFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('7'); // days
-  const [selectedClient, setSelectedClient] = useState('all');
 
   useEffect(() => {
     if (user) {
@@ -50,11 +45,7 @@ export const AuditTrail = () => {
       
       let query = supabase
         .from('audit_logs')
-        .select(`
-          *,
-          user_profile:profiles!audit_logs_user_id_fkey(full_name, email),
-          document:documents(title)
-        `);
+        .select('*');
 
       // Apply date filter
       if (dateFilter !== 'all') {
@@ -68,12 +59,56 @@ export const AuditTrail = () => {
         query = query.eq('action', actionFilter);
       }
 
-      const { data, error } = await query
+      const { data: logsData, error } = await query
         .order('created_at', { ascending: false })
         .limit(100);
 
       if (error) throw error;
-      setAuditLogs(data || []);
+
+      // Fetch related data separately to avoid join issues
+      const logsWithDetails = await Promise.all(
+        (logsData || []).map(async (log) => {
+          let user_name = 'Unknown User';
+          let user_email = '';
+          let document_title = '';
+
+          // Fetch user profile
+          if (log.user_id) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('full_name, email')
+              .eq('id', log.user_id)
+              .single();
+            
+            if (profile) {
+              user_name = profile.full_name || 'Unknown User';
+              user_email = profile.email || '';
+            }
+          }
+
+          // Fetch document title
+          if (log.document_id) {
+            const { data: doc } = await supabase
+              .from('documents')
+              .select('title')
+              .eq('id', log.document_id)
+              .single();
+            
+            if (doc) {
+              document_title = doc.title;
+            }
+          }
+
+          return {
+            ...log,
+            user_name,
+            user_email,
+            document_title
+          };
+        })
+      );
+
+      setAuditLogs(logsWithDetails);
     } catch (error) {
       console.error('Error fetching audit logs:', error);
       toast.error('Failed to load audit trail');
@@ -114,9 +149,9 @@ export const AuditTrail = () => {
     const headers = ['Date/Time', 'User', 'Action', 'Document', 'IP Address', 'Details'];
     const rows = logs.map(log => [
       format(new Date(log.created_at), 'yyyy-MM-dd HH:mm:ss'),
-      log.user_profile?.full_name || 'Unknown User',
+      log.user_name || 'Unknown User',
       log.action,
-      log.document?.title || 'N/A',
+      log.document_title || 'N/A',
       log.metadata?.ip_address || 'N/A',
       log.metadata?.details || ''
     ]);
@@ -160,9 +195,9 @@ export const AuditTrail = () => {
 
   const filteredLogs = auditLogs.filter(log => {
     const matchesSearch = 
-      log.user_profile?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      log.user_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.document?.title?.toLowerCase().includes(searchTerm.toLowerCase());
+      log.document_title?.toLowerCase().includes(searchTerm.toLowerCase());
     
     return matchesSearch;
   });
@@ -306,7 +341,7 @@ export const AuditTrail = () => {
                           )}
                         </div>
                         <p className="font-medium text-sm">
-                          {log.user_profile?.full_name || 'Unknown User'} 
+                          {log.user_name || 'Unknown User'} 
                           {log.action === 'view' && ' viewed '}
                           {log.action === 'download' && ' downloaded '}
                           {log.action === 'upload' && ' uploaded '}
@@ -314,8 +349,8 @@ export const AuditTrail = () => {
                           {log.action === 'delete' && ' deleted '}
                           {log.action === 'login' && ' logged in'}
                           {log.action === 'logout' && ' logged out'}
-                          {log.document?.title && (
-                            <span className="font-normal">"{log.document.title}"</span>
+                          {log.document_title && (
+                            <span className="font-normal">"{log.document_title}"</span>
                           )}
                         </p>
                         <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">

@@ -21,10 +21,8 @@ interface Message {
   created_at: string;
   thread_id?: string;
   priority: 'low' | 'normal' | 'high' | 'urgent';
-  sender_profile?: {
-    full_name: string;
-    email: string;
-  };
+  sender_name?: string;
+  sender_email?: string;
 }
 
 interface MessagingSystemProps {
@@ -58,17 +56,32 @@ export const MessagingSystem = ({ isClientView = false }: MessagingSystemProps) 
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
+      const { data: messagesData, error } = await supabase
         .from('messages')
-        .select(`
-          *,
-          sender_profile:profiles!messages_sender_id_fkey(full_name, email)
-        `)
+        .select('*')
         .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setMessages(data || []);
+
+      // Fetch sender profiles separately to avoid join issues
+      const messagesWithProfiles = await Promise.all(
+        (messagesData || []).map(async (message) => {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, email')
+            .eq('id', message.sender_id)
+            .single();
+
+          return {
+            ...message,
+            sender_name: profile?.full_name || 'Unknown User',
+            sender_email: profile?.email || ''
+          };
+        })
+      );
+
+      setMessages(messagesWithProfiles);
     } catch (error) {
       console.error('Error fetching messages:', error);
       toast.error('Failed to load messages');
@@ -144,7 +157,7 @@ export const MessagingSystem = ({ isClientView = false }: MessagingSystemProps) 
   const filteredMessages = messages.filter(message =>
     message.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
     message.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    message.sender_profile?.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
+    message.sender_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const unreadCount = messages.filter(m => 
@@ -242,7 +255,7 @@ export const MessagingSystem = ({ isClientView = false }: MessagingSystemProps) 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <p className="font-medium text-sm truncate">
-                          {message.sender_profile?.full_name || 'Unknown User'}
+                          {message.sender_name || 'Unknown User'}
                         </p>
                         <Badge variant={getPriorityColor(message.priority)} className="text-xs">
                           {message.priority}
@@ -327,7 +340,7 @@ export const MessagingSystem = ({ isClientView = false }: MessagingSystemProps) 
                       </Badge>
                     </CardTitle>
                     <p className="text-sm text-muted-foreground">
-                      From: {selectedMessage.sender_profile?.full_name} ({selectedMessage.sender_profile?.email})
+                      From: {selectedMessage.sender_name} ({selectedMessage.sender_email})
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {format(new Date(selectedMessage.created_at), 'MMMM dd, yyyy at HH:mm')}

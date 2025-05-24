@@ -52,18 +52,18 @@ const Settings = () => {
       }
 
       if (data) {
-        setTimeZone(data.time_zone || 'UTC');
-        setLanguage(data.language || 'en');
-        setAutoSave(data.auto_save ?? true);
-        setCompactView(data.compact_view ?? false);
-        setDocumentSync(data.document_sync ?? true);
-        setDefaultCurrency(data.default_currency || 'CAD');
-        setTwoFactorEnabled(data.two_factor_enabled ?? false);
-        setSessionTimeout(data.session_timeout || '30');
-        setIpWhitelisting(data.ip_whitelisting ?? false);
-        setLoginNotifications(data.login_notifications ?? true);
-        setDocumentEncryption(data.document_encryption ?? true);
-        setPasswordExpiry(data.password_expiry || '90');
+        setTimeZone(String(data.time_zone || 'UTC'));
+        setLanguage(String(data.language || 'en'));
+        setAutoSave(Boolean(data.auto_save ?? true));
+        setCompactView(Boolean(data.compact_view ?? false));
+        setDocumentSync(Boolean(data.document_sync ?? true));
+        setDefaultCurrency(String(data.default_currency || 'CAD'));
+        setTwoFactorEnabled(Boolean(data.two_factor_enabled ?? false));
+        setSessionTimeout(String(data.session_timeout || '30'));
+        setIpWhitelisting(Boolean(data.ip_whitelisting ?? false));
+        setLoginNotifications(Boolean(data.login_notifications ?? true));
+        setDocumentEncryption(Boolean(data.document_encryption ?? true));
+        setPasswordExpiry(String(data.password_expiry || '90'));
       }
     } catch (error) {
       console.error('Error loading settings:', error);
