@@ -49,17 +49,17 @@ export const ClientTasks = () => {
         return;
       }
       
-      // Properly cast the data to ClientTask[]
+      // Properly cast the data to ClientTask[] with explicit type assertions
       const typedTasks: ClientTask[] = (data || []).map(task => ({
-        id: task.id,
-        title: task.title || '',
-        description: task.description,
-        status: task.status as 'pending' | 'in_progress' | 'completed' | 'cancelled',
-        priority: task.priority as 'low' | 'medium' | 'high',
-        due_date: task.due_date,
-        created_at: task.created_at,
-        assigned_to: task.assigned_to,
-        created_by: task.created_by
+        id: task.id as string,
+        title: (task.title as string) || '',
+        description: task.description as string | null,
+        status: (task.status as 'pending' | 'in_progress' | 'completed' | 'cancelled') || 'pending',
+        priority: (task.priority as 'low' | 'medium' | 'high') || 'medium',
+        due_date: task.due_date as string | null,
+        created_at: task.created_at as string,
+        assigned_to: task.assigned_to as string | null,
+        created_by: task.created_by as string | null
       }));
       
       setTasks(typedTasks);

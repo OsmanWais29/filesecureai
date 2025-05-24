@@ -50,17 +50,17 @@ export const ClientAppointments = () => {
         return;
       }
       
-      // Properly cast the data to Appointment[]
+      // Properly cast the data to Appointment[] with explicit type assertions
       const typedAppointments: Appointment[] = (data || []).map(appointment => ({
-        id: appointment.id,
-        title: appointment.title || '',
-        description: appointment.description,
-        start_time: appointment.start_time,
-        end_time: appointment.end_time,
-        location: appointment.location,
-        meeting_type: appointment.meeting_type || 'in-person',
-        status: appointment.status || 'scheduled',
-        trustee_id: appointment.trustee_id,
+        id: appointment.id as string,
+        title: (appointment.title as string) || '',
+        description: appointment.description as string | null,
+        start_time: appointment.start_time as string,
+        end_time: appointment.end_time as string,
+        location: appointment.location as string | null,
+        meeting_type: (appointment.meeting_type as string) || 'in-person',
+        status: (appointment.status as string) || 'scheduled',
+        trustee_id: appointment.trustee_id as string | null,
         metadata: appointment.metadata || {}
       }));
       

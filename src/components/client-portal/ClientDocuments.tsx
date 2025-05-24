@@ -61,16 +61,16 @@ export const ClientDocuments = () => {
         return;
       }
       
-      // Properly cast the data to ClientDocument[]
+      // Properly cast the data to ClientDocument[] with explicit type assertions
       const typedDocuments: ClientDocument[] = (data || []).map(doc => ({
-        id: doc.id,
-        title: doc.title || '',
-        type: doc.type,
-        size: doc.size,
-        created_at: doc.created_at,
-        updated_at: doc.updated_at,
-        storage_path: doc.storage_path,
-        url: doc.url,
+        id: doc.id as string,
+        title: (doc.title as string) || '',
+        type: doc.type as string | null,
+        size: doc.size as number | null,
+        created_at: doc.created_at as string,
+        updated_at: doc.updated_at as string,
+        storage_path: doc.storage_path as string | null,
+        url: doc.url as string | null,
         metadata: doc.metadata || {}
       }));
       
@@ -158,12 +158,12 @@ export const ClientDocuments = () => {
 
       // Create download link using the DOM document object
       const url = URL.createObjectURL(data);
-      const a = window.document.createElement('a');
+      const a = document.createElement('a');
       a.href = url;
       a.download = clientDocument.title;
-      window.document.body.appendChild(a);
+      document.body.appendChild(a);
       a.click();
-      window.document.body.removeChild(a);
+      document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
       toast.success('Document downloaded');
@@ -246,7 +246,7 @@ export const ClientDocuments = () => {
         
         <div className="flex gap-2">
           <Button
-            onClick={() => window.document.getElementById('file-upload')?.click()}
+            onClick={() => document.getElementById('file-upload')?.click()}
             disabled={uploading}
             className="flex items-center gap-2"
           >
@@ -291,7 +291,7 @@ export const ClientDocuments = () => {
               </p>
               {!searchTerm && (
                 <Button
-                  onClick={() => window.document.getElementById('file-upload')?.click()}
+                  onClick={() => document.getElementById('file-upload')?.click()}
                   variant="outline"
                 >
                   Upload Your First Document
