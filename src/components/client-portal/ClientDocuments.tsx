@@ -54,13 +54,13 @@ export const ClientDocuments = () => {
       
       // Transform data to match Document interface
       const formattedDocuments: Document[] = (data || []).map(doc => ({
-        id: doc.id,
-        title: doc.title || 'Untitled Document',
-        type: doc.type || 'application/octet-stream',
-        size: doc.size || 0,
-        created_at: doc.created_at,
-        storage_path: doc.storage_path || '',
-        url: doc.url || '',
+        id: doc.id as string,
+        title: (doc.title as string) || 'Untitled Document',
+        type: (doc.type as string) || 'application/octet-stream',
+        size: (doc.size as number) || 0,
+        created_at: doc.created_at as string,
+        storage_path: (doc.storage_path as string) || '',
+        url: (doc.url as string) || '',
         metadata: doc.metadata || {}
       }));
       
