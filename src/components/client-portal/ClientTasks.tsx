@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuthState } from "@/hooks/useAuthState";
 import { supabase } from "@/lib/supabase";
@@ -50,7 +49,20 @@ export const ClientTasks = () => {
         return;
       }
       
-      setTasks(data || []);
+      // Properly cast the data to ClientTask[]
+      const typedTasks: ClientTask[] = (data || []).map(task => ({
+        id: task.id,
+        title: task.title || '',
+        description: task.description,
+        status: task.status as 'pending' | 'in_progress' | 'completed' | 'cancelled',
+        priority: task.priority as 'low' | 'medium' | 'high',
+        due_date: task.due_date,
+        created_at: task.created_at,
+        assigned_to: task.assigned_to,
+        created_by: task.created_by
+      }));
+      
+      setTasks(typedTasks);
       setError(null);
     } catch (err) {
       console.error('Error in fetchTasks:', err);

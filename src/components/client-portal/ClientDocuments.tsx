@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuthState } from "@/hooks/useAuthState";
 import { supabase } from "@/lib/supabase";
@@ -62,7 +61,20 @@ export const ClientDocuments = () => {
         return;
       }
       
-      setDocuments(data || []);
+      // Properly cast the data to ClientDocument[]
+      const typedDocuments: ClientDocument[] = (data || []).map(doc => ({
+        id: doc.id,
+        title: doc.title || '',
+        type: doc.type,
+        size: doc.size,
+        created_at: doc.created_at,
+        updated_at: doc.updated_at,
+        storage_path: doc.storage_path,
+        url: doc.url,
+        metadata: doc.metadata || {}
+      }));
+      
+      setDocuments(typedDocuments);
       setError(null);
     } catch (err) {
       console.error('Error in fetchDocuments:', err);
@@ -127,8 +139,8 @@ export const ClientDocuments = () => {
     }
   };
 
-  const downloadDocument = async (document: ClientDocument) => {
-    if (!document.storage_path) {
+  const downloadDocument = async (clientDocument: ClientDocument) => {
+    if (!clientDocument.storage_path) {
       toast.error('Document not available for download');
       return;
     }
@@ -136,7 +148,7 @@ export const ClientDocuments = () => {
     try {
       const { data, error } = await supabase.storage
         .from('documents')
-        .download(document.storage_path);
+        .download(clientDocument.storage_path);
 
       if (error) {
         console.error('Error downloading document:', error);
@@ -144,14 +156,14 @@ export const ClientDocuments = () => {
         return;
       }
 
-      // Create download link
+      // Create download link using the DOM document object
       const url = URL.createObjectURL(data);
-      const a = document.createElement('a');
+      const a = window.document.createElement('a');
       a.href = url;
-      a.download = document.title;
-      document.body.appendChild(a);
+      a.download = clientDocument.title;
+      window.document.body.appendChild(a);
       a.click();
-      document.body.removeChild(a);
+      window.document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
       toast.success('Document downloaded');
@@ -234,7 +246,7 @@ export const ClientDocuments = () => {
         
         <div className="flex gap-2">
           <Button
-            onClick={() => document.getElementById('file-upload')?.click()}
+            onClick={() => window.document.getElementById('file-upload')?.click()}
             disabled={uploading}
             className="flex items-center gap-2"
           >
@@ -279,7 +291,7 @@ export const ClientDocuments = () => {
               </p>
               {!searchTerm && (
                 <Button
-                  onClick={() => document.getElementById('file-upload')?.click()}
+                  onClick={() => window.document.getElementById('file-upload')?.click()}
                   variant="outline"
                 >
                   Upload Your First Document
@@ -290,32 +302,32 @@ export const ClientDocuments = () => {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {filteredDocuments.map((document) => (
-            <Card key={document.id}>
+          {filteredDocuments.map((clientDocument) => (
+            <Card key={clientDocument.id}>
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    {getFileTypeIcon(document.type)}
+                    {getFileTypeIcon(clientDocument.type)}
                     <div>
-                      <CardTitle className="text-lg">{document.title}</CardTitle>
+                      <CardTitle className="text-lg">{clientDocument.title}</CardTitle>
                       <CardDescription className="flex items-center gap-4 text-sm">
-                        <span>{formatFileSize(document.size)}</span>
+                        <span>{formatFileSize(clientDocument.size)}</span>
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          {formatDate(document.created_at)}
+                          {formatDate(clientDocument.created_at)}
                         </span>
                       </CardDescription>
                     </div>
                   </div>
-                  {document.type && (
-                    <Badge variant="outline">{document.type.split('/')[1]?.toUpperCase()}</Badge>
+                  {clientDocument.type && (
+                    <Badge variant="outline">{clientDocument.type.split('/')[1]?.toUpperCase()}</Badge>
                   )}
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="flex gap-2">
                   <Button
-                    onClick={() => downloadDocument(document)}
+                    onClick={() => downloadDocument(clientDocument)}
                     size="sm"
                     variant="outline"
                     className="flex items-center gap-2"

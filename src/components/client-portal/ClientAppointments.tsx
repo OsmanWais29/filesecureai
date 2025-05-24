@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuthState } from "@/hooks/useAuthState";
 import { supabase } from "@/lib/supabase";
@@ -51,7 +50,21 @@ export const ClientAppointments = () => {
         return;
       }
       
-      setAppointments(data || []);
+      // Properly cast the data to Appointment[]
+      const typedAppointments: Appointment[] = (data || []).map(appointment => ({
+        id: appointment.id,
+        title: appointment.title || '',
+        description: appointment.description,
+        start_time: appointment.start_time,
+        end_time: appointment.end_time,
+        location: appointment.location,
+        meeting_type: appointment.meeting_type || 'in-person',
+        status: appointment.status || 'scheduled',
+        trustee_id: appointment.trustee_id,
+        metadata: appointment.metadata || {}
+      }));
+      
+      setAppointments(typedAppointments);
       setError(null);
     } catch (err) {
       console.error('Error in fetchAppointments:', err);
