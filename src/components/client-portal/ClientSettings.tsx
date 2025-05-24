@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { AlertCircle, Save, User, Bell, Shield, Globe } from "lucide-react";
 import { toast } from "sonner";
+import { toString, toNumber, toBoolean, safeObjectCast } from "@/utils/typeSafetyUtils";
 
 interface ClientProfile {
   full_name: string;
@@ -68,24 +69,25 @@ export const ClientSettings = () => {
       }
 
       if (profileData) {
+        const profileObj = safeObjectCast(profileData);
         setProfile({
-          full_name: profileData.full_name || '',
-          email: profileData.email || user.email || '',
-          phone: profileData.phone || '',
-          address: profileData.address || '',
-          date_of_birth: profileData.date_of_birth || '',
-          emergency_contact_name: profileData.emergency_contact_name || '',
-          emergency_contact_phone: profileData.emergency_contact_phone || '',
-          occupation: profileData.occupation || '',
-          income: profileData.income || 0,
-          preferred_contact: profileData.preferred_contact || 'email',
-          language: profileData.language || 'en',
-          timezone: profileData.timezone || 'EST'
+          full_name: toString(profileObj.full_name),
+          email: toString(profileObj.email) || user.email || '',
+          phone: toString(profileObj.phone),
+          address: toString(profileObj.address),
+          date_of_birth: toString(profileObj.date_of_birth),
+          emergency_contact_name: toString(profileObj.emergency_contact_name),
+          emergency_contact_phone: toString(profileObj.emergency_contact_phone),
+          occupation: toString(profileObj.occupation),
+          income: toNumber(profileObj.income),
+          preferred_contact: toString(profileObj.preferred_contact) || 'email',
+          language: toString(profileObj.language) || 'en',
+          timezone: toString(profileObj.timezone) || 'EST'
         });
 
         setNotifications({
-          email_notifications: profileData.email_notifications ?? true,
-          sms_notifications: profileData.sms_notifications ?? false
+          email_notifications: toBoolean(profileObj.email_notifications) ?? true,
+          sms_notifications: toBoolean(profileObj.sms_notifications) ?? false
         });
       } else {
         // Create default profile if none exists

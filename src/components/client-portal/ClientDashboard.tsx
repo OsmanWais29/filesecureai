@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { toString, toNumber, safeObjectCast } from "@/utils/typeSafetyUtils";
 
 interface DashboardMetrics {
   totalDocuments: number;
@@ -108,8 +109,15 @@ export const ClientDashboard = () => {
       const appointments = appointmentsRes.data || [];
       const notifications = notificationsRes.data || [];
 
-      const pendingTasks = tasks.filter(t => t.status === 'pending' || t.status === 'in_progress').length;
-      const completedTasks = tasks.filter(t => t.status === 'completed').length;
+      const pendingTasks = tasks.filter(t => {
+        const status = toString(safeObjectCast(t).status);
+        return status === 'pending' || status === 'in_progress';
+      }).length;
+      
+      const completedTasks = tasks.filter(t => {
+        const status = toString(safeObjectCast(t).status);
+        return status === 'completed';
+      }).length;
 
       setMetrics({
         totalDocuments: documents.length,
@@ -121,11 +129,11 @@ export const ClientDashboard = () => {
 
       // Set trustee info
       if (trusteeRes.data?.profiles) {
-        const profile = trusteeRes.data.profiles as any;
+        const profile = safeObjectCast(trusteeRes.data.profiles);
         setTrusteeInfo({
-          name: profile.full_name || 'Your Trustee',
-          email: profile.email || '',
-          phone: profile.phone
+          name: toString(profile.full_name) || 'Your Trustee',
+          email: toString(profile.email) || '',
+          phone: toString(profile.phone)
         });
       }
 
@@ -166,23 +174,25 @@ export const ClientDashboard = () => {
       const activities: RecentActivity[] = [];
 
       (recentDocs || []).forEach(doc => {
+        const docObj = safeObjectCast(doc);
         activities.push({
-          id: doc.id,
+          id: toString(docObj.id),
           type: 'document',
           title: 'Document uploaded',
-          description: doc.title,
-          timestamp: doc.created_at
+          description: toString(docObj.title),
+          timestamp: toString(docObj.created_at)
         });
       });
 
       (recentTasks || []).forEach(task => {
+        const taskObj = safeObjectCast(task);
         activities.push({
-          id: task.id,
+          id: toString(taskObj.id),
           type: 'task',
           title: 'Task assigned',
-          description: task.title,
-          timestamp: task.created_at,
-          status: task.status
+          description: toString(taskObj.title),
+          timestamp: toString(taskObj.created_at),
+          status: toString(taskObj.status)
         });
       });
 
