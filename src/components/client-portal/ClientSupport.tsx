@@ -1,214 +1,293 @@
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageCircle, Send, Clock } from "lucide-react";
-import { toast } from "sonner";
+import { useState, useEffect } from "react";
 import { useAuthState } from "@/hooks/useAuthState";
+import { supabase } from "@/lib/supabase";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { MessageSquare, Phone, Mail, Clock, CheckCircle } from "lucide-react";
+import { toast } from "sonner";
 
-interface Message {
+interface SupportTicket {
   id: string;
-  content: string;
-  sender: "client" | "trustee";
-  timestamp: Date;
-  read: boolean;
+  title: string;
+  message: string;
+  status: 'open' | 'in_progress' | 'resolved';
+  priority: 'low' | 'medium' | 'high';
+  created_at: string;
+  updated_at: string;
 }
 
 export const ClientSupport = () => {
-  const [message, setMessage] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuthState();
-  
-  // Placeholder messages for demonstration
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "msg1",
-      content: "Welcome to the support center! How can we help you today?",
-      sender: "trustee",
-      timestamp: new Date(Date.now() - 86400000), // 1 day ago
-      read: true
-    }
-  ]);
+  const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isCreatingTicket, setIsCreatingTicket] = useState(false);
+  const [newTicket, setNewTicket] = useState({
+    title: '',
+    message: '',
+    priority: 'medium'
+  });
 
-  const handleSendMessage = async () => {
-    if (!message.trim()) {
-      toast.error("Please enter a message");
+  useEffect(() => {
+    if (user) {
+      fetchSupportTickets();
+    }
+  }, [user]);
+
+  const fetchSupportTickets = async () => {
+    try {
+      // For now, we'll simulate some support tickets
+      // In a real app, you'd fetch from a support_tickets table
+      const mockTickets: SupportTicket[] = [
+        {
+          id: '1',
+          title: 'Question about monthly payments',
+          message: 'I need clarification about my upcoming payment schedule.',
+          status: 'resolved',
+          priority: 'medium',
+          created_at: '2024-01-15T10:00:00Z',
+          updated_at: '2024-01-16T14:30:00Z'
+        },
+        {
+          id: '2',
+          title: 'Document upload issue',
+          message: 'Having trouble uploading my bank statements.',
+          status: 'in_progress',
+          priority: 'high',
+          created_at: '2024-01-20T09:00:00Z',
+          updated_at: '2024-01-20T15:00:00Z'
+        }
+      ];
+      
+      setTickets(mockTickets);
+    } catch (error) {
+      console.error('Error fetching support tickets:', error);
+      toast.error('Failed to load support tickets');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createSupportTicket = async () => {
+    if (!newTicket.title.trim() || !newTicket.message.trim()) {
+      toast.error('Please fill in all fields');
       return;
     }
 
-    setIsSubmitting(true);
-    
     try {
-      // In a real app, this would send the message to the backend
-      // For now, we'll just simulate adding it to the list
-      const newMessage: Message = {
-        id: `msg${Date.now()}`,
-        content: message,
-        sender: "client",
-        timestamp: new Date(),
-        read: false
+      setIsCreatingTicket(true);
+      
+      // In a real app, you'd insert into a support_tickets table
+      const mockNewTicket: SupportTicket = {
+        id: Date.now().toString(),
+        title: newTicket.title,
+        message: newTicket.message,
+        status: 'open',
+        priority: newTicket.priority as 'low' | 'medium' | 'high',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
+
+      setTickets([mockNewTicket, ...tickets]);
+      setNewTicket({ title: '', message: '', priority: 'medium' });
+      toast.success('Support ticket created successfully');
       
-      setMessages(prev => [...prev, newMessage]);
-      setMessage("");
-      
-      toast.success("Message sent successfully", {
-        description: "Your trustee will respond soon"
-      });
-      
-      // Simulate a response for demonstration purposes
-      setTimeout(() => {
-        const responseMessage: Message = {
-          id: `msg${Date.now() + 1}`,
-          content: "Thank you for your message. A trustee will review it and get back to you as soon as possible.",
-          sender: "trustee",
-          timestamp: new Date(),
-          read: false
-        };
-        
-        setMessages(prev => [...prev, responseMessage]);
-      }, 1000);
     } catch (error) {
-      console.error("Error sending message:", error);
-      toast.error("Failed to send message", {
-        description: "Please try again later"
-      });
+      console.error('Error creating support ticket:', error);
+      toast.error('Failed to create support ticket');
     } finally {
-      setIsSubmitting(false);
+      setIsCreatingTicket(false);
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'resolved': return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'in_progress': return <Clock className="h-4 w-4 text-blue-500" />;
+      default: return <MessageSquare className="h-4 w-4 text-orange-500" />;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'resolved': return 'secondary';
+      case 'in_progress': return 'default';
+      default: return 'destructive';
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high': return 'destructive';
+      case 'medium': return 'default';
+      case 'low': return 'secondary';
+      default: return 'default';
     }
   };
 
   return (
-    <div className="p-4 md:p-6 w-full">
-      <h1 className="text-2xl font-bold mb-4">Support</h1>
-      <p className="text-muted-foreground mb-6">
-        Need assistance? Send a message to your trustee.
-      </p>
-      
-      <div className="grid md:grid-cols-3 gap-6">
-        {/* Support messages */}
-        <div className="md:col-span-2">
-          <Card className="h-[600px] flex flex-col">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <MessageCircle className="h-5 w-5 mr-2" />
-                Support Messages
-              </CardTitle>
-              <CardDescription>
-                Your conversation with the support team
-              </CardDescription>
-            </CardHeader>
-            
-            <CardContent className="flex-1 overflow-y-auto space-y-4 mb-4">
-              {messages.map(msg => (
-                <div 
-                  key={msg.id} 
-                  className={`flex ${msg.sender === 'client' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div 
-                    className={`max-w-[80%] p-3 rounded-lg ${
-                      msg.sender === 'client' 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'bg-muted'
-                    }`}
-                  >
-                    <p>{msg.content}</p>
-                    <p className={`text-xs mt-1 flex items-center ${
-                      msg.sender === 'client' 
-                        ? 'text-primary-foreground/70' 
-                        : 'text-muted-foreground'
-                    }`}>
-                      <Clock className="h-3 w-3 mr-1" />
-                      {msg.timestamp.toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              ))}
-              
-              {messages.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  No messages yet. Start a conversation!
-                </div>
-              )}
-            </CardContent>
-            
-            <CardFooter className="border-t p-4">
-              <div className="w-full flex items-center gap-2">
-                <Textarea 
-                  placeholder="Type your message here..."
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  className="resize-none"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }
-                  }}
-                />
-                <Button 
-                  onClick={handleSendMessage}
-                  disabled={isSubmitting || !message.trim()}
-                  className="shrink-0"
-                >
-                  <Send className="h-4 w-4 mr-2" />
-                  Send
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Support Center</h1>
+        <p className="text-muted-foreground">
+          Get help with your questions and issues
+        </p>
+      </div>
+
+      {/* Contact Information */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <Phone className="h-8 w-8 text-primary" />
+              <div>
+                <h3 className="font-medium">Phone Support</h3>
+                <p className="text-sm text-muted-foreground">1-800-123-4567</p>
+                <p className="text-xs text-muted-foreground">Mon-Fri 9AM-5PM</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <Mail className="h-8 w-8 text-primary" />
+              <div>
+                <h3 className="font-medium">Email Support</h3>
+                <p className="text-sm text-muted-foreground">support@trustee.com</p>
+                <p className="text-xs text-muted-foreground">24-48 hour response</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <MessageSquare className="h-8 w-8 text-primary" />
+              <div>
+                <h3 className="font-medium">Live Chat</h3>
+                <p className="text-sm text-muted-foreground">Available now</p>
+                <Button size="sm" className="mt-1">
+                  Start Chat
                 </Button>
               </div>
-            </CardFooter>
-          </Card>
-        </div>
-        
-        {/* Support info */}
-        <div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Create New Ticket */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Submit a Support Request</CardTitle>
+          <CardDescription>
+            Describe your issue and we'll get back to you as soon as possible
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <label className="text-sm font-medium">Subject</label>
+            <Input
+              placeholder="Brief description of your issue"
+              value={newTicket.title}
+              onChange={(e) => setNewTicket({ ...newTicket, title: e.target.value })}
+            />
+          </div>
+          
+          <div>
+            <label className="text-sm font-medium">Priority</label>
+            <select
+              className="w-full mt-1 p-2 border rounded-md"
+              value={newTicket.priority}
+              onChange={(e) => setNewTicket({ ...newTicket, priority: e.target.value })}
+            >
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium">Message</label>
+            <Textarea
+              placeholder="Please provide details about your issue..."
+              rows={4}
+              value={newTicket.message}
+              onChange={(e) => setNewTicket({ ...newTicket, message: e.target.value })}
+            />
+          </div>
+
+          <Button 
+            onClick={createSupportTicket}
+            disabled={isCreatingTicket}
+            className="w-full"
+          >
+            {isCreatingTicket ? 'Submitting...' : 'Submit Support Request'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Support Tickets History */}
+      <div>
+        <h2 className="text-lg font-semibold mb-4">Your Support Requests</h2>
+        {loading ? (
+          <div className="animate-pulse space-y-4">
+            {[1, 2].map(i => (
+              <Card key={i}>
+                <CardHeader className="h-20 bg-muted"></CardHeader>
+              </Card>
+            ))}
+          </div>
+        ) : tickets.length === 0 ? (
           <Card>
-            <CardHeader>
-              <CardTitle>Support Information</CardTitle>
-              <CardDescription>Ways to get help</CardDescription>
-            </CardHeader>
-            
-            <CardContent className="space-y-4">
-              <div>
-                <h3 className="font-semibold mb-1">Contact Hours</h3>
-                <p className="text-sm text-muted-foreground">
-                  Monday - Friday: 9:00 AM - 5:00 PM
+            <CardContent className="pt-6">
+              <div className="text-center py-6">
+                <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">No support requests yet</h3>
+                <p className="text-muted-foreground">
+                  Submit your first support request using the form above
                 </p>
-              </div>
-              
-              <div>
-                <h3 className="font-semibold mb-1">Emergency Contact</h3>
-                <p className="text-sm text-muted-foreground">
-                  For urgent matters outside regular hours:
-                  <br />
-                  Phone: (555) 123-4567
-                </p>
-              </div>
-              
-              <div>
-                <h3 className="font-semibold mb-1">Response Time</h3>
-                <p className="text-sm text-muted-foreground">
-                  We typically respond within 1 business day.
-                </p>
-              </div>
-              
-              <div className="pt-4 border-t">
-                <h3 className="font-medium mb-2">Frequently Asked Questions</h3>
-                <ul className="space-y-1">
-                  <li className="text-sm underline cursor-pointer text-primary">
-                    How do I update my personal information?
-                  </li>
-                  <li className="text-sm underline cursor-pointer text-primary">
-                    What documents do I need to upload?
-                  </li>
-                  <li className="text-sm underline cursor-pointer text-primary">
-                    How can I schedule an appointment?
-                  </li>
-                </ul>
               </div>
             </CardContent>
           </Card>
-        </div>
+        ) : (
+          <div className="space-y-4">
+            {tickets.map((ticket) => (
+              <Card key={ticket.id}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2">
+                      {getStatusIcon(ticket.status)}
+                      <CardTitle className="text-lg">{ticket.title}</CardTitle>
+                    </div>
+                    <div className="flex gap-2">
+                      <Badge variant={getPriorityColor(ticket.priority)}>
+                        {ticket.priority}
+                      </Badge>
+                      <Badge variant={getStatusColor(ticket.status)}>
+                        {ticket.status.replace('_', ' ')}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground mb-2">{ticket.message}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Created: {new Date(ticket.created_at).toLocaleDateString()}
+                    {ticket.updated_at !== ticket.created_at && (
+                      <> • Updated: {new Date(ticket.updated_at).toLocaleDateString()}</>
+                    )}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
