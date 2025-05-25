@@ -1,3 +1,4 @@
+
 import React from "react";
 import { ChatMessage } from "../../../types";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,7 +18,7 @@ interface DocumentModuleContentProps {
 }
 
 export const DocumentModuleContent: React.FC<DocumentModuleContentProps> = ({
-  messages,
+  messages = [], // Default to empty array
   inputMessage,
   setInputMessage,
   handleKeyPress,
@@ -42,7 +43,7 @@ export const DocumentModuleContent: React.FC<DocumentModuleContentProps> = ({
 
       <ScrollArea className="flex-1 pr-4 mb-4">
         <div className="space-y-4">
-          {messages.map(message => (
+          {Array.isArray(messages) && messages.map(message => (
             <MessageComponent key={message.id} message={message} />
           ))}
         </div>
