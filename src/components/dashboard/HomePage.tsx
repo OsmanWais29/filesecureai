@@ -6,7 +6,7 @@ import { FileUpload } from '@/components/FileUpload';
 import { RecentDocuments } from './RecentDocuments';
 import { RecentClients } from './RecentClients';
 import { StatsGrid } from './StatsGrid';
-import { Upload, FileText, Users, Shield } from 'lucide-react';
+import { Upload, FileText, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const HomePage = () => {
@@ -34,22 +34,16 @@ export const HomePage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <div className="space-y-6">
-        {/* Header Section */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                SecureFiles AI Dashboard
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
-                Welcome back! Manage your documents and clients efficiently.
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                <Shield className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-              </div>
-            </div>
+        {/* Enhanced Header Section */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-8">
+          <div className="text-center space-y-3">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              SecureFiles AI Dashboard
+            </h1>
+            <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+              Welcome back! Streamline your document management and client relationships with intelligent AI-powered tools.
+            </p>
+            <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full mx-auto mt-4"></div>
           </div>
         </div>
 
