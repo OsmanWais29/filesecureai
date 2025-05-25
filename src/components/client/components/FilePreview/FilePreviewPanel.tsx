@@ -19,9 +19,9 @@ export const FilePreviewPanel: React.FC<FilePreviewPanelProps> = ({
 }) => {
   if (!document) {
     return (
-      <div className="h-full flex flex-col">
-        <div className="p-4 border-b bg-muted/10">
-          <h3 className="text-lg font-semibold text-foreground">File Preview</h3>
+      <div className="h-full flex flex-col bg-background">
+        <div className="p-4 border-b">
+          <h3 className="text-lg font-semibold">File Preview</h3>
           <p className="text-sm text-muted-foreground">Select a document to preview</p>
         </div>
         
@@ -37,9 +37,9 @@ export const FilePreviewPanel: React.FC<FilePreviewPanelProps> = ({
   }
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="p-4 border-b bg-muted/10">
-        <h3 className="text-lg font-semibold text-foreground">File Preview</h3>
+    <div className="h-full flex flex-col bg-background">
+      <div className="p-4 border-b">
+        <h3 className="text-lg font-semibold">File Preview</h3>
         <p className="text-sm text-muted-foreground">Document details and preview</p>
       </div>
       
@@ -50,7 +50,7 @@ export const FilePreviewPanel: React.FC<FilePreviewPanelProps> = ({
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
-                  <CardTitle className="text-lg font-semibold truncate text-foreground">
+                  <CardTitle className="text-lg font-semibold truncate">
                     {document.title}
                   </CardTitle>
                   <div className="flex items-center gap-2 mt-2">
@@ -85,7 +85,7 @@ export const FilePreviewPanel: React.FC<FilePreviewPanelProps> = ({
           {/* Document Details */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base text-foreground">Document Information</CardTitle>
+              <CardTitle className="text-base">Document Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 gap-3">
@@ -94,7 +94,7 @@ export const FilePreviewPanel: React.FC<FilePreviewPanelProps> = ({
                     <Calendar className="h-4 w-4 mr-2" />
                     Created
                   </span>
-                  <span className="font-medium text-foreground">
+                  <span className="font-medium">
                     {formatDate(document.created_at).split(' at ')[0]}
                   </span>
                 </div>
@@ -104,7 +104,7 @@ export const FilePreviewPanel: React.FC<FilePreviewPanelProps> = ({
                     <Calendar className="h-4 w-4 mr-2" />
                     Modified
                   </span>
-                  <span className="font-medium text-foreground">
+                  <span className="font-medium">
                     {formatDate(document.updated_at).split(' at ')[0]}
                   </span>
                 </div>
@@ -114,7 +114,7 @@ export const FilePreviewPanel: React.FC<FilePreviewPanelProps> = ({
                     <FileType className="h-4 w-4 mr-2" />
                     Size
                   </span>
-                  <span className="font-medium text-foreground">2.3 MB</span>
+                  <span className="font-medium">2.3 MB</span>
                 </div>
                 
                 <div className="flex items-center justify-between text-sm">
@@ -133,7 +133,7 @@ export const FilePreviewPanel: React.FC<FilePreviewPanelProps> = ({
           {/* Document Preview Placeholder */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base text-foreground">Quick Preview</CardTitle>
+              <CardTitle className="text-base">Quick Preview</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="aspect-[3/4] bg-gradient-to-br from-muted/30 to-muted/60 rounded-lg flex items-center justify-center border-2 border-dashed border-muted-foreground/20">
@@ -149,7 +149,7 @@ export const FilePreviewPanel: React.FC<FilePreviewPanelProps> = ({
           {/* Comments Section */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base text-foreground">Comments & Notes</CardTitle>
+              <CardTitle className="text-base">Comments & Notes</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-center text-muted-foreground py-6">
