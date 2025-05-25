@@ -70,13 +70,13 @@ export const ClientTemplate = ({ clientId, onBack, onDocumentOpen }: ClientTempl
   const tasks = getClientTasks(clientId);
 
   return (
-    <div className="h-full flex flex-col bg-background">
+    <div className="h-screen flex flex-col bg-background">
       <ClientHeader client={client} onBack={onBack} />
       
       <div className="flex-1 overflow-hidden">
         <ResizablePanelGroup direction="horizontal" className="h-full">
           {/* Left Panel: Client Information */}
-          <ResizablePanel defaultSize={25} minSize={20} className="bg-muted/30">
+          <ResizablePanel defaultSize={25} minSize={20} maxSize={35} className="bg-muted/30">
             <ClientInfoPanel 
               client={client} 
               tasks={tasks}
@@ -92,7 +92,7 @@ export const ClientTemplate = ({ clientId, onBack, onDocumentOpen }: ClientTempl
           <ResizableHandle withHandle />
           
           {/* Middle Panel: Documents */}
-          <ResizablePanel defaultSize={45} minSize={30}>
+          <ResizablePanel defaultSize={45} minSize={30} maxSize={60}>
             <ClientDocumentsPanel
               documents={documents.map(doc => ({
                 id: doc.id,
@@ -112,7 +112,7 @@ export const ClientTemplate = ({ clientId, onBack, onDocumentOpen }: ClientTempl
           <ResizableHandle withHandle />
           
           {/* Right Panel: File Preview */}
-          <ResizablePanel defaultSize={30} minSize={20}>
+          <ResizablePanel defaultSize={30} minSize={25} maxSize={40}>
             <FilePreviewPanel 
               document={selectedDocument} 
               onDocumentOpen={handleDocumentOpen}
