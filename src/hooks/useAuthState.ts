@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { detectSubdomain } from '@/utils/subdomain';
+import { detectPortalFromPath } from '@/utils/routing';
 
 export function useAuthState() {
   const [user, setUser] = useState(null);
@@ -10,10 +10,10 @@ export function useAuthState() {
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
 
-  // Use the robust subdomain detection
-  const subdomainInfo = useMemo(() => detectSubdomain(), []);
+  // Use the routing detection instead of subdomain
+  const portalInfo = useMemo(() => detectPortalFromPath(), []);
   
-  const { subdomain, isClient, isTrustee } = subdomainInfo;
+  const { portal, isClient, isTrustee } = portalInfo;
 
   // Initialize auth state
   useEffect(() => {
@@ -21,12 +21,12 @@ export function useAuthState() {
     
     const initializeAuth = async () => {
       try {
-        console.log('Initializing auth state...', { subdomain, isClient, isTrustee });
+        console.log('Initializing auth state...', { portal, isClient, isTrustee });
         
         // Set up auth listener first
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           (event, newSession) => {
-            console.log(`Auth event: ${event}`, { subdomain, user: newSession?.user?.email });
+            console.log(`Auth event: ${event}`, { portal, user: newSession?.user?.email });
             
             if (isMounted) {
               setSession(newSession);
@@ -68,7 +68,7 @@ export function useAuthState() {
     return () => {
       isMounted = false;
     };
-  }, [subdomain, isClient, isTrustee]);
+  }, [portal, isClient, isTrustee]);
 
   const signOut = useCallback(async () => {
     try {
@@ -79,9 +79,14 @@ export function useAuthState() {
       
       toast.success('Signed out successfully');
       
-      // Simple redirect to login
+      // Redirect to appropriate login
       setTimeout(() => {
-        window.location.href = '/login';
+        const currentPortal = detectPortalFromPath();
+        if (currentPortal.isClient) {
+          window.location.href = '/client-login';
+        } else {
+          window.location.href = '/login';
+        }
       }, 100);
     } catch (error) {
       console.error('Sign out error:', error);
@@ -95,7 +100,7 @@ export function useAuthState() {
     loading,
     initialized,
     signOut,
-    subdomain,
+    portal,
     isClient,
     isTrustee
   };

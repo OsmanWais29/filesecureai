@@ -5,7 +5,6 @@ import { AuthLayout } from '@/components/auth/AuthLayout';
 import { ClientPortalForm } from '@/components/auth/ClientPortalForm';
 import { ConfirmationSentScreen } from '@/components/auth/ConfirmationSentScreen';
 import { useAuthState } from '@/hooks/useAuthState';
-import { redirectToSubdomain } from '@/utils/subdomain';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { FileText, Calendar, MessageSquare, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
@@ -14,36 +13,26 @@ const ClientLogin = () => {
   const [confirmationSent, setConfirmationSent] = useState(false);
   const [confirmationEmail, setConfirmationEmail] = useState('');
   const navigate = useNavigate();
-  const { user, loading, initialized, isClient, isTrustee } = useAuthState();
+  const { user, loading, initialized, isClient } = useAuthState();
   const [redirecting, setRedirecting] = useState(false);
-
-  // Redirect if not on client subdomain
-  useEffect(() => {
-    if (isTrustee) {
-      console.log("Not on client subdomain, redirecting to trustee login");
-      toast.error("Please use the trustee portal for trustee login");
-      setRedirecting(true);
-      redirectToSubdomain('trustee', '/login');
-    }
-  }, [isTrustee]);
 
   // Redirect if already authenticated as client
   useEffect(() => {
-    if (!loading && initialized && user && isClient && !redirecting) {
+    if (!loading && initialized && user && !redirecting) {
       const userType = user.user_metadata?.user_type;
       
       if (userType === 'client') {
         console.log('User already authenticated as client, redirecting to portal');
         setRedirecting(true);
-        navigate('/portal', { replace: true });
+        navigate('/client-portal', { replace: true });
       } else if (userType === 'trustee') {
-        console.log('Trustee account on client subdomain, redirecting');
+        console.log('Trustee account trying to access client login');
         toast.error("Please use the trustee portal for trustee accounts");
         setRedirecting(true);
-        redirectToSubdomain('trustee');
+        navigate('/login', { replace: true });
       }
     }
-  }, [user, loading, navigate, isClient, initialized, redirecting]);
+  }, [user, loading, navigate, initialized, redirecting]);
 
   const handleConfirmationSent = (email: string) => {
     setConfirmationEmail(email);
@@ -56,7 +45,7 @@ const ClientLogin = () => {
 
   const handleSwitchToTrusteePortal = () => {
     setRedirecting(true);
-    redirectToSubdomain('trustee');
+    navigate('/login');
   };
 
   if (loading || redirecting) {
@@ -67,16 +56,6 @@ const ClientLogin = () => {
           {redirecting ? 'Redirecting...' : 'Loading...'}
         </p>
       </div>
-    );
-  }
-
-  if (!isClient) {
-    return (
-      <AuthLayout isClientPortal={true}>
-        <div className="text-center p-8 text-white">
-          Redirecting to trustee portal...
-        </div>
-      </AuthLayout>
     );
   }
 

@@ -1,6 +1,6 @@
 
 import { supabase } from '@/lib/supabase';
-import { detectSubdomain } from '@/utils/subdomain';
+import { detectPortalFromPath } from '@/utils/routing';
 
 interface SignUpData {
   email: string;
@@ -14,14 +14,7 @@ interface SignUpData {
 
 // Simplified email validation
 const isTrusteeEmail = (email: string): boolean => {
-  const { isDevelopment } = detectSubdomain();
-  
   // For development, allow all emails
-  if (isDevelopment) {
-    return true;
-  }
-  
-  // In production, you can add specific domain validation here
   const allowedDomains = [
     'trustee.com',
     'securefilesai.com',
@@ -36,9 +29,9 @@ const isTrusteeEmail = (email: string): boolean => {
 
 export const authService = {
   async signUp({ email, password, fullName, userId, avatarUrl, userType, metadata = {} }: SignUpData) {
-    const { isClient } = detectSubdomain();
+    const { isClient } = detectPortalFromPath();
     
-    // Auto-detect user type from subdomain if not provided
+    // Auto-detect user type from portal if not provided
     if (!userType) {
       userType = isClient ? 'client' : 'trustee';
     }
@@ -101,9 +94,9 @@ export const authService = {
   },
 
   async signIn(email: string, password: string, userType?: 'trustee' | 'client') {
-    const { isClient } = detectSubdomain();
+    const { isClient } = detectPortalFromPath();
     
-    // Auto-detect user type from subdomain if not provided
+    // Auto-detect user type from portal if not provided
     if (!userType) {
       userType = isClient ? 'client' : 'trustee';
     }
@@ -124,7 +117,7 @@ export const authService = {
     const userMetadataType = data.user?.user_metadata?.user_type;
     
     if (!userMetadataType) {
-      // If no user type in metadata, set it based on subdomain
+      // If no user type in metadata, set it based on portal
       console.log("No user type found, setting to:", userType);
       try {
         await supabase.auth.updateUser({

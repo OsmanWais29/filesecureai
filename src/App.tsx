@@ -53,9 +53,9 @@ function HomePageResolver() {
 
   // User is authenticated
   if (user) {
-    // If client, redirect to client portal
+    // If on client portal paths, redirect to client portal
     if (isClient) {
-      return <Navigate to="/portal" replace />;
+      return <Navigate to="/client-portal" replace />;
     }
     
     // If trustee, show the main dashboard
@@ -64,68 +64,52 @@ function HomePageResolver() {
     }
   }
   
-  // Not authenticated, go to login
+  // Not authenticated, go to appropriate login
+  if (isClient) {
+    return <Navigate to="/client-login" replace />;
+  }
+  
   return <Navigate to="/login" replace />;
 }
 
 function App() {
-  const { subdomain, isClient, loading } = useAuthState();
+  const { portal, loading } = useAuthState();
   
   useEffect(() => {
-    logRoutingEvent(`App: Current subdomain detected: ${subdomain}`);
-    recordSessionEvent(`app_rendered_with_subdomain_${subdomain || 'none'}`);
-  }, [subdomain, isClient]);
+    logRoutingEvent(`App: Current portal detected: ${portal}`);
+    recordSessionEvent(`app_rendered_with_portal_${portal || 'none'}`);
+  }, [portal]);
 
   useEffect(() => {
     authDebug.checkAuthState();
   }, []);
 
-  // Show loading state while determining subdomain
-  if (loading && subdomain === null) {
+  // Show loading state while determining portal
+  if (loading && portal === null) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-background">
         <LoadingSpinner size="large" />
-        <p className="mt-4 text-muted-foreground">Detecting application context...</p>
+        <p className="mt-4 text-muted-foreground">Loading application...</p>
       </div>
     );
   }
   
-  // If subdomain is 'client', show client routes
-  if (isClient) {
-    return (
-      <Routes>
-        <Route path="/" element={<HomePageResolver />} />
-        <Route path="/login" element={<ClientLogin />} />
-        <Route path="/client-portal/*" element={
-          <AuthRoleGuard requiredRole="client" redirectPath="/login">
-            <ClientPortal />
-          </AuthRoleGuard>
-        } />
-        <Route path="/portal/*" element={
-          <AuthRoleGuard requiredRole="client" redirectPath="/login">
-            <ClientPortal />
-          </AuthRoleGuard>
-        } />
-        
-        {/* Redirect any attempt to access trustee routes */}
-        <Route path="/crm" element={<Navigate to="/login" replace />} />
-        <Route path="/trustee/*" element={<Navigate to="/login" replace />} />
-        <Route path="/documents" element={<Navigate to="/login" replace />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    );
-  }
-  
-  // For trustee routes
   return (
     <Routes>
+      {/* Home route */}
       <Route path="/" element={<HomePageResolver />} />
-      <Route path="/login" element={<TrusteeLogin />} />
       
-      {/* Redirect client login attempts on trustee subdomain */}
-      <Route path="/client-login" element={<Navigate to="/login" replace />} />
-      <Route path="/client-portal/*" element={<Navigate to="/login" replace />} />
-      <Route path="/portal/*" element={<Navigate to="/login" replace />} />
+      {/* Authentication routes */}
+      <Route path="/login" element={<TrusteeLogin />} />
+      <Route path="/trustee-login" element={<TrusteeLogin />} />
+      <Route path="/client-login" element={<ClientLogin />} />
+      
+      {/* Client Portal routes */}
+      <Route path="/client-portal/*" element={
+        <AuthRoleGuard requiredRole="client" redirectPath="/client-login">
+          <ClientPortal />
+        </AuthRoleGuard>
+      } />
 
       {/* Trustee-only routes */}
       <Route path="/crm" element={

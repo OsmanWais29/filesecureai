@@ -23,7 +23,7 @@ const ClientPortal = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
-  const { user, session, loading: authLoading, signOut, isClient } = useAuthState();
+  const { user, session, loading: authLoading, signOut } = useAuthState();
   const { role, loading: roleLoading, isClient: isUserClient } = useUserRole();
 
   const isLoading = authLoading || roleLoading;
@@ -31,7 +31,6 @@ const ClientPortal = () => {
   console.log('ClientPortal state:', {
     user: user?.email,
     role,
-    isClient,
     isUserClient,
     loading: isLoading,
     pathname: location.pathname
@@ -44,13 +43,13 @@ const ClientPortal = () => {
         hasUser: !!user, 
         hasSession: !!session,
         role,
-        isClient,
         isUserClient
       });
       
-      // If no session, show auth
+      // If no session, redirect to client login
       if (!session || !user) {
-        console.log("ClientPortal: No session, will show Auth component");
+        console.log("ClientPortal: No session, redirecting to client login");
+        navigate('/client-login', { replace: true });
         return;
       }
 
@@ -58,18 +57,20 @@ const ClientPortal = () => {
       if (role && !isUserClient) {
         console.log("ClientPortal: User doesn't have client role:", role);
         toast.error("Access denied. This portal is for clients only.");
+        navigate('/login', { replace: true });
         return;
       }
 
       console.log("ClientPortal: User authenticated and has correct role");
     }
-  }, [user, session, role, isLoading, isClient, isUserClient]);
+  }, [user, session, role, isLoading, isUserClient, navigate]);
 
   // Handler for signing out
   const handleSignOut = async () => {
     try {
       console.log("ClientPortal: Signing out user");
       await signOut();
+      navigate('/client-login', { replace: true });
     } catch (error) {
       console.error("Error signing out:", error);
       setError(error instanceof Error ? error : new Error("Failed to sign out"));
@@ -90,31 +91,16 @@ const ClientPortal = () => {
     return <AuthErrorDisplay error={error instanceof Error ? error.message : String(error)} />;
   }
 
-  // If not authenticated, show client portal auth component
+  // If not authenticated, redirect to client login
   if (!session || !user) {
-    console.log("ClientPortal: No session, showing Auth component");
-    return <Auth isClientPortal={true} />;
+    navigate('/client-login', { replace: true });
+    return null;
   }
 
   // Check if user has client role (allow access if role is not yet loaded)
   if (role && !isUserClient) {
-    console.log("ClientPortal: User doesn't have client role:", role);
-    return (
-      <div className="h-screen w-full flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
-          <p className="text-muted-foreground mb-4">
-            This portal is for clients only.
-          </p>
-          <button 
-            onClick={handleSignOut}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
-          >
-            Sign Out
-          </button>
-        </div>
-      </div>
-    );
+    navigate('/login', { replace: true });
+    return null;
   }
 
   // Show client portal dashboard for authenticated clients
