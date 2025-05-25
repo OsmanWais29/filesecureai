@@ -11,7 +11,7 @@ interface MainLayoutProps {
   showFooter?: boolean;
 }
 
-export const MainLayout = ({ children, showFooter = true }: MainLayoutProps) => {
+export const MainLayout = ({ children, showFooter = false }: MainLayoutProps) => {
   const isMobile = useIsMobile();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -52,10 +52,8 @@ export const MainLayout = ({ children, showFooter = true }: MainLayoutProps) => 
         )}
       >
         <MainHeader />
-        <main className="flex-1 overflow-auto p-2 sm:p-4 md:p-6 bg-gray-50 dark:bg-background w-full">
-          <div className="container mx-auto max-w-full pb-16 sm:pb-20">
-            {children}
-          </div>
+        <main className="flex-1 overflow-auto w-full">
+          {children}
         </main>
         {showFooter && <Footer compact className="bg-white dark:bg-background" />}
       </div>
