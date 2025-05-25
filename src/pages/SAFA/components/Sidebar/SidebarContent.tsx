@@ -42,14 +42,12 @@ export const Sidebar = ({ activeModule, setActiveModule, onUploadComplete }: Sid
     setInputMessage("");
   };
 
-  // Emit sidebar collapse event
   useEffect(() => {
     const event = new CustomEvent('safaSidebarCollapse', { 
       detail: { collapsed: isSidebarCollapsed } 
     });
     window.dispatchEvent(event);
     
-    // Small delay to let the transition complete
     const timer = setTimeout(() => {
       window.dispatchEvent(new Event('resize'));
     }, 300);
@@ -110,64 +108,52 @@ export const Sidebar = ({ activeModule, setActiveModule, onUploadComplete }: Sid
   };
 
   return (
-    <div className="flex h-full">
-      <aside className={cn(
-        "border-r bg-muted/30 overflow-y-auto h-full transition-all duration-300",
-        isSidebarCollapsed ? "w-16" : "w-64"
-      )}>
-        <div className="p-4 space-y-4">
-          {!isSidebarCollapsed ? (
-            <>
-              <div className="flex justify-between items-center">
-                <h3 className="font-medium">Categories</h3>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={() => setIsSidebarCollapsed(true)}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-              </div>
-              <CategorySelector 
-                activeModule={activeModule} 
-                setActiveModule={setActiveModule}
-                handleStartConsultation={handleStartConsultation}
-                showConversation={showConversation}
-                isProcessing={isProcessing}
-                onUploadComplete={onUploadComplete}
-              />
-              <RecentConversations />
-            </>
-          ) : (
-            <div className="flex flex-col items-center gap-4">
+    <div className="h-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="flex flex-col h-full p-4 space-y-4">
+        {!isSidebarCollapsed ? (
+          <>
+            <div className="flex justify-between items-center">
+              <h3 className="font-semibold text-lg">AI Modules</h3>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7"
-                onClick={() => setIsSidebarCollapsed(false)}
+                className="h-8 w-8"
+                onClick={() => setIsSidebarCollapsed(true)}
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronLeft className="h-4 w-4" />
               </Button>
-              <CategorySelector 
-                activeModule={activeModule} 
-                setActiveModule={setActiveModule}
-                handleStartConsultation={handleStartConsultation}
-                showConversation={showConversation}
-                isProcessing={isProcessing}
-                onUploadComplete={onUploadComplete}
-                collapsed={true}
-              />
             </div>
-          )}
-        </div>
-      </aside>
-
-      <div className={cn(
-        "flex-1 transition-all duration-300",
-        isSidebarCollapsed ? "ml-0" : "ml-0"
-      )}>
-        {renderModuleContent()}
+            <CategorySelector 
+              activeModule={activeModule} 
+              setActiveModule={setActiveModule}
+              handleStartConsultation={handleStartConsultation}
+              showConversation={showConversation}
+              isProcessing={isProcessing}
+              onUploadComplete={onUploadComplete}
+            />
+            <RecentConversations />
+          </>
+        ) : (
+          <div className="flex flex-col items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setIsSidebarCollapsed(false)}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <CategorySelector 
+              activeModule={activeModule} 
+              setActiveModule={setActiveModule}
+              handleStartConsultation={handleStartConsultation}
+              showConversation={showConversation}
+              isProcessing={isProcessing}
+              onUploadComplete={onUploadComplete}
+              collapsed={true}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

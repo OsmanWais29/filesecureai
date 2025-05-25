@@ -12,7 +12,6 @@ const SAFAPage = () => {
     setSidebarCollapsed(!sidebarCollapsed);
   };
 
-  // Emit custom event when sidebar collapses/expands
   useEffect(() => {
     const customEvent = new CustomEvent('safaSidebarCollapse', { 
       detail: { collapsed: sidebarCollapsed } 
@@ -28,11 +27,11 @@ const SAFAPage = () => {
 
   return (
     <MainLayout>
-      <div className="flex h-full flex-col">
+      <div className="flex h-full flex-col bg-gradient-to-br from-background to-muted/20">
         <SAFAHeader toggleSidebar={toggleSidebar} />
         <div className="flex flex-1 overflow-hidden">
           <SAFASidebar isCollapsed={sidebarCollapsed} onToggle={toggleSidebar} />
-          <div className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'ml-0' : 'ml-0'}`}>
+          <div className="flex-1 overflow-hidden">
             <SAFAContent />
           </div>
         </div>
