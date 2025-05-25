@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuthState } from "@/hooks/useAuthState";
 import { supabase } from "@/lib/supabase";
@@ -51,7 +50,19 @@ export const ClientDocuments = () => {
         return;
       }
       
-      setDocuments(data || []);
+      // Properly type the documents data
+      const typedDocuments: ClientDocument[] = (data || []).map(doc => ({
+        id: doc.id as string,
+        title: doc.title as string,
+        type: doc.type as string | null,
+        created_at: doc.created_at as string,
+        updated_at: doc.updated_at as string,
+        metadata: doc.metadata,
+        url: doc.url as string | null,
+        size: doc.size as number | null,
+      }));
+      
+      setDocuments(typedDocuments);
     } catch (err) {
       console.error('Error in fetchDocuments:', err);
       toast.error('Failed to load documents');

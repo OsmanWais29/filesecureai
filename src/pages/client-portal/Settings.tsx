@@ -76,18 +76,18 @@ export const ClientSettings = () => {
 
       if (data) {
         setProfile({
-          full_name: data.full_name || '',
-          email: data.email || user.email || '',
-          phone: data.phone || '',
-          address: data.address || '',
-          preferred_contact: data.preferred_contact || 'email',
-          language: data.language || 'en',
-          timezone: data.timezone || 'EST'
+          full_name: String(data.full_name || ''),
+          email: String(data.email || user.email || ''),
+          phone: String(data.phone || ''),
+          address: String(data.address || ''),
+          preferred_contact: String(data.preferred_contact || 'email'),
+          language: String(data.language || 'en'),
+          timezone: String(data.timezone || 'EST')
         });
 
         setNotifications({
-          email_notifications: data.email_notifications ?? true,
-          sms_notifications: data.sms_notifications ?? false,
+          email_notifications: Boolean(data.email_notifications ?? true),
+          sms_notifications: Boolean(data.sms_notifications ?? false),
           appointment_reminders: true,
           document_updates: true,
           task_notifications: true
