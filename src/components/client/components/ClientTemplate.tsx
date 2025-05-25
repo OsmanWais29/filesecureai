@@ -76,47 +76,53 @@ export const ClientTemplate = ({ clientId, onBack, onDocumentOpen }: ClientTempl
       <div className="flex-1 overflow-hidden">
         <ResizablePanelGroup direction="horizontal" className="h-full">
           {/* Left Panel: Client Information */}
-          <ResizablePanel defaultSize={25} minSize={20} maxSize={35} className="bg-muted/30">
-            <ClientInfoPanel 
-              client={client} 
-              tasks={tasks}
-              documentCount={documents.length}
-              lastActivityDate={client.last_interaction}
-              documents={documents}
-              onDocumentSelect={handleDocumentSelect}
-              selectedDocumentId={selectedDocumentId}
-              onClientUpdate={handleClientUpdate}
-            />
+          <ResizablePanel defaultSize={25} minSize={20} maxSize={35}>
+            <div className="h-full border-r bg-muted/20">
+              <ClientInfoPanel 
+                client={client} 
+                tasks={tasks}
+                documentCount={documents.length}
+                lastActivityDate={client.last_interaction}
+                documents={documents}
+                onDocumentSelect={handleDocumentSelect}
+                selectedDocumentId={selectedDocumentId}
+                onClientUpdate={handleClientUpdate}
+              />
+            </div>
           </ResizablePanel>
           
           <ResizableHandle withHandle />
           
           {/* Middle Panel: Documents */}
           <ResizablePanel defaultSize={45} minSize={30} maxSize={60}>
-            <ClientDocumentsPanel
-              documents={documents.map(doc => ({
-                id: doc.id,
-                title: doc.title,
-                type: doc.type || 'document',
-                status: 'complete' as const,
-                category: doc.type === 'financial' ? 'Financial' : doc.type === 'form' ? 'Forms' : 'Other',
-                dateModified: doc.updated_at,
-                fileType: 'pdf',
-                fileSize: '2.3 MB'
-              }))}
-              onDocumentSelect={handleDocumentSelect}
-              selectedDocumentId={selectedDocumentId}
-            />
+            <div className="h-full border-r bg-background">
+              <ClientDocumentsPanel
+                documents={documents.map(doc => ({
+                  id: doc.id,
+                  title: doc.title,
+                  type: doc.type || 'document',
+                  status: 'complete' as const,
+                  category: doc.type === 'financial' ? 'Financial' : doc.type === 'form' ? 'Forms' : 'Other',
+                  dateModified: doc.updated_at,
+                  fileType: 'pdf',
+                  fileSize: '2.3 MB'
+                }))}
+                onDocumentSelect={handleDocumentSelect}
+                selectedDocumentId={selectedDocumentId}
+              />
+            </div>
           </ResizablePanel>
           
           <ResizableHandle withHandle />
           
           {/* Right Panel: File Preview */}
           <ResizablePanel defaultSize={30} minSize={25} maxSize={40}>
-            <FilePreviewPanel 
-              document={selectedDocument} 
-              onDocumentOpen={handleDocumentOpen}
-            />
+            <div className="h-full bg-background">
+              <FilePreviewPanel 
+                document={selectedDocument} 
+                onDocumentOpen={handleDocumentOpen}
+              />
+            </div>
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
