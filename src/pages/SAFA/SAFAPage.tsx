@@ -31,7 +31,7 @@ const SAFAPage = () => {
         <SAFAHeader toggleSidebar={toggleSidebar} />
         <div className="flex flex-1 overflow-hidden">
           <SAFASidebar isCollapsed={sidebarCollapsed} onToggle={toggleSidebar} />
-          <div className="flex-1 overflow-hidden">
+          <div className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'ml-0' : 'ml-0'}`}>
             <SAFAContent />
           </div>
         </div>

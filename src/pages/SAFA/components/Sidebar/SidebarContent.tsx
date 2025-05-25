@@ -7,21 +7,18 @@ import { LegalModuleContent } from "./ModuleContents/LegalModuleContent";
 import { HelpModuleContent } from "./ModuleContents/HelpModuleContent";
 import { ClientConversation } from "../ClientConnect/ClientConversation";
 import { RecentConversations } from "./RecentConversations";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface SidebarContentProps {
   activeModule: 'document' | 'legal' | 'help' | 'client';
   setActiveModule: (module: 'document' | 'legal' | 'help' | 'client') => void;
   onUploadComplete: (documentId: string) => Promise<void>;
+  isCollapsed?: boolean;
 }
 
-export const Sidebar = ({ activeModule, setActiveModule, onUploadComplete }: SidebarContentProps) => {
+export const Sidebar = ({ activeModule, setActiveModule, onUploadComplete, isCollapsed = false }: SidebarContentProps) => {
   const { categoryMessages, handleSendMessage, isProcessing } = useConversations(activeModule);
   const [showConversation, setShowConversation] = useState(false);
   const [inputMessage, setInputMessage] = useState("");
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const handleStartConsultation = async () => {
     setActiveModule('client');
@@ -42,25 +39,28 @@ export const Sidebar = ({ activeModule, setActiveModule, onUploadComplete }: Sid
     setInputMessage("");
   };
 
-  useEffect(() => {
-    const event = new CustomEvent('safaSidebarCollapse', { 
-      detail: { collapsed: isSidebarCollapsed } 
-    });
-    window.dispatchEvent(event);
-    
-    const timer = setTimeout(() => {
-      window.dispatchEvent(new Event('resize'));
-    }, 300);
-    
-    return () => clearTimeout(timer);
-  }, [isSidebarCollapsed]);
+  if (isCollapsed) {
+    return (
+      <div className="h-full p-2">
+        <CategorySelector 
+          activeModule={activeModule} 
+          setActiveModule={setActiveModule}
+          handleStartConsultation={handleStartConsultation}
+          showConversation={showConversation}
+          isProcessing={isProcessing}
+          onUploadComplete={onUploadComplete}
+          collapsed={true}
+        />
+      </div>
+    );
+  }
 
   const renderModuleContent = () => {
     switch (activeModule) {
       case 'document':
         return (
           <DocumentModuleContent
-            messages={categoryMessages.document}
+            messages={categoryMessages.document || []}
             inputMessage={inputMessage}
             setInputMessage={setInputMessage}
             handleKeyPress={handleKeyPress}
@@ -72,7 +72,7 @@ export const Sidebar = ({ activeModule, setActiveModule, onUploadComplete }: Sid
       case 'legal':
         return (
           <LegalModuleContent
-            messages={categoryMessages.legal}
+            messages={categoryMessages.legal || []}
             inputMessage={inputMessage}
             setInputMessage={setInputMessage}
             handleKeyPress={handleKeyPress}
@@ -83,7 +83,7 @@ export const Sidebar = ({ activeModule, setActiveModule, onUploadComplete }: Sid
       case 'help':
         return (
           <HelpModuleContent
-            messages={categoryMessages.help}
+            messages={categoryMessages.help || []}
             inputMessage={inputMessage}
             setInputMessage={setInputMessage}
             handleKeyPress={handleKeyPress}
@@ -94,7 +94,7 @@ export const Sidebar = ({ activeModule, setActiveModule, onUploadComplete }: Sid
       case 'client':
         return showConversation && (
           <ClientConversation
-            messages={categoryMessages.client}
+            messages={categoryMessages.client || []}
             inputMessage={inputMessage}
             setInputMessage={setInputMessage}
             handleSendMessage={handleMessageSend}
@@ -109,51 +109,26 @@ export const Sidebar = ({ activeModule, setActiveModule, onUploadComplete }: Sid
 
   return (
     <div className="h-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex flex-col h-full p-4 space-y-4">
-        {!isSidebarCollapsed ? (
-          <>
-            <div className="flex justify-between items-center">
-              <h3 className="font-semibold text-lg">AI Modules</h3>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setIsSidebarCollapsed(true)}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-            </div>
-            <CategorySelector 
-              activeModule={activeModule} 
-              setActiveModule={setActiveModule}
-              handleStartConsultation={handleStartConsultation}
-              showConversation={showConversation}
-              isProcessing={isProcessing}
-              onUploadComplete={onUploadComplete}
-            />
-            <RecentConversations />
-          </>
-        ) : (
-          <div className="flex flex-col items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setIsSidebarCollapsed(false)}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <CategorySelector 
-              activeModule={activeModule} 
-              setActiveModule={setActiveModule}
-              handleStartConsultation={handleStartConsultation}
-              showConversation={showConversation}
-              isProcessing={isProcessing}
-              onUploadComplete={onUploadComplete}
-              collapsed={true}
-            />
-          </div>
-        )}
+      <div className="flex flex-col h-full">
+        <div className="p-4 border-b">
+          <h3 className="font-semibold text-lg mb-4">AI Modules</h3>
+          <CategorySelector 
+            activeModule={activeModule} 
+            setActiveModule={setActiveModule}
+            handleStartConsultation={handleStartConsultation}
+            showConversation={showConversation}
+            isProcessing={isProcessing}
+            onUploadComplete={onUploadComplete}
+          />
+        </div>
+        
+        <div className="flex-1 overflow-hidden">
+          {renderModuleContent()}
+        </div>
+        
+        <div className="p-4 border-t">
+          <RecentConversations />
+        </div>
       </div>
     </div>
   );

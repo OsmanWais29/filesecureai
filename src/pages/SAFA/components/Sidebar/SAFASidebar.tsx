@@ -20,7 +20,7 @@ const SAFASidebar: React.FC<SAFASidebarProps> = ({ isCollapsed, onToggle }) => {
   useEffect(() => {
     document.documentElement.style.setProperty(
       '--safa-sidebar-width', 
-      isCollapsed ? '4rem' : '16rem'
+      isCollapsed ? '4rem' : '20rem'
     );
 
     return () => {
@@ -30,19 +30,22 @@ const SAFASidebar: React.FC<SAFASidebarProps> = ({ isCollapsed, onToggle }) => {
 
   return (
     <div className={cn(
-      "h-full border-r bg-background transition-all duration-300 relative",
-      isCollapsed ? "w-16" : "w-64"
+      "h-full border-r bg-background transition-all duration-300 relative flex-shrink-0",
+      isCollapsed ? "w-16" : "w-80"
     )}>
-      <Sidebar 
-        activeModule={activeModule}
-        setActiveModule={setActiveModule}
-        onUploadComplete={handleUploadComplete}
-      />
+      <div className="h-full flex flex-col">
+        <Sidebar 
+          activeModule={activeModule}
+          setActiveModule={setActiveModule}
+          onUploadComplete={handleUploadComplete}
+          isCollapsed={isCollapsed}
+        />
+      </div>
       <Button 
         variant="ghost" 
         size="icon" 
         onClick={onToggle}
-        className="absolute bottom-4 right-0 translate-x-1/2 rounded-full border shadow-md"
+        className="absolute -right-3 top-6 z-10 rounded-full border shadow-md bg-background hover:bg-muted"
         aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
         {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
