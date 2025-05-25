@@ -1,13 +1,17 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LucideIcon } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { LucideIcon, TrendingUp, TrendingDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface StatCardProps {
   title: string;
   value: string | number;
   description: string;
   icon: LucideIcon;
+  trend?: 'up' | 'down';
+  percentage?: string;
+  gradient?: string;
   onClick?: () => void;
 }
 
@@ -15,27 +19,60 @@ export const StatCard = ({
   title, 
   value, 
   description, 
-  icon: Icon, 
+  icon: Icon,
+  trend,
+  percentage,
+  gradient = "from-gray-500 to-gray-600",
   onClick
 }: StatCardProps) => {
   return (
     <Card 
-      className="hover:shadow-md hover:bg-accent/50 transition-all duration-200 cursor-pointer group" 
+      className="relative overflow-hidden bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer group" 
       onClick={onClick}
     >
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium group-hover:text-accent-foreground transition-colors">
-          {title}
-        </CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold group-hover:text-accent-foreground transition-colors">
-          {value}
+      {/* Gradient background */}
+      <div className={cn(
+        "absolute inset-0 bg-gradient-to-br opacity-5 group-hover:opacity-10 transition-opacity",
+        gradient
+      )} />
+      
+      <CardContent className="relative p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className={cn(
+            "p-3 rounded-xl bg-gradient-to-br text-white shadow-lg group-hover:scale-110 transition-transform",
+            gradient
+          )}>
+            <Icon className="h-6 w-6" />
+          </div>
+          
+          {trend && percentage && (
+            <div className={cn(
+              "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
+              trend === 'up' 
+                ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" 
+                : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+            )}>
+              {trend === 'up' ? (
+                <TrendingUp className="h-3 w-3" />
+              ) : (
+                <TrendingDown className="h-3 w-3" />
+              )}
+              {percentage}
+            </div>
+          )}
         </div>
-        <p className="text-xs text-muted-foreground group-hover:text-muted-foreground/80 transition-colors">
-          {description}
-        </p>
+        
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors">
+            {title}
+          </h3>
+          <div className="text-3xl font-bold text-gray-900 dark:text-white group-hover:scale-105 transition-transform origin-left">
+            {value}
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors">
+            {description}
+          </p>
+        </div>
       </CardContent>
     </Card>
   );
