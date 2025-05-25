@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileUpload } from '@/components/FileUpload';
 import { RecentDocuments } from './RecentDocuments';
 import { RecentClients } from './RecentClients';
-import { FileText, Users, Shield, Zap, Clock } from 'lucide-react';
+import { FileText, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSessionContext } from '@/contexts/SessionContext';
 
@@ -53,24 +53,6 @@ export const HomePage = () => {
     return 'Good evening';
   };
 
-  const features = [
-    {
-      icon: Shield,
-      title: "Secure & Compliant",
-      description: "PIPEDA compliant with Canadian data storage"
-    },
-    {
-      icon: Zap,
-      title: "AI-Powered",
-      description: "Intelligent document processing and analysis"
-    },
-    {
-      icon: Clock,
-      title: "Real-Time",
-      description: "Instant updates and collaboration"
-    }
-  ];
-
   return (
     <div className="min-h-screen bg-background">
       {/* Header Section */}
@@ -94,21 +76,6 @@ export const HomePage = () => {
       </div>
 
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
-        {/* Features Section */}
-        <div className="grid md:grid-cols-3 gap-6">
-          {features.map((feature, index) => (
-            <Card key={index} className="text-center hover:shadow-md transition-shadow">
-              <CardContent className="p-6 space-y-4">
-                <div className="inline-flex p-3 rounded-lg bg-primary/10">
-                  <feature.icon className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="text-lg font-semibold">{feature.title}</h3>
-                <p className="text-muted-foreground text-sm">{feature.description}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
         {/* Upload Section */}
         <Card>
           <CardContent className="p-8">
