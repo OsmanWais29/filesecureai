@@ -19,73 +19,57 @@ import { ClientSettings } from "@/pages/client-portal/Settings";
 
 const ClientPortal = () => {
   const [error, setError] = useState<Error | null>(null);
-  const [isClientSubdomain, setIsClientSubdomain] = useState(false);
   
   const location = useLocation();
   const navigate = useNavigate();
   
-  const { user, session, loading: authLoading, signOut } = useAuthState();
-  const { role, loading: roleLoading, isClient, isTrustee } = useUserRole();
+  const { user, session, loading: authLoading, signOut, isClient } = useAuthState();
+  const { role, loading: roleLoading, isClient: isUserClient } = useUserRole();
 
   const isLoading = authLoading || roleLoading;
 
-  // Check if we're on the client subdomain
-  useEffect(() => {
-    const hostname = window.location.hostname;
-    const isLocalhost = hostname === 'localhost';
-    
-    if (isLocalhost) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const subdomain = urlParams.get('subdomain');
-      const isClient = subdomain === 'client';
-      setIsClientSubdomain(isClient);
-      console.log("ClientPortal: On localhost with subdomain:", subdomain, "isClient:", isClient);
-    } else {
-      const hostParts = hostname.split('.');
-      const isClient = hostParts.length > 2 && hostParts[0] === 'client';
-      setIsClientSubdomain(isClient);
-      console.log("ClientPortal: On production with hostname:", hostname, "isClient:", isClient);
-    }
-  }, []);
+  console.log('ClientPortal state:', {
+    user: user?.email,
+    role,
+    isClient,
+    isUserClient,
+    loading: isLoading,
+    pathname: location.pathname
+  });
 
-  // Check if user is authenticated and has correct role
+  // Check authentication and role
   useEffect(() => {
     if (!isLoading) {
-      console.log("ClientPortal: Auth state loaded, user:", user?.id, "role:", role);
+      console.log("ClientPortal: Auth state loaded", { 
+        hasUser: !!user, 
+        hasSession: !!session,
+        role,
+        isClient,
+        isUserClient
+      });
       
-      if (user && role) {
-        // Redirect trustees to main app if they try to access client portal
-        if (isTrustee && isClientSubdomain) {
-          console.log("ClientPortal: Trustee account detected but on client subdomain");
-          toast.error("Trustee accounts cannot access the client portal");
-          // Redirect to trustee subdomain
-          const hostname = window.location.hostname;
-          if (hostname === 'localhost') {
-            window.location.href = window.location.origin + '?subdomain=trustee';
-          } else {
-            const hostParts = hostname.split('.');
-            if (hostParts.length > 2) {
-              hostParts[0] = 'trustee';
-              window.location.href = `https://${hostParts.join('.')}`;
-            }
-          }
-        } else if (isClient) {
-          console.log("ClientPortal: Authenticated as client, accessing client portal");
-        } else {
-          console.log("ClientPortal: User has unknown role:", role);
-        }
-      } else {
-        console.log("ClientPortal: No authenticated user or role not loaded");
+      // If no session, show auth
+      if (!session || !user) {
+        console.log("ClientPortal: No session, will show Auth component");
+        return;
       }
+
+      // Check if user has appropriate role
+      if (role && !isUserClient) {
+        console.log("ClientPortal: User doesn't have client role:", role);
+        toast.error("Access denied. This portal is for clients only.");
+        return;
+      }
+
+      console.log("ClientPortal: User authenticated and has correct role");
     }
-  }, [user, role, isLoading, navigate, isClientSubdomain, isClient, isTrustee]);
+  }, [user, session, role, isLoading, isClient, isUserClient]);
 
   // Handler for signing out
   const handleSignOut = async () => {
     try {
       console.log("ClientPortal: Signing out user");
       await signOut();
-      navigate('/', { replace: true });
     } catch (error) {
       console.error("Error signing out:", error);
       setError(error instanceof Error ? error : new Error("Failed to sign out"));
@@ -107,16 +91,30 @@ const ClientPortal = () => {
   }
 
   // If not authenticated, show client portal auth component
-  if (!session) {
+  if (!session || !user) {
     console.log("ClientPortal: No session, showing Auth component");
     return <Auth isClientPortal={true} />;
   }
 
-  // Check if user has client role
-  if (!isClient) {
+  // Check if user has client role (allow access if role is not yet loaded)
+  if (role && !isUserClient) {
     console.log("ClientPortal: User doesn't have client role:", role);
-    toast.error("Access denied. This portal is for clients only.");
-    return <Auth isClientPortal={true} />;
+    return (
+      <div className="h-screen w-full flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
+          <p className="text-muted-foreground mb-4">
+            This portal is for clients only.
+          </p>
+          <button 
+            onClick={handleSignOut}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
+          >
+            Sign Out
+          </button>
+        </div>
+      </div>
+    );
   }
 
   // Show client portal dashboard for authenticated clients

@@ -12,7 +12,7 @@ interface SignUpData {
   metadata?: Record<string, any>;
 }
 
-// Simplified email validation for trustees
+// Simplified email validation
 const isTrusteeEmail = (email: string): boolean => {
   const { isDevelopment } = detectSubdomain();
   
@@ -43,7 +43,7 @@ export const authService = {
       userType = isClient ? 'client' : 'trustee';
     }
     
-    console.log(`Signing up ${email} as ${userType} on subdomain: ${detectSubdomain().subdomain}`);
+    console.log(`Signing up ${email} as ${userType}`);
     
     // Validate email domain for trustees
     if (userType === 'trustee' && !isTrusteeEmail(email)) {
@@ -108,7 +108,7 @@ export const authService = {
       userType = isClient ? 'client' : 'trustee';
     }
     
-    console.log(`Signing in ${email} as ${userType} on subdomain: ${detectSubdomain().subdomain}`);
+    console.log(`Signing in ${email} as ${userType}`);
     
     // Sign in
     const { error, data } = await supabase.auth.signInWithPassword({
@@ -141,10 +141,6 @@ export const authService = {
       } catch (updateError) {
         console.error("Failed to update user metadata:", updateError);
       }
-    } else if (userMetadataType !== userType) {
-      // User type mismatch - allow but warn
-      console.warn(`User type mismatch: expected ${userType}, got ${userMetadataType}`);
-      // Don't sign out, just log the mismatch
     }
     
     return data;

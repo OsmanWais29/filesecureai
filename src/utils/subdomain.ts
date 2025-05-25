@@ -1,8 +1,4 @@
 
-/**
- * Robust subdomain detection that works in both development and production
- */
-
 export interface SubdomainInfo {
   subdomain: string | null;
   isClient: boolean;
@@ -10,81 +6,65 @@ export interface SubdomainInfo {
   isDevelopment: boolean;
 }
 
-/**
- * Detects the current subdomain with fallbacks for different environments
- */
-export function detectSubdomain(): SubdomainInfo {
+export const detectSubdomain = (): SubdomainInfo => {
   const hostname = window.location.hostname;
-  const isDevelopment = hostname === 'localhost' || hostname.includes('127.0.0.1');
+  const isDevelopment = hostname === 'localhost' || hostname === '127.0.0.1';
   
   let subdomain: string | null = null;
-  
+  let isClient = false;
+  let isTrustee = false;
+
   if (isDevelopment) {
-    // Development: Check URL params first, then fallback to default
+    // For development, check URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     subdomain = urlParams.get('subdomain');
     
-    // If no subdomain param, default to trustee for development
+    // Default to client subdomain in development if none specified
     if (!subdomain) {
-      subdomain = 'trustee';
+      subdomain = 'client';
     }
-  } else {
-    // Production: Extract from hostname
-    const hostParts = hostname.split('.');
     
-    if (hostParts.length >= 3) {
-      // Has subdomain: subdomain.domain.com
-      subdomain = hostParts[0];
-    } else if (hostParts.length === 2) {
-      // No subdomain: domain.com - default to trustee
+    isClient = subdomain === 'client';
+    isTrustee = subdomain === 'trustee';
+  } else {
+    // For production, parse subdomain from hostname
+    const parts = hostname.split('.');
+    if (parts.length >= 3) {
+      subdomain = parts[0];
+      isClient = subdomain === 'client';
+      isTrustee = subdomain === 'trustee';
+    } else {
+      // Default to trustee for main domain
       subdomain = 'trustee';
+      isTrustee = true;
     }
   }
-  
-  const isClient = subdomain === 'client';
-  const isTrustee = !isClient; // Everything else is considered trustee
-  
+
   return {
     subdomain,
     isClient,
     isTrustee,
     isDevelopment
   };
-}
+};
 
-/**
- * Builds URLs for cross-subdomain navigation
- */
-export function buildSubdomainUrl(targetSubdomain: string, path: string = ''): string {
+export const redirectToSubdomain = (targetSubdomain: 'client' | 'trustee', path: string = '/') => {
   const { isDevelopment } = detectSubdomain();
-  const currentOrigin = window.location.origin;
   
   if (isDevelopment) {
-    // Development: Use URL params
-    const baseUrl = currentOrigin.split('?')[0]; // Remove existing params
-    return `${baseUrl}?subdomain=${targetSubdomain}${path ? `#${path}` : ''}`;
+    // For development, use URL parameters
+    const url = new URL(window.location.origin);
+    url.searchParams.set('subdomain', targetSubdomain);
+    url.pathname = path;
+    window.location.href = url.toString();
   } else {
-    // Production: Use actual subdomains
+    // For production, redirect to subdomain
     const hostname = window.location.hostname;
-    const hostParts = hostname.split('.');
+    const parts = hostname.split('.');
     
-    if (hostParts.length >= 3) {
-      // Replace existing subdomain
-      hostParts[0] = targetSubdomain;
-    } else {
-      // Add subdomain
-      hostParts.unshift(targetSubdomain);
+    if (parts.length >= 2) {
+      const domain = parts.slice(-2).join('.');
+      window.location.href = `https://${targetSubdomain}.${domain}${path}`;
     }
-    
-    const protocol = window.location.protocol;
-    return `${protocol}//${hostParts.join('.')}${path}`;
   }
-}
-
-/**
- * Redirects to a different subdomain
- */
-export function redirectToSubdomain(targetSubdomain: string, path: string = ''): void {
-  const url = buildSubdomainUrl(targetSubdomain, path);
-  window.location.href = url;
-}
+};
