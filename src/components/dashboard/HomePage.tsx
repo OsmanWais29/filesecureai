@@ -5,9 +5,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileUpload } from '@/components/FileUpload';
 import { RecentDocuments } from './RecentDocuments';
 import { RecentClients } from './RecentClients';
-import { Upload, FileText, Users } from 'lucide-react';
+import { FileText, Users, TrendingUp, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSessionContext } from '@/contexts/SessionContext';
+import { Separator } from '@/components/ui/separator';
 
 export const HomePage = () => {
   const navigate = useNavigate();
@@ -54,56 +55,138 @@ export const HomePage = () => {
     return 'Good evening';
   };
 
+  const quickStats = [
+    {
+      title: "Active Cases",
+      value: "24",
+      description: "Currently in progress",
+      icon: FileText,
+      trend: "+12%"
+    },
+    {
+      title: "Clients Served",
+      value: "156",
+      description: "This quarter",
+      icon: Users,
+      trend: "+8%"
+    },
+    {
+      title: "Compliance Rate",
+      value: "98.5%",
+      description: "Meeting all standards",
+      icon: Shield,
+      trend: "+2.1%"
+    },
+    {
+      title: "Processing Time",
+      value: "4.2 days",
+      description: "Average document review",
+      icon: TrendingUp,
+      trend: "-15%"
+    }
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
-      {/* Enhanced Header */}
-      <div className="bg-gradient-to-r from-primary to-secondary border-b border-border/20 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="text-center">
-            <h1 className="text-5xl font-bold text-white mb-3">
-              {getGreeting()}, {getUserName()}!
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+      {/* Header Section */}
+      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="flex flex-col space-y-2">
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
+              {getGreeting()}, {getUserName()}
             </h1>
-            <p className="text-blue-100 text-xl">
-              Welcome back! The All-in-One Intelligent Workspace for Insolvency
+            <p className="text-slate-600 dark:text-slate-300 text-lg">
+              SecureFiles AI - Professional Insolvency Management Platform
             </p>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Upload Section - Made Bigger */}
-        <Card className="mb-10 border-0 bg-white/90 backdrop-blur-sm shadow-xl">
-          <CardContent className="p-8">
-            <div className="transform scale-110">
-              <FileUpload onUploadComplete={handleUploadComplete} />
-            </div>
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {quickStats.map((stat, index) => (
+            <Card key={index} className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <stat.icon className="h-5 w-5 text-primary" />
+                      <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                        {stat.title}
+                      </p>
+                    </div>
+                    <p className="text-2xl font-bold text-slate-900 dark:text-white">
+                      {stat.value}
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {stat.description}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <span className={`text-sm font-medium ${
+                      stat.trend.startsWith('+') ? 'text-green-600' : 'text-blue-600'
+                    }`}>
+                      {stat.trend}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Document Upload Section */}
+        <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-lg">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-xl font-semibold text-slate-900 dark:text-white">
+              Document Management
+            </CardTitle>
+            <p className="text-slate-600 dark:text-slate-300">
+              Upload and process documents with AI-powered analysis
+            </p>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <FileUpload onUploadComplete={handleUploadComplete} />
           </CardContent>
         </Card>
 
-        {/* Recent Activity */}
-        <Card className="border-0 bg-white/90 backdrop-blur-sm shadow-xl">
-          <CardHeader className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-t-lg py-8">
-            <CardTitle className="text-primary text-2xl">Recent Activity</CardTitle>
+        <Separator className="my-8" />
+
+        {/* Recent Activity Section */}
+        <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-xl font-semibold text-slate-900 dark:text-white">
+              Recent Activity
+            </CardTitle>
+            <p className="text-slate-600 dark:text-slate-300">
+              Quick access to your latest documents and clients
+            </p>
           </CardHeader>
-          <CardContent className="p-8">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-2 bg-gray-100 dark:bg-gray-700 h-12">
-                <TabsTrigger value="documents" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white text-base">
-                  <FileText className="h-5 w-5" />
+          <CardContent>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 bg-slate-100 dark:bg-slate-700">
+                <TabsTrigger 
+                  value="documents" 
+                  className="flex items-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-600"
+                >
+                  <FileText className="h-4 w-4" />
                   Recent Documents
                 </TabsTrigger>
-                <TabsTrigger value="clients" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-white text-base">
-                  <Users className="h-5 w-5" />
+                <TabsTrigger 
+                  value="clients" 
+                  className="flex items-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-600"
+                >
+                  <Users className="h-4 w-4" />
                   Recent Clients
                 </TabsTrigger>
               </TabsList>
               
-              <TabsContent value="documents" className="mt-8">
+              <TabsContent value="documents" className="mt-6">
                 <RecentDocuments onDocumentSelect={handleDocumentSelect} />
               </TabsContent>
               
-              <TabsContent value="clients" className="mt-8">
+              <TabsContent value="clients" className="mt-6">
                 <RecentClients onClientSelect={handleClientSelect} />
               </TabsContent>
             </Tabs>
