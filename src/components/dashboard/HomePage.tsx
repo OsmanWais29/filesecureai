@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileUpload } from '@/components/FileUpload';
 import { RecentDocuments } from './RecentDocuments';
 import { RecentClients } from './RecentClients';
-import { FileText, Users, BarChart3, ArrowRight, Shield, Zap, Clock } from 'lucide-react';
+import { FileText, Users, Shield, Zap, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSessionContext } from '@/contexts/SessionContext';
 import { Button } from '@/components/ui/button';
@@ -54,30 +54,6 @@ export const HomePage = () => {
     return 'Good evening';
   };
 
-  const quickActions = [
-    {
-      title: "Document Management",
-      description: "Upload and analyze bankruptcy forms",
-      icon: FileText,
-      action: () => navigate('/documents'),
-      color: "bg-blue-500"
-    },
-    {
-      title: "Client Relations",
-      description: "Manage client data and interactions",
-      icon: Users,
-      action: () => navigate('/crm'),
-      color: "bg-emerald-500"
-    },
-    {
-      title: "Analytics Dashboard", 
-      description: "View performance metrics",
-      icon: BarChart3,
-      action: () => navigate('/activity'),
-      color: "bg-purple-500"
-    }
-  ];
-
   const features = [
     {
       icon: Shield,
@@ -98,7 +74,7 @@ export const HomePage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Compact Hero Section */}
+      {/* Hero Section */}
       <div className="bg-gradient-to-br from-blue-900 to-indigo-900 text-white">
         <div className="max-w-6xl mx-auto px-6 py-16">
           <div className="text-center space-y-6">
@@ -165,33 +141,6 @@ export const HomePage = () => {
             <FileUpload onUploadComplete={handleUploadComplete} />
           </div>
         </Card>
-
-        {/* Quick Actions */}
-        <div className="space-y-6">
-          <h2 className="text-2xl font-bold text-center">Quick Access</h2>
-          <div className="grid lg:grid-cols-3 gap-6">
-            {quickActions.map((action, index) => (
-              <Card 
-                key={index} 
-                className="cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-                onClick={action.action}
-              >
-                <CardContent className="p-6">
-                  <div className="flex items-start space-x-4">
-                    <div className={`p-3 rounded-lg ${action.color} text-white`}>
-                      <action.icon className="h-6 w-6" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold mb-2">{action.title}</h3>
-                      <p className="text-gray-600 text-sm mb-3">{action.description}</p>
-                      <ArrowRight className="h-4 w-4 text-gray-400" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
 
         {/* Recent Activity */}
         <Card>
