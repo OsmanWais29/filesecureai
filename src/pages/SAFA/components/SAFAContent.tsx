@@ -30,7 +30,6 @@ const SAFAContent = () => {
     }
   };
 
-  // Convert messages to match ConversationView expectations
   const getMessagesForTab = (tab: string) => {
     const messages = categoryMessages[tab] || [];
     return messages.map(msg => ({

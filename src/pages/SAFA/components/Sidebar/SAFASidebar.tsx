@@ -15,10 +15,8 @@ const SAFASidebar: React.FC<SAFASidebarProps> = ({ isCollapsed, onToggle }) => {
 
   const handleUploadComplete = async (documentId: string) => {
     console.log("Document uploaded successfully:", documentId);
-    // Add your logic here
   };
 
-  // Set CSS custom property for sidebar width
   useEffect(() => {
     document.documentElement.style.setProperty(
       '--safa-sidebar-width', 
