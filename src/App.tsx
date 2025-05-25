@@ -1,3 +1,4 @@
+
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useAuthState } from "@/hooks/useAuthState";
@@ -57,9 +58,9 @@ function HomePageResolver() {
       return <Navigate to="/portal" replace />;
     }
     
-    // If trustee, redirect to CRM
+    // If trustee, show the dashboard (Index component) - NOT redirect to CRM
     if (isTrustee) {
-      return <Navigate to="/crm" replace />;
+      return <Index />;
     }
   }
   

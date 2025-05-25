@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { DocumentViewer } from "@/components/DocumentViewer";
-import { RecentlyAccessedPage } from "@/pages/RecentlyAccessedPage";
+import { DashboardHome } from "@/components/dashboard/DashboardHome";
 import { showPerformanceToast } from "@/utils/performance";
 import { Home } from "lucide-react";
 import { useAuthState } from "@/hooks/useAuthState";
@@ -72,7 +72,7 @@ const TrusteeIndex = () => {
     setDocumentTitle(null);
     setIsForm47(false);
     setLoadFailed(false);
-    navigate('/trustee/dashboard', { replace: true });
+    navigate('/', { replace: true });
   }, [navigate]);
 
   const handleDocumentLoadFailure = useCallback(() => {
@@ -122,7 +122,9 @@ const TrusteeIndex = () => {
         <div className="flex flex-col min-h-screen">
           <MainLayout>
             {session ? (
-              <RecentlyAccessedPage />
+              <div className="container mx-auto p-6 bg-background min-h-screen">
+                <DashboardHome />
+              </div>
             ) : (
               <div className="flex h-screen w-full items-center justify-center">
                 <LoadingSpinner />
