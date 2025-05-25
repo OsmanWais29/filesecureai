@@ -32,78 +32,77 @@ export const HomePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="space-y-6">
-        {/* Redesigned Compact Header */}
-        <div className="relative">
-          <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-md rounded-2xl shadow-lg border border-white/20 dark:border-gray-700/50 p-8">
-            <div className="max-w-4xl mx-auto text-center space-y-4">
-              <h1 className="text-4xl md:text-5xl font-bold">
-                <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                  SecureFiles AI
-                </span>
+        {/* Professional Header */}
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="flex flex-col space-y-2">
+              <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">
+                SecureFiles AI
               </h1>
-              
-              <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-                Streamline your document management with{' '}
-                <span className="font-semibold text-indigo-600 dark:text-indigo-400">intelligent AI-powered tools</span>
+              <p className="text-gray-600 dark:text-gray-400">
+                Professional document management and client relationship platform
               </p>
-              
-              <div className="flex items-center justify-center gap-2 pt-2">
-                <div className="w-12 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
-                <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
-                <div className="w-12 h-0.5 bg-gradient-to-l from-blue-500 to-purple-500 rounded-full"></div>
-              </div>
             </div>
           </div>
         </div>
 
-        {/* Enhanced Stats Grid */}
-        <StatsGrid />
+        {/* Content Container */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+          {/* Stats Grid */}
+          <StatsGrid />
 
-        {/* File Upload */}
-        <Card className="shadow-lg border-0 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-3 text-xl">
-              <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
-                <Upload className="h-5 w-5" />
-              </div>
-              Upload Documents
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <FileUpload onUploadComplete={handleUploadComplete} />
-          </CardContent>
-        </Card>
+          {/* File Upload */}
+          <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3 text-xl text-gray-900 dark:text-white">
+                <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
+                  <Upload className="h-5 w-5" />
+                </div>
+                Upload Documents
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <FileUpload onUploadComplete={handleUploadComplete} />
+            </CardContent>
+          </Card>
 
-        {/* Recent Items Tabs */}
-        <Card className="shadow-lg border-0 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-xl">Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-2 bg-gray-100/50 dark:bg-gray-700/50">
-                <TabsTrigger value="documents" className="flex items-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800">
-                  <FileText className="h-4 w-4" />
-                  Recent Documents
-                </TabsTrigger>
-                <TabsTrigger value="clients" className="flex items-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800">
-                  <Users className="h-4 w-4" />
-                  Recent Clients
-                </TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="documents" className="mt-6">
-                <RecentDocuments onDocumentSelect={handleDocumentSelect} />
-              </TabsContent>
-              
-              <TabsContent value="clients" className="mt-6">
-                <RecentClients onClientSelect={handleClientSelect} />
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+          {/* Recent Items */}
+          <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl text-gray-900 dark:text-white">Recent Activity</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="grid w-full grid-cols-2 bg-gray-100 dark:bg-gray-700">
+                  <TabsTrigger 
+                    value="documents" 
+                    className="flex items-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800"
+                  >
+                    <FileText className="h-4 w-4" />
+                    Recent Documents
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="clients" 
+                    className="flex items-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800"
+                  >
+                    <Users className="h-4 w-4" />
+                    Recent Clients
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="documents" className="mt-6">
+                  <RecentDocuments onDocumentSelect={handleDocumentSelect} />
+                </TabsContent>
+                
+                <TabsContent value="clients" className="mt-6">
+                  <RecentClients onClientSelect={handleClientSelect} />
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
