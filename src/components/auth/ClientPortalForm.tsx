@@ -3,10 +3,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Lock, AlertTriangle, Mail, UserPlus } from 'lucide-react';
+import { Lock, AlertTriangle, Mail, UserPlus, Phone, MapPin, Briefcase, DollarSign } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { authService } from './authService';
 import { useRateLimiting } from './hooks/useRateLimiting';
 import { validateAuthForm } from './authValidation';
@@ -22,6 +23,11 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [occupation, setOccupation] = useState('');
+  const [income, setIncome] = useState('');
+  const [preferredContact, setPreferredContact] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [authInProgress, setAuthInProgress] = useState(false);
@@ -64,6 +70,14 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
       console.log(`ClientPortalForm: Starting ${isSignUp ? 'sign up' : 'sign in'} process for ${email}`);
       
       if (isSignUp) {
+        const clientMetadata = {
+          phone,
+          address,
+          occupation,
+          income,
+          preferred_contact: preferredContact
+        };
+
         const { user } = await authService.signUp({
           email,
           password,
@@ -71,6 +85,7 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
           userId: '',
           avatarUrl: null,
           userType: 'client',
+          metadata: clientMetadata
         });
 
         if (user?.identities?.length === 0) {
@@ -97,7 +112,7 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
           // Redirect to client portal
           console.log("ClientPortalForm: Client authentication successful, redirecting to portal");
           setTimeout(() => {
-            navigate('/portal', { replace: true });
+            navigate('/client-portal', { replace: true });
           }, 300);
           
         } catch (signInError: any) {
@@ -137,7 +152,7 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
           {isSignUp ? 'Create Client Account' : 'Client Portal Login'}
         </h1>
         <p className="text-sm text-white/80">
-          {isSignUp ? 'Sign up for client access' : 'Sign in to your client portal'}
+          {isSignUp ? 'Register for secure access to your case information' : 'Sign in to your client portal'}
         </p>
       </div>
 
@@ -150,30 +165,117 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
 
       <form onSubmit={handleAuth} className="space-y-5">
         {isSignUp && (
-          <div>
-            <Label htmlFor="fullName" className="text-white">Full Name</Label>
-            <Input
-              id="fullName"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Enter your full name"
-              disabled={loading || authInProgress}
-              className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
-            />
-          </div>
+          <>
+            <div>
+              <Label htmlFor="fullName" className="text-white">Full Name *</Label>
+              <Input
+                id="fullName"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Enter your full legal name"
+                required
+                disabled={loading || authInProgress}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="phone" className="text-white">Phone Number *</Label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/60" />
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="(555) 123-4567"
+                  required
+                  disabled={loading || authInProgress}
+                  className="bg-white/10 border-white/20 text-white placeholder:text-white/60 pl-10"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="address" className="text-white">Address *</Label>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/60" />
+                <Input
+                  id="address"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Full address including postal code"
+                  required
+                  disabled={loading || authInProgress}
+                  className="bg-white/10 border-white/20 text-white placeholder:text-white/60 pl-10"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="occupation" className="text-white">Occupation *</Label>
+              <div className="relative">
+                <Briefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/60" />
+                <Input
+                  id="occupation"
+                  value={occupation}
+                  onChange={(e) => setOccupation(e.target.value)}
+                  placeholder="Your current job title"
+                  required
+                  disabled={loading || authInProgress}
+                  className="bg-white/10 border-white/20 text-white placeholder:text-white/60 pl-10"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="income" className="text-white">Monthly Income *</Label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/60" />
+                <Input
+                  id="income"
+                  type="number"
+                  value={income}
+                  onChange={(e) => setIncome(e.target.value)}
+                  placeholder="Enter monthly income"
+                  required
+                  disabled={loading || authInProgress}
+                  className="bg-white/10 border-white/20 text-white placeholder:text-white/60 pl-10"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="preferredContact" className="text-white">Preferred Contact Method *</Label>
+              <Select value={preferredContact} onValueChange={setPreferredContact} required>
+                <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                  <SelectValue placeholder="Select contact preference" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="email">Email</SelectItem>
+                  <SelectItem value="phone">Phone</SelectItem>
+                  <SelectItem value="text">Text Message</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </>
         )}
 
         <div>
           <Label htmlFor="email" className="text-white">Email Address</Label>
-          <Input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter your email"
-            disabled={loading || authInProgress}
-            className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
-          />
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/60" />
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your email"
+              required
+              disabled={loading || authInProgress}
+              className="bg-white/10 border-white/20 text-white placeholder:text-white/60 pl-10"
+            />
+          </div>
         </div>
 
         <div>
@@ -183,7 +285,8 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter your password"
+            placeholder={isSignUp ? "Create a secure password (min 6 characters)" : "Enter your password"}
+            required
             disabled={loading || authInProgress}
             className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
           />
@@ -202,7 +305,7 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
           ) : isSignUp ? (
             <>
               <UserPlus className="h-4 w-4" />
-              <span>Sign Up</span>
+              <span>Create Account</span>
             </>
           ) : (
             <>
