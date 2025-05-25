@@ -9,14 +9,13 @@ import { AuthErrorDisplay } from "@/components/auth/AuthErrorDisplay";
 import { ClientPortalLayout } from "@/components/client-portal/ClientPortalLayout";
 import { toast } from "sonner";
 
-// Import from the client-portal pages folder
-import Dashboard from "./client-portal/Dashboard";
-import Documents from "./client-portal/Documents";
-import Tasks from "./client-portal/Tasks";
-import Appointments from "./client-portal/Appointments";
-import Support from "./client-portal/Support";
-import Settings from "./client-portal/Settings";
-import NotFound from "./client-portal/NotFound";
+// Import client portal pages
+import { ClientDashboard } from "@/pages/client-portal/Dashboard";
+import { ClientDocuments } from "@/pages/client-portal/Documents";
+import { ClientTasks } from "@/components/client-portal/ClientTasks";
+import { ClientAppointments } from "@/pages/client-portal/Appointments";
+import { ClientSupport } from "@/pages/client-portal/Support";
+import { ClientSettings } from "@/pages/client-portal/Settings";
 
 const ClientPortal = () => {
   const [error, setError] = useState<Error | null>(null);
@@ -125,13 +124,12 @@ const ClientPortal = () => {
   return (
     <ClientPortalLayout onSignOut={handleSignOut}>
       <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/documents" element={<Documents />} />
-        <Route path="/tasks" element={<Tasks />} />
-        <Route path="/appointments" element={<Appointments />} />
-        <Route path="/support" element={<Support />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="*" element={<NotFound />} />
+        <Route path="/" element={<ClientDashboard />} />
+        <Route path="/documents" element={<ClientDocuments />} />
+        <Route path="/tasks" element={<ClientTasks />} />
+        <Route path="/appointments" element={<ClientAppointments />} />
+        <Route path="/support" element={<ClientSupport />} />
+        <Route path="/settings" element={<ClientSettings />} />
       </Routes>
     </ClientPortalLayout>
   );
