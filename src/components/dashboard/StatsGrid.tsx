@@ -31,7 +31,6 @@ export const StatsGrid = () => {
         description="+2 this week"
         icon={FileText}
         onClick={handleDocumentsClick}
-        actionLabel="View Documents"
       />
       
       <StatCard
@@ -40,7 +39,6 @@ export const StatsGrid = () => {
         description="+1 this week"
         icon={Users}
         onClick={handleClientsClick}
-        actionLabel="Manage Clients"
       />
       
       <StatCard
@@ -49,7 +47,6 @@ export const StatsGrid = () => {
         description="-3 today"
         icon={Activity}
         onClick={handleTasksClick}
-        actionLabel="View Tasks"
       />
       
       <StatCard
@@ -58,7 +55,6 @@ export const StatsGrid = () => {
         description="Files uploaded"
         icon={Upload}
         onClick={handleUploadsClick}
-        actionLabel="Upload Files"
       />
     </div>
   );
