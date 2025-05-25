@@ -60,7 +60,7 @@ export const HomePage = () => {
               {getGreeting()}, {getUserName()}!
             </h1>
             <p className="text-blue-100 text-lg">
-              Welcome back to SecureFiles AI - Your intelligent document management platform
+              Welcome back! The All-in-One Intelligent Workspace for Insolvency
             </p>
           </div>
         </div>
