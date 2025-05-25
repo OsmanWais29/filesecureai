@@ -8,7 +8,6 @@ import { RecentClients } from './RecentClients';
 import { FileText, Users, Shield, Zap, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSessionContext } from '@/contexts/SessionContext';
-import { Button } from '@/components/ui/button';
 
 export const HomePage = () => {
   const navigate = useNavigate();
@@ -73,73 +72,52 @@ export const HomePage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <div className="bg-gradient-to-br from-blue-900 to-indigo-900 text-white">
-        <div className="max-w-6xl mx-auto px-6 py-16">
-          <div className="text-center space-y-6">
-            <div className="inline-flex items-center px-3 py-1 bg-blue-500/20 rounded-full text-sm">
-              <span className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
+    <div className="min-h-screen bg-background">
+      {/* Header Section */}
+      <div className="border-b bg-card">
+        <div className="max-w-6xl mx-auto px-6 py-8">
+          <div className="text-center space-y-4">
+            <div className="inline-flex items-center px-3 py-1 bg-primary/10 rounded-full text-sm text-primary">
+              <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
               {getGreeting()}, {getUserName()}
             </div>
             
-            <h1 className="text-5xl font-bold">
-              SecureFiles <span className="text-blue-400">AI</span>
+            <h1 className="text-4xl font-bold text-foreground">
+              SecureFiles <span className="text-primary">AI</span>
             </h1>
             
-            <p className="text-xl text-blue-100 max-w-2xl mx-auto">
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Professional insolvency management platform for Licensed Insolvency Trustees
             </p>
-            
-            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
-              <Button 
-                onClick={() => navigate('/documents')} 
-                size="lg"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8"
-              >
-                <FileText className="h-5 w-5 mr-2" />
-                Start Processing
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                onClick={() => navigate('/crm')}
-                size="lg"
-                className="border-white/30 text-white hover:bg-white/10 px-8"
-              >
-                <Users className="h-5 w-5 mr-2" />
-                Client Portal
-              </Button>
-            </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-12 space-y-12">
+      <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
         {/* Features Section */}
         <div className="grid md:grid-cols-3 gap-6">
           {features.map((feature, index) => (
-            <Card key={index} className="text-center p-6 hover:shadow-lg transition-shadow">
-              <CardContent className="space-y-4">
-                <div className="inline-flex p-3 rounded-lg bg-blue-50">
-                  <feature.icon className="h-6 w-6 text-blue-600" />
+            <Card key={index} className="text-center hover:shadow-md transition-shadow">
+              <CardContent className="p-6 space-y-4">
+                <div className="inline-flex p-3 rounded-lg bg-primary/10">
+                  <feature.icon className="h-6 w-6 text-primary" />
                 </div>
                 <h3 className="text-lg font-semibold">{feature.title}</h3>
-                <p className="text-gray-600 text-sm">{feature.description}</p>
+                <p className="text-muted-foreground text-sm">{feature.description}</p>
               </CardContent>
             </Card>
           ))}
         </div>
 
         {/* Upload Section */}
-        <Card className="overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-8">
+        <Card>
+          <CardContent className="p-8">
             <div className="text-center space-y-4 mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Upload Documents</h2>
-              <p className="text-gray-600">Analyze bankruptcy forms with AI-powered processing</p>
+              <h2 className="text-2xl font-bold">Upload Documents</h2>
+              <p className="text-muted-foreground">Analyze bankruptcy forms with AI-powered processing</p>
             </div>
             <FileUpload onUploadComplete={handleUploadComplete} />
-          </div>
+          </CardContent>
         </Card>
 
         {/* Recent Activity */}
@@ -147,7 +125,7 @@ export const HomePage = () => {
           <CardContent className="p-6">
             <div className="text-center space-y-4 mb-6">
               <h2 className="text-2xl font-bold">Recent Activity</h2>
-              <p className="text-gray-600">Quick access to your latest work</p>
+              <p className="text-muted-foreground">Quick access to your latest work</p>
             </div>
             
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
