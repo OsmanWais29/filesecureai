@@ -6,7 +6,9 @@ import { DocumentManagement } from '@/components/DocumentList/DocumentManagement
 const DocumentsPage = () => {
   return (
     <MainLayout>
-      <DocumentManagement />
+      <div className="container mx-auto p-6 bg-background min-h-screen">
+        <DocumentManagement />
+      </div>
     </MainLayout>
   );
 };

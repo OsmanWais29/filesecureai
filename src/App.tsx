@@ -58,7 +58,7 @@ function HomePageResolver() {
       return <Navigate to="/portal" replace />;
     }
     
-    // If trustee, show the dashboard (Index component) - NOT redirect to CRM
+    // If trustee, show the main dashboard
     if (isTrustee) {
       return <Index />;
     }

@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { DocumentViewer } from "@/components/DocumentViewer";
-import { DashboardHome } from "@/components/dashboard/DashboardHome";
+import { HomePage } from "@/components/dashboard/HomePage";
 import { showPerformanceToast } from "@/utils/performance";
 import { Home } from "lucide-react";
 import { useAuthState } from "@/hooks/useAuthState";
@@ -123,7 +123,7 @@ const TrusteeIndex = () => {
           <MainLayout>
             {session ? (
               <div className="container mx-auto p-6 bg-background min-h-screen">
-                <DashboardHome />
+                <HomePage />
               </div>
             ) : (
               <div className="flex h-screen w-full items-center justify-center">
