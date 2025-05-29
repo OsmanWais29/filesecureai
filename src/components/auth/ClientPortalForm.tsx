@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Lock, AlertTriangle, Mail, UserPlus, Phone, MapPin, Briefcase, DollarSign } from 'lucide-react';
+import { Lock, AlertTriangle, Mail, UserPlus, Phone, MapPin, Briefcase, DollarSign, FileText, Building } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +28,13 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
   const [occupation, setOccupation] = useState('');
   const [income, setIncome] = useState('');
   const [preferredContact, setPreferredContact] = useState('');
+  
+  // New estate and case fields
+  const [estateNumber, setEstateNumber] = useState('');
+  const [caseNumber, setCaseNumber] = useState('');
+  const [location, setLocation] = useState('');
+  const [administrativeType, setAdministrativeType] = useState('');
+  
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [authInProgress, setAuthInProgress] = useState(false);
@@ -75,7 +82,11 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
           address,
           occupation,
           income,
-          preferred_contact: preferredContact
+          preferred_contact: preferredContact,
+          estate_number: estateNumber,
+          case_number: caseNumber,
+          location,
+          administrative_type: administrativeType
         };
 
         const { user } = await authService.signUp({
@@ -177,6 +188,72 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
                 disabled={loading || authInProgress}
                 className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
               />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="estateNumber" className="text-white">Estate Number *</Label>
+                <div className="relative">
+                  <FileText className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/60" />
+                  <Input
+                    id="estateNumber"
+                    value={estateNumber}
+                    onChange={(e) => setEstateNumber(e.target.value)}
+                    placeholder="e.g., 31-12345"
+                    required
+                    disabled={loading || authInProgress}
+                    className="bg-white/10 border-white/20 text-white placeholder:text-white/60 pl-10"
+                  />
+                </div>
+                <p className="text-xs text-white/60 mt-1">Format: Division-Number</p>
+              </div>
+
+              <div>
+                <Label htmlFor="caseNumber" className="text-white">Case Number *</Label>
+                <div className="relative">
+                  <FileText className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/60" />
+                  <Input
+                    id="caseNumber"
+                    value={caseNumber}
+                    onChange={(e) => setCaseNumber(e.target.value)}
+                    placeholder="Your case number"
+                    required
+                    disabled={loading || authInProgress}
+                    className="bg-white/10 border-white/20 text-white placeholder:text-white/60 pl-10"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="location" className="text-white">Location *</Label>
+              <div className="relative">
+                <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/60" />
+                <Input
+                  id="location"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="Office location or jurisdiction"
+                  required
+                  disabled={loading || authInProgress}
+                  className="bg-white/10 border-white/20 text-white placeholder:text-white/60 pl-10"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="administrativeType" className="text-white">Administrative Type *</Label>
+              <Select value={administrativeType} onValueChange={setAdministrativeType} required>
+                <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                  <SelectValue placeholder="Select administrative type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="division1">Division 1</SelectItem>
+                  <SelectItem value="division2">Division 2</SelectItem>
+                  <SelectItem value="ordinary">Ordinary</SelectItem>
+                  <SelectItem value="summary">Summary</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div>
