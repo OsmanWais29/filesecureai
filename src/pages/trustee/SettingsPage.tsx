@@ -1,12 +1,14 @@
 
 import React from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
-import Settings from '@/pages/Settings';
+import { AccessControlDashboard } from '@/components/settings/access-control/AccessControlDashboard';
 
 const SettingsPage = () => {
   return (
     <MainLayout>
-      <Settings />
+      <div className="container mx-auto p-6">
+        <AccessControlDashboard />
+      </div>
     </MainLayout>
   );
 };

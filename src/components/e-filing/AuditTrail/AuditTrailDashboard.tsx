@@ -7,9 +7,6 @@ import { FilterPanel } from "./FilterPanel";
 import { FilterOptions } from "./types/filterTypes";
 import { AuditEntry } from "./TimelineEntry";
 import { isWithinTimeframe } from "@/utils/validation";
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
-import { PanelLeft, Filter as FilterIcon, Users } from "lucide-react";
 
 const generateMockData = (): AuditEntry[] => {
   const users = [
@@ -160,69 +157,29 @@ export const AuditTrailDashboard = () => {
     setFilters(newFilters);
   }, []);
   
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  
   return (
-    <div className="flex flex-col h-full container max-w-screen-2xl p-0">
-      <div className="flex items-center justify-between h-14 border-b px-4 bg-white/80 sticky top-0 z-30">
-        <div className="flex items-center gap-2">
-          <Sheet>
-            <SheetTrigger asChild>
-              <button className="mr-2 rounded-md border p-2 hover:bg-accent flex items-center" aria-label="Select Client">
-                <PanelLeft className="h-5 w-5" />
-              </button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-60 p-0">
-              <div className="p-4">
-                <span className="font-semibold text-sm text-muted-foreground mb-2 block">Select Client</span>
-                <div>
-                  <AuditTrailHeader onClientChange={setCurrentClientId} condensed />
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
-
-          <span className="text-lg font-bold">Audit Trail</span>
-          <span className="ml-2 text-muted-foreground text-xs tracking-wide hidden md:inline">
-            Chronological record of all system activity
-          </span>
+    <div className="flex flex-col h-full">
+      <AuditTrailHeader onClientChange={handleClientChange} />
+      
+      <div className="flex flex-1 gap-6">
+        <div className="w-1/4 min-w-0">
+          <FilterPanel 
+            entries={allEntries} 
+            onFilterChange={handleFilterChange} 
+          />
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsFilterOpen(true)}
-            className="rounded-md border px-2 py-1 hover:bg-accent flex items-center gap-1"
-            aria-label="Filters"
-          >
-            <FilterIcon className="h-4 w-4" />
-            <span className="hidden sm:inline text-xs font-medium">Filters</span>
-          </button>
-        </div>
-      </div>
-
-      <div className="flex-1 flex h-[calc(100vh-3.5rem)]">
-        <div className="w-full md:w-[360px] border-r overflow-y-auto h-full bg-gradient-to-b from-muted/60 to-transparent">
+        
+        <div className="w-1/2 min-w-0">
           <Timeline
             entries={filteredEntries}
             onEntrySelect={handleEntrySelect}
             selectedEntryId={selectedEntry?.id}
-            dense
           />
         </div>
-
-        <div className="flex-1 min-w-0 overflow-y-auto h-full bg-card px-6">
-          <DetailPanel entry={selectedEntry} compact />
+        
+        <div className="w-1/4 min-w-0">
+          <DetailPanel entry={selectedEntry} />
         </div>
-
-        <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-          <SheetContent side="right" className="w-[380px] p-0">
-            <div className="p-5">
-              <FilterPanel entries={allEntries} onFilterChange={handleFilterChange} />
-            </div>
-            <SheetClose asChild>
-              <button className="absolute top-2 right-2 text-muted-foreground font-bold" aria-label="Close">×</button>
-            </SheetClose>
-          </SheetContent>
-        </Sheet>
       </div>
     </div>
   );
