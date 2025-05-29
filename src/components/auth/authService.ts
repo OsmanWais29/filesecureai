@@ -14,7 +14,7 @@ interface SignUpData {
 
 // Simplified email validation
 const isTrusteeEmail = (email: string): boolean => {
-  // For development, allow all emails
+  // For development, allow all emails for trustees
   const allowedDomains = [
     'trustee.com',
     'securefilesai.com',
@@ -38,7 +38,7 @@ export const authService = {
     
     console.log(`Signing up ${email} as ${userType}`);
     
-    // Validate email domain for trustees
+    // Validate email domain for trustees (clients can use any email)
     if (userType === 'trustee' && !isTrusteeEmail(email)) {
       throw new Error("This email domain is not authorized for trustee accounts.");
     }
@@ -79,7 +79,11 @@ export const authService = {
             address: metadata?.address,
             occupation: metadata?.occupation,
             income: metadata?.income,
-            preferred_contact: metadata?.preferred_contact
+            preferred_contact: metadata?.preferred_contact,
+            estate_number: metadata?.estate_number,
+            case_number: metadata?.case_number,
+            location: metadata?.location,
+            administrative_type: metadata?.administrative_type
           });
 
         if (profileError) {
@@ -115,6 +119,20 @@ export const authService = {
     
     // Check user type after successful login
     const userMetadataType = data.user?.user_metadata?.user_type;
+    
+    // Enforce portal separation - clients can ONLY access client portal
+    if (userType === 'client' && userMetadataType && userMetadataType !== 'client') {
+      // Sign out immediately if trying to access wrong portal
+      await supabase.auth.signOut();
+      throw new Error("Access denied. This account is not authorized for the client portal.");
+    }
+    
+    // Trustees can ONLY access trustee portal
+    if (userType === 'trustee' && userMetadataType === 'client') {
+      // Sign out immediately if trying to access wrong portal
+      await supabase.auth.signOut();
+      throw new Error("Access denied. Client accounts cannot access the trustee portal.");
+    }
     
     if (!userMetadataType) {
       // If no user type in metadata, set it based on portal

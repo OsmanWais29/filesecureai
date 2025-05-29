@@ -157,28 +157,31 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
   };
 
   return (
-    <div className="w-full max-w-md mx-auto space-y-8 rounded-xl border bg-card/95 p-8 shadow-lg backdrop-blur-sm">
-      <div className="text-center space-y-2">
-        <h1 className="text-2xl font-bold text-white">
+    <div className="w-full max-w-md mx-auto space-y-6 rounded-2xl border border-blue-200/30 bg-white/95 backdrop-blur-md p-8 shadow-2xl">
+      <div className="text-center space-y-3">
+        <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl mx-auto flex items-center justify-center mb-4">
+          <Lock className="h-8 w-8 text-white" />
+        </div>
+        <h1 className="text-2xl font-bold text-gray-800">
           {isSignUp ? 'Create Client Account' : 'Client Portal Login'}
         </h1>
-        <p className="text-sm text-white/80">
+        <p className="text-sm text-gray-600">
           {isSignUp ? 'Register for secure access to your case information' : 'Sign in to your client portal'}
         </p>
       </div>
 
       {error && (
-        <Alert variant="destructive" className="border border-destructive/20 bg-destructive/10">
+        <Alert variant="destructive" className="border-red-200 bg-red-50">
           <AlertTriangle className="h-4 w-4" />
-          <AlertDescription className="font-medium">{error}</AlertDescription>
+          <AlertDescription className="font-medium text-red-800">{error}</AlertDescription>
         </Alert>
       )}
 
-      <form onSubmit={handleAuth} className="space-y-5">
+      <form onSubmit={handleAuth} className="space-y-4">
         {isSignUp && (
           <>
             <div>
-              <Label htmlFor="fullName" className="text-white">Full Name *</Label>
+              <Label htmlFor="fullName" className="text-gray-700 font-medium">Full Name *</Label>
               <Input
                 id="fullName"
                 value={fullName}
@@ -186,15 +189,15 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
                 placeholder="Enter your full legal name"
                 required
                 disabled={loading || authInProgress}
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="estateNumber" className="text-white">Estate Number *</Label>
-                <div className="relative">
-                  <FileText className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/60" />
+                <Label htmlFor="estateNumber" className="text-gray-700 font-medium">Estate Number *</Label>
+                <div className="relative mt-1">
+                  <FileText className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
                     id="estateNumber"
                     value={estateNumber}
@@ -202,16 +205,16 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
                     placeholder="e.g., 31-12345"
                     required
                     disabled={loading || authInProgress}
-                    className="bg-white/10 border-white/20 text-white placeholder:text-white/60 pl-10"
+                    className="pl-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
-                <p className="text-xs text-white/60 mt-1">Format: Division-Number</p>
+                <p className="text-xs text-gray-500 mt-1">Format: Division-Number</p>
               </div>
 
               <div>
-                <Label htmlFor="caseNumber" className="text-white">Case Number *</Label>
-                <div className="relative">
-                  <FileText className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/60" />
+                <Label htmlFor="caseNumber" className="text-gray-700 font-medium">Case Number *</Label>
+                <div className="relative mt-1">
+                  <FileText className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
                     id="caseNumber"
                     value={caseNumber}
@@ -219,16 +222,16 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
                     placeholder="Your case number"
                     required
                     disabled={loading || authInProgress}
-                    className="bg-white/10 border-white/20 text-white placeholder:text-white/60 pl-10"
+                    className="pl-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
               </div>
             </div>
 
             <div>
-              <Label htmlFor="location" className="text-white">Location *</Label>
-              <div className="relative">
-                <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/60" />
+              <Label htmlFor="location" className="text-gray-700 font-medium">Location *</Label>
+              <div className="relative mt-1">
+                <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   id="location"
                   value={location}
@@ -236,18 +239,18 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
                   placeholder="Office location or jurisdiction"
                   required
                   disabled={loading || authInProgress}
-                  className="bg-white/10 border-white/20 text-white placeholder:text-white/60 pl-10"
+                  className="pl-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
             </div>
 
             <div>
-              <Label htmlFor="administrativeType" className="text-white">Administrative Type *</Label>
+              <Label htmlFor="administrativeType" className="text-gray-700 font-medium">Administrative Type *</Label>
               <Select value={administrativeType} onValueChange={setAdministrativeType} required>
-                <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                <SelectTrigger className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                   <SelectValue placeholder="Select administrative type" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white border-gray-200">
                   <SelectItem value="division1">Division 1</SelectItem>
                   <SelectItem value="division2">Division 2</SelectItem>
                   <SelectItem value="ordinary">Ordinary</SelectItem>
@@ -257,9 +260,9 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
             </div>
 
             <div>
-              <Label htmlFor="phone" className="text-white">Phone Number *</Label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/60" />
+              <Label htmlFor="phone" className="text-gray-700 font-medium">Phone Number *</Label>
+              <div className="relative mt-1">
+                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   id="phone"
                   type="tel"
@@ -268,15 +271,15 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
                   placeholder="(555) 123-4567"
                   required
                   disabled={loading || authInProgress}
-                  className="bg-white/10 border-white/20 text-white placeholder:text-white/60 pl-10"
+                  className="pl-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
             </div>
 
             <div>
-              <Label htmlFor="address" className="text-white">Address *</Label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/60" />
+              <Label htmlFor="address" className="text-gray-700 font-medium">Address *</Label>
+              <div className="relative mt-1">
+                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   id="address"
                   value={address}
@@ -284,15 +287,15 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
                   placeholder="Full address including postal code"
                   required
                   disabled={loading || authInProgress}
-                  className="bg-white/10 border-white/20 text-white placeholder:text-white/60 pl-10"
+                  className="pl-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
             </div>
 
             <div>
-              <Label htmlFor="occupation" className="text-white">Occupation *</Label>
-              <div className="relative">
-                <Briefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/60" />
+              <Label htmlFor="occupation" className="text-gray-700 font-medium">Occupation *</Label>
+              <div className="relative mt-1">
+                <Briefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   id="occupation"
                   value={occupation}
@@ -300,15 +303,15 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
                   placeholder="Your current job title"
                   required
                   disabled={loading || authInProgress}
-                  className="bg-white/10 border-white/20 text-white placeholder:text-white/60 pl-10"
+                  className="pl-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
             </div>
 
             <div>
-              <Label htmlFor="income" className="text-white">Monthly Income *</Label>
-              <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/60" />
+              <Label htmlFor="income" className="text-gray-700 font-medium">Monthly Income *</Label>
+              <div className="relative mt-1">
+                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   id="income"
                   type="number"
@@ -317,18 +320,18 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
                   placeholder="Enter monthly income"
                   required
                   disabled={loading || authInProgress}
-                  className="bg-white/10 border-white/20 text-white placeholder:text-white/60 pl-10"
+                  className="pl-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
             </div>
 
             <div>
-              <Label htmlFor="preferredContact" className="text-white">Preferred Contact Method *</Label>
+              <Label htmlFor="preferredContact" className="text-gray-700 font-medium">Preferred Contact Method *</Label>
               <Select value={preferredContact} onValueChange={setPreferredContact} required>
-                <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                <SelectTrigger className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                   <SelectValue placeholder="Select contact preference" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white border-gray-200">
                   <SelectItem value="email">Email</SelectItem>
                   <SelectItem value="phone">Phone</SelectItem>
                   <SelectItem value="text">Text Message</SelectItem>
@@ -339,9 +342,9 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
         )}
 
         <div>
-          <Label htmlFor="email" className="text-white">Email Address</Label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/60" />
+          <Label htmlFor="email" className="text-gray-700 font-medium">Email Address</Label>
+          <div className="relative mt-1">
+            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               id="email"
               type="email"
@@ -350,13 +353,13 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
               placeholder="Enter your email"
               required
               disabled={loading || authInProgress}
-              className="bg-white/10 border-white/20 text-white placeholder:text-white/60 pl-10"
+              className="pl-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
         </div>
 
         <div>
-          <Label htmlFor="password" className="text-white">Password</Label>
+          <Label htmlFor="password" className="text-gray-700 font-medium">Password</Label>
           <Input
             id="password"
             type="password"
@@ -365,46 +368,46 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
             placeholder={isSignUp ? "Create a secure password (min 6 characters)" : "Enter your password"}
             required
             disabled={loading || authInProgress}
-            className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
+            className="mt-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
 
         <Button
           type="submit"
           disabled={loading || isRateLimited || authInProgress}
-          className="w-full flex items-center justify-center gap-2"
+          className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium py-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
         >
           {loading ? (
             <>
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2"></div>
               <span>Processing...</span>
             </>
           ) : isSignUp ? (
             <>
-              <UserPlus className="h-4 w-4" />
+              <UserPlus className="h-4 w-4 mr-2" />
               <span>Create Account</span>
             </>
           ) : (
             <>
-              <Lock className="h-4 w-4" />
+              <Lock className="h-4 w-4 mr-2" />
               <span>Sign In</span>
             </>
           )}
         </Button>
 
         {attempts > 0 && attempts < 5 && (
-          <p className="text-xs text-destructive text-center">
+          <p className="text-xs text-red-600 text-center">
             {5 - attempts} attempts remaining before temporary lockout
           </p>
         )}
       </form>
 
-      <div className="relative my-4">
+      <div className="relative my-6">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-white/20"></div>
+          <div className="w-full border-t border-gray-200"></div>
         </div>
         <div className="relative flex justify-center text-xs">
-          <span className="bg-transparent px-2 text-white/80">
+          <span className="bg-white px-2 text-gray-500">
             {isSignUp ? 'Already have an account?' : "Don't have an account?"}
           </span>
         </div>
@@ -417,7 +420,7 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
             setError(null);
           }}
           variant="ghost"
-          className="text-sm text-white hover:text-white/90 hover:underline"
+          className="text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 font-medium"
         >
           {isSignUp ? 'Sign in instead' : "Create an account"}
         </Button>
@@ -426,7 +429,7 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
           <Button
             onClick={onSwitchToTrusteePortal}
             variant="outline"
-            className="w-full text-sm bg-white/10 border-white/20 text-white hover:bg-white/20"
+            className="w-full text-sm border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400"
           >
             Switch to Trustee Portal
           </Button>

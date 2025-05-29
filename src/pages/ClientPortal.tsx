@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate, Routes, Route } from "react-router-dom";
-import { Auth } from "@/components/Auth";
 import { useAuthState } from "@/hooks/useAuthState";
 import { useUserRole } from "@/hooks/useUserRole";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -30,18 +29,20 @@ const ClientPortal = () => {
 
   console.log('ClientPortal state:', {
     user: user?.email,
+    userType: user?.user_metadata?.user_type,
     role,
     isUserClient,
     loading: isLoading,
     pathname: location.pathname
   });
 
-  // Check authentication and role
+  // Strict authentication and role checking
   useEffect(() => {
     if (!isLoading) {
       console.log("ClientPortal: Auth state loaded", { 
         hasUser: !!user, 
         hasSession: !!session,
+        userType: user?.user_metadata?.user_type,
         role,
         isUserClient
       });
@@ -53,7 +54,16 @@ const ClientPortal = () => {
         return;
       }
 
-      // Check if user has appropriate role
+      // Strict role checking - only clients can access client portal
+      const userType = user.user_metadata?.user_type;
+      
+      if (userType === 'trustee') {
+        console.log("ClientPortal: Trustee account detected, denying access");
+        toast.error("Access denied. Trustee accounts cannot access the client portal.");
+        navigate('/login', { replace: true });
+        return;
+      }
+
       if (role && !isUserClient) {
         console.log("ClientPortal: User doesn't have client role:", role);
         toast.error("Access denied. This portal is for clients only.");
@@ -80,8 +90,11 @@ const ClientPortal = () => {
   // Show loading spinner while auth state is being determined
   if (isLoading) {
     return (
-      <div className="h-screen w-full flex items-center justify-center">
-        <LoadingSpinner />
+      <div className="h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
+        <div className="text-center">
+          <LoadingSpinner size="large" />
+          <p className="mt-4 text-gray-600">Loading client portal...</p>
+        </div>
       </div>
     );
   }
@@ -97,8 +110,9 @@ const ClientPortal = () => {
     return null;
   }
 
-  // Check if user has client role (allow access if role is not yet loaded)
-  if (role && !isUserClient) {
+  // Check if user has client role (strict enforcement)
+  const userType = user.user_metadata?.user_type;
+  if (userType === 'trustee' || (role && !isUserClient)) {
     navigate('/login', { replace: true });
     return null;
   }

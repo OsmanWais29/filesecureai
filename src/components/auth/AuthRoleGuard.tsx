@@ -12,7 +12,7 @@ interface AuthRoleGuardProps {
 }
 
 export const AuthRoleGuard = ({ children, requiredRole, redirectPath }: AuthRoleGuardProps) => {
-  const { user, loading: authLoading, portal } = useAuthState();
+  const { user, loading: authLoading } = useAuthState();
   const { role, loading: roleLoading, isClient, isTrustee } = useUserRole();
   const [shouldRedirect, setShouldRedirect] = useState(false);
 
@@ -25,9 +25,11 @@ export const AuthRoleGuard = ({ children, requiredRole, redirectPath }: AuthRole
         return;
       }
 
+      // Strict role enforcement - no cross-portal access
       const hasCorrectRole = requiredRole === 'client' ? isClient : isTrustee;
       
       if (role && !hasCorrectRole) {
+        console.log(`AuthRoleGuard: User role ${role} does not match required role ${requiredRole}`);
         setShouldRedirect(true);
       }
     }
@@ -45,12 +47,16 @@ export const AuthRoleGuard = ({ children, requiredRole, redirectPath }: AuthRole
     return <Navigate to={redirectPath} replace />;
   }
 
-  if (role && requiredRole === 'client' && !isClient) {
-    return <Navigate to="/login" replace />;
+  // Additional security check - redirect clients trying to access trustee routes
+  if (role && requiredRole === 'trustee' && isClient) {
+    console.log("AuthRoleGuard: Client attempting to access trustee portal, redirecting");
+    return <Navigate to="/client-login" replace />;
   }
 
-  if (role && requiredRole === 'trustee' && !isTrustee) {
-    return <Navigate to="/client-login" replace />;
+  // Additional security check - redirect trustees trying to access client routes
+  if (role && requiredRole === 'client' && isTrustee) {
+    console.log("AuthRoleGuard: Trustee attempting to access client portal, redirecting");
+    return <Navigate to="/login" replace />;
   }
 
   return <>{children}</>;
