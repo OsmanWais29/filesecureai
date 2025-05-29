@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Mail, Phone, MapPin, Bell, Globe } from "lucide-react";
+import { User, Mail, Phone, MapPin, Bell, Shield, Palette } from "lucide-react";
 import { toast } from "sonner";
 
 export const ClientSettings = () => {
@@ -30,6 +30,13 @@ export const ClientSettings = () => {
     appointmentReminders: true,
     documentUpdates: true,
     taskDeadlines: true
+  });
+
+  // Privacy settings
+  const [privacy, setPrivacy] = useState({
+    profileVisibility: 'private',
+    dataSharing: false,
+    analytics: true
   });
 
   // Appearance settings
@@ -231,15 +238,57 @@ export const ClientSettings = () => {
         </CardContent>
       </Card>
 
-      {/* Regional Preferences */}
+      {/* Privacy & Security */}
       <Card className="bg-white/90 backdrop-blur-sm border-blue-200/50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-gray-800">
-            <Globe className="h-5 w-5" />
-            Regional Preferences
+            <Shield className="h-5 w-5" />
+            Privacy & Security
           </CardTitle>
           <CardDescription>
-            Set your language and timezone preferences
+            Manage your privacy settings and data preferences
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-gray-700">Data Sharing</Label>
+                <p className="text-sm text-gray-600">Allow anonymized data for service improvement</p>
+              </div>
+              <Switch
+                checked={privacy.dataSharing}
+                onCheckedChange={(checked) => setPrivacy({...privacy, dataSharing: checked})}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-gray-700">Analytics</Label>
+                <p className="text-sm text-gray-600">Help us improve by sharing usage analytics</p>
+              </div>
+              <Switch
+                checked={privacy.analytics}
+                onCheckedChange={(checked) => setPrivacy({...privacy, analytics: checked})}
+              />
+            </div>
+          </div>
+          <div className="pt-4 border-t">
+            <Button variant="outline" className="border-red-300 text-red-700 hover:bg-red-50">
+              Change Password
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Appearance Settings */}
+      <Card className="bg-white/90 backdrop-blur-sm border-blue-200/50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-gray-800">
+            <Palette className="h-5 w-5" />
+            Appearance
+          </CardTitle>
+          <CardDescription>
+            Customize how the portal looks and feels
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
