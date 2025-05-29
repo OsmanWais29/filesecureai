@@ -11,18 +11,18 @@ export const AuthLayout = ({ children, isClientPortal = false }: AuthLayoutProps
   const location = useLocation();
   const isClient = location.pathname === '/client-portal' || location.pathname === '/client-login' || isClientPortal;
   
-  // Consistent blue gradient for client portal
+  // Blue gradient background for client portal
   const bgGradient = isClient 
-    ? "from-blue-50 via-blue-100 to-blue-200" 
+    ? "from-blue-600 via-blue-700 to-blue-800" 
     : "from-background to-secondary/30";
 
   return (
     <div className={`flex flex-col min-h-screen bg-gradient-to-br ${bgGradient}`}>
       <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-5" 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-10" 
         style={{
           backgroundImage: isClient 
-            ? "url('data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"none\" fill-rule=\"evenodd\"%3E%3Cg fill=\"%236366f1\" fill-opacity=\"0.3\"%3E%3Cpath d=\"M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')" 
+            ? "url('data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"none\" fill-rule=\"evenodd\"%3E%3Cg fill=\"%23ffffff\" fill-opacity=\"0.2\"%3E%3Cpath d=\"M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')" 
             : "none"
         }}
       ></div>
@@ -34,7 +34,7 @@ export const AuthLayout = ({ children, isClientPortal = false }: AuthLayoutProps
             className="h-10 sm:h-12 md:h-16"
           />
           {isClient && (
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white text-xs sm:text-sm px-3 py-1.5 rounded-lg font-bold shadow-lg border border-blue-500">
+            <div className="bg-white/20 backdrop-blur-sm text-white text-xs sm:text-sm px-3 py-1.5 rounded-lg font-bold shadow-lg border border-white/30">
               CLIENT PORTAL
             </div>
           )}
@@ -45,7 +45,7 @@ export const AuthLayout = ({ children, isClientPortal = false }: AuthLayoutProps
         {children}
       </div>
       
-      <div className="w-full py-4 text-center text-gray-600 text-xs z-10">
+      <div className="w-full py-4 text-center text-white/80 text-xs z-10">
         <p>&copy; {new Date().getFullYear()} SecureFiles AI. All rights reserved.</p>
       </div>
     </div>
