@@ -122,12 +122,12 @@ const ClientPortal = () => {
   return (
     <ClientPortalLayout onSignOut={handleSignOut}>
       <Routes>
-        <Route path="/" element={<ClientDashboard />} />
-        <Route path="/documents" element={<ClientDocuments />} />
-        <Route path="/tasks" element={<ClientTasks />} />
-        <Route path="/appointments" element={<ClientAppointments />} />
-        <Route path="/support" element={<ClientSupport />} />
-        <Route path="/settings" element={<ClientSettings />} />
+        <Route index element={<ClientDashboard />} />
+        <Route path="documents" element={<ClientDocuments />} />
+        <Route path="tasks" element={<ClientTasks />} />
+        <Route path="appointments" element={<ClientAppointments />} />
+        <Route path="support" element={<ClientSupport />} />
+        <Route path="settings" element={<ClientSettings />} />
       </Routes>
     </ClientPortalLayout>
   );

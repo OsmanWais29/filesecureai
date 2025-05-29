@@ -5,108 +5,62 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, Phone, Mail, Clock, CheckCircle, AlertCircle } from "lucide-react";
-import { toast } from "sonner";
+import { MessageSquare, Phone, Mail, Clock, Search, Plus } from "lucide-react";
 
 interface SupportTicket {
   id: string;
   subject: string;
-  message: string;
-  status: 'open' | 'in_progress' | 'resolved';
+  status: 'open' | 'in-progress' | 'resolved';
   priority: 'low' | 'medium' | 'high';
-  created_at: string;
-  updated_at: string;
+  createdDate: string;
+  lastUpdate: string;
+  category: string;
 }
 
 export const ClientSupport = () => {
-  const [tickets, setTickets] = useState<SupportTicket[]>([
+  const [tickets] = useState<SupportTicket[]>([
     {
-      id: '1',
-      subject: 'Question about Form 47',
-      message: 'I need clarification on section 3 of my consumer proposal form.',
-      status: 'in_progress',
-      priority: 'medium',
-      created_at: '2024-03-10T10:30:00Z',
-      updated_at: '2024-03-11T14:15:00Z'
+      id: "1",
+      subject: "Question about Form 47 completion",
+      status: "resolved",
+      priority: "medium",
+      createdDate: "2024-01-15",
+      lastUpdate: "2024-01-16",
+      category: "Documentation"
     },
     {
-      id: '2',
-      subject: 'Document upload issue',
-      message: 'Having trouble uploading my bank statements. The file seems too large.',
-      status: 'resolved',
-      priority: 'low',
-      created_at: '2024-03-08T09:00:00Z',
-      updated_at: '2024-03-08T16:30:00Z'
+      id: "2", 
+      subject: "Need clarification on payment schedule",
+      status: "in-progress",
+      priority: "high",
+      createdDate: "2024-01-20",
+      lastUpdate: "2024-01-21",
+      category: "Payments"
     }
   ]);
 
   const [showNewTicket, setShowNewTicket] = useState(false);
   const [newTicket, setNewTicket] = useState({
     subject: '',
-    message: '',
-    priority: 'medium' as const
+    category: '',
+    description: ''
   });
-
-  const handleSubmitTicket = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!newTicket.subject.trim() || !newTicket.message.trim()) {
-      toast.error('Please fill in all fields');
-      return;
-    }
-
-    const ticket: SupportTicket = {
-      id: Date.now().toString(),
-      subject: newTicket.subject,
-      message: newTicket.message,
-      status: 'open',
-      priority: newTicket.priority,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-
-    setTickets([ticket, ...tickets]);
-    setNewTicket({ subject: '', message: '', priority: 'medium' });
-    setShowNewTicket(false);
-    toast.success('Support ticket submitted successfully');
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'open':
-        return <AlertCircle className="h-4 w-4 text-orange-500" />;
-      case 'in_progress':
-        return <Clock className="h-4 w-4 text-blue-500" />;
-      case 'resolved':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      default:
-        return <MessageSquare className="h-4 w-4" />;
-    }
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'open':
-        return 'destructive';
-      case 'in_progress':
-        return 'default';
-      case 'resolved':
-        return 'secondary';
-      default:
-        return 'outline';
+      case 'open': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'in-progress': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'resolved': return 'bg-green-100 text-green-800 border-green-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'high':
-        return 'destructive';
-      case 'medium':
-        return 'default';
-      case 'low':
-        return 'secondary';
-      default:
-        return 'outline';
+      case 'high': return 'bg-red-100 text-red-800 border-red-200';
+      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'low': return 'bg-gray-100 text-gray-800 border-gray-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
@@ -114,205 +68,188 @@ export const ClientSupport = () => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      day: 'numeric'
     });
   };
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="p-6 space-y-6 bg-gradient-to-br from-blue-50 to-blue-100 min-h-screen">
+      <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-2xl font-bold">Support</h1>
-          <p className="text-muted-foreground">
-            Get help and support for your case
+          <h1 className="text-3xl font-bold text-gray-800">Support Center</h1>
+          <p className="text-gray-600 mt-2">
+            Get help with your case or submit a support request
           </p>
         </div>
-        <Button onClick={() => setShowNewTicket(true)}>
-          <MessageSquare className="h-4 w-4 mr-2" />
-          New Support Request
+        <Button 
+          onClick={() => setShowNewTicket(true)}
+          className="bg-blue-600 hover:bg-blue-700"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          New Ticket
         </Button>
       </div>
 
       {/* Contact Information */}
       <div className="grid md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <Phone className="h-8 w-8 mx-auto text-primary mb-3" />
-            <h3 className="font-medium mb-2">Phone Support</h3>
-            <p className="text-sm text-muted-foreground mb-3">
-              Call us for immediate assistance
-            </p>
-            <p className="font-medium">1-800-TRUSTEE</p>
-            <p className="text-xs text-muted-foreground">Mon-Fri 9AM-5PM EST</p>
+        <Card className="bg-white/90 backdrop-blur-sm border-blue-200/50">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <div className="p-3 bg-blue-100 rounded-lg w-fit mx-auto mb-3">
+                <Phone className="h-6 w-6 text-blue-600" />
+              </div>
+              <h3 className="font-medium text-gray-800">Phone Support</h3>
+              <p className="text-sm text-gray-600 mt-1">(555) 123-4567</p>
+              <p className="text-xs text-gray-500 mt-1">Mon-Fri 9AM-5PM</p>
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <Mail className="h-8 w-8 mx-auto text-primary mb-3" />
-            <h3 className="font-medium mb-2">Email Support</h3>
-            <p className="text-sm text-muted-foreground mb-3">
-              Send us your questions via email
-            </p>
-            <p className="font-medium">support@securefiles.ai</p>
-            <p className="text-xs text-muted-foreground">Response within 24 hours</p>
+        <Card className="bg-white/90 backdrop-blur-sm border-blue-200/50">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <div className="p-3 bg-blue-100 rounded-lg w-fit mx-auto mb-3">
+                <Mail className="h-6 w-6 text-blue-600" />
+              </div>
+              <h3 className="font-medium text-gray-800">Email Support</h3>
+              <p className="text-sm text-gray-600 mt-1">support@securefiles.ai</p>
+              <p className="text-xs text-gray-500 mt-1">24-48 hour response</p>
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <MessageSquare className="h-8 w-8 mx-auto text-primary mb-3" />
-            <h3 className="font-medium mb-2">Online Support</h3>
-            <p className="text-sm text-muted-foreground mb-3">
-              Submit a support ticket online
-            </p>
-            <Button variant="outline" size="sm" onClick={() => setShowNewTicket(true)}>
-              Create Ticket
-            </Button>
+        <Card className="bg-white/90 backdrop-blur-sm border-blue-200/50">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <div className="p-3 bg-blue-100 rounded-lg w-fit mx-auto mb-3">
+                <MessageSquare className="h-6 w-6 text-blue-600" />
+              </div>
+              <h3 className="font-medium text-gray-800">Live Chat</h3>
+              <p className="text-sm text-gray-600 mt-1">Instant messaging</p>
+              <p className="text-xs text-gray-500 mt-1">Mon-Fri 9AM-5PM</p>
+            </div>
           </CardContent>
         </Card>
       </div>
 
       {/* New Ticket Form */}
       {showNewTicket && (
-        <Card>
+        <Card className="bg-white/90 backdrop-blur-sm border-blue-200/50">
           <CardHeader>
-            <CardTitle>New Support Request</CardTitle>
+            <CardTitle className="text-gray-800">Submit New Support Request</CardTitle>
             <CardDescription>
               Describe your issue and we'll get back to you as soon as possible
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmitTicket} className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="subject" className="block text-sm font-medium mb-2">
-                    Subject
-                  </label>
-                  <Input
-                    id="subject"
-                    value={newTicket.subject}
-                    onChange={(e) => setNewTicket({ ...newTicket, subject: e.target.value })}
-                    placeholder="Brief description of your issue"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="priority" className="block text-sm font-medium mb-2">
-                    Priority
-                  </label>
-                  <select
-                    id="priority"
-                    value={newTicket.priority}
-                    onChange={(e) => setNewTicket({ ...newTicket, priority: e.target.value as any })}
-                    className="w-full px-3 py-2 border rounded-md bg-background"
-                  >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label htmlFor="message" className="block text-sm font-medium mb-2">
-                  Message
-                </label>
-                <Textarea
-                  id="message"
-                  value={newTicket.message}
-                  onChange={(e) => setNewTicket({ ...newTicket, message: e.target.value })}
-                  placeholder="Provide detailed information about your issue..."
-                  rows={4}
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button type="submit">Submit Request</Button>
-                <Button type="button" variant="outline" onClick={() => setShowNewTicket(false)}>
-                  Cancel
-                </Button>
-              </div>
-            </form>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+              <Input
+                value={newTicket.subject}
+                onChange={(e) => setNewTicket({...newTicket, subject: e.target.value})}
+                placeholder="Brief description of your issue"
+                className="border-blue-300 focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+              <select 
+                value={newTicket.category}
+                onChange={(e) => setNewTicket({...newTicket, category: e.target.value})}
+                className="w-full p-2 border border-blue-300 rounded-md focus:border-blue-500 focus:outline-none"
+              >
+                <option value="">Select a category</option>
+                <option value="documentation">Documentation</option>
+                <option value="payments">Payments</option>
+                <option value="appointments">Appointments</option>
+                <option value="technical">Technical Issues</option>
+                <option value="general">General Questions</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <Textarea
+                value={newTicket.description}
+                onChange={(e) => setNewTicket({...newTicket, description: e.target.value})}
+                placeholder="Please provide detailed information about your issue..."
+                rows={4}
+                className="border-blue-300 focus:border-blue-500"
+              />
+            </div>
+            <div className="flex gap-3">
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                Submit Ticket
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowNewTicket(false)}
+                className="border-blue-300 text-blue-700 hover:bg-blue-50"
+              >
+                Cancel
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
 
       {/* Support Tickets */}
-      <Card>
+      <Card className="bg-white/90 backdrop-blur-sm border-blue-200/50">
         <CardHeader>
-          <CardTitle>My Support Tickets</CardTitle>
-          <CardDescription>Track the status of your support requests</CardDescription>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle className="text-gray-800">My Support Tickets</CardTitle>
+              <CardDescription>
+                Track the status of your support requests
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Search className="h-4 w-4 text-gray-400" />
+              <Input placeholder="Search tickets..." className="w-64 border-blue-300" />
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {tickets.length === 0 ? (
             <div className="text-center py-8">
-              <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <MessageSquare className="h-12 w-12 mx-auto text-blue-500 mb-4" />
               <h3 className="text-lg font-medium mb-2">No support tickets</h3>
-              <p className="text-muted-foreground mb-4">
-                You haven't submitted any support requests yet
+              <p className="text-gray-600">
+                You haven't submitted any support requests yet.
               </p>
-              <Button onClick={() => setShowNewTicket(true)}>
-                Create Your First Ticket
-              </Button>
             </div>
           ) : (
             <div className="space-y-4">
               {tickets.map((ticket) => (
-                <div key={ticket.id} className="p-4 border rounded-lg space-y-3">
+                <div key={ticket.id} className="p-4 border border-blue-200 rounded-lg hover:shadow-md transition-shadow">
                   <div className="flex items-start justify-between">
-                    <div className="space-y-2 flex-1">
-                      <div className="flex items-center gap-2">
-                        {getStatusIcon(ticket.status)}
-                        <h3 className="font-medium">{ticket.subject}</h3>
-                        <Badge variant={getStatusColor(ticket.status)}>
-                          {ticket.status.replace('_', ' ')}
-                        </Badge>
-                        <Badge variant={getPriorityColor(ticket.priority)}>
-                          {ticket.priority} priority
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">{ticket.message}</p>
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span>Created: {formatDate(ticket.created_at)}</span>
-                        <span>Updated: {formatDate(ticket.updated_at)}</span>
-                      </div>
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-800">{ticket.subject}</h4>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Category: {ticket.category} • Created: {formatDate(ticket.createdDate)}
+                      </p>
                     </div>
+                    <div className="flex gap-2 ml-4">
+                      <Badge className={`${getPriorityColor(ticket.priority)} font-medium`}>
+                        {ticket.priority}
+                      </Badge>
+                      <Badge className={`${getStatusColor(ticket.status)} font-medium`}>
+                        {ticket.status.replace('-', ' ')}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between mt-3">
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <Clock className="h-4 w-4" />
+                      Last updated: {formatDate(ticket.lastUpdate)}
+                    </div>
+                    <Button size="sm" variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50">
+                      View Details
+                    </Button>
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* FAQ Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Frequently Asked Questions</CardTitle>
-          <CardDescription>Common questions and answers</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="p-4 bg-muted/50 rounded-lg">
-              <h4 className="font-medium mb-2">How do I upload documents?</h4>
-              <p className="text-sm text-muted-foreground">
-                Go to the Documents section and use the upload button. Ensure your files are in PDF format and under 10MB.
-              </p>
-            </div>
-            <div className="p-4 bg-muted/50 rounded-lg">
-              <h4 className="font-medium mb-2">When will I hear back from my trustee?</h4>
-              <p className="text-sm text-muted-foreground">
-                Trustees typically respond within 1-2 business days. For urgent matters, please call our support line.
-              </p>
-            </div>
-            <div className="p-4 bg-muted/50 rounded-lg">
-              <h4 className="font-medium mb-2">Can I reschedule my appointment?</h4>
-              <p className="text-sm text-muted-foreground">
-                Yes, you can reschedule appointments up to 24 hours in advance through the Appointments section.
-              </p>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

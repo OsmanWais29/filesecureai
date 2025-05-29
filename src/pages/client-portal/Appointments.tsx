@@ -4,18 +4,19 @@ import { useAuthState } from "@/hooks/useAuthState";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, MapPin, Video, Phone, Plus } from "lucide-react";
-import { toast } from "sonner";
+import { Calendar, Clock, MapPin, Phone, Video, Plus } from "lucide-react";
 
 interface Appointment {
   id: string;
   title: string;
-  description?: string;
-  start_time: string;
-  end_time: string;
-  meeting_type: string;
+  date: string;
+  time: string;
+  duration: string;
+  type: 'in-person' | 'phone' | 'video';
+  status: 'scheduled' | 'completed' | 'cancelled';
   location?: string;
-  status: string;
+  description?: string;
+  trustee: string;
 }
 
 export const ClientAppointments = () => {
@@ -23,95 +24,75 @@ export const ClientAppointments = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Mock data for demonstration
   useEffect(() => {
-    const mockAppointments: Appointment[] = [
-      {
-        id: '1',
-        title: 'Initial Consultation',
-        description: 'Discuss your financial situation and available options',
-        start_time: '2024-03-15T14:00:00Z',
-        end_time: '2024-03-15T15:00:00Z',
-        meeting_type: 'video',
-        location: 'Online Meeting',
-        status: 'scheduled'
-      },
-      {
-        id: '2',
-        title: 'Document Review',
-        description: 'Review submitted financial documents',
-        start_time: '2024-03-20T10:00:00Z',
-        end_time: '2024-03-20T10:30:00Z',
-        meeting_type: 'phone',
-        status: 'scheduled'
-      },
-      {
-        id: '3',
-        title: 'Follow-up Meeting',
-        description: 'Check progress and address any questions',
-        start_time: '2024-02-28T13:00:00Z',
-        end_time: '2024-02-28T13:30:00Z',
-        meeting_type: 'in_person',
-        location: '123 Business St, Toronto, ON',
-        status: 'completed'
-      }
-    ];
-
+    // Mock data for demonstration
     setTimeout(() => {
-      setAppointments(mockAppointments);
+      setAppointments([
+        {
+          id: "1",
+          title: "Initial Consultation",
+          date: "2024-02-15",
+          time: "10:00 AM",
+          duration: "60 minutes",
+          type: "video",
+          status: "scheduled",
+          description: "Discuss your financial situation and review proposal options.",
+          trustee: "Sarah Johnson, LIT"
+        },
+        {
+          id: "2",
+          title: "Document Review",
+          date: "2024-01-20",
+          time: "2:00 PM",
+          duration: "30 minutes",
+          type: "phone",
+          status: "completed",
+          description: "Review completed forms and answer questions.",
+          trustee: "Sarah Johnson, LIT"
+        },
+        {
+          id: "3",
+          title: "Creditor Meeting Preparation",
+          date: "2024-02-28",
+          time: "9:00 AM",
+          duration: "45 minutes",
+          type: "in-person",
+          status: "scheduled",
+          location: "123 Main St, Suite 400, Toronto, ON",
+          description: "Prepare for the upcoming creditor meeting.",
+          trustee: "Sarah Johnson, LIT"
+        }
+      ]);
       setLoading(false);
     }, 1000);
-  }, [user]);
-
-  const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return {
-      date: date.toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      }),
-      time: date.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    };
-  };
-
-  const getMeetingIcon = (type: string) => {
-    switch (type) {
-      case 'video':
-        return <Video className="h-4 w-4" />;
-      case 'phone':
-        return <Phone className="h-4 w-4" />;
-      case 'in_person':
-        return <MapPin className="h-4 w-4" />;
-      default:
-        return <Calendar className="h-4 w-4" />;
-    }
-  };
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'scheduled':
-        return 'default';
-      case 'completed':
-        return 'secondary';
-      case 'cancelled':
-        return 'destructive';
-      default:
-        return 'outline';
+      case 'scheduled': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'completed': return 'bg-green-100 text-green-800 border-green-200';
+      case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
-  const upcomingAppointments = appointments.filter(apt => 
-    new Date(apt.start_time) > new Date() && apt.status === 'scheduled'
-  );
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'video': return <Video className="h-4 w-4" />;
+      case 'phone': return <Phone className="h-4 w-4" />;
+      case 'in-person': return <MapPin className="h-4 w-4" />;
+      default: return <Calendar className="h-4 w-4" />;
+    }
+  };
 
-  const pastAppointments = appointments.filter(apt => 
-    new Date(apt.start_time) <= new Date() || apt.status === 'completed'
-  );
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
 
   if (loading) {
     return (
@@ -128,150 +109,94 @@ export const ClientAppointments = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="p-6 space-y-6 bg-gradient-to-br from-blue-50 to-blue-100 min-h-screen">
+      <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-2xl font-bold">Appointments</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold text-gray-800">Appointments</h1>
+          <p className="text-gray-600 mt-2">
             View and manage your scheduled meetings
           </p>
         </div>
-        <Button onClick={() => toast.info('Appointment booking feature coming soon')}>
+        <Button className="bg-blue-600 hover:bg-blue-700">
           <Plus className="h-4 w-4 mr-2" />
           Request Appointment
         </Button>
       </div>
 
-      {/* Upcoming Appointments */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Upcoming Appointments
-          </CardTitle>
-          <CardDescription>Your scheduled meetings and consultations</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {upcomingAppointments.length === 0 ? (
+      {appointments.length === 0 ? (
+        <Card className="bg-white/90 backdrop-blur-sm border-blue-200/50">
+          <CardContent className="pt-6">
             <div className="text-center py-8">
-              <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No upcoming appointments</h3>
-              <p className="text-muted-foreground mb-4">
-                Schedule a meeting with your trustee to discuss your case
+              <Calendar className="h-12 w-12 mx-auto text-blue-500 mb-4" />
+              <h3 className="text-lg font-medium mb-2">No appointments scheduled</h3>
+              <p className="text-gray-600 mb-4">
+                You don't have any upcoming appointments. Request one to meet with your trustee.
               </p>
-              <Button variant="outline">
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="h-4 w-4 mr-2" />
                 Request Appointment
               </Button>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {upcomingAppointments.map((appointment) => {
-                const { date, time } = formatDateTime(appointment.start_time);
-                return (
-                  <div key={appointment.id} className="p-4 border rounded-lg space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-medium">{appointment.title}</h3>
-                          <Badge variant={getStatusColor(appointment.status)}>
-                            {appointment.status}
-                          </Badge>
-                        </div>
-                        {appointment.description && (
-                          <p className="text-sm text-muted-foreground">
-                            {appointment.description}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {date}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {time}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            {getMeetingIcon(appointment.meeting_type)}
-                            {appointment.meeting_type === 'video' && 'Video Call'}
-                            {appointment.meeting_type === 'phone' && 'Phone Call'}
-                            {appointment.meeting_type === 'in_person' && 'In Person'}
-                          </div>
-                        </div>
-                        {appointment.location && (
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <MapPin className="h-3 w-3" />
-                            {appointment.location}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
-                          Reschedule
-                        </Button>
-                        {appointment.meeting_type === 'video' && (
-                          <Button size="sm">
-                            Join Meeting
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Past Appointments */}
-      {pastAppointments.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Past Appointments
-            </CardTitle>
-            <CardDescription>Your completed meetings and consultations</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {pastAppointments.map((appointment) => {
-                const { date, time } = formatDateTime(appointment.start_time);
-                return (
-                  <div key={appointment.id} className="p-4 border rounded-lg opacity-75">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-medium">{appointment.title}</h3>
-                          <Badge variant={getStatusColor(appointment.status)}>
-                            {appointment.status}
-                          </Badge>
-                        </div>
-                        {appointment.description && (
-                          <p className="text-sm text-muted-foreground">
-                            {appointment.description}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {date}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {time}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
           </CardContent>
         </Card>
+      ) : (
+        <div className="space-y-4">
+          {appointments.map((appointment) => (
+            <Card key={appointment.id} className="bg-white/90 backdrop-blur-sm border-blue-200/50 hover:shadow-lg transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      {getTypeIcon(appointment.type)}
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg text-gray-800">{appointment.title}</CardTitle>
+                      <CardDescription className="text-gray-600">
+                        With {appointment.trustee}
+                      </CardDescription>
+                    </div>
+                  </div>
+                  <Badge className={`${getStatusColor(appointment.status)} font-medium`}>
+                    {appointment.status}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <Calendar className="h-4 w-4 text-blue-600" />
+                    <span>{formatDate(appointment.date)}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <Clock className="h-4 w-4 text-blue-600" />
+                    <span>{appointment.time} ({appointment.duration})</span>
+                  </div>
+                  {appointment.location && (
+                    <div className="flex items-center gap-2 text-gray-700 md:col-span-2">
+                      <MapPin className="h-4 w-4 text-blue-600" />
+                      <span>{appointment.location}</span>
+                    </div>
+                  )}
+                </div>
+                
+                {appointment.description && (
+                  <p className="text-gray-700">{appointment.description}</p>
+                )}
+                
+                {appointment.status === 'scheduled' && (
+                  <div className="flex gap-3">
+                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                      Join Meeting
+                    </Button>
+                    <Button size="sm" variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50">
+                      Reschedule
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       )}
     </div>
   );

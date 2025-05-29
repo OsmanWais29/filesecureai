@@ -104,7 +104,12 @@ function App() {
       <Route path="/trustee-login" element={<TrusteeLogin />} />
       <Route path="/client-login" element={<ClientLogin />} />
       
-      {/* Client Portal routes */}
+      {/* Client Portal routes - Updated to use wildcard properly */}
+      <Route path="/client-portal" element={
+        <AuthRoleGuard requiredRole="client" redirectPath="/client-login">
+          <ClientPortal />
+        </AuthRoleGuard>
+      } />
       <Route path="/client-portal/*" element={
         <AuthRoleGuard requiredRole="client" redirectPath="/client-login">
           <ClientPortal />

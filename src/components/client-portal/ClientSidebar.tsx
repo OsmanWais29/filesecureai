@@ -18,33 +18,33 @@ import {
 const navigationItems = [
   {
     title: "Dashboard",
-    href: "/portal",
+    href: "/client-portal",
     icon: LayoutDashboard,
     end: true
   },
   {
     title: "Documents",
-    href: "/portal/documents",
+    href: "/client-portal/documents",
     icon: FileText
   },
   {
     title: "Tasks",
-    href: "/portal/tasks",
+    href: "/client-portal/tasks",
     icon: CheckSquare
   },
   {
     title: "Appointments",
-    href: "/portal/appointments",
+    href: "/client-portal/appointments",
     icon: Calendar
   },
   {
     title: "Support",
-    href: "/portal/support",
+    href: "/client-portal/support",
     icon: MessageSquare
   },
   {
     title: "Settings",
-    href: "/portal/settings",
+    href: "/client-portal/settings",
     icon: Settings
   }
 ];
@@ -66,27 +66,27 @@ export const ClientSidebar = () => {
 
   return (
     <div className={cn(
-      "flex flex-col h-full bg-white dark:bg-gray-900 border-r transition-all duration-300",
+      "flex flex-col h-full bg-white/95 backdrop-blur-sm border-r border-blue-200/50 transition-all duration-300 shadow-lg",
       collapsed ? "w-16" : "w-64"
     )}>
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b">
+      <div className="flex items-center justify-between p-4 border-b border-blue-200/50">
         {!collapsed && (
           <div>
-            <h2 className="text-lg font-semibold text-primary">Client Portal</h2>
-            <p className="text-xs text-muted-foreground">SecureFiles AI</p>
+            <h2 className="text-lg font-semibold text-blue-800">Client Portal</h2>
+            <p className="text-xs text-blue-600">SecureFiles AI</p>
           </div>
         )}
         <Button
           variant="ghost"
           size="icon"
           onClick={handleToggleCollapse}
-          className="ml-auto"
+          className="ml-auto hover:bg-blue-100"
         >
           {collapsed ? (
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-4 w-4 text-blue-600" />
           ) : (
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4 text-blue-600" />
           )}
         </Button>
       </div>
@@ -97,17 +97,17 @@ export const ClientSidebar = () => {
           {navigationItems.map((item) => {
             const isActive = item.end 
               ? location.pathname === item.href
-              : location.pathname.startsWith(item.href);
+              : location.pathname.startsWith(item.href) && location.pathname !== "/client-portal";
 
             return (
               <NavLink
                 key={item.href}
                 to={item.href}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-muted",
+                  "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-blue-100",
                   isActive 
-                    ? "bg-primary text-primary-foreground hover:bg-primary/90" 
-                    : "text-muted-foreground hover:text-foreground",
+                    ? "bg-blue-600 text-white hover:bg-blue-700" 
+                    : "text-blue-700 hover:text-blue-800",
                   collapsed && "justify-center px-2"
                 )}
                 title={collapsed ? item.title : undefined}
@@ -121,9 +121,9 @@ export const ClientSidebar = () => {
       </ScrollArea>
 
       {/* Footer */}
-      <div className="p-4 border-t">
+      <div className="p-4 border-t border-blue-200/50">
         <div className={cn(
-          "text-xs text-muted-foreground",
+          "text-xs text-blue-600",
           collapsed ? "text-center" : ""
         )}>
           {collapsed ? "v1.0" : "SecureFiles AI v1.0"}
