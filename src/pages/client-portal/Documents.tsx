@@ -77,11 +77,11 @@ export const ClientDocuments = () => {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="p-6 bg-gray-50 min-h-screen">
         <div className="animate-pulse space-y-4">
           {[1, 2, 3].map(i => (
-            <Card key={i}>
-              <CardHeader className="h-20 bg-muted rounded"></CardHeader>
+            <Card key={i} className="bg-white">
+              <CardHeader className="h-20 bg-gray-100 rounded"></CardHeader>
             </Card>
           ))}
         </div>
@@ -90,75 +90,77 @@ export const ClientDocuments = () => {
   }
 
   return (
-    <div className="p-6 space-y-6 bg-gradient-to-br from-blue-50 to-blue-100 min-h-screen">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-800">My Documents</h1>
-        <p className="text-gray-600 mt-2">
-          View and manage your case documents and forms
-        </p>
-      </div>
-
-      {documents.length === 0 ? (
-        <Card className="bg-white/90 backdrop-blur-sm border-blue-200/50">
-          <CardContent className="pt-6">
-            <div className="text-center py-8">
-              <FileText className="h-12 w-12 mx-auto text-blue-500 mb-4" />
-              <h3 className="text-lg font-medium mb-2">No documents available</h3>
-              <p className="text-gray-600">
-                Your documents will appear here once they are uploaded by your trustee.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {documents.map((doc) => (
-            <Card key={doc.id} className="bg-white/90 backdrop-blur-sm border-blue-200/50 hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <FileText className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg text-gray-800">{doc.name}</CardTitle>
-                      <CardDescription className="text-gray-600">
-                        {doc.type} • {doc.size} • Uploaded {formatDate(doc.uploadDate)}
-                      </CardDescription>
-                    </div>
-                  </div>
-                  <Badge className={`${getStatusColor(doc.status)} font-medium`}>
-                    {doc.status.replace('_', ' ')}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {doc.description && (
-                  <p className="text-gray-700">{doc.description}</p>
-                )}
-                
-                {doc.status === 'requires_signature' && (
-                  <div className="flex items-center gap-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                    <AlertCircle className="h-4 w-4 text-orange-600" />
-                    <span className="text-sm text-orange-800 font-medium">Action Required: Signature needed</span>
-                  </div>
-                )}
-                
-                <div className="flex gap-3">
-                  <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                    <Eye className="h-4 w-4 mr-2" />
-                    View
-                  </Button>
-                  <Button size="sm" variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50">
-                    <Download className="h-4 w-4 mr-2" />
-                    Download
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="max-w-6xl mx-auto space-y-6">
+        <div className="bg-white rounded-lg shadow-sm border p-6">
+          <h1 className="text-2xl font-bold text-gray-900">My Documents</h1>
+          <p className="text-gray-600 mt-2">
+            View and manage your case documents and forms
+          </p>
         </div>
-      )}
+
+        {documents.length === 0 ? (
+          <Card className="bg-white border shadow-sm">
+            <CardContent className="pt-6">
+              <div className="text-center py-8">
+                <FileText className="h-12 w-12 mx-auto text-blue-500 mb-4" />
+                <h3 className="text-lg font-medium mb-2 text-gray-900">No documents available</h3>
+                <p className="text-gray-600">
+                  Your documents will appear here once they are uploaded by your trustee.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {documents.map((doc) => (
+              <Card key={doc.id} className="bg-white border shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <FileText className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg text-gray-900">{doc.name}</CardTitle>
+                        <CardDescription className="text-gray-600">
+                          {doc.type} • {doc.size} • Uploaded {formatDate(doc.uploadDate)}
+                        </CardDescription>
+                      </div>
+                    </div>
+                    <Badge className={`${getStatusColor(doc.status)} font-medium`}>
+                      {doc.status.replace('_', ' ')}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {doc.description && (
+                    <p className="text-gray-700">{doc.description}</p>
+                  )}
+                  
+                  {doc.status === 'requires_signature' && (
+                    <div className="flex items-center gap-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                      <AlertCircle className="h-4 w-4 text-orange-600" />
+                      <span className="text-sm text-orange-800 font-medium">Action Required: Signature needed</span>
+                    </div>
+                  )}
+                  
+                  <div className="flex gap-3">
+                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
+                      <Eye className="h-4 w-4 mr-2" />
+                      View
+                    </Button>
+                    <Button size="sm" variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50">
+                      <Download className="h-4 w-4 mr-2" />
+                      Download
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
