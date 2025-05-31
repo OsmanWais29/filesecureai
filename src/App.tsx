@@ -1,7 +1,8 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { TrackingProvider } from './contexts/TrackingContext';
+import { TrackingProvider } from './providers/TrackingProvider';
 import HomePage from './pages/HomePage';
 import DocumentsPage from './pages/DocumentsPage';
 import SettingsPage from './pages/SettingsPage';
@@ -14,7 +15,7 @@ import PublicLayout from './components/layout/PublicLayout';
 import DashboardPage from './pages/DashboardPage';
 import DocumentViewerPage from './pages/DocumentViewerPage';
 import PDFViewerDemo from './pages/PDFViewerDemo';
-import TestingPage from "@/pages/TestingPage";
+import TestingPage from "./pages/TestingPage";
 
 function App() {
   return (
