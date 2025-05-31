@@ -43,7 +43,7 @@ export class OSBAnalysisService {
       .single();
 
     if (error) throw error;
-    return data as unknown as OSBFormAnalysis;
+    return data as OSBFormAnalysis;
   }
 
   /**
@@ -58,7 +58,7 @@ export class OSBAnalysisService {
       .limit(limit);
 
     if (error) throw error;
-    return (data as unknown as OSBFormAnalysis[]) || [];
+    return (data as OSBFormAnalysis[]) || [];
   }
 
   /**
@@ -73,7 +73,7 @@ export class OSBAnalysisService {
       .limit(limit);
 
     if (error) throw error;
-    return (data as unknown as OSBFormAnalysis[]) || [];
+    return (data as OSBFormAnalysis[]) || [];
   }
 
   /**
@@ -179,11 +179,12 @@ export class OSBAnalysisService {
 
     } catch (error) {
       console.error('PDF analysis test error:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       return {
         pdfAccessible: false,
         extractionSuccess: false,
         analysisSuccess: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: errorMessage
       };
     }
   }
