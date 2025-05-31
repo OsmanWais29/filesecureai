@@ -1078,6 +1078,235 @@ export type Database = {
         }
         Relationships: []
       }
+      osb_compliance_tracking: {
+        Row: {
+          analysis_id: string | null
+          checked_at: string | null
+          id: string
+          is_compliant: boolean
+          notes: string | null
+          regulation_reference: string | null
+          requirement_type: string
+        }
+        Insert: {
+          analysis_id?: string | null
+          checked_at?: string | null
+          id?: string
+          is_compliant: boolean
+          notes?: string | null
+          regulation_reference?: string | null
+          requirement_type: string
+        }
+        Update: {
+          analysis_id?: string | null
+          checked_at?: string | null
+          id?: string
+          is_compliant?: boolean
+          notes?: string | null
+          regulation_reference?: string | null
+          requirement_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "osb_compliance_tracking_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "osb_form_analyses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      osb_form_analyses: {
+        Row: {
+          amounts_reasonable: boolean | null
+          analysis_result: Json
+          analyzed_by: string | null
+          bankruptcy_date: string | null
+          bia_compliant: boolean | null
+          compliance_status: Json | null
+          confidence_score: number | null
+          court_district: string | null
+          created_at: string | null
+          creditor_name: string | null
+          dates_consistent: boolean | null
+          debtor_address: string | null
+          debtor_name: string | null
+          document_type: string
+          estate_number: string | null
+          extraction_quality: string | null
+          filing_date: string | null
+          form_number: string
+          form_title: string
+          id: string
+          identified_risks: Json | null
+          osb_compliant: boolean | null
+          overall_risk_level: string
+          pages_analyzed: number | null
+          processing_status: string
+          required_fields_complete: boolean | null
+          signature_date: string | null
+          signature_verified: boolean | null
+          trustee_name: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amounts_reasonable?: boolean | null
+          analysis_result: Json
+          analyzed_by?: string | null
+          bankruptcy_date?: string | null
+          bia_compliant?: boolean | null
+          compliance_status?: Json | null
+          confidence_score?: number | null
+          court_district?: string | null
+          created_at?: string | null
+          creditor_name?: string | null
+          dates_consistent?: boolean | null
+          debtor_address?: string | null
+          debtor_name?: string | null
+          document_type: string
+          estate_number?: string | null
+          extraction_quality?: string | null
+          filing_date?: string | null
+          form_number: string
+          form_title: string
+          id?: string
+          identified_risks?: Json | null
+          osb_compliant?: boolean | null
+          overall_risk_level: string
+          pages_analyzed?: number | null
+          processing_status: string
+          required_fields_complete?: boolean | null
+          signature_date?: string | null
+          signature_verified?: boolean | null
+          trustee_name?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amounts_reasonable?: boolean | null
+          analysis_result?: Json
+          analyzed_by?: string | null
+          bankruptcy_date?: string | null
+          bia_compliant?: boolean | null
+          compliance_status?: Json | null
+          confidence_score?: number | null
+          court_district?: string | null
+          created_at?: string | null
+          creditor_name?: string | null
+          dates_consistent?: boolean | null
+          debtor_address?: string | null
+          debtor_name?: string | null
+          document_type?: string
+          estate_number?: string | null
+          extraction_quality?: string | null
+          filing_date?: string | null
+          form_number?: string
+          form_title?: string
+          id?: string
+          identified_risks?: Json | null
+          osb_compliant?: boolean | null
+          overall_risk_level?: string
+          pages_analyzed?: number | null
+          processing_status?: string
+          required_fields_complete?: boolean | null
+          signature_date?: string | null
+          signature_verified?: boolean | null
+          trustee_name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      osb_forms_reference: {
+        Row: {
+          bia_references: Json
+          category: string
+          created_at: string | null
+          filing_deadlines: Json
+          form_number: string
+          form_title: string
+          is_active: boolean | null
+          required_attachments: Json
+          required_fields: Json
+          risk_level: string
+          validation_rules: string | null
+        }
+        Insert: {
+          bia_references: Json
+          category: string
+          created_at?: string | null
+          filing_deadlines: Json
+          form_number: string
+          form_title: string
+          is_active?: boolean | null
+          required_attachments: Json
+          required_fields: Json
+          risk_level: string
+          validation_rules?: string | null
+        }
+        Update: {
+          bia_references?: Json
+          category?: string
+          created_at?: string | null
+          filing_deadlines?: Json
+          form_number?: string
+          form_title?: string
+          is_active?: boolean | null
+          required_attachments?: Json
+          required_fields?: Json
+          risk_level?: string
+          validation_rules?: string | null
+        }
+        Relationships: []
+      }
+      osb_risk_assessments: {
+        Row: {
+          analysis_id: string | null
+          created_at: string | null
+          deadline_impact: boolean | null
+          description: string
+          id: string
+          regulation_reference: string | null
+          resolution_notes: string | null
+          resolved: boolean | null
+          risk_type: string
+          severity: string
+          suggested_action: string | null
+        }
+        Insert: {
+          analysis_id?: string | null
+          created_at?: string | null
+          deadline_impact?: boolean | null
+          description: string
+          id?: string
+          regulation_reference?: string | null
+          resolution_notes?: string | null
+          resolved?: boolean | null
+          risk_type: string
+          severity: string
+          suggested_action?: string | null
+        }
+        Update: {
+          analysis_id?: string | null
+          created_at?: string | null
+          deadline_impact?: boolean | null
+          description?: string
+          id?: string
+          regulation_reference?: string | null
+          resolution_notes?: string | null
+          resolved?: boolean | null
+          risk_type?: string
+          severity?: string
+          suggested_action?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "osb_risk_assessments_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "osb_form_analyses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           address: string | null
@@ -1465,9 +1694,32 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      osb_analysis_dashboard: {
+        Row: {
+          analysis_date: string | null
+          avg_confidence: number | null
+          bia_compliant_count: number | null
+          complete_forms_count: number | null
+          form_number: string | null
+          form_title: string | null
+          high_risk_count: number | null
+          low_risk_count: number | null
+          medium_risk_count: number | null
+          osb_compliant_count: number | null
+          total_analyses: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      get_risk_summary: {
+        Args: { analysis_uuid: string }
+        Returns: {
+          risk_level: string
+          risk_count: number
+          critical_issues: string[]
+        }[]
+      }
       get_user_role: {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
