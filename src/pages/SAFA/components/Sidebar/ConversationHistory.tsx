@@ -1,9 +1,8 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageSquare, Clock, MoreHorizontal, Trash2, Edit } from "lucide-react";
+import { MessageSquare, Clock, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ConversationItem {
@@ -64,8 +63,8 @@ export const ConversationHistory: React.FC<ConversationHistoryProps> = ({ isColl
               variant="ghost"
               size="sm"
               className={cn(
-                "h-10 w-10 p-0 flex items-center justify-center",
-                conversation.isActive && "bg-gray-100"
+                "h-10 w-10 p-0 flex items-center justify-center hover:bg-accent",
+                conversation.isActive && "bg-accent"
               )}
             >
               <MessageSquare className="h-4 w-4" />
@@ -78,8 +77,8 @@ export const ConversationHistory: React.FC<ConversationHistoryProps> = ({ isColl
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-gray-200">
-        <h3 className="font-semibold text-sm text-gray-900 mb-2">Recent Conversations</h3>
+      <div className="p-4 border-b border-border">
+        <h3 className="font-semibold text-sm text-foreground mb-2">Recent Conversations</h3>
       </div>
       
       <ScrollArea className="flex-1">
@@ -89,20 +88,20 @@ export const ConversationHistory: React.FC<ConversationHistoryProps> = ({ isColl
               key={conversation.id}
               variant="ghost"
               className={cn(
-                "w-full justify-start h-auto p-3 mb-1 text-left hover:bg-gray-50 transition-colors",
-                conversation.isActive && "bg-gray-100 hover:bg-gray-100"
+                "w-full justify-start h-auto p-3 mb-1 text-left hover:bg-accent transition-colors group",
+                conversation.isActive && "bg-accent hover:bg-accent"
               )}
             >
               <div className="flex items-start gap-3 w-full">
-                <MessageSquare className="h-4 w-4 mt-1 shrink-0 text-gray-500" />
+                <MessageSquare className="h-4 w-4 mt-1 shrink-0 text-muted-foreground" />
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-sm text-gray-900 truncate mb-1">
+                  <div className="font-medium text-sm text-foreground truncate mb-1">
                     {conversation.title}
                   </div>
-                  <div className="text-xs text-gray-500 truncate mb-1">
+                  <div className="text-xs text-muted-foreground truncate mb-1">
                     {conversation.preview}
                   </div>
-                  <div className="flex items-center gap-1 text-xs text-gray-400">
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Clock className="h-3 w-3" />
                     {conversation.timestamp}
                   </div>
@@ -110,7 +109,7 @@ export const ConversationHistory: React.FC<ConversationHistoryProps> = ({ isColl
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted"
                   onClick={(e) => {
                     e.stopPropagation();
                     // Handle conversation options

@@ -96,22 +96,22 @@ export const ChatInterface = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full bg-background">
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-0">
         {messages.length === 0 ? (
           // Welcome Screen
           <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 max-w-4xl mx-auto w-full">
             <div className="text-center mb-12">
-              <div className="w-12 h-12 mx-auto mb-6 bg-green-600 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 mx-auto mb-6 bg-green-600 dark:bg-green-500 rounded-full flex items-center justify-center">
                 <MessageSquare className="h-6 w-6 text-white" />
               </div>
               
-              <h1 className="text-3xl font-semibold text-gray-900 mb-4">
+              <h1 className="text-3xl font-semibold text-foreground mb-4">
                 How can I help you today?
               </h1>
               
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
                 I'm your AI assistant for SecureFiles AI. Ask me about document management, bankruptcy procedures, risk assessments, or platform features.
               </p>
             </div>
@@ -120,34 +120,34 @@ export const ChatInterface = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-2xl mb-8">
               <button
                 onClick={() => setInputMessage("How do I upload and analyze bankruptcy documents?")}
-                className="p-4 text-left bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors group"
+                className="p-4 text-left bg-card hover:bg-accent rounded-lg border border-border transition-colors group"
               >
-                <div className="font-medium text-gray-900 mb-1 group-hover:text-green-600">Document Management</div>
-                <div className="text-sm text-gray-600">Learn how to upload and analyze documents</div>
+                <div className="font-medium text-foreground mb-1 group-hover:text-green-600 dark:group-hover:text-green-400">Document Management</div>
+                <div className="text-sm text-muted-foreground">Learn how to upload and analyze documents</div>
               </button>
               
               <button
                 onClick={() => setInputMessage("What are the different bankruptcy forms and their purposes?")}
-                className="p-4 text-left bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors group"
+                className="p-4 text-left bg-card hover:bg-accent rounded-lg border border-border transition-colors group"
               >
-                <div className="font-medium text-gray-900 mb-1 group-hover:text-green-600">Bankruptcy Forms</div>
-                <div className="text-sm text-gray-600">Understanding Forms 1-96 requirements</div>
+                <div className="font-medium text-foreground mb-1 group-hover:text-green-600 dark:group-hover:text-green-400">Bankruptcy Forms</div>
+                <div className="text-sm text-muted-foreground">Understanding Forms 1-96 requirements</div>
               </button>
               
               <button
                 onClick={() => setInputMessage("How does the AI-powered risk assessment work?")}
-                className="p-4 text-left bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors group"
+                className="p-4 text-left bg-card hover:bg-accent rounded-lg border border-border transition-colors group"
               >
-                <div className="font-medium text-gray-900 mb-1 group-hover:text-green-600">Risk Assessment</div>
-                <div className="text-sm text-gray-600">Learn about AI-powered compliance analysis</div>
+                <div className="font-medium text-foreground mb-1 group-hover:text-green-600 dark:group-hover:text-green-400">Risk Assessment</div>
+                <div className="text-sm text-muted-foreground">Learn about AI-powered compliance analysis</div>
               </button>
 
               <button
                 onClick={() => setInputMessage("How do I train the AI with my firm's documents?")}
-                className="p-4 text-left bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors group"
+                className="p-4 text-left bg-card hover:bg-accent rounded-lg border border-border transition-colors group"
               >
-                <div className="font-medium text-gray-900 mb-1 group-hover:text-green-600">AI Training</div>
-                <div className="text-sm text-gray-600">Upload documents to improve responses</div>
+                <div className="font-medium text-foreground mb-1 group-hover:text-green-600 dark:group-hover:text-green-400">AI Training</div>
+                <div className="text-sm text-muted-foreground">Upload documents to improve responses</div>
               </button>
             </div>
           </div>
@@ -159,24 +159,24 @@ export const ChatInterface = () => {
                 <div key={message.id} className="mb-6">
                   <div className={`flex items-start gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     {message.role === 'assistant' && (
-                      <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center shrink-0 mt-1">
+                      <div className="w-8 h-8 bg-green-600 dark:bg-green-500 rounded-full flex items-center justify-center shrink-0 mt-1">
                         <MessageSquare className="h-4 w-4 text-white" />
                       </div>
                     )}
                     
                     <div className={`flex flex-col space-y-2 max-w-[85%] ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
-                      <div className={`px-4 py-3 rounded-2xl text-gray-800 leading-relaxed whitespace-pre-wrap ${
+                      <div className={`px-4 py-3 rounded-2xl leading-relaxed whitespace-pre-wrap ${
                         message.role === 'user' 
-                          ? "bg-gray-100 text-gray-900" 
-                          : "bg-white border border-gray-200"
+                          ? "bg-muted text-foreground" 
+                          : "bg-card border border-border text-foreground"
                       }`}>
                         {message.content}
                       </div>
                     </div>
 
                     {message.role === 'user' && (
-                      <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center shrink-0 mt-1">
-                        <div className="w-5 h-5 bg-white rounded-full" />
+                      <div className="w-8 h-8 bg-foreground rounded-full flex items-center justify-center shrink-0 mt-1">
+                        <div className="w-5 h-5 bg-background rounded-full" />
                       </div>
                     )}
                   </div>
@@ -186,18 +186,18 @@ export const ChatInterface = () => {
               {isProcessing && (
                 <div className="mb-6">
                   <div className="flex items-start gap-4">
-                    <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center shrink-0 mt-1">
+                    <div className="w-8 h-8 bg-green-600 dark:bg-green-500 rounded-full flex items-center justify-center shrink-0 mt-1">
                       <Loader2 className="h-4 w-4 text-white animate-spin" />
                     </div>
                     <div className="flex-1">
-                      <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3">
+                      <div className="bg-card border border-border rounded-2xl px-4 py-3">
                         <div className="flex items-center gap-2">
                           <div className="flex gap-1">
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
+                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
                           </div>
-                          <span className="text-sm text-gray-500">Thinking...</span>
+                          <span className="text-sm text-muted-foreground">Thinking...</span>
                         </div>
                       </div>
                     </div>
@@ -210,17 +210,17 @@ export const ChatInterface = () => {
         )}
 
         {/* Input Area - Fixed at bottom */}
-        <div className="border-t border-gray-200 bg-white">
+        <div className="border-t border-border bg-background">
           <div className="max-w-3xl mx-auto px-6 py-4">
             <div className="relative">
-              <div className="flex items-end gap-3 p-3 bg-white border border-gray-300 rounded-2xl shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-all">
+              <div className="flex items-end gap-3 p-3 bg-background border border-border rounded-2xl shadow-sm focus-within:border-ring focus-within:shadow-md transition-all">
                 <textarea
                   ref={textareaRef}
                   value={inputMessage}
                   onChange={handleInputChange}
                   onKeyDown={handleKeyPress}
                   placeholder="Message SecureFiles AI..."
-                  className="flex-1 min-h-[24px] max-h-[200px] resize-none border-0 p-0 focus:outline-none bg-transparent text-base placeholder:text-gray-500"
+                  className="flex-1 min-h-[24px] max-h-[200px] resize-none border-0 p-0 focus:outline-none bg-transparent text-base placeholder:text-muted-foreground text-foreground"
                   disabled={isProcessing}
                   rows={1}
                   style={{ height: '24px' }}
@@ -229,16 +229,16 @@ export const ChatInterface = () => {
                   onClick={handleSend}
                   disabled={!inputMessage.trim() || isProcessing}
                   size="sm"
-                  className="shrink-0 h-8 w-8 p-0 rounded-lg bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 transition-colors"
+                  className="shrink-0 h-8 w-8 p-0 rounded-lg bg-foreground hover:bg-foreground/90 disabled:bg-muted-foreground transition-colors"
                 >
                   {isProcessing ? 
-                    <Loader2 className="h-4 w-4 animate-spin" /> : 
-                    <Send className="h-4 w-4" />
+                    <Loader2 className="h-4 w-4 animate-spin text-background" /> : 
+                    <Send className="h-4 w-4 text-background" />
                   }
                 </Button>
               </div>
               
-              <div className="mt-2 text-xs text-gray-500 text-center">
+              <div className="mt-2 text-xs text-muted-foreground text-center">
                 {isProcessing ? 
                   "AI is processing your message..." : 
                   "SecureFiles AI can make mistakes. Consider checking important information."}
