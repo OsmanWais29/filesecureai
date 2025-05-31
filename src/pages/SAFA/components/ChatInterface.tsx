@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Plus, Upload } from "lucide-react";
 import { useConversations } from "../hooks/useConversations";
@@ -8,10 +8,15 @@ import { TrainingUpload } from "./TrainingUpload";
 import { useToast } from "@/hooks/use-toast";
 
 export const ChatInterface = () => {
-  const { categoryMessages, handleSendMessage, isProcessing, clearConversation } = useConversations('help');
+  const { categoryMessages, handleSendMessage, isProcessing, clearConversation, loadConversationHistory } = useConversations('help');
   const [inputMessage, setInputMessage] = useState("");
   const [showTrainingUpload, setShowTrainingUpload] = useState(false);
   const { toast } = useToast();
+
+  // Load conversation history on mount
+  useEffect(() => {
+    loadConversationHistory('help');
+  }, [loadConversationHistory]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -27,13 +32,6 @@ export const ChatInterface = () => {
       try {
         await handleSendMessage(inputMessage);
         setInputMessage("");
-        
-        // Simulate AI response for demo
-        setTimeout(() => {
-          const aiResponse = generateAIResponse(inputMessage);
-          // Add AI response to messages
-          // This would normally be handled by the real AI integration
-        }, 1000);
       } catch (error) {
         toast({
           title: "Error",
@@ -47,34 +45,19 @@ export const ChatInterface = () => {
   const handleNewChat = useCallback(() => {
     clearConversation('help');
     setInputMessage("");
+    setShowTrainingUpload(false);
     toast({
       title: "New Chat Started",
       description: "Your conversation has been cleared.",
     });
   }, [clearConversation, toast]);
 
-  const generateAIResponse = (userMessage: string): string => {
-    if (userMessage.toLowerCase().includes("upload") || userMessage.toLowerCase().includes("document")) {
-      return "To upload documents for training in SecureFiles AI, navigate to the Documents page and use the drag-and-drop upload area or click the Upload button. The system supports PDF, Excel, Word, and image files.";
-    }
-    if (userMessage.toLowerCase().includes("bankruptcy") || userMessage.toLowerCase().includes("form")) {
-      return "SecureFiles AI supports all bankruptcy forms (Forms 1-96). Each form has specific validation rules and risk assessments. Forms like 47 (Consumer Proposal) and 65 (Assignment) have automated compliance checking.";
-    }
-    if (userMessage.toLowerCase().includes("risk")) {
-      return "Our AI-powered risk assessment analyzes documents for compliance issues, missing signatures, incomplete fields, and regulatory violations. Risk levels are color-coded: Green (low), Orange (medium), and Red (high priority).";
-    }
-    if (userMessage.toLowerCase().includes("user") || userMessage.toLowerCase().includes("permission")) {
-      return "User management is handled through the Settings > Access Control section. You can assign roles, manage province-based access, and configure IP whitelisting for enhanced security.";
-    }
-    return "I'm here to help you with SecureFiles AI. I can assist with document upload procedures, bankruptcy form guidance, risk assessment features, user management, and platform navigation. What specific area would you like help with?";
-  };
-
   const messages = categoryMessages.help || [];
 
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Header */}
-      <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between bg-white">
+      <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between bg-white shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
             <BookOpen className="h-4 w-4 text-white" />
@@ -109,16 +92,16 @@ export const ChatInterface = () => {
 
       {/* Training Upload Panel */}
       {showTrainingUpload && (
-        <div className="border-b border-gray-200 bg-gray-50">
+        <div className="border-b border-gray-200 bg-gray-50 shrink-0">
           <TrainingUpload onClose={() => setShowTrainingUpload(false)} />
         </div>
       )}
 
-      {/* Chat Content */}
-      <div className="flex-1 overflow-hidden">
+      {/* Chat Content - Full Height */}
+      <div className="flex-1 flex flex-col min-h-0">
         {messages.length === 0 ? (
           // Welcome Screen - ChatGPT style
-          <div className="h-full flex flex-col items-center justify-center px-4">
+          <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
             <div className="text-center max-w-2xl">
               <div className="w-16 h-16 mx-auto mb-6 bg-green-100 rounded-full flex items-center justify-center">
                 <BookOpen className="h-8 w-8 text-green-600" />

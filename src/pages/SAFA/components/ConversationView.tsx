@@ -33,10 +33,10 @@ export const ConversationView = ({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Messages Area */}
+      {/* Messages Area - Full Height with Scroll */}
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full">
-          <div className="max-w-4xl mx-auto px-6 py-8">
+          <div className="max-w-4xl mx-auto px-6 py-8 pb-32">
             {messages.map((message) => (
               <div key={message.id} className="mb-8">
                 <ChatMessage message={message} />
@@ -69,9 +69,9 @@ export const ConversationView = ({
         </ScrollArea>
       </div>
 
-      {/* Input Area - Fixed at bottom */}
-      <div className="border-t border-gray-200 bg-white">
-        <div className="max-w-4xl mx-auto px-6 py-4">
+      {/* Input Area - Fixed at bottom like ChatGPT */}
+      <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200">
+        <div className="max-w-4xl mx-auto px-6 py-6">
           <ChatInput 
             inputMessage={inputMessage}
             setInputMessage={setInputMessage}
