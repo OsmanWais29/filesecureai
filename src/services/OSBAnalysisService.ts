@@ -43,7 +43,7 @@ export class OSBAnalysisService {
       .single();
 
     if (error) throw error;
-    return data as OSBFormAnalysis;
+    return data as unknown as OSBFormAnalysis;
   }
 
   /**
@@ -58,7 +58,7 @@ export class OSBAnalysisService {
       .limit(limit);
 
     if (error) throw error;
-    return (data as OSBFormAnalysis[]) || [];
+    return (data as unknown as OSBFormAnalysis[]) || [];
   }
 
   /**
@@ -73,7 +73,7 @@ export class OSBAnalysisService {
       .limit(limit);
 
     if (error) throw error;
-    return (data as OSBFormAnalysis[]) || [];
+    return (data as unknown as OSBFormAnalysis[]) || [];
   }
 
   /**
@@ -162,7 +162,7 @@ export class OSBAnalysisService {
       // Test document analysis
       const analysisResult = await supabase.functions.invoke('analyze-document', {
         body: {
-          documentId: documentId,
+          documentId: String(documentId),
           extractionMode: 'comprehensive',
           includeRegulatory: true
         }

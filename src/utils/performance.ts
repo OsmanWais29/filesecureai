@@ -32,10 +32,11 @@ export const showPerformanceToast = debounce((pageName: string) => {
   if (loadTime) {
     analyticsService.trackEvent({
       category: 'Performance',
-      subcategory: 'Load',
-      action: 'PageLoad',
-      label: pageName,
-      value: Math.round(loadTime)
+      type: 'PageLoad',
+      metadata: {
+        pageName,
+        value: Math.round(loadTime)
+      }
     });
     
     // Show toast for slow page loads (> 500ms) in development only

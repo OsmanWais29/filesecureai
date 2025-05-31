@@ -58,7 +58,7 @@ export const useEnhancedAnalytics = ({
     setLastFetchTime(now);
     
     try {
-      const trends = await analyticsService.getEventTrends(period, {
+      const trends = analyticsService.getEventTrends(period, {
         ...options,
         userRole
       });
@@ -76,8 +76,8 @@ export const useEnhancedAnalytics = ({
   
   // Debounced version of event tracking to prevent excessive calls
   const debouncedTrackInteraction = useDebouncedCallback(
-    (component: string, action: string, subcategory: EventSubcategory = 'Click', metadata?: Record<string, any>) => {
-      analyticsService.trackInteraction(component, action, subcategory, metadata);
+    (component: string, action: string, metadata?: Record<string, any>) => {
+      analyticsService.trackInteraction(component, action, metadata);
     },
     300
   );

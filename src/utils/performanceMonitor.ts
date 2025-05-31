@@ -1,4 +1,3 @@
-
 /**
  * Optimized performance monitoring utility
  */
@@ -219,10 +218,11 @@ export const measureRouteChange = (from: string, to: string) => {
   if (interactionTime) {
     analyticsService.trackEvent({
       category: 'Performance',
-      subcategory: 'Interaction',
-      action: 'PageInteraction',
-      label: from,
-      value: Math.round(interactionTime)
+      type: 'PageInteraction',
+      metadata: {
+        from,
+        value: Math.round(interactionTime)
+      }
     });
   }
   
@@ -236,9 +236,11 @@ export const measureRouteChange = (from: string, to: string) => {
     // Track navigation event
     analyticsService.trackEvent({
       category: 'Navigation',
-      subcategory: 'Navigation',
-      action: 'RouteChange',
-      label: `${from} → ${to}`
+      type: 'RouteChange',
+      metadata: {
+        from,
+        to
+      }
     });
   }, 0);
   

@@ -167,7 +167,7 @@ class AnalyticsService {
     }));
   }
 
-  getEventTrends(): EventTrend[] {
+  getEventTrends(period?: string, options?: any): EventTrend[] {
     const trends = new Map<string, number>();
     this.events.forEach(event => {
       const date = new Date(event.timestamp).toISOString().split('T')[0];
@@ -197,4 +197,3 @@ class AnalyticsService {
 }
 
 export const analyticsService = new AnalyticsService();
-export { EventCategory, EventSubcategory, EventTrend };
