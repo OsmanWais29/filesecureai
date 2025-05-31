@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Send, Loader2 } from "lucide-react";
+import { useRef, useEffect } from "react";
 
 interface ChatInputProps {
   inputMessage: string;
@@ -18,35 +19,46 @@ export const ChatInput = ({
   handleKeyPress,
   isProcessing
 }: ChatInputProps) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
+    }
+  }, [inputMessage]);
+
   return (
-    <div className="p-4">
-      <div className="flex gap-3 items-end">
-        <div className="flex-1">
-          <Textarea
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            onKeyDown={handleKeyPress}
-            placeholder="Message SecureFiles AI..."
-            className="min-h-[60px] max-h-[200px] resize-none border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary"
-            disabled={isProcessing}
-          />
-        </div>
+    <div className="relative">
+      <div className="flex items-end gap-3 p-3 bg-white border border-gray-300 rounded-xl shadow-sm focus-within:border-green-500 focus-within:ring-1 focus-within:ring-green-500">
+        <Textarea
+          ref={textareaRef}
+          value={inputMessage}
+          onChange={(e) => setInputMessage(e.target.value)}
+          onKeyDown={handleKeyPress}
+          placeholder="Message SecureFiles AI..."
+          className="flex-1 min-h-[24px] max-h-[120px] resize-none border-0 p-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
+          disabled={isProcessing}
+          rows={1}
+        />
         <Button
           onClick={handleSendMessage}
           disabled={!inputMessage.trim() || isProcessing}
-          size="icon"
-          className="h-[60px] w-[60px] rounded-lg"
+          size="sm"
+          className="shrink-0 h-8 w-8 p-0 rounded-lg bg-green-600 hover:bg-green-700"
         >
           {isProcessing ? 
-            <Loader2 className="h-5 w-5 animate-spin" /> : 
-            <Send className="h-5 w-5" />
+            <Loader2 className="h-4 w-4 animate-spin" /> : 
+            <Send className="h-4 w-4" />
           }
         </Button>
       </div>
-      <div className="mt-2 text-xs text-muted-foreground text-center">
+      
+      <div className="mt-2 text-xs text-gray-500 text-center">
         {isProcessing ? 
           "AI is processing your message..." : 
-          "Press Enter to send, Shift+Enter for a new line"}
+          "SecureFiles AI can make mistakes. Consider checking important information."}
       </div>
     </div>
   );

@@ -1,154 +1,144 @@
 
 import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, MessageSquare } from "lucide-react";
+import { BookOpen, MessageSquare, Plus } from "lucide-react";
 import { useConversations } from "../hooks/useConversations";
 import { ConversationView } from "./ConversationView";
-import { cn } from "@/lib/utils";
-
-type ChatMode = 'help' | 'general';
+import { useToast } from "@/hooks/use-toast";
 
 export const ChatInterface = () => {
-  const [chatMode, setChatMode] = useState<ChatMode>('general');
   const { categoryMessages, handleSendMessage, isProcessing } = useConversations('help');
   const [inputMessage, setInputMessage] = useState("");
+  const { toast } = useToast();
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       if (inputMessage.trim()) {
-        handleSendMessage(inputMessage);
-        setInputMessage("");
+        handleSend();
       }
     }
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (inputMessage.trim()) {
-      handleSendMessage(inputMessage);
-      setInputMessage("");
+      try {
+        await handleSendMessage(inputMessage);
+        setInputMessage("");
+        
+        // Simulate AI response for demo
+        setTimeout(async () => {
+          const aiResponse = generateAIResponse(inputMessage);
+          // For now, we'll just show a toast since the AI integration isn't complete
+          toast({
+            title: "AI Response",
+            description: aiResponse,
+          });
+        }, 1000);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to send message. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
-  const getMessagesForChat = () => {
-    const messages = categoryMessages.help || [];
-    return messages.map(msg => ({
-      id: msg.id,
-      content: msg.content,
-      role: msg.role,
-      timestamp: msg.timestamp,
-      module: 'help'
-    }));
+  const generateAIResponse = (userMessage: string): string => {
+    if (userMessage.toLowerCase().includes("upload") || userMessage.toLowerCase().includes("document")) {
+      return "To upload documents in SecureFiles AI, navigate to the Documents page and use the drag-and-drop upload area or click the Upload button. The system supports PDF, Excel, Word, and image files.";
+    }
+    if (userMessage.toLowerCase().includes("bankruptcy") || userMessage.toLowerCase().includes("form")) {
+      return "SecureFiles AI supports all bankruptcy forms (Forms 1-96). Each form has specific validation rules and risk assessments. Forms like 47 (Consumer Proposal) and 65 (Assignment) have automated compliance checking.";
+    }
+    if (userMessage.toLowerCase().includes("risk")) {
+      return "Our AI-powered risk assessment analyzes documents for compliance issues, missing signatures, incomplete fields, and regulatory violations. Risk levels are color-coded: Green (low), Orange (medium), and Red (high priority).";
+    }
+    if (userMessage.toLowerCase().includes("user") || userMessage.toLowerCase().includes("permission")) {
+      return "User management is handled through the Settings > Access Control section. You can assign roles, manage province-based access, and configure IP whitelisting for enhanced security.";
+    }
+    return "I'm here to help you with SecureFiles AI. I can assist with document upload procedures, bankruptcy form guidance, risk assessment features, user management, and platform navigation. What specific area would you like help with?";
   };
 
-  const welcomeMessage = chatMode === 'help' 
-    ? "Hello! I'm your AI training assistant. I can help you learn how to use SecureFiles AI, explain features, and provide guidance on best practices for document management and bankruptcy procedures."
-    : "Hello! I'm SecureFiles AI Assistant. How can I help you today?";
+  const messages = categoryMessages.help || [];
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex flex-col h-full bg-white">
       {/* Header */}
-      <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-4">
-        <div className="flex items-center justify-between max-w-4xl mx-auto">
-          <div>
-            <h1 className="text-2xl font-bold">SecureFiles AI Assistant</h1>
-            <p className="text-muted-foreground">Intelligent document analysis and legal advisory system</p>
+      <div className="border-b border-gray-200 px-4 py-3 flex items-center justify-between bg-white">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+            <BookOpen className="h-4 w-4 text-white" />
           </div>
-          
-          {/* Mode Toggle */}
-          <div className="flex gap-2">
-            <Button
-              variant={chatMode === 'general' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setChatMode('general')}
-              className="flex items-center gap-2"
-            >
-              <MessageSquare className="h-4 w-4" />
-              General Chat
-            </Button>
-            <Button
-              variant={chatMode === 'help' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setChatMode('help')}
-              className="flex items-center gap-2"
-            >
-              <BookOpen className="h-4 w-4" />
-              Training & Help
-            </Button>
+          <div>
+            <h1 className="font-semibold text-gray-900">SecureFiles AI Assistant</h1>
+            <p className="text-sm text-gray-500">Training & Help</p>
           </div>
         </div>
+        
+        <Button variant="outline" size="sm" className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          New chat
+        </Button>
       </div>
 
       {/* Chat Content */}
       <div className="flex-1 overflow-hidden">
-        <div className="h-full max-w-4xl mx-auto">
-          {getMessagesForChat().length === 0 ? (
-            // Welcome Screen
-            <div className="h-full flex flex-col items-center justify-center p-8">
-              <div className="text-center space-y-6 max-w-2xl">
-                <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
-                  {chatMode === 'help' ? (
-                    <BookOpen className="h-8 w-8 text-primary" />
-                  ) : (
-                    <MessageSquare className="h-8 w-8 text-primary" />
-                  )}
-                </div>
-                
-                <div>
-                  <h2 className="text-3xl font-bold mb-4">
-                    {chatMode === 'help' ? 'Training & Help Center' : 'SecureFiles AI Assistant'}
-                  </h2>
-                  <p className="text-muted-foreground text-lg leading-relaxed">
-                    {welcomeMessage}
-                  </p>
-                </div>
+        {messages.length === 0 ? (
+          // Welcome Screen - ChatGPT style
+          <div className="h-full flex flex-col items-center justify-center px-4">
+            <div className="text-center max-w-md">
+              <div className="w-16 h-16 mx-auto mb-6 bg-green-100 rounded-full flex items-center justify-center">
+                <BookOpen className="h-8 w-8 text-green-600" />
+              </div>
+              
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+                How can I help you today?
+              </h2>
+              
+              <p className="text-gray-600 mb-8">
+                I'm your AI training assistant for SecureFiles AI. Ask me about document management, bankruptcy procedures, or platform features.
+              </p>
 
-                {chatMode === 'help' && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
-                    <Card className="p-4 hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => setInputMessage("How do I upload documents?")}>
-                      <CardContent className="p-0">
-                        <h3 className="font-medium mb-2">Document Upload</h3>
-                        <p className="text-sm text-muted-foreground">Learn how to upload and manage documents</p>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="p-4 hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => setInputMessage("What are the different bankruptcy forms?")}>
-                      <CardContent className="p-0">
-                        <h3 className="font-medium mb-2">Bankruptcy Forms</h3>
-                        <p className="text-sm text-muted-foreground">Understanding Forms 1-96 and their purposes</p>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="p-4 hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => setInputMessage("How does risk assessment work?")}>
-                      <CardContent className="p-0">
-                        <h3 className="font-medium mb-2">Risk Assessment</h3>
-                        <p className="text-sm text-muted-foreground">Learn about AI-powered risk analysis</p>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="p-4 hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => setInputMessage("How to manage user permissions?")}>
-                      <CardContent className="p-0">
-                        <h3 className="font-medium mb-2">User Management</h3>
-                        <p className="text-sm text-muted-foreground">Managing roles and access control</p>
-                      </CardContent>
-                    </Card>
-                  </div>
-                )}
+              {/* Quick suggestions */}
+              <div className="grid grid-cols-1 gap-3">
+                <button
+                  onClick={() => setInputMessage("How do I upload documents?")}
+                  className="p-3 text-left bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <div className="font-medium text-gray-900">Document Upload</div>
+                  <div className="text-sm text-gray-600">Learn how to upload and manage documents</div>
+                </button>
+                
+                <button
+                  onClick={() => setInputMessage("What are the different bankruptcy forms?")}
+                  className="p-3 text-left bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <div className="font-medium text-gray-900">Bankruptcy Forms</div>
+                  <div className="text-sm text-gray-600">Understanding Forms 1-96 and their purposes</div>
+                </button>
+                
+                <button
+                  onClick={() => setInputMessage("How does risk assessment work?")}
+                  className="p-3 text-left bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <div className="font-medium text-gray-900">Risk Assessment</div>
+                  <div className="text-sm text-gray-600">Learn about AI-powered risk analysis</div>
+                </button>
               </div>
             </div>
-          ) : (
-            // Chat View
-            <ConversationView
-              messages={getMessagesForChat()}
-              inputMessage={inputMessage}
-              setInputMessage={setInputMessage}
-              handleSendMessage={handleSend}
-              handleKeyPress={handleKeyPress}
-              isProcessing={isProcessing}
-            />
-          )}
-        </div>
+          </div>
+        ) : (
+          <ConversationView
+            messages={messages}
+            inputMessage={inputMessage}
+            setInputMessage={setInputMessage}
+            handleSendMessage={handleSend}
+            handleKeyPress={handleKeyPress}
+            isProcessing={isProcessing}
+          />
+        )}
       </div>
     </div>
   );

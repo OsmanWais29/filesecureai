@@ -36,24 +36,30 @@ export const ConversationView = ({
       {/* Messages Area */}
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full">
-          <div className="p-4 space-y-6 max-w-3xl mx-auto">
+          <div className="max-w-3xl mx-auto px-4 py-6">
             {messages.map((message) => (
-              <ChatMessage key={message.id} message={message} />
+              <div key={message.id} className="mb-6">
+                <ChatMessage message={message} />
+              </div>
             ))}
             
             {isProcessing && (
-              <div className="flex items-start gap-3 w-full py-2 px-1">
-                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                </div>
-                <div className="bg-muted rounded-lg p-4 max-w-[85%]">
-                  <div className="flex items-center gap-2">
-                    <div className="typing-indicator">
-                      <span className="dot"></span>
-                      <span className="dot"></span>
-                      <span className="dot"></span>
+              <div className="mb-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center shrink-0">
+                    <Loader2 className="h-4 w-4 text-white animate-spin" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="bg-gray-100 rounded-2xl px-4 py-3 max-w-[80%]">
+                      <div className="flex items-center gap-2">
+                        <div className="typing-indicator">
+                          <span className="dot"></span>
+                          <span className="dot"></span>
+                          <span className="dot"></span>
+                        </div>
+                        <span className="text-sm text-gray-600 ml-2">Thinking...</span>
+                      </div>
                     </div>
-                    <span className="text-sm text-muted-foreground">AI is thinking...</span>
                   </div>
                 </div>
               </div>
@@ -63,9 +69,9 @@ export const ConversationView = ({
         </ScrollArea>
       </div>
 
-      {/* Input Area */}
-      <div className="border-t bg-background">
-        <div className="max-w-3xl mx-auto">
+      {/* Input Area - Fixed at bottom like ChatGPT */}
+      <div className="border-t border-gray-200 bg-white">
+        <div className="max-w-3xl mx-auto px-4 py-4">
           <ChatInput 
             inputMessage={inputMessage}
             setInputMessage={setInputMessage}
@@ -81,15 +87,14 @@ export const ConversationView = ({
           .typing-indicator {
             display: flex;
             align-items: center;
-            column-gap: 4px;
+            gap: 4px;
           }
           
           .dot {
             width: 6px;
             height: 6px;
-            background-color: currentColor;
+            background-color: #6b7280;
             border-radius: 50%;
-            opacity: 0.6;
             animation: bounce 1.5s infinite;
           }
           
