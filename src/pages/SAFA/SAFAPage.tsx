@@ -5,7 +5,7 @@ import { ChatInterface } from "./components/ChatInterface";
 const SAFAPage = () => {
   return (
     <MainLayout>
-      <div className="h-[calc(100vh-4rem)] flex flex-col bg-white">
+      <div className="h-full flex flex-col bg-white">
         <ChatInterface />
       </div>
     </MainLayout>

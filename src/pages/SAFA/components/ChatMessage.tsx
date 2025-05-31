@@ -22,7 +22,7 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
         </div>
       )}
       
-      <div className={cn("flex flex-col space-y-1 max-w-[80%]", isUser ? "items-end" : "items-start")}>
+      <div className={cn("flex flex-col space-y-2 max-w-[80%]", isUser ? "items-end" : "items-start")}>
         <div className="flex items-center gap-2">
           <span className="font-medium text-gray-900 text-sm">
             {isUser ? "You" : "SecureFiles AI"}
@@ -35,10 +35,10 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
         </div>
         
         <div className={cn(
-          "px-4 py-3 rounded-2xl text-gray-800 leading-relaxed whitespace-pre-wrap",
+          "px-6 py-4 rounded-3xl text-gray-800 leading-relaxed whitespace-pre-wrap max-w-none",
           isUser 
-            ? "bg-gray-900 text-white rounded-br-md" 
-            : "bg-gray-100 rounded-bl-md"
+            ? "bg-green-600 text-white rounded-br-lg" 
+            : "bg-gray-100 rounded-bl-lg"
         )}>
           {message.content}
         </div>
