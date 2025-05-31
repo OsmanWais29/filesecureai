@@ -32,28 +32,43 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     // Apply the theme to the document
     const root = document.documentElement;
+    const body = document.body;
+    
+    // Remove all theme classes first
+    root.classList.remove('dark', 'light');
+    root.removeAttribute('data-theme');
+    body.classList.remove('dark', 'light');
+    
+    // Add transition class for smooth theme switching
+    root.classList.add('dark-mode-transition');
+    body.classList.add('theme-transition');
     
     if (theme === 'system') {
       // Check system preference
       const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
       if (isDarkMode) {
-        root.classList.add('dark-mode-transition');
+        root.classList.add('dark');
         root.setAttribute('data-theme', 'dark');
+        body.classList.add('dark');
       } else {
-        root.classList.add('dark-mode-transition');
-        root.removeAttribute('data-theme');
+        root.classList.add('light');
+        root.setAttribute('data-theme', 'light');
+        body.classList.add('light');
       }
     } else if (theme === 'dark') {
-      root.classList.add('dark-mode-transition');
+      root.classList.add('dark');
       root.setAttribute('data-theme', 'dark');
+      body.classList.add('dark');
     } else {
-      root.classList.add('dark-mode-transition');
-      root.removeAttribute('data-theme');
+      root.classList.add('light');
+      root.setAttribute('data-theme', 'light');
+      body.classList.add('light');
     }
     
     // Remove transition class after animation completes
     const transitionTimeout = setTimeout(() => {
       root.classList.remove('dark-mode-transition');
+      body.classList.remove('theme-transition');
     }, 300);
     
     return () => clearTimeout(transitionTimeout);

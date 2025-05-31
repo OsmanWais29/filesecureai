@@ -7,24 +7,24 @@
 
 @layer base {
   :root {
-    --background: 197 30% 97%;
-    --foreground: 197 100% 21%;
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
-    --card-foreground: 197 100% 21%;
+    --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 197 100% 21%;
+    --popover-foreground: 222.2 84% 4.9%;
     --primary: 197 100% 21%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 197 35% 60%;
-    --secondary-foreground: 197 100% 21%;
-    --muted: 197 15% 90%;
-    --muted-foreground: 197 30% 40%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
     --accent: 129 51% 47%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 197 15% 85%;
-    --input: 197 15% 85%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
     --ring: 197 100% 21%;
     --radius: 0.75rem;
     
@@ -39,25 +39,47 @@
     --safa-sidebar-collapsed-width: 4rem;
   }
 
-  [data-theme="dark"] {
-    --background: 222 47% 11%;
-    --foreground: 0 0% 95%;
-    --card: 217 33% 17%;
-    --card-foreground: 0 0% 95%;
-    --popover: 217 33% 17%;
-    --popover-foreground: 0 0% 95%;
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
     --primary: 199 69% 72%;
-    --primary-foreground: 222 47% 11%;
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 0 0% 95%;
-    --muted: 217 33% 17%;
+    --primary-foreground: 222.2 84% 4.9%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
     --accent: 129 51% 47%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 199 69% 72%;
+  }
+
+  [data-theme="dark"] {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 199 69% 72%;
+    --primary-foreground: 222.2 84% 4.9%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 129 51% 47%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
     --ring: 199 69% 72%;
   }
 }
@@ -66,17 +88,25 @@
   * {
     @apply border-border;
   }
+  
+  html {
+    @apply transition-colors duration-300;
+  }
+  
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background text-foreground antialiased transition-colors duration-300;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
   
-  /* Add styles to ensure there's no overlap between sidebar and content */
+  /* Ensure root element follows theme */
   #root {
-    width: 100%;
-    max-width: 100%;
-    margin: 0;
-    padding: 0;
+    @apply w-full max-w-none m-0 p-0 bg-background text-foreground transition-colors duration-300;
+    min-height: 100vh;
+  }
+  
+  /* Force all elements to respect theme colors */
+  .theme-transition * {
+    @apply transition-colors duration-300;
   }
 }
 
@@ -105,53 +135,53 @@
   
   /* Responsive content containers - updated for consistency */
   .content-container {
-    @apply transition-all duration-300 w-full;
+    @apply transition-all duration-300 w-full bg-background;
   }
   
   .content-with-sidebar {
-    @apply transition-all duration-300;
+    @apply transition-all duration-300 bg-background;
     margin-left: var(--sidebar-width, 16rem);
     width: calc(100% - var(--sidebar-width, 16rem));
   }
   
   .content-with-collapsed-sidebar {
-    @apply transition-all duration-300;
+    @apply transition-all duration-300 bg-background;
     margin-left: var(--sidebar-collapsed-width, 4rem);
     width: calc(100% - var(--sidebar-collapsed-width, 4rem));
   }
   
   .document-content-with-sidebar {
-    @apply transition-all duration-300;
+    @apply transition-all duration-300 bg-background;
     margin-left: var(--document-sidebar-width, 16rem);
     width: calc(100% - var(--document-sidebar-width, 16rem));
   }
   
   .document-content-with-collapsed-sidebar {
-    @apply transition-all duration-300;
+    @apply transition-all duration-300 bg-background;
     margin-left: var(--document-sidebar-collapsed-width, 4rem);
     width: calc(100% - var(--document-sidebar-collapsed-width, 4rem));
   }
   
   .client-content-with-sidebar {
-    @apply transition-all duration-300;
+    @apply transition-all duration-300 bg-background;
     margin-left: var(--client-sidebar-width, 16rem);
     width: calc(100% - var(--client-sidebar-width, 16rem));
   }
   
   .client-content-with-collapsed-sidebar {
-    @apply transition-all duration-300;
+    @apply transition-all duration-300 bg-background;
     margin-left: var(--client-sidebar-collapsed-width, 4rem);
     width: calc(100% - var(--client-sidebar-collapsed-width, 4rem));
   }
   
   .safa-content-with-sidebar {
-    @apply transition-all duration-300;
+    @apply transition-all duration-300 bg-background;
     margin-left: var(--safa-sidebar-width, 16rem);
     width: calc(100% - var(--safa-sidebar-width, 16rem));
   }
   
   .safa-content-with-collapsed-sidebar {
-    @apply transition-all duration-300;
+    @apply transition-all duration-300 bg-background;
     margin-left: var(--safa-sidebar-collapsed-width, 4rem);
     width: calc(100% - var(--safa-sidebar-collapsed-width, 4rem));
   }
@@ -184,15 +214,15 @@
   
   /* Enhanced document viewer styles */
   .doc-sidebar {
-    @apply bg-white dark:bg-card/80 shadow-sm rounded-md overflow-auto;
+    @apply bg-card shadow-sm rounded-md overflow-auto;
   }
   
   .doc-content {
-    @apply bg-white dark:bg-muted/10 shadow-sm rounded-md overflow-auto;
+    @apply bg-muted/10 shadow-sm rounded-md overflow-auto;
   }
   
   .doc-collaboration {
-    @apply bg-white dark:bg-card/80 shadow-sm rounded-md overflow-auto;
+    @apply bg-card shadow-sm rounded-md overflow-auto;
   }
 
   /* Document details enhanced styles */
@@ -210,7 +240,7 @@
   
   /* Document risk and task cards */
   .doc-card {
-    @apply bg-white dark:bg-card/50 rounded-md shadow-sm border border-border/30 p-3 hover:shadow-md transition-shadow;
+    @apply bg-card rounded-md shadow-sm border border-border/30 p-3 hover:shadow-md transition-shadow;
   }
   
   .doc-card-header {
@@ -227,7 +257,7 @@
 
   /* Better document sidebar readability */
   .sidebar-section {
-    @apply bg-white dark:bg-card/30 rounded-md shadow-sm p-4 mb-4;
+    @apply bg-card rounded-md shadow-sm p-4 mb-4;
   }
   
   .sidebar-section-header {
@@ -239,7 +269,7 @@
   }
   
   .collaboration-panel-bottom {
-    @apply fixed bottom-0 left-0 right-0 bg-white dark:bg-background border-t border-border/50;
+    @apply fixed bottom-0 left-0 right-0 bg-background border-t border-border/50;
     height: 300px;
     z-index: 50;
     box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -271,8 +301,21 @@
   }
 }
 
-/* Dark mode transition */
+/* Dark mode transition - Enhanced */
 html.dark-mode-transition,
-html.dark-mode-transition * {
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, fill 0.3s ease, stroke 0.3s ease;
+html.dark-mode-transition *,
+.dark-mode-transition,
+.dark-mode-transition * {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, fill 0.3s ease, stroke 0.3s ease !important;
+}
+
+/* Force dark mode styles */
+.dark,
+[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+.dark *,
+[data-theme="dark"] * {
+  @apply border-border;
 }

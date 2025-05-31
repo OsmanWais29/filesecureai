@@ -43,19 +43,19 @@ export const MainLayout = ({ children, showFooter = false }: MainLayoutProps) =>
   }, []);
 
   return (
-    <div className="min-h-screen h-screen w-full flex overflow-hidden bg-gray-50 dark:bg-background">
+    <div className="min-h-screen h-screen w-full flex overflow-hidden bg-background">
       <MainSidebar />
       <div 
         className={cn(
-          "flex-1 flex flex-col w-full overflow-hidden transition-all duration-300",
+          "flex-1 flex flex-col w-full overflow-hidden transition-all duration-300 bg-background",
           sidebarCollapsed ? "ml-16" : "ml-64"
         )}
       >
         <MainHeader />
-        <main className="flex-1 overflow-auto w-full">
+        <main className="flex-1 overflow-auto w-full bg-background">
           {children}
         </main>
-        {showFooter && <Footer compact className="bg-white dark:bg-background" />}
+        {showFooter && <Footer compact className="bg-background" />}
       </div>
     </div>
   );
