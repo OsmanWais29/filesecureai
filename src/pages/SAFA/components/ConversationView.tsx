@@ -4,7 +4,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatMessage as ChatMessageType } from "../types";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
-import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 
 interface ConversationViewProps {
@@ -24,10 +23,8 @@ export const ConversationView = ({
   handleKeyPress,
   isProcessing
 }: ConversationViewProps) => {
-  // Reference to scroll to bottom of messages
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to bottom of messages when messages change
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
@@ -35,41 +32,85 @@ export const ConversationView = ({
   }, [messages]);
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-br from-background to-muted/30">
-      <div className="flex-1 relative overflow-hidden">
-        <ScrollArea className="absolute inset-0 px-4">
-          <div className="py-4 space-y-4">
-            {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-[200px] text-center p-4">
-                <div className="text-muted-foreground mb-2">
-                  No messages yet. Start a conversation!
-                </div>
-              </div>
-            ) : (
-              messages.map((message) => (
-                <ChatMessage key={message.id} message={message} />
-              ))
-            )}
+    <div className="flex flex-col h-full">
+      {/* Messages Area */}
+      <div className="flex-1 overflow-hidden">
+        <ScrollArea className="h-full">
+          <div className="p-4 space-y-6 max-w-3xl mx-auto">
+            {messages.map((message) => (
+              <ChatMessage key={message.id} message={message} />
+            ))}
             
             {isProcessing && (
-              <Card className="p-4 bg-muted/30 border-dashed animate-pulse">
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  <p className="text-sm text-muted-foreground">AI is thinking...</p>
+              <div className="flex items-start gap-3 w-full py-2 px-1">
+                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 </div>
-              </Card>
+                <div className="bg-muted rounded-lg p-4 max-w-[85%]">
+                  <div className="flex items-center gap-2">
+                    <div className="typing-indicator">
+                      <span className="dot"></span>
+                      <span className="dot"></span>
+                      <span className="dot"></span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">AI is thinking...</span>
+                  </div>
+                </div>
+              </div>
             )}
             <div ref={messagesEndRef} />
           </div>
         </ScrollArea>
       </div>
-      <ChatInput 
-        inputMessage={inputMessage}
-        setInputMessage={setInputMessage}
-        handleSendMessage={handleSendMessage}
-        handleKeyPress={handleKeyPress}
-        isProcessing={isProcessing}
-      />
+
+      {/* Input Area */}
+      <div className="border-t bg-background">
+        <div className="max-w-3xl mx-auto">
+          <ChatInput 
+            inputMessage={inputMessage}
+            setInputMessage={setInputMessage}
+            handleSendMessage={handleSendMessage}
+            handleKeyPress={handleKeyPress}
+            isProcessing={isProcessing}
+          />
+        </div>
+      </div>
+
+      <style>
+        {`
+          .typing-indicator {
+            display: flex;
+            align-items: center;
+            column-gap: 4px;
+          }
+          
+          .dot {
+            width: 6px;
+            height: 6px;
+            background-color: currentColor;
+            border-radius: 50%;
+            opacity: 0.6;
+            animation: bounce 1.5s infinite;
+          }
+          
+          .dot:nth-child(2) {
+            animation-delay: 0.2s;
+          }
+          
+          .dot:nth-child(3) {
+            animation-delay: 0.4s;
+          }
+          
+          @keyframes bounce {
+            0%, 60%, 100% {
+              transform: translateY(0);
+            }
+            30% {
+              transform: translateY(-4px);
+            }
+          }
+        `}
+      </style>
     </div>
   );
 };
