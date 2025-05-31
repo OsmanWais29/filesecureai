@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -15,7 +16,6 @@ export const MainSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { theme } = useTheme();
-  const isDarkMode = theme === 'dark';
   const isMobile = useIsMobile();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -85,11 +85,11 @@ export const MainSidebar = () => {
   const SidebarContent = () => (
     <>
       {/* App Logo */}
-      <div className="p-4 border-b flex justify-between items-center">
+      <div className="p-4 border-b border-border flex justify-between items-center bg-background">
         {!isCollapsed && (
           <Button
             variant="ghost"
-            className="w-full justify-start px-2 py-4 hover:bg-transparent"
+            className="w-full justify-start px-2 py-4 hover:bg-accent/10 text-foreground"
             onClick={() => handleNavigation('/')}
           >
             <div className="flex items-center gap-2">
@@ -98,10 +98,9 @@ export const MainSidebar = () => {
                 alt="Secure Files AI Logo" 
                 className="w-9 h-9"
               />
-              <span className={cn(
-                "font-bold text-lg",
-                isDarkMode ? "text-white" : "text-black"
-              )}>Secure Files AI</span>
+              <span className="font-bold text-lg text-foreground">
+                Secure Files AI
+              </span>
             </div>
           </Button>
         )}
@@ -111,7 +110,7 @@ export const MainSidebar = () => {
             variant="ghost" 
             size="icon" 
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="rounded-full h-8 w-8 flex-shrink-0"
+            className="rounded-full h-8 w-8 flex-shrink-0 hover:bg-accent/10 text-foreground"
             aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
@@ -121,14 +120,14 @@ export const MainSidebar = () => {
       </div>
 
       {/* Navigation Links with ScrollArea */}
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 bg-background">
         <nav className="px-3 py-2 space-y-1">
           {navigationItems.map((item) => (
             <Button
               key={item.label}
               variant="ghost"
               className={cn(
-                "w-full justify-start gap-3 px-4 py-6 h-auto",
+                "w-full justify-start gap-3 px-4 py-6 h-auto text-foreground",
                 "hover:bg-accent/10 hover:text-accent transition-colors duration-200",
                 isActivePath(item.path) && "bg-accent/10 text-accent"
               )}
@@ -142,9 +141,7 @@ export const MainSidebar = () => {
               {!isCollapsed && (
                 <span className={cn(
                   "text-sm font-medium",
-                  isActivePath(item.path) ? 
-                    "text-accent" : 
-                    isDarkMode ? "text-white" : "text-black"
+                  isActivePath(item.path) ? "text-accent" : "text-foreground"
                 )}>
                   {item.label}
                 </span>
@@ -155,11 +152,11 @@ export const MainSidebar = () => {
       </ScrollArea>
 
       {/* Bottom Section */}
-      <div className="px-3 py-4 border-t">
+      <div className="px-3 py-4 border-t border-border bg-background">
         <Button 
           variant="ghost"
           className={cn(
-            "w-full justify-start gap-3 px-4 py-6 h-auto hover:bg-accent/10 hover:text-accent",
+            "w-full justify-start gap-3 px-4 py-6 h-auto hover:bg-accent/10 hover:text-accent text-foreground",
             isActivePath("/settings") && "bg-accent/10 text-accent"
           )}
           onClick={() => handleNavigation("/settings")}
@@ -172,9 +169,7 @@ export const MainSidebar = () => {
           {!isCollapsed && (
             <span className={cn(
               "text-sm font-medium",
-              isActivePath("/settings") ? 
-                "text-accent" : 
-                isDarkMode ? "text-white" : "text-black"
+              isActivePath("/settings") ? "text-accent" : "text-foreground"
             )}>Settings</span>
           )}
         </Button>
@@ -182,7 +177,7 @@ export const MainSidebar = () => {
         <Button 
           variant="ghost"
           className={cn(
-            "w-full justify-start gap-3 px-4 py-6 h-auto hover:bg-accent/10 hover:text-accent",
+            "w-full justify-start gap-3 px-4 py-6 h-auto hover:bg-accent/10 hover:text-accent text-foreground",
             isActivePath("/profile") && "bg-accent/10 text-accent"
           )}
           onClick={() => handleNavigation("/profile")}
@@ -195,9 +190,7 @@ export const MainSidebar = () => {
           {!isCollapsed && (
             <span className={cn(
               "text-sm font-medium",
-              isActivePath("/profile") ? 
-                "text-accent" : 
-                isDarkMode ? "text-white" : "text-black"
+              isActivePath("/profile") ? "text-accent" : "text-foreground"
             )}>Profile</span>
           )}
         </Button>
@@ -210,7 +203,7 @@ export const MainSidebar = () => {
     <Button 
       variant="ghost" 
       size="icon" 
-      className="fixed top-4 left-4 z-50 md:hidden"
+      className="fixed top-4 left-4 z-50 md:hidden bg-background text-foreground hover:bg-accent/10"
       onClick={() => setIsSidebarOpen(!isSidebarOpen)}
     >
       {isSidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -223,7 +216,7 @@ export const MainSidebar = () => {
       <>
         <MobileMenuButton />
         <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
-          <SheetContent side="left" className="p-0 w-64">
+          <SheetContent side="left" className="p-0 w-64 bg-background">
             <SidebarContent />
           </SheetContent>
         </Sheet>
@@ -234,8 +227,7 @@ export const MainSidebar = () => {
   // For desktop: use fixed sidebar
   return (
     <aside className={cn(
-      "h-screen flex flex-col fixed left-0 top-0 z-40 border-r shadow-sm transition-all duration-300",
-      isDarkMode ? "bg-background" : "bg-white",
+      "h-screen flex flex-col fixed left-0 top-0 z-40 border-r border-border shadow-sm transition-all duration-300 bg-background",
       isCollapsed ? "w-16" : "w-64"
     )}>
       <SidebarContent />
