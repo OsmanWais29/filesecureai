@@ -1,60 +1,111 @@
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { PenSquare, Upload, MessageSquare } from "lucide-react";
-import { useConversations } from "../hooks/useConversations";
-import { ConversationView } from "./ConversationView";
-import { TrainingUpload } from "./TrainingUpload";
+import { PenSquare, Upload, MessageSquare, Send, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
+import { ChatMessage } from "../types";
 
 export const ChatInterface = () => {
-  const { categoryMessages, handleSendMessage, isProcessing, clearConversation, loadConversationHistory } = useConversations('help');
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState("");
-  const [showTrainingUpload, setShowTrainingUpload] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    loadConversationHistory('help');
-  }, [loadConversationHistory]);
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
+  const handleSend = useCallback(async () => {
+    if (!inputMessage.trim() || isProcessing) return;
+
+    const userMessage: ChatMessage = {
+      id: `user-${Date.now()}`,
+      content: inputMessage.trim(),
+      role: 'user',
+      timestamp: new Date().toISOString(),
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputMessage("");
+    setIsProcessing(true);
+
+    // Reset textarea height
+    if (textareaRef.current) {
+      textareaRef.current.style.height = '24px';
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('deepseek-chat', {
+        body: { message: userMessage.content }
+      });
+
+      if (error) {
+        throw new Error(`AI API error: ${error.message}`);
+      }
+
+      const aiMessage: ChatMessage = {
+        id: `ai-${Date.now()}`,
+        content: data.response || 'I apologize, but I encountered an error processing your request.',
+        role: 'assistant',
+        timestamp: new Date().toISOString(),
+      };
+
+      setMessages(prev => [...prev, aiMessage]);
+
+    } catch (error) {
+      console.error('Error sending message:', error);
+      
+      const errorMessage: ChatMessage = {
+        id: `error-${Date.now()}`,
+        content: 'I apologize, but I encountered an error. Please check that the DeepSeek API is configured properly.',
+        role: 'assistant',
+        timestamp: new Date().toISOString(),
+      };
+
+      setMessages(prev => [...prev, errorMessage]);
+      
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [inputMessage, isProcessing, toast]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      if (inputMessage.trim()) {
-        handleSend();
-      }
+      handleSend();
     }
   };
 
-  const handleSend = useCallback(async () => {
-    if (inputMessage.trim() && !isProcessing) {
-      try {
-        await handleSendMessage(inputMessage);
-        setInputMessage("");
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to send message. Please try again.",
-          variant: "destructive",
-        });
-      }
-    }
-  }, [inputMessage, isProcessing, handleSendMessage, toast]);
-
-  const handleNewChat = useCallback(() => {
-    clearConversation('help');
+  const handleNewChat = () => {
+    setMessages([]);
     setInputMessage("");
-    setShowTrainingUpload(false);
     toast({
       title: "New Chat Started",
-      description: "Previous conversation cleared. You can start a new conversation.",
+      description: "Previous conversation cleared.",
     });
-  }, [clearConversation, toast]);
+  };
 
-  const messages = categoryMessages.help || [];
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputMessage(e.target.value);
+    
+    // Auto-resize textarea
+    const textarea = e.target;
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
+  };
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white">
         <div className="flex items-center gap-3">
@@ -69,7 +120,6 @@ export const ChatInterface = () => {
             variant="ghost" 
             size="sm" 
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-            onClick={() => setShowTrainingUpload(!showTrainingUpload)}
           >
             <Upload className="h-4 w-4" />
             Train AI
@@ -86,14 +136,7 @@ export const ChatInterface = () => {
         </div>
       </div>
 
-      {/* Training Upload Panel */}
-      {showTrainingUpload && (
-        <div className="border-b border-gray-200 bg-gray-50">
-          <TrainingUpload onClose={() => setShowTrainingUpload(false)} />
-        </div>
-      )}
-
-      {/* Main Chat Area */}
+      {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-0">
         {messages.length === 0 ? (
           // Welcome Screen
@@ -146,58 +189,108 @@ export const ChatInterface = () => {
                 <div className="text-gray-600">Upload documents to improve AI responses for your practice</div>
               </button>
             </div>
+          </div>
+        ) : (
+          // Chat Messages
+          <div className="flex-1 overflow-y-auto">
+            <div className="max-w-4xl mx-auto px-6 py-8">
+              {messages.map((message) => (
+                <div key={message.id} className="mb-8">
+                  <div className={`flex items-start gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    {message.role === 'assistant' && (
+                      <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center shrink-0">
+                        <MessageSquare className="h-4 w-4 text-white" />
+                      </div>
+                    )}
+                    
+                    <div className={`flex flex-col space-y-2 max-w-[80%] ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900 text-sm">
+                          {message.role === 'user' ? "You" : "SecureFiles AI"}
+                        </span>
+                      </div>
+                      
+                      <div className={`px-6 py-4 rounded-3xl text-gray-800 leading-relaxed whitespace-pre-wrap ${
+                        message.role === 'user' 
+                          ? "bg-green-600 text-white rounded-br-lg" 
+                          : "bg-gray-100 rounded-bl-lg"
+                      }`}>
+                        {message.content}
+                      </div>
+                    </div>
 
-            {/* Input Area */}
-            <div className="w-full max-w-3xl">
-              <div className="relative">
-                <div className="flex items-end gap-4 p-4 bg-white border border-gray-300 rounded-3xl shadow-sm focus-within:border-green-500 focus-within:shadow-md transition-all">
-                  <textarea
-                    value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    onKeyDown={handleKeyPress}
-                    placeholder="Message SecureFiles AI..."
-                    className="flex-1 min-h-[24px] max-h-[200px] resize-none border-0 p-0 focus:outline-none bg-transparent text-base placeholder:text-gray-500"
-                    disabled={isProcessing}
-                    rows={1}
-                    style={{
-                      height: 'auto',
-                      minHeight: '24px',
-                      maxHeight: '200px'
-                    }}
-                    onInput={(e) => {
-                      const target = e.target as HTMLTextAreaElement;
-                      target.style.height = 'auto';
-                      target.style.height = Math.min(target.scrollHeight, 200) + 'px';
-                    }}
-                  />
-                  <Button
-                    onClick={handleSend}
-                    disabled={!inputMessage.trim() || isProcessing}
-                    size="sm"
-                    className="shrink-0 h-10 w-10 p-0 rounded-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 transition-colors"
-                  >
-                    <MessageSquare className="h-5 w-5" />
-                  </Button>
+                    {message.role === 'user' && (
+                      <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center shrink-0">
+                        <div className="w-5 h-5 bg-white rounded-full" />
+                      </div>
+                    )}
+                  </div>
                 </div>
-                
-                <div className="mt-3 text-sm text-gray-500 text-center">
+              ))}
+              
+              {isProcessing && (
+                <div className="mb-8">
+                  <div className="flex items-start gap-4">
+                    <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center shrink-0">
+                      <Loader2 className="h-4 w-4 text-white animate-spin" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="bg-gray-100 rounded-3xl rounded-bl-lg px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="flex gap-1">
+                            <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" />
+                            <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                            <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                          </div>
+                          <span className="text-sm text-gray-600">Thinking...</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          </div>
+        )}
+
+        {/* Input Area - Fixed at bottom */}
+        <div className="border-t border-gray-200 bg-white">
+          <div className="max-w-4xl mx-auto px-6 py-6">
+            <div className="relative">
+              <div className="flex items-end gap-4 p-4 bg-white border border-gray-300 rounded-3xl shadow-sm focus-within:border-green-500 focus-within:shadow-md transition-all">
+                <textarea
+                  ref={textareaRef}
+                  value={inputMessage}
+                  onChange={handleInputChange}
+                  onKeyDown={handleKeyPress}
+                  placeholder="Message SecureFiles AI..."
+                  className="flex-1 min-h-[24px] max-h-[200px] resize-none border-0 p-0 focus:outline-none bg-transparent text-base placeholder:text-gray-500"
+                  disabled={isProcessing}
+                  rows={1}
+                  style={{ height: '24px' }}
+                />
+                <Button
+                  onClick={handleSend}
+                  disabled={!inputMessage.trim() || isProcessing}
+                  size="sm"
+                  className="shrink-0 h-10 w-10 p-0 rounded-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 transition-colors"
+                >
                   {isProcessing ? 
-                    "AI is processing your message..." : 
-                    "SecureFiles AI can make mistakes. Consider checking important information."}
-                </div>
+                    <Loader2 className="h-5 w-5 animate-spin" /> : 
+                    <Send className="h-5 w-5" />
+                  }
+                </Button>
+              </div>
+              
+              <div className="mt-3 text-sm text-gray-500 text-center">
+                {isProcessing ? 
+                  "AI is processing your message..." : 
+                  "SecureFiles AI can make mistakes. Consider checking important information."}
               </div>
             </div>
           </div>
-        ) : (
-          <ConversationView
-            messages={messages}
-            inputMessage={inputMessage}
-            setInputMessage={setInputMessage}
-            handleSendMessage={handleSend}
-            handleKeyPress={handleKeyPress}
-            isProcessing={isProcessing}
-          />
-        )}
+        </div>
       </div>
     </div>
   );
