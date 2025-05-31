@@ -93,13 +93,49 @@ export const useConversations = (activeTab?: string): UseConversationsResult => 
           updated_at: new Date().toISOString()
         });
 
+      // Simulate AI response after a delay
+      setTimeout(() => {
+        const aiMessage: ChatMessage = {
+          id: `ai-${Date.now()}`,
+          content: generateAIResponse(content),
+          role: 'assistant',
+          timestamp: new Date().toISOString(),
+          category
+        };
+
+        setCategoryMessages(prev => ({
+          ...prev,
+          [category]: [...(prev[category] || []), aiMessage]
+        }));
+
+        setIsProcessing(false);
+      }, 1500);
+
     } catch (err) {
       console.error('Error sending message:', err);
       setError('Failed to send message');
-    } finally {
       setIsProcessing(false);
     }
   }, [categoryMessages]);
+
+  const generateAIResponse = (userMessage: string): string => {
+    if (userMessage.toLowerCase().includes("upload") || userMessage.toLowerCase().includes("document")) {
+      return "To upload documents in SecureFiles AI, navigate to the Documents page and use the drag-and-drop upload area or click the Upload button. The system supports PDF, Excel, Word, and image files. You can also use the 'Train AI' button here to upload documents specifically for improving my responses.";
+    }
+    if (userMessage.toLowerCase().includes("bankruptcy") || userMessage.toLowerCase().includes("form")) {
+      return "SecureFiles AI supports all bankruptcy forms (Forms 1-96). Each form has specific validation rules and risk assessments. Forms like 47 (Consumer Proposal) and 65 (Assignment) have automated compliance checking. I can help you understand the requirements for any specific form.";
+    }
+    if (userMessage.toLowerCase().includes("risk")) {
+      return "Our AI-powered risk assessment analyzes documents for compliance issues, missing signatures, incomplete fields, and regulatory violations. Risk levels are color-coded: Green (low), Orange (medium), and Red (high priority). Would you like me to explain how to interpret risk assessments?";
+    }
+    if (userMessage.toLowerCase().includes("user") || userMessage.toLowerCase().includes("permission")) {
+      return "User management is handled through the Settings > Access Control section. You can assign roles, manage province-based access, and configure IP whitelisting for enhanced security. Each user role has different permissions for document access and system features.";
+    }
+    if (userMessage.toLowerCase().includes("train") || userMessage.toLowerCase().includes("training")) {
+      return "You can train me by uploading documents using the 'Train AI' button. I'll analyze these documents to improve my responses and knowledge base. Supported formats include PDF, Word, Excel, and text files. The more relevant documents you upload, the better I can assist you.";
+    }
+    return "I'm here to help you with SecureFiles AI. I can assist with document upload procedures, bankruptcy form guidance, risk assessment features, user management, AI training, and platform navigation. What specific area would you like help with?";
+  };
 
   const handleSendMessage = useCallback(async (content: string) => {
     if (activeTab) {

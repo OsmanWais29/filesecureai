@@ -15,19 +15,16 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
     : message.timestamp;
 
   return (
-    <div className="flex items-start gap-4 w-full">
-      {/* Avatar */}
-      <div className={cn(
-        "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
-        isUser ? "bg-gray-800 text-white" : "bg-green-600 text-white"
-      )}>
-        {isUser ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
-      </div>
+    <div className={cn("flex items-start gap-4 w-full", isUser ? "justify-end" : "justify-start")}>
+      {!isUser && (
+        <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center shrink-0">
+          <Bot className="h-4 w-4 text-white" />
+        </div>
+      )}
       
-      {/* Message Content */}
-      <div className="flex-1 space-y-2">
+      <div className={cn("flex flex-col space-y-2 max-w-3xl", isUser ? "items-end" : "items-start")}>
         <div className="flex items-center gap-2">
-          <span className="font-medium text-gray-900">
+          <span className="font-medium text-gray-900 text-sm">
             {isUser ? "You" : "SecureFiles AI"}
           </span>
           {timestamp && (
@@ -37,12 +34,21 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
           )}
         </div>
         
-        <div className="prose prose-sm max-w-none">
-          <div className="text-gray-800 leading-relaxed whitespace-pre-wrap">
-            {message.content}
-          </div>
+        <div className={cn(
+          "px-4 py-3 rounded-2xl text-gray-800 leading-relaxed whitespace-pre-wrap",
+          isUser 
+            ? "bg-green-600 text-white rounded-br-md" 
+            : "bg-gray-100 rounded-bl-md"
+        )}>
+          {message.content}
         </div>
       </div>
+
+      {isUser && (
+        <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center shrink-0">
+          <User className="h-4 w-4 text-white" />
+        </div>
+      )}
     </div>
   );
 };
