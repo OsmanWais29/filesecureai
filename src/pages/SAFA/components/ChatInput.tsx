@@ -21,7 +21,6 @@ export const ChatInput = ({
 }: ChatInputProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -32,7 +31,7 @@ export const ChatInput = ({
   return (
     <div className="w-full">
       <div className="relative">
-        <div className="flex items-end gap-3 p-4 bg-white border border-gray-300 rounded-3xl shadow-lg focus-within:border-green-500 focus-within:ring-2 focus-within:ring-green-200 transition-all">
+        <div className="flex items-end gap-3 p-3 bg-white border border-gray-300 rounded-2xl shadow-sm focus-within:border-gray-400 focus-within:shadow-md transition-all">
           <Textarea
             ref={textareaRef}
             value={inputMessage}
@@ -47,16 +46,16 @@ export const ChatInput = ({
             onClick={handleSendMessage}
             disabled={!inputMessage.trim() || isProcessing}
             size="sm"
-            className="shrink-0 h-10 w-10 p-0 rounded-xl bg-green-600 hover:bg-green-700 disabled:bg-gray-300 transition-colors"
+            className="shrink-0 h-8 w-8 p-0 rounded-lg bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 transition-colors"
           >
             {isProcessing ? 
-              <Loader2 className="h-5 w-5 animate-spin" /> : 
-              <Send className="h-5 w-5" />
+              <Loader2 className="h-4 w-4 animate-spin" /> : 
+              <Send className="h-4 w-4" />
             }
           </Button>
         </div>
         
-        <div className="mt-3 text-xs text-gray-500 text-center">
+        <div className="mt-2 text-xs text-gray-500 text-center">
           {isProcessing ? 
             "AI is processing your message..." : 
             "SecureFiles AI can make mistakes. Consider checking important information."}

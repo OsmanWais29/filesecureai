@@ -33,24 +33,24 @@ export const ConversationView = ({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Messages Area - Full Height with Scroll */}
+      {/* Messages Area */}
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full">
-          <div className="max-w-4xl mx-auto px-6 py-8 pb-32">
+          <div className="max-w-3xl mx-auto px-4 py-6">
             {messages.map((message) => (
-              <div key={message.id} className="mb-8">
+              <div key={message.id} className="mb-6">
                 <ChatMessage message={message} />
               </div>
             ))}
             
             {isProcessing && (
-              <div className="mb-8">
+              <div className="mb-6">
                 <div className="flex items-start gap-4">
                   <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center shrink-0">
                     <Loader2 className="h-4 w-4 text-white animate-spin" />
                   </div>
                   <div className="flex-1">
-                    <div className="bg-gray-100 rounded-2xl px-4 py-3 max-w-3xl">
+                    <div className="bg-gray-100 rounded-2xl px-4 py-3">
                       <div className="flex items-center gap-2">
                         <div className="typing-indicator">
                           <span className="dot"></span>
@@ -69,9 +69,9 @@ export const ConversationView = ({
         </ScrollArea>
       </div>
 
-      {/* Input Area - Fixed at bottom like ChatGPT */}
-      <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200">
-        <div className="max-w-4xl mx-auto px-6 py-6">
+      {/* Input Area - Fixed at bottom */}
+      <div className="border-t border-gray-200 bg-white">
+        <div className="max-w-3xl mx-auto px-4 py-4">
           <ChatInput 
             inputMessage={inputMessage}
             setInputMessage={setInputMessage}

@@ -2,7 +2,7 @@
 import { cn } from "@/lib/utils";
 import { ChatMessage as ChatMessageType } from "../types";
 import { formatDistanceToNow } from "date-fns";
-import { User, Bot } from "lucide-react";
+import { User, MessageSquare } from "lucide-react";
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -15,20 +15,20 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
     : message.timestamp;
 
   return (
-    <div className={cn("flex items-start gap-4 w-full", isUser ? "justify-end" : "justify-start")}>
+    <div className={cn("flex items-start gap-4 w-full group", isUser ? "justify-end" : "justify-start")}>
       {!isUser && (
         <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center shrink-0">
-          <Bot className="h-4 w-4 text-white" />
+          <MessageSquare className="h-4 w-4 text-white" />
         </div>
       )}
       
-      <div className={cn("flex flex-col space-y-2 max-w-3xl", isUser ? "items-end" : "items-start")}>
+      <div className={cn("flex flex-col space-y-1 max-w-[80%]", isUser ? "items-end" : "items-start")}>
         <div className="flex items-center gap-2">
           <span className="font-medium text-gray-900 text-sm">
             {isUser ? "You" : "SecureFiles AI"}
           </span>
           {timestamp && (
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity">
               {formatDistanceToNow(timestamp, { addSuffix: true })}
             </span>
           )}
@@ -37,7 +37,7 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
         <div className={cn(
           "px-4 py-3 rounded-2xl text-gray-800 leading-relaxed whitespace-pre-wrap",
           isUser 
-            ? "bg-green-600 text-white rounded-br-md" 
+            ? "bg-gray-900 text-white rounded-br-md" 
             : "bg-gray-100 rounded-bl-md"
         )}>
           {message.content}
