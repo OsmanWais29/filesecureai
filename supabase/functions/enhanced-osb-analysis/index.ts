@@ -165,8 +165,15 @@ serve(async (req) => {
 
     console.log(`Enhanced OSB Analysis request: Form ${formNumber || 'unknown'}, Type: ${analysisType}`);
 
+    // Check if DeepSeek API key is available
+    if (!deepseekApiKey) {
+      throw new Error('DeepSeek API key not configured');
+    }
+
     // Generate enhanced prompt
     const prompt = generateEnhancedPrompt(formNumber || 'unknown', documentText);
+
+    console.log('Calling DeepSeek API...');
 
     // Call DeepSeek API with enhanced prompt
     const deepseekResponse = await fetch('https://api.deepseek.com/v1/chat/completions', {
@@ -190,11 +197,22 @@ serve(async (req) => {
     });
 
     if (!deepseekResponse.ok) {
-      throw new Error(`DeepSeek API error: ${deepseekResponse.statusText}`);
+      const errorText = await deepseekResponse.text();
+      throw new Error(`DeepSeek API error: ${deepseekResponse.status} - ${errorText}`);
     }
 
     const result = await deepseekResponse.json();
-    const analysisResult = JSON.parse(result.choices[0].message.content);
+    
+    if (!result.choices || !result.choices[0] || !result.choices[0].message) {
+      throw new Error('Invalid response from DeepSeek API');
+    }
+
+    let analysisResult;
+    try {
+      analysisResult = JSON.parse(result.choices[0].message.content);
+    } catch (parseError) {
+      throw new Error(`Failed to parse DeepSeek response: ${parseError.message}`);
+    }
 
     console.log('DeepSeek analysis completed successfully');
 

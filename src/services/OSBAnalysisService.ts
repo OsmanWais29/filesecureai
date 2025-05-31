@@ -38,16 +38,12 @@ export class OSBAnalysisService {
   static async getAnalysisById(id: string): Promise<OSBFormAnalysis | null> {
     const { data, error } = await supabase
       .from('osb_form_analyses')
-      .select(`
-        *,
-        risks:osb_risk_assessments(*),
-        compliance:osb_compliance_tracking(*)
-      `)
+      .select('*')
       .eq('id', id)
       .single();
 
     if (error) throw error;
-    return data;
+    return data as OSBFormAnalysis;
   }
 
   /**
@@ -62,7 +58,7 @@ export class OSBAnalysisService {
       .limit(limit);
 
     if (error) throw error;
-    return data;
+    return data as OSBFormAnalysis[];
   }
 
   /**
@@ -77,7 +73,7 @@ export class OSBAnalysisService {
       .limit(limit);
 
     if (error) throw error;
-    return data;
+    return data as OSBFormAnalysis[];
   }
 
   /**
@@ -131,5 +127,64 @@ export class OSBAnalysisService {
       .eq('id', riskId);
 
     if (error) throw error;
+  }
+
+  /**
+   * Test PDF extraction and analysis
+   */
+  static async testPDFAnalysis(documentId: string): Promise<{
+    pdfAccessible: boolean;
+    extractionSuccess: boolean;
+    analysisSuccess: boolean;
+    error?: string;
+  }> {
+    try {
+      console.log('Testing PDF analysis for document:', documentId);
+
+      // Test PDF accessibility
+      const { data: document, error: docError } = await supabase
+        .from('documents')
+        .select('storage_path, title')
+        .eq('id', documentId)
+        .single();
+
+      if (docError) {
+        throw new Error(`Document fetch error: ${docError.message}`);
+      }
+
+      // Test PDF URL generation
+      const { data: urlData } = supabase.storage
+        .from('documents')
+        .getPublicUrl(document.storage_path);
+
+      console.log('PDF URL generated:', urlData.publicUrl);
+
+      // Test document analysis
+      const analysisResult = await supabase.functions.invoke('analyze-document', {
+        body: {
+          documentId,
+          extractionMode: 'comprehensive',
+          includeRegulatory: true
+        }
+      });
+
+      console.log('Analysis result:', analysisResult);
+
+      return {
+        pdfAccessible: true,
+        extractionSuccess: !analysisResult.error,
+        analysisSuccess: analysisResult.data?.success || false,
+        error: analysisResult.error?.message
+      };
+
+    } catch (error) {
+      console.error('PDF analysis test error:', error);
+      return {
+        pdfAccessible: false,
+        extractionSuccess: false,
+        analysisSuccess: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
   }
 }
