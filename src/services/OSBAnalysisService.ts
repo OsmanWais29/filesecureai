@@ -1,4 +1,3 @@
-
 // OSB Analysis Service - Enhanced DeepSeek Integration
 import { supabase } from '@/lib/supabase';
 import { DeepSeekAnalysisResponse, OSBFormAnalysis, IdentifiedRisk } from '@/types/osb-analysis';
@@ -43,7 +42,7 @@ export class OSBAnalysisService {
       .single();
 
     if (error) throw error;
-    return data as OSBFormAnalysis;
+    return data as unknown as OSBFormAnalysis;
   }
 
   /**
@@ -58,7 +57,7 @@ export class OSBAnalysisService {
       .limit(limit);
 
     if (error) throw error;
-    return (data || []) as OSBFormAnalysis[];
+    return (data || []) as unknown as OSBFormAnalysis[];
   }
 
   /**
@@ -73,7 +72,7 @@ export class OSBAnalysisService {
       .limit(limit);
 
     if (error) throw error;
-    return (data || []) as OSBFormAnalysis[];
+    return (data || []) as unknown as OSBFormAnalysis[];
   }
 
   /**
