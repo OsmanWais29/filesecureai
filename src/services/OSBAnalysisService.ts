@@ -198,6 +198,7 @@ export class OSBAnalysisService {
   ): Promise<{
     success: boolean;
     analysisId?: string;
+    reasoning?: string;
     error?: string;
   }> {
     try {
@@ -205,7 +206,7 @@ export class OSBAnalysisService {
       console.log('Custom prompt:', customPrompt);
 
       // Ensure documentId is properly typed as string
-      const docId = typeof documentId === 'string' ? documentId : String(documentId);
+      const docId = String(documentId);
 
       const { data, error } = await supabase.functions.invoke('enhanced-osb-analysis', {
         body: {
@@ -223,6 +224,7 @@ export class OSBAnalysisService {
       return {
         success: true,
         analysisId: data?.analysisId,
+        reasoning: data?.reasoning,
       };
 
     } catch (error) {

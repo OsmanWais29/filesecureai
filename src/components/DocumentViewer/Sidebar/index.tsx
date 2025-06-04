@@ -1,13 +1,16 @@
 
+import { useState } from "react";
 import { DocumentDetails } from "../DocumentDetails";
 import { RiskAssessment } from "../RiskAssessment";
 import { DeadlineManager } from "../DeadlineManager";
 import { DocumentDetails as DocumentDetailsType, Risk as DocumentRisk } from "../types";
+import { DeepSeekPromptingEngine } from "../DeepSeekPromptingEngine";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { AlertTriangle, FileText, Calendar, Zap } from "lucide-react";
+import { AlertTriangle, FileText, Calendar, Zap, Brain } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface SidebarProps {
   document: DocumentDetailsType;
@@ -15,6 +18,8 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ document, onDeadlineUpdated }) => {
+  const [showPromptingEngine, setShowPromptingEngine] = useState(false);
+  
   console.log("[DEBUG] Document analysis in Sidebar:", document.analysis);
   console.log("[DEBUG] Extracted info in Sidebar:", document.analysis?.[0]?.content?.extracted_info || {});
   console.log("[DEBUG] Risks in Sidebar:", document.analysis?.[0]?.content?.risks || []);
@@ -27,6 +32,35 @@ export const Sidebar: React.FC<SidebarProps> = ({ document, onDeadlineUpdated })
   // Check if document has analysis errors
   const hasAnalysisError = document.metadata?.analysis_status === 'error' || 
                           document.ai_processing_status === 'error';
+
+  const handleAnalysisComplete = (reasoning: string) => {
+    console.log('DeepSeek reasoning completed:', reasoning);
+    setShowPromptingEngine(false);
+    // Trigger document refresh to show updated analysis
+    onDeadlineUpdated();
+  };
+
+  const handleStartPrompting = () => {
+    setShowPromptingEngine(true);
+  };
+
+  const handleBackFromPrompting = () => {
+    setShowPromptingEngine(false);
+  };
+
+  // Show prompting engine if active
+  if (showPromptingEngine) {
+    return (
+      <div className="h-full flex flex-col">
+        <DeepSeekPromptingEngine
+          documentId={document.id}
+          documentTitle={document.title}
+          onAnalysisComplete={handleAnalysisComplete}
+          onBack={handleBackFromPrompting}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col">
@@ -78,17 +112,35 @@ export const Sidebar: React.FC<SidebarProps> = ({ document, onDeadlineUpdated })
                 </div>
                 
                 {!hasValidAnalysis && !hasAnalysisError && (
-                  <div className="mt-3 p-2 bg-muted/50 border border-border/40 rounded-md">
-                    <p className="text-xs text-muted-foreground">
-                      Use the DeepSeek AI system in the header above to analyze this document.
+                  <div className="mt-3">
+                    <Button
+                      onClick={handleStartPrompting}
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                    >
+                      <Brain className="h-4 w-4 mr-2" />
+                      Analyze with DeepSeek AI
+                    </Button>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Use DeepSeek AI reasoning to analyze this document with custom prompts.
                     </p>
                   </div>
                 )}
                 
                 {hasAnalysisError && (
-                  <div className="mt-3 p-2 bg-destructive/10 border border-destructive/20 rounded-md">
-                    <p className="text-xs text-destructive">
-                      Analysis failed. Use the DeepSeek AI system above to retry.
+                  <div className="mt-3">
+                    <Button
+                      onClick={handleStartPrompting}
+                      variant="destructive"
+                      size="sm"
+                      className="w-full"
+                    >
+                      <Brain className="h-4 w-4 mr-2" />
+                      Retry with DeepSeek AI
+                    </Button>
+                    <p className="text-xs text-destructive mt-2">
+                      Previous analysis failed. Use DeepSeek AI to retry with enhanced reasoning.
                     </p>
                   </div>
                 )}
@@ -116,9 +168,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ document, onDeadlineUpdated })
               <CardContent>
                 <div className="text-center py-4">
                   <Zap className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground mb-3">
                     Run AI analysis to identify potential risks and compliance issues
                   </p>
+                  {!hasValidAnalysis && (
+                    <Button
+                      onClick={handleStartPrompting}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <Brain className="h-4 w-4 mr-2" />
+                      Start Analysis
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
