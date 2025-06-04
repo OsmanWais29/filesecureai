@@ -162,7 +162,7 @@ export class OSBAnalysisService {
       // Test document analysis with proper type handling
       const analysisResult = await supabase.functions.invoke('analyze-document', {
         body: {
-          documentId: documentId, // Explicitly use the string parameter
+          documentId: String(documentId), // Ensure it's a string
           extractionMode: 'comprehensive',
           includeRegulatory: true
         }
@@ -184,6 +184,43 @@ export class OSBAnalysisService {
         pdfAccessible: false,
         extractionSuccess: false,
         analysisSuccess: false,
+        error: errorMessage
+      };
+    }
+  }
+
+  /**
+   * Trigger DeepSeek AI analysis for a document
+   */
+  static async triggerDeepSeekAnalysis(documentId: string): Promise<{
+    success: boolean;
+    analysisId?: string;
+    error?: string;
+  }> {
+    try {
+      console.log('Triggering DeepSeek analysis for document:', documentId);
+
+      const { data, error } = await supabase.functions.invoke('enhanced-osb-analysis', {
+        body: {
+          documentId: String(documentId),
+          analysisType: 'deepseek_reinforcement',
+          includeRegulatory: true,
+          enhancedExtraction: true
+        }
+      });
+
+      if (error) throw error;
+
+      return {
+        success: true,
+        analysisId: data?.analysisId,
+      };
+
+    } catch (error) {
+      console.error('DeepSeek analysis error:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        success: false,
         error: errorMessage
       };
     }

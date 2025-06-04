@@ -1,3 +1,4 @@
+
 import { useEffect, useMemo } from "react";
 import DocumentPreview from "./DocumentPreview";
 import { useDocumentViewer } from "./hooks/useDocumentViewer";
@@ -51,8 +52,9 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
     }
   }, [loadingError, onLoadFailure]);
 
-  // Function to handle document updates (like comments added)
+  // Function to handle document updates (like comments added or analysis completed)
   const handleDocumentUpdated = () => {
+    console.log("Document updated, refreshing viewer...");
     handleRefresh();
   };
 
@@ -68,7 +70,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
         storage_path: "sample-documents/form-47-consumer-proposal.pdf",
         analysis: [
           {
-            id: "form47-analysis",  // Add the required id property
+            id: "form47-analysis",
             content: {
               extracted_info: {
                 formNumber: "47",
