@@ -174,7 +174,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
         documentTitle={displayTitle}
         documentType={document.type}
         documentId={documentId}
-        hasAnalysis={hasValidAnalysis}
+        hasAnalysis={Boolean(hasValidAnalysis)}
         onAnalysisComplete={handleDocumentUpdated}
         sidebar={
           <Sidebar document={document} onDeadlineUpdated={handleDocumentUpdated} />

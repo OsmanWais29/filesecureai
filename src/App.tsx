@@ -8,7 +8,8 @@ import DocumentsPage from './pages/DocumentsPage';
 import SettingsPage from './pages/SettingsPage';
 import ActivityPage from './pages/ActivityPage';
 import ClientsPage from './pages/ClientsPage';
-import LoginPage from './pages/LoginPage';
+import TrusteeLogin from './pages/auth/TrusteeLogin';
+import ClientLogin from './pages/auth/ClientLogin';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import PublicLayout from './components/layout/PublicLayout';
@@ -35,6 +36,9 @@ import TrusteeConverterPage from './pages/trustee/ConverterPage';
 import TrusteeEFilingPage from './pages/trustee/EFilingPage';
 import TrusteeSupport from './pages/trustee/Support';
 import TrusteeConBrandingPage from './pages/trustee/ConBrandingPage';
+
+// Import client portal
+import ClientPortal from './pages/ClientPortal';
 
 function App() {
   return (
@@ -76,8 +80,12 @@ function App() {
             <Route path="/trustee/support" element={<ProtectedRoute><TrusteeSupport /></ProtectedRoute>} />
             <Route path="/trustee/branding" element={<ProtectedRoute><TrusteeConBrandingPage /></ProtectedRoute>} />
             
-            {/* Public routes */}
-            <Route path="/login" element={<PublicLayout><LoginPage /></PublicLayout>} />
+            {/* Client portal routes */}
+            <Route path="/client-portal/*" element={<ProtectedRoute><ClientPortal /></ProtectedRoute>} />
+            
+            {/* Auth routes */}
+            <Route path="/login" element={<PublicLayout><TrusteeLogin /></PublicLayout>} />
+            <Route path="/client-login" element={<PublicLayout><ClientLogin /></PublicLayout>} />
           </Routes>
         </AuthProvider>
       </TrackingProvider>
