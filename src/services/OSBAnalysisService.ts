@@ -162,7 +162,7 @@ export class OSBAnalysisService {
       // Test document analysis with proper type handling
       const analysisResult = await supabase.functions.invoke('analyze-document', {
         body: {
-          documentId: String(documentId), // Ensure it's a string
+          documentId: documentId,
           extractionMode: 'comprehensive',
           includeRegulatory: true
         }
@@ -205,12 +205,9 @@ export class OSBAnalysisService {
       console.log('Triggering DeepSeek analysis for document:', documentId);
       console.log('Custom prompt:', customPrompt);
 
-      // Ensure documentId is properly typed as string and handle any conversion
-      const docId = typeof documentId === 'string' ? documentId : String(documentId);
-
       const { data, error } = await supabase.functions.invoke('enhanced-osb-analysis', {
         body: {
-          documentId: docId,
+          documentId: documentId,
           analysisType: 'deepseek_reasoning_reinforcement',
           customPrompt: customPrompt,
           includeRegulatory: true,
