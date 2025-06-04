@@ -1,4 +1,14 @@
 
-import AnalyticsPage from "../AnalyticsPage";
+import React from "react";
+import { MainLayout } from "@/components/layout/MainLayout";
+import { AnalyticsPage as MainAnalyticsPage } from "@/pages/AnalyticsPage";
 
-export default AnalyticsPage;
+const TrusteeAnalyticsPage = () => {
+  return (
+    <MainLayout>
+      <MainAnalyticsPage />
+    </MainLayout>
+  );
+};
+
+export default TrusteeAnalyticsPage;

@@ -207,7 +207,7 @@ export class OSBAnalysisService {
 
       const { data, error } = await supabase.functions.invoke('enhanced-osb-analysis', {
         body: {
-          documentId: documentId,
+          documentId: documentId as string, // Explicit cast to string
           analysisType: 'deepseek_reasoning_reinforcement',
           customPrompt: customPrompt,
           includeRegulatory: true,

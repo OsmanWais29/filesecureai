@@ -1,4 +1,14 @@
 
-import DocumentViewerPage from "../DocumentViewerPage";
+import React from "react";
+import { MainLayout } from "@/components/layout/MainLayout";
+import { DocumentViewerPage as MainDocumentViewerPage } from "@/pages/DocumentViewerPage";
 
-export default DocumentViewerPage;
+const TrusteeDocumentViewerPage = () => {
+  return (
+    <MainLayout>
+      <MainDocumentViewerPage />
+    </MainLayout>
+  );
+};
+
+export default TrusteeDocumentViewerPage;

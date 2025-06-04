@@ -1,16 +1,14 @@
 
-import React from 'react';
-import { MainLayout } from '@/components/layout/MainLayout';
-import { AccessControlDashboard } from '@/components/settings/access-control/AccessControlDashboard';
+import React from "react";
+import { MainLayout } from "@/components/layout/MainLayout";
+import { SettingsPage as MainSettingsPage } from "@/pages/SettingsPage";
 
-const SettingsPage = () => {
+const TrusteeSettingsPage = () => {
   return (
     <MainLayout>
-      <div className="container mx-auto p-6">
-        <AccessControlDashboard />
-      </div>
+      <MainSettingsPage />
     </MainLayout>
   );
 };
 
-export default SettingsPage;
+export default TrusteeSettingsPage;

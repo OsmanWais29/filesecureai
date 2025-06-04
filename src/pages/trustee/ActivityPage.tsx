@@ -1,4 +1,14 @@
 
-import ActivityPage from "../ActivityPage";
+import React from "react";
+import { MainLayout } from "@/components/layout/MainLayout";
+import { ActivityPage as MainActivityPage } from "@/pages/ActivityPage";
 
-export default ActivityPage;
+const TrusteeActivityPage = () => {
+  return (
+    <MainLayout>
+      <MainActivityPage />
+    </MainLayout>
+  );
+};
+
+export default TrusteeActivityPage;

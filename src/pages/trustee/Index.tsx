@@ -1,149 +1,179 @@
 
-import { useState, useEffect, useCallback } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { DocumentViewer } from "@/components/DocumentViewer";
-import { HomePage } from "@/components/dashboard/HomePage";
-import { showPerformanceToast } from "@/utils/performance";
-import { Home } from "lucide-react";
-import { useAuthState } from "@/hooks/useAuthState";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import React from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Footer } from "@/components/layout/Footer";
-import { toast } from "sonner";
-import { isDebugMode, debugTiming } from "@/utils/debugMode";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { useIsTablet } from "@/hooks/use-tablet";
+import { 
+  FileText, 
+  Users, 
+  AlertTriangle, 
+  TrendingUp,
+  Calendar,
+  MessageSquare,
+  Settings,
+  BarChart3
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const TrusteeIndex = () => {
-  const [selectedDocument, setSelectedDocument] = useState<string | null>(null);
-  const [documentKey, setDocumentKey] = useState<number>(0);
-  const [documentTitle, setDocumentTitle] = useState<string | null>(null);
-  const [isForm47, setIsForm47] = useState<boolean>(false);
-  const [loadFailed, setLoadFailed] = useState<boolean>(false);
-  
-  const location = useLocation();
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
-  const isTablet = useIsTablet();
-  
-  const { user, session, loading: isLoading, initialized } = useAuthState();
 
-  // Handle document selection from state
-  useEffect(() => {
-    if (location.state?.selectedDocument) {
-      console.log("Setting selected document from location state:", location.state.selectedDocument);
-      
-      const loadStart = performance.now();
-      setLoadFailed(false);
-      
-      const docId = location.state.selectedDocument;
-      if (!docId || typeof docId !== 'string') {
-        toast.error("Invalid document ID provided");
-        console.error("Invalid document ID:", docId);
-        return;
-      }
-      
-      if (location.state.isForm47) {
-        setIsForm47(true);
-      }
-      
-      if (location.state.documentTitle) {
-        setDocumentTitle(location.state.documentTitle);
-      }
-      
-      setDocumentKey(prev => prev + 1);
-      setSelectedDocument(docId);
-      
-      if (isDebugMode()) {
-        debugTiming('document-state-load', performance.now() - loadStart);
-      } else {
-        navigate('/trustee/dashboard', { replace: true });
-      }
+  const quickActions = [
+    {
+      title: "Document Analysis",
+      description: "Upload and analyze bankruptcy forms",
+      icon: FileText,
+      action: () => navigate("/trustee/documents"),
+      color: "bg-blue-500"
+    },
+    {
+      title: "Client Management",
+      description: "Manage client relationships and cases",
+      icon: Users,
+      action: () => navigate("/trustee/crm"),
+      color: "bg-green-500"
+    },
+    {
+      title: "Risk Assessment",
+      description: "Review compliance and risk indicators",
+      icon: AlertTriangle,
+      action: () => navigate("/trustee/analytics"),
+      color: "bg-orange-500"
+    },
+    {
+      title: "Analytics Dashboard",
+      description: "View performance metrics and insights",
+      icon: BarChart3,
+      action: () => navigate("/trustee/analytics"),
+      color: "bg-purple-500"
     }
-  }, [location, navigate]);
+  ];
 
-  useEffect(() => {
-    showPerformanceToast("Trustee Dashboard");
-  }, []);
+  const recentActivity = [
+    { id: 1, action: "Form 47 analyzed", client: "John Doe", time: "2 hours ago" },
+    { id: 2, action: "Risk assessment completed", client: "Jane Smith", time: "4 hours ago" },
+    { id: 3, action: "Document uploaded", client: "Mike Johnson", time: "1 day ago" },
+    { id: 4, action: "Client meeting scheduled", client: "Sarah Wilson", time: "2 days ago" }
+  ];
 
-  const handleBackToDocuments = useCallback(() => {
-    setSelectedDocument(null);
-    setDocumentTitle(null);
-    setIsForm47(false);
-    setLoadFailed(false);
-    navigate('/', { replace: true });
-  }, [navigate]);
-
-  const handleDocumentLoadFailure = useCallback(() => {
-    console.log("Document load failed, showing error state");
-    setLoadFailed(true);
-  }, []);
-
-  // Show loading spinner while auth state is being determined
-  if (isLoading || !initialized) {
-    return (
-      <div className="h-screen w-full flex items-center justify-center">
-        <LoadingSpinner />
-        <p className="ml-2 text-muted-foreground">Loading...</p>
-      </div>
-    );
-  }
-
-  // Show document viewer or main dashboard
   return (
-    <div className={`min-h-screen bg-background flex flex-col ${selectedDocument ? '' : 'h-screen'}`}>
-      {selectedDocument ? (
-        <div className="h-screen flex flex-col">
-          <div className="mb-1 px-1 py-2">
-            <Button
-              variant="ghost"
-              size={isMobile ? "sm" : "default"}
-              onClick={handleBackToDocuments}
-              className="flex items-center text-xs sm:text-sm text-muted-foreground hover:text-foreground"
-            >
-              <Home className="h-3.5 w-3.5 mr-1" /> 
-              {(!isMobile || isTablet) && "Back to Dashboard"}
-              {isMobile && !isTablet && "Back"}
+    <MainLayout>
+      <div className="p-6 space-y-6">
+        {/* Header */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Trustee Dashboard</h1>
+            <p className="text-gray-600 mt-1">Welcome back! Here's what's happening with your cases.</p>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={() => navigate("/trustee/calendar")} variant="outline">
+              <Calendar className="h-4 w-4 mr-2" />
+              Calendar
+            </Button>
+            <Button onClick={() => navigate("/trustee/support")} variant="outline">
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Support
             </Button>
           </div>
-          <div className="flex-1 overflow-hidden">
-            <DocumentViewer 
-              documentId={selectedDocument} 
-              key={`doc-${selectedDocument}-${documentKey}`}
-              bypassProcessing={isDebugMode() || isForm47}
-              onLoadFailure={handleDocumentLoadFailure}
-              documentTitle={documentTitle}
-              isForm47={isForm47}
-            />
-          </div>
         </div>
-      ) : (
-        <div className="flex flex-col min-h-screen">
-          <MainLayout>
-            {session ? (
-              <div className="container mx-auto p-6 bg-background min-h-screen">
-                <HomePage />
-              </div>
-            ) : (
-              <div className="flex h-screen w-full items-center justify-center">
-                <LoadingSpinner />
-                <p className="ml-2 text-muted-foreground">
-                  Redirecting to login...
-                </p>
-                {(() => {
-                  setTimeout(() => {
-                    navigate('/login', { replace: true });
-                  }, 500);
-                  return null;
-                })()}
-              </div>
-            )}
-          </MainLayout>
-          <Footer compact className="mt-auto w-full" />
+
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Cases</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">24</div>
+              <p className="text-xs text-muted-foreground">+2 from last month</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Documents Processed</CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">157</div>
+              <p className="text-xs text-muted-foreground">+12% from last week</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Risk Alerts</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">3</div>
+              <p className="text-xs text-muted-foreground">Requires attention</p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Compliance Score</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">94%</div>
+              <p className="text-xs text-muted-foreground">+2% from last month</p>
+            </CardContent>
+          </Card>
         </div>
-      )}
-    </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Quick Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4">
+                {quickActions.map((action, index) => (
+                  <Button
+                    key={index}
+                    variant="outline"
+                    className="h-auto p-4 flex flex-col items-center gap-2 hover:bg-gray-50"
+                    onClick={action.action}
+                  >
+                    <div className={`p-2 rounded-full ${action.color} text-white`}>
+                      <action.icon className="h-4 w-4" />
+                    </div>
+                    <div className="text-center">
+                      <div className="font-medium text-sm">{action.title}</div>
+                      <div className="text-xs text-gray-500">{action.description}</div>
+                    </div>
+                  </Button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Recent Activity */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Activity</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {recentActivity.map((activity) => (
+                  <div key={activity.id} className="flex justify-between items-center">
+                    <div>
+                      <p className="text-sm font-medium">{activity.action}</p>
+                      <p className="text-xs text-gray-500">{activity.client}</p>
+                    </div>
+                    <span className="text-xs text-gray-400">{activity.time}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </MainLayout>
   );
 };
 
