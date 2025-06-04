@@ -29,8 +29,8 @@ const AnalyticsPage: React.FC = () => {
     setMetrics(getMetrics());
     setCategories(getEventsByCategory());
     
-    // Fetch trend data
-    fetchTrendData('day', { category: 'navigation' });
+    // Fetch trend data with proper EventCategory type
+    fetchTrendData('day', { category: 'navigation' as any });
   }, [getMetrics, getEventsByCategory, fetchTrendData]);
 
   const handleGenerateTestData = () => {
