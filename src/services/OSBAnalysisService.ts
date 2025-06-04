@@ -162,7 +162,7 @@ export class OSBAnalysisService {
       // Test document analysis with proper type handling
       const analysisResult = await supabase.functions.invoke('analyze-document', {
         body: {
-          documentId,
+          documentId: documentId, // Explicitly use the string parameter
           extractionMode: 'comprehensive',
           includeRegulatory: true
         }
