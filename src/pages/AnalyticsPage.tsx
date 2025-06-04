@@ -1,141 +1,138 @@
 
-import { useState, useEffect, useMemo } from "react";
-import { MainLayout } from "@/components/layout/MainLayout";
-import { AnalyticsSidebar } from "@/components/analytics/AnalyticsSidebar";
-import { AnalyticsContent } from "@/components/analytics/AnalyticsContent";
-import { RoleDashboards } from "@/components/analytics/RoleDashboards";
-import { getAnalyticsCategories } from "@/components/analytics/analyticsCategories";
-import { getMockDocumentData } from "@/components/analytics/utils";
-import { useEnhancedAnalytics } from "@/hooks/useEnhancedAnalytics";
-import { showPerformanceToast } from "@/utils/performance";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AnomalyDetectionDashboard } from "@/components/analytics/performance/AnomalyDetectionDashboard";
-import { Button } from "@/components/ui/button";
-import { Presentation, User, BarChart2, TrendingUp } from "lucide-react";
+import React, { useEffect, useState } from 'react';
+import { MainLayout } from '@/components/layout/MainLayout';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { useEnhancedAnalytics } from '@/hooks/useEnhancedAnalytics';
+import { analyticsService } from '@/services/analyticsService';
 
-const AnalyticsPage = () => {
-  const [activeCategory, setActiveCategory] = useState("business");
-  const [activeModule, setActiveModule] = useState("client");
-  const [activeTab, setActiveTab] = useState("default");
-  const analytics = useEnhancedAnalytics({
-    pageName: "AnalyticsDashboard",
-    userRole: "admin",
-    enablePersistence: true
+const AnalyticsPage: React.FC = () => {
+  const {
+    trackEvent,
+    trackInteraction,
+    getMetrics,
+    getEventsByCategory,
+    getEventsBySubcategory,
+    trendData,
+    fetchTrendData,
+    isLoadingTrends
+  } = useEnhancedAnalytics({
+    pageName: 'Analytics',
+    userRole: 'admin'
   });
 
-  // Get categories - memoize to prevent unnecessary recalculations
-  const categories = useMemo(() => getAnalyticsCategories(), []);
-  
-  // Get mock data for DocumentAnalytics component - memoize to prevent recreating on every render
-  const documentMockData = useMemo(() => getMockDocumentData(), []);
-
-  // Handle category change
-  const handleCategoryChange = (categoryId: string) => {
-    if (categoryId === activeCategory) return; // Prevent unnecessary state updates
-    
-    setActiveCategory(categoryId);
-    // Track the category change
-    analytics.trackInteraction("AnalyticsSidebar", "CategoryChange", "Navigation", { categoryId });
-    
-    // Set the first module of the category as active
-    const firstModuleId = categories.find(c => c.id === categoryId)?.modules[0]?.id || "";
-    setActiveModule(firstModuleId);
-  };
-
-  // Handle module change with memoization to prevent recreating on every render
-  const handleModuleChange = useMemo(() => (moduleId: string) => {
-    if (moduleId === activeModule) return; // Prevent unnecessary state updates
-    
-    setActiveModule(moduleId);
-    analytics.trackInteraction("AnalyticsContent", "ModuleChange", "Navigation", { moduleId });
-  }, [activeModule, analytics]);
+  const [metrics, setMetrics] = useState<any>(null);
+  const [categories, setCategories] = useState<any[]>([]);
 
   useEffect(() => {
-    // Show performance toast when dashboard loads
-    showPerformanceToast("Analytics Dashboard");
-  }, []);
+    // Load initial data
+    setMetrics(getMetrics());
+    setCategories(getEventsByCategory());
+    
+    // Fetch trend data
+    fetchTrendData('day', { category: 'navigation' });
+  }, [getMetrics, getEventsByCategory, fetchTrendData]);
+
+  const handleGenerateTestData = () => {
+    // Generate some test analytics data
+    trackEvent({
+      type: 'test_event',
+      category: 'testing'
+    });
+    
+    trackInteraction('AnalyticsPage', 'generate_test_data');
+    
+    // Refresh metrics
+    setMetrics(getMetrics());
+    setCategories(getEventsByCategory());
+  };
+
+  const handleExportData = () => {
+    const data = analyticsService.getAnalyticsData();
+    console.log('Analytics data:', data);
+    
+    trackInteraction('AnalyticsPage', 'export_data');
+  };
 
   return (
     <MainLayout>
-      <div className="mb-6 max-w-4xl p-6">
-        <h1 className="text-3xl font-bold text-primary">Analytics Dashboard</h1>
-        <p className="text-muted-foreground mt-1">
-          Monitor your trustee practice with detailed insights across all operational areas
-        </p>
-      </div>
-      
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6 px-6">
-        <div className="flex items-center justify-between">
-          <TabsList>
-            <TabsTrigger value="default" className="flex items-center">
-              <Presentation className="mr-2 h-4 w-4" />
-              Standard Analytics
-            </TabsTrigger>
-            <TabsTrigger value="role-based" className="flex items-center">
-              <User className="mr-2 h-4 w-4" />
-              Role-Based Dashboards
-            </TabsTrigger>
-            <TabsTrigger value="anomalies" className="flex items-center">
-              <TrendingUp className="mr-2 h-4 w-4" />
-              Performance Anomalies
-            </TabsTrigger>
-          </TabsList>
-          
-          <div>
-            <Button 
-              variant="outline" 
-              onClick={() => analytics.fetchTrendData()}
-              disabled={analytics.isLoadingTrends}
-            >
-              <BarChart2 className="mr-2 h-4 w-4" />
-              {analytics.isLoadingTrends ? 'Refreshing...' : 'Refresh Data'}
-            </Button>
+      <div className="container mx-auto py-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
+          <div className="space-x-2">
+            <Button onClick={handleGenerateTestData}>Generate Test Data</Button>
+            <Button variant="outline" onClick={handleExportData}>Export Data</Button>
           </div>
         </div>
-        
-        <TabsContent value="default" className="mt-0">
-          <div className="grid grid-cols-12 gap-6">
-            {/* Categories sidebar */}
-            <div className="col-span-12 md:col-span-3">
-              <AnalyticsSidebar 
-                categories={categories}
-                activeCategory={activeCategory}
-                onCategoryChange={handleCategoryChange}
-              />
-            </div>
 
-            {/* Main content area */}
-            <div className="col-span-12 md:col-span-9">
-              <AnalyticsContent 
-                categories={categories}
-                activeCategory={activeCategory}
-                activeModule={activeModule}
-                setActiveModule={handleModuleChange}
-                documentMockData={documentMockData}
-              />
-            </div>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="role-based" className="mt-0">
-          <RoleDashboards />
-        </TabsContent>
-        
-        <TabsContent value="anomalies" className="mt-0">
+        {/* Metrics Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardHeader>
-              <CardTitle>Performance Anomaly Detection</CardTitle>
-              <CardDescription>
-                Automatically detect and analyze performance issues across the application
-              </CardDescription>
+              <CardTitle>Total Events</CardTitle>
             </CardHeader>
             <CardContent>
-              <AnomalyDetectionDashboard />
+              <div className="text-2xl font-bold">{metrics?.totalPageViews || 0}</div>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Interactions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{metrics?.totalInteractions || 0}</div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Errors</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{metrics?.totalErrors || 0}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Categories */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Event Categories</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {categories.map((category) => (
+                <div key={category.id} className="flex justify-between items-center">
+                  <span>{category.name}</span>
+                  <span className="font-bold">{category.count}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Trend Data */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Trend Data</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoadingTrends ? (
+              <div>Loading trends...</div>
+            ) : (
+              <div className="space-y-2">
+                {trendData.map((trend, index) => (
+                  <div key={index} className="flex justify-between items-center">
+                    <span>{trend.date}</span>
+                    <span className="font-bold">{trend.count}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </MainLayout>
   );
 };
