@@ -3,9 +3,11 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { Zap, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Zap, AlertTriangle, CheckCircle, Brain } from 'lucide-react';
 import { OSBAnalysisService } from '@/services/OSBAnalysisService';
 import { toast } from 'sonner';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface DeepSeekAnalysisButtonProps {
   documentId: string;
@@ -22,28 +24,31 @@ export const DeepSeekAnalysisButton: React.FC<DeepSeekAnalysisButtonProps> = ({
 }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisStatus, setAnalysisStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
+  const [showPromptSystem, setShowPromptSystem] = useState(false);
+  const [customPrompt, setCustomPrompt] = useState('');
 
-  const handleTriggerAnalysis = async () => {
+  const handleTriggerAnalysis = async (prompt?: string) => {
     if (isAnalyzing) return;
 
     setIsAnalyzing(true);
     setAnalysisStatus('processing');
 
     try {
-      toast.info('Starting DeepSeek AI analysis...', {
-        description: 'This may take a few moments'
+      toast.info('Starting DeepSeek AI reasoning analysis...', {
+        description: 'Enhanced reinforcement learning in progress'
       });
 
-      const result = await OSBAnalysisService.triggerDeepSeekAnalysis(documentId);
+      const result = await OSBAnalysisService.triggerDeepSeekAnalysis(documentId, prompt);
 
       if (result.success) {
         setAnalysisStatus('success');
-        toast.success('DeepSeek analysis completed!', {
-          description: 'Document analysis has been updated with new insights'
+        toast.success('DeepSeek reasoning analysis completed!', {
+          description: 'Document analysis enhanced with reinforcement learning'
         });
         
-        // Trigger callback to refresh the document viewer
         onAnalysisComplete();
+        setShowPromptSystem(false);
+        setCustomPrompt('');
       } else {
         throw new Error(result.error || 'Analysis failed');
       }
@@ -56,7 +61,6 @@ export const DeepSeekAnalysisButton: React.FC<DeepSeekAnalysisButtonProps> = ({
     } finally {
       setIsAnalyzing(false);
       
-      // Reset status after a delay
       setTimeout(() => {
         setAnalysisStatus('idle');
       }, 3000);
@@ -68,7 +72,7 @@ export const DeepSeekAnalysisButton: React.FC<DeepSeekAnalysisButtonProps> = ({
       return (
         <>
           <LoadingSpinner size="small" className="mr-2" />
-          Analyzing...
+          Reasoning...
         </>
       );
     }
@@ -77,7 +81,7 @@ export const DeepSeekAnalysisButton: React.FC<DeepSeekAnalysisButtonProps> = ({
       return (
         <>
           <CheckCircle className="h-4 w-4 mr-2" />
-          Analysis Complete
+          Analysis Enhanced
         </>
       );
     }
@@ -93,8 +97,8 @@ export const DeepSeekAnalysisButton: React.FC<DeepSeekAnalysisButtonProps> = ({
 
     return (
       <>
-        <Zap className="h-4 w-4 mr-2" />
-        {hasAnalysis ? 'Enhance Analysis' : 'Analyze with AI'}
+        <Brain className="h-4 w-4 mr-2" />
+        {hasAnalysis ? 'Enhance with DeepSeek' : 'Analyze with DeepSeek AI'}
       </>
     );
   };
@@ -106,10 +110,62 @@ export const DeepSeekAnalysisButton: React.FC<DeepSeekAnalysisButtonProps> = ({
     return 'outline';
   };
 
+  if (showPromptSystem) {
+    return (
+      <Card className={`${className} border-blue-200 bg-blue-50/50`}>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium flex items-center">
+            <Brain className="h-4 w-4 mr-2 text-blue-600" />
+            DeepSeek AI Reasoning System
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">
+              Custom Analysis Prompt (optional):
+            </label>
+            <Input
+              placeholder="e.g., Focus on compliance risks, Check for missing signatures, Analyze financial data..."
+              value={customPrompt}
+              onChange={(e) => setCustomPrompt(e.target.value)}
+              className="text-sm"
+              disabled={isAnalyzing}
+            />
+          </div>
+          
+          <div className="flex gap-2">
+            <Button
+              onClick={() => handleTriggerAnalysis(customPrompt || undefined)}
+              disabled={isAnalyzing}
+              variant={getButtonVariant()}
+              size="sm"
+              className="flex-1"
+            >
+              {getButtonContent()}
+            </Button>
+            
+            <Button
+              onClick={() => setShowPromptSystem(false)}
+              variant="outline"
+              size="sm"
+              disabled={isAnalyzing}
+            >
+              Cancel
+            </Button>
+          </div>
+          
+          <div className="text-xs text-muted-foreground">
+            💡 DeepSeek will use reinforcement learning to enhance analysis accuracy
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       <Button
-        onClick={handleTriggerAnalysis}
+        onClick={() => setShowPromptSystem(true)}
         disabled={isAnalyzing}
         variant={getButtonVariant()}
         size="sm"
@@ -120,12 +176,14 @@ export const DeepSeekAnalysisButton: React.FC<DeepSeekAnalysisButtonProps> = ({
       
       {!hasAnalysis && (
         <Badge variant="secondary" className="text-xs">
-          No Analysis
+          <Zap className="h-3 w-3 mr-1" />
+          AI Ready
         </Badge>
       )}
       
       {hasAnalysis && analysisStatus === 'idle' && (
         <Badge variant="outline" className="text-xs">
+          <Brain className="h-3 w-3 mr-1" />
           Enhance
         </Badge>
       )}

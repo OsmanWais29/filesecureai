@@ -1,6 +1,8 @@
 
 import React from "react";
-import { FileBarChart, FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FileText, Menu, MessageSquare, Users, History, CheckSquare } from "lucide-react";
+import { DeepSeekAnalysisButton } from "../../DeepSeekAnalysisButton";
 
 interface ViewerHeaderProps {
   documentTitle: string;
@@ -10,6 +12,9 @@ interface ViewerHeaderProps {
   isMobile: boolean;
   toggleSidebar: () => void;
   toggleCollaborationPanel: () => void;
+  documentId?: string;
+  hasAnalysis?: boolean;
+  onAnalysisComplete?: () => void;
 }
 
 export const ViewerHeader: React.FC<ViewerHeaderProps> = ({
@@ -20,54 +25,59 @@ export const ViewerHeader: React.FC<ViewerHeaderProps> = ({
   isMobile,
   toggleSidebar,
   toggleCollaborationPanel,
+  documentId,
+  hasAnalysis = false,
+  onAnalysisComplete = () => {}
 }) => {
   return (
-    <div className="sticky top-0 z-10 flex justify-between items-center p-2 sm:p-3 bg-muted/30 border-b">
-      <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
-        <div className="bg-muted/50 p-1.5 sm:p-2 rounded-md flex-shrink-0">
-          {isForm47 ? (
-            <FileBarChart className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-          ) : (
-            <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-          )}
-        </div>
-        <div className="flex flex-col overflow-hidden">
-          <h1 className="text-sm sm:text-lg font-bold text-foreground truncate">{documentTitle}</h1>
-          <div className="flex flex-wrap gap-1 sm:gap-2 mt-0.5 sm:mt-1">
-            {isForm47 && (
-              <div className="bg-primary/10 text-primary px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap">
-                Consumer Proposal
-              </div>
-            )}
-            <div className="bg-muted text-muted-foreground px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap">
-              Form {documentType.includes('47') ? '47' : documentType}
-            </div>
+    <div className="flex items-center justify-between p-4 border-b border-border/20 bg-white dark:bg-background">
+      <div className="flex items-center gap-3">
+        {(isMobile || isTablet) && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleSidebar}
+            className="flex items-center gap-2"
+          >
+            <Menu className="h-4 w-4" />
+          </Button>
+        )}
+        
+        <div className="flex items-center gap-2">
+          <FileText className="h-5 w-5 text-blue-600" />
+          <div>
+            <h1 className="font-semibold text-lg text-gray-900 dark:text-gray-100">
+              {documentTitle}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {isForm47 ? "Bankruptcy Form" : `Document Type: ${documentType}`}
+            </p>
           </div>
         </div>
       </div>
-      
-      {(isMobile || isTablet) && (
-        <div className="flex gap-2">
+
+      {/* DeepSeek AI Analysis System */}
+      <div className="flex items-center gap-3">
+        {documentId && (
+          <DeepSeekAnalysisButton
+            documentId={documentId}
+            hasAnalysis={hasAnalysis}
+            onAnalysisComplete={onAnalysisComplete}
+            className="max-w-xs"
+          />
+        )}
+        
+        {(isMobile || isTablet) && (
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            onClick={toggleSidebar}
-            className="h-8 px-2"
-          >
-            {isTablet && !isMobile ? "Document Details" : "Details"}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm" 
             onClick={toggleCollaborationPanel}
-            className="h-8 px-2"
+            className="flex items-center gap-2"
           >
-            {isTablet && !isMobile ? "Collaboration" : "Comments"}
+            <MessageSquare className="h-4 w-4" />
           </Button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
-
-import { Button } from "@/components/ui/button";

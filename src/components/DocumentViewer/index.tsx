@@ -157,6 +157,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
   const isForm47Document = isForm47 || isDocumentForm47(document);
   // Use passed documentTitle if available, otherwise use the one from document
   const displayTitle = documentTitle || document.title;
+  const hasValidAnalysis = document.analysis && document.analysis.length > 0 && document.analysis?.[0]?.content?.extracted_info;
 
   // Ensure versions have storage_path by adding an empty string for any missing paths
   const adaptVersions = (versions = []) => {
@@ -172,6 +173,9 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
         isForm47={isForm47Document}
         documentTitle={displayTitle}
         documentType={document.type}
+        documentId={documentId}
+        hasAnalysis={hasValidAnalysis}
+        onAnalysisComplete={handleDocumentUpdated}
         sidebar={
           <Sidebar document={document} onDeadlineUpdated={handleDocumentUpdated} />
         }

@@ -1,4 +1,3 @@
-
 // OSB Analysis Service - Enhanced DeepSeek Integration
 import { supabase } from '@/lib/supabase';
 import { DeepSeekAnalysisResponse, OSBFormAnalysis, IdentifiedRisk } from '@/types/osb-analysis';
@@ -190,22 +189,28 @@ export class OSBAnalysisService {
   }
 
   /**
-   * Trigger DeepSeek AI analysis for a document
+   * Trigger DeepSeek AI analysis for a document with optional custom prompt
    */
-  static async triggerDeepSeekAnalysis(documentId: string): Promise<{
+  static async triggerDeepSeekAnalysis(
+    documentId: string, 
+    customPrompt?: string
+  ): Promise<{
     success: boolean;
     analysisId?: string;
     error?: string;
   }> {
     try {
       console.log('Triggering DeepSeek analysis for document:', documentId);
+      console.log('Custom prompt:', customPrompt);
 
       const { data, error } = await supabase.functions.invoke('enhanced-osb-analysis', {
         body: {
           documentId: String(documentId),
-          analysisType: 'deepseek_reinforcement',
+          analysisType: 'deepseek_reasoning_reinforcement',
+          customPrompt: customPrompt,
           includeRegulatory: true,
-          enhancedExtraction: true
+          enhancedExtraction: true,
+          reinforcementLearning: true
         }
       });
 

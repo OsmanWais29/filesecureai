@@ -2,7 +2,6 @@
 import { DocumentDetails } from "../DocumentDetails";
 import { RiskAssessment } from "../RiskAssessment";
 import { DeadlineManager } from "../DeadlineManager";
-import { DeepSeekAnalysisButton } from "../DeepSeekAnalysisButton";
 import { DocumentDetails as DocumentDetailsType, Risk as DocumentRisk } from "../types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -31,50 +30,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ document, onDeadlineUpdated })
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header with analysis status and button */}
-      <Card className="mb-4">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-medium flex items-center">
-              <FileText className="h-4 w-4 mr-2" />
-              Document Analysis
-            </CardTitle>
-            {hasAnalysisError && (
-              <Badge variant="destructive" className="text-xs">
-                <AlertTriangle className="h-3 w-3 mr-1" />
-                Error
-              </Badge>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <DeepSeekAnalysisButton
-            documentId={document.id}
-            hasAnalysis={hasValidAnalysis}
-            onAnalysisComplete={onDeadlineUpdated}
-            className="w-full"
-          />
-          
-          {hasAnalysisError && (
-            <div className="mt-2 p-2 bg-destructive/10 border border-destructive/20 rounded-md">
-              <p className="text-xs text-destructive">
-                Analysis failed. Use the button above to retry with DeepSeek AI.
-              </p>
-            </div>
-          )}
-          
-          {!hasValidAnalysis && !hasAnalysisError && (
-            <div className="mt-2 p-2 bg-muted/50 border border-border/40 rounded-md">
-              <p className="text-xs text-muted-foreground">
-                No analysis available. Click above to analyze this document with AI.
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-      
       <ScrollArea className="flex-1">
-        <div className="space-y-4">
+        <div className="space-y-4 p-4">
           {/* Document Details */}
           {hasValidAnalysis ? (
             <DocumentDetails
@@ -119,6 +76,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ document, onDeadlineUpdated })
                     <p>{new Date(document.created_at).toLocaleDateString()}</p>
                   </div>
                 </div>
+                
+                {!hasValidAnalysis && !hasAnalysisError && (
+                  <div className="mt-3 p-2 bg-muted/50 border border-border/40 rounded-md">
+                    <p className="text-xs text-muted-foreground">
+                      Use the DeepSeek AI system in the header above to analyze this document.
+                    </p>
+                  </div>
+                )}
+                
+                {hasAnalysisError && (
+                  <div className="mt-3 p-2 bg-destructive/10 border border-destructive/20 rounded-md">
+                    <p className="text-xs text-destructive">
+                      Analysis failed. Use the DeepSeek AI system above to retry.
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -128,7 +101,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ document, onDeadlineUpdated })
           {/* Risk Assessment */}
           {hasValidAnalysis && document.analysis?.[0]?.content?.risks ? (
             <RiskAssessment 
-              risks={document.analysis[0].content.risks as DocumentRisk[]} 
+              risks={document.analysis[0].content.risks as DocumentRisk[]}
+              documentId={document.id}
+              isLoading={false}
             />
           ) : (
             <Card>

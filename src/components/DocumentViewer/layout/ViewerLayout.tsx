@@ -16,6 +16,9 @@ interface ViewerLayoutProps {
   versionPanel: React.ReactNode;
   documentTitle: string;
   documentType: string;
+  documentId?: string;
+  hasAnalysis?: boolean;
+  onAnalysisComplete?: () => void;
 }
 
 export const ViewerLayout: React.FC<ViewerLayoutProps> = ({
@@ -27,6 +30,9 @@ export const ViewerLayout: React.FC<ViewerLayoutProps> = ({
   versionPanel,
   documentTitle,
   documentType,
+  documentId,
+  hasAnalysis = false,
+  onAnalysisComplete = () => {},
 }) => {
   const [isPanelExpanded, setIsPanelExpanded] = useState(false);
   const [selectedTab, setSelectedTab] = useState<string>("comments");
@@ -53,6 +59,9 @@ export const ViewerLayout: React.FC<ViewerLayoutProps> = ({
         isMobile={isMobile}
         toggleSidebar={toggleSidebar}
         toggleCollaborationPanel={toggleCollaborationPanel}
+        documentId={documentId}
+        hasAnalysis={hasAnalysis}
+        onAnalysisComplete={onAnalysisComplete}
       />
       
       {isMobile ? (
