@@ -6,6 +6,7 @@ import { useAuthState } from '@/hooks/useAuthState';
 import { supabase } from '@/lib/supabase';
 import { GeneralSettings } from '@/components/settings/GeneralSettings';
 import { SecuritySettings } from '@/components/settings/SecuritySettings';
+import { AccessControlDashboard } from '@/components/settings/access-control/AccessControlDashboard';
 import { EncryptionStatus } from '@/components/security/EncryptionStatus';
 import { AuditTrail } from '@/components/audit/AuditTrail';
 import { Settings as SettingsIcon, Shield, Database, Activity } from 'lucide-react';
@@ -194,9 +195,9 @@ const Settings = () => {
             <Shield className="h-4 w-4" />
             Security
           </TabsTrigger>
-          <TabsTrigger value="encryption" className="flex items-center gap-2">
+          <TabsTrigger value="access-control" className="flex items-center gap-2">
             <Database className="h-4 w-4" />
-            Encryption
+            Access Control
           </TabsTrigger>
           <TabsTrigger value="audit" className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
@@ -240,8 +241,8 @@ const Settings = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="encryption">
-          <EncryptionStatus />
+        <TabsContent value="access-control">
+          <AccessControlDashboard />
         </TabsContent>
 
         <TabsContent value="audit">

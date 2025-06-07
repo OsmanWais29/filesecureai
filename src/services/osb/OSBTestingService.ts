@@ -40,7 +40,7 @@ export class OSBTestingService {
       // Test document analysis
       const analysisResult = await supabase.functions.invoke('analyze-document', {
         body: {
-          documentId,
+          documentId: documentId as string,
           extractionMode: 'comprehensive',
           includeRegulatory: true
         }
