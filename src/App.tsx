@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Route, Routes } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TrackingProvider } from './contexts/TrackingContext';
 import HomePage from './pages/HomePage';
 import DocumentsPage from './pages/DocumentsPage';
@@ -54,59 +53,57 @@ import ClientPortal from './pages/ClientPortal';
 
 function App() {
   return (
-    <QueryClientProvider client={new QueryClient()}>
-      <TrackingProvider>
-        <AuthProvider>
-          <Routes>
-            {/* Main routes */}
-            <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
-            <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-            <Route path="/documents" element={<ProtectedRoute><DocumentsPage /></ProtectedRoute>} />
-            <Route path="/documents/:documentId" element={<ProtectedRoute><DocumentViewerPage /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-            <Route path="/activity" element={<ProtectedRoute><ActivityPage /></ProtectedRoute>} />
-            <Route path="/clients" element={<ProtectedRoute><ClientsPage /></ProtectedRoute>} />
-            <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-            <Route path="/converter" element={<ProtectedRoute><ConverterPage /></ProtectedRoute>} />
-            <Route path="/SAFA" element={<ProtectedRoute><SAFAPage /></ProtectedRoute>} />
-            <Route path="/crm" element={<ProtectedRoute><CRMPage /></ProtectedRoute>} />
-            <Route path="/e-filing" element={<ProtectedRoute><EFilingPage /></ProtectedRoute>} />
-            <Route path="/audit" element={<ProtectedRoute><AuditTrailPage /></ProtectedRoute>} />
-            <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
-            <Route path="/pdf-viewer-demo" element={<ProtectedRoute><PDFViewerDemo /></ProtectedRoute>} />
-            <Route path="/testing" element={<ProtectedRoute><TestingPage /></ProtectedRoute>} />
-            
-            {/* Trustee routes */}
-            <Route path="/trustee" element={<ProtectedRoute><TrusteeIndex /></ProtectedRoute>} />
-            <Route path="/trustee/dashboard" element={<ProtectedRoute><TrusteeIndex /></ProtectedRoute>} />
-            <Route path="/trustee/documents" element={<ProtectedRoute><TrusteeDocumentsPage /></ProtectedRoute>} />
-            <Route path="/trustee/settings" element={<ProtectedRoute><TrusteeSettingsPage /></ProtectedRoute>} />
-            <Route path="/trustee/activity" element={<ProtectedRoute><TrusteeActivityPage /></ProtectedRoute>} />
-            <Route path="/trustee/analytics" element={<ProtectedRoute><TrusteeAnalyticsPage /></ProtectedRoute>} />
-            <Route path="/trustee/profile" element={<ProtectedRoute><TrusteeProfilePage /></ProtectedRoute>} />
-            <Route path="/trustee/crm" element={<ProtectedRoute><TrusteeCRMPage /></ProtectedRoute>} />
-            <Route path="/document/:documentId" element={<ProtectedRoute><TrusteeDocumentViewerPage /></ProtectedRoute>} />
-            <Route path="/trustee/document/:documentId" element={<ProtectedRoute><TrusteeDocumentViewerPage /></ProtectedRoute>} />
-            <Route path="/client/:clientId" element={<ProtectedRoute><TrusteeClientViewerPage /></ProtectedRoute>} />
-            <Route path="/trustee/client/:clientId" element={<ProtectedRoute><TrusteeClientViewerPage /></ProtectedRoute>} />
-            <Route path="/trustee/notifications" element={<ProtectedRoute><TrusteeNotificationsPage /></ProtectedRoute>} />
-            <Route path="/trustee/calendar" element={<ProtectedRoute><TrusteeCalendarPage /></ProtectedRoute>} />
-            <Route path="/trustee/converter" element={<ProtectedRoute><TrusteeConverterPage /></ProtectedRoute>} />
-            <Route path="/trustee/efiling" element={<ProtectedRoute><TrusteeEFilingPage /></ProtectedRoute>} />
-            <Route path="/trustee/support" element={<ProtectedRoute><TrusteeSupport /></ProtectedRoute>} />
-            <Route path="/trustee/branding" element={<ProtectedRoute><TrusteeConBrandingPage /></ProtectedRoute>} />
-            
-            {/* Client portal routes */}
-            <Route path="/client-portal/*" element={<ProtectedRoute><ClientPortal /></ProtectedRoute>} />
-            
-            {/* Auth routes */}
-            <Route path="/login" element={<PublicLayout><TrusteeLogin /></PublicLayout>} />
-            <Route path="/client-login" element={<PublicLayout><ClientLogin /></PublicLogin>} />
-          </Routes>
-        </AuthProvider>
-      </TrackingProvider>
-    </QueryClientProvider>
+    <TrackingProvider>
+      <AuthProvider>
+        <Routes>
+          {/* Main routes */}
+          <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+          <Route path="/documents" element={<ProtectedRoute><DocumentsPage /></ProtectedRoute>} />
+          <Route path="/documents/:documentId" element={<ProtectedRoute><DocumentViewerPage /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+          <Route path="/activity" element={<ProtectedRoute><ActivityPage /></ProtectedRoute>} />
+          <Route path="/clients" element={<ProtectedRoute><ClientsPage /></ProtectedRoute>} />
+          <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          <Route path="/converter" element={<ProtectedRoute><ConverterPage /></ProtectedRoute>} />
+          <Route path="/SAFA" element={<ProtectedRoute><SAFAPage /></ProtectedRoute>} />
+          <Route path="/crm" element={<ProtectedRoute><CRMPage /></ProtectedRoute>} />
+          <Route path="/e-filing" element={<ProtectedRoute><EFilingPage /></ProtectedRoute>} />
+          <Route path="/audit" element={<ProtectedRoute><AuditTrailPage /></ProtectedRoute>} />
+          <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+          <Route path="/pdf-viewer-demo" element={<ProtectedRoute><PDFViewerDemo /></ProtectedRoute>} />
+          <Route path="/testing" element={<ProtectedRoute><TestingPage /></ProtectedRoute>} />
+          
+          {/* Trustee routes */}
+          <Route path="/trustee" element={<ProtectedRoute><TrusteeIndex /></ProtectedRoute>} />
+          <Route path="/trustee/dashboard" element={<ProtectedRoute><TrusteeIndex /></ProtectedRoute>} />
+          <Route path="/trustee/documents" element={<ProtectedRoute><TrusteeDocumentsPage /></ProtectedRoute>} />
+          <Route path="/trustee/settings" element={<ProtectedRoute><TrusteeSettingsPage /></ProtectedRoute>} />
+          <Route path="/trustee/activity" element={<ProtectedRoute><TrusteeActivityPage /></ProtectedRoute>} />
+          <Route path="/trustee/analytics" element={<ProtectedRoute><TrusteeAnalyticsPage /></ProtectedRoute>} />
+          <Route path="/trustee/profile" element={<ProtectedRoute><TrusteeProfilePage /></ProtectedRoute>} />
+          <Route path="/trustee/crm" element={<ProtectedRoute><TrusteeCRMPage /></ProtectedRoute>} />
+          <Route path="/document/:documentId" element={<ProtectedRoute><TrusteeDocumentViewerPage /></ProtectedRoute>} />
+          <Route path="/trustee/document/:documentId" element={<ProtectedRoute><TrusteeDocumentViewerPage /></ProtectedRoute>} />
+          <Route path="/client/:clientId" element={<ProtectedRoute><TrusteeClientViewerPage /></ProtectedRoute>} />
+          <Route path="/trustee/client/:clientId" element={<ProtectedRoute><TrusteeClientViewerPage /></ProtectedRoute>} />
+          <Route path="/trustee/notifications" element={<ProtectedRoute><TrusteeNotificationsPage /></ProtectedRoute>} />
+          <Route path="/trustee/calendar" element={<ProtectedRoute><TrusteeCalendarPage /></ProtectedRoute>} />
+          <Route path="/trustee/converter" element={<ProtectedRoute><TrusteeConverterPage /></ProtectedRoute>} />
+          <Route path="/trustee/efiling" element={<ProtectedRoute><TrusteeEFilingPage /></ProtectedRoute>} />
+          <Route path="/trustee/support" element={<ProtectedRoute><TrusteeSupport /></ProtectedRoute>} />
+          <Route path="/trustee/branding" element={<ProtectedRoute><TrusteeConBrandingPage /></ProtectedRoute>} />
+          
+          {/* Client portal routes */}
+          <Route path="/client-portal/*" element={<ProtectedRoute><ClientPortal /></ProtectedRoute>} />
+          
+          {/* Auth routes */}
+          <Route path="/login" element={<PublicLayout><TrusteeLogin /></PublicLayout>} />
+          <Route path="/client-login" element={<PublicLayout><ClientLogin /></PublicLayout>} />
+        </Routes>
+      </AuthProvider>
+    </TrackingProvider>
   );
 }
 
