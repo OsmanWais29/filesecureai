@@ -210,12 +210,13 @@ export class OSBAnalysisService {
       console.log('Triggering DeepSeek analysis for document:', documentId);
       console.log('Custom prompt:', customPrompt);
 
-      // Validate and convert documentId parameter
+      // Validate and convert documentId parameter to string
       if (!documentId) {
         throw new Error('Invalid document ID provided');
       }
 
-      const documentIdString = String(documentId);
+      // Ensure documentId is converted to string properly
+      const documentIdString = typeof documentId === 'string' ? documentId : String(documentId);
 
       const { data, error } = await supabase.functions.invoke('enhanced-osb-analysis', {
         body: {
