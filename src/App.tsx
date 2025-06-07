@@ -4,7 +4,6 @@ import { Route, Routes } from 'react-router-dom';
 import { TrackingProvider } from './contexts/TrackingContext';
 import HomePage from './pages/HomePage';
 import DocumentsPage from './pages/DocumentsPage';
-import SettingsPage from './pages/SettingsPage';
 import ActivityPage from './pages/ActivityPage';
 import ClientsPage from './pages/ClientsPage';
 import TrusteeLogin from './pages/auth/TrusteeLogin';
@@ -51,6 +50,10 @@ import AuditTrailPage from './pages/audit/AuditTrailPage';
 // Import client portal
 import ClientPortal from './pages/ClientPortal';
 
+// Import Settings component wrapped with MainLayout
+import { MainLayout } from './components/layout/MainLayout';
+import Settings from './pages/Settings';
+
 function App() {
   return (
     <TrackingProvider>
@@ -61,7 +64,7 @@ function App() {
           <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
           <Route path="/documents" element={<ProtectedRoute><DocumentsPage /></ProtectedRoute>} />
           <Route path="/documents/:documentId" element={<ProtectedRoute><DocumentViewerPage /></ProtectedRoute>} />
-          <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><MainLayout><Settings /></MainLayout></ProtectedRoute>} />
           <Route path="/activity" element={<ProtectedRoute><ActivityPage /></ProtectedRoute>} />
           <Route path="/clients" element={<ProtectedRoute><ClientsPage /></ProtectedRoute>} />
           <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
