@@ -47,7 +47,7 @@ import TrusteeConBrandingPage from './pages/trustee/ConBrandingPage';
 
 // Import separate E-Filing and Audit Trail pages
 import EFilingPage from './pages/EFilingPage';
-import ProductionAudit from './pages/audit/ProductionAudit';
+import AuditTrailPage from './pages/audit/AuditTrailPage';
 
 // Import client portal
 import ClientPortal from './pages/ClientPortal';
@@ -72,7 +72,7 @@ function App() {
             <Route path="/SAFA" element={<ProtectedRoute><SAFAPage /></ProtectedRoute>} />
             <Route path="/crm" element={<ProtectedRoute><CRMPage /></ProtectedRoute>} />
             <Route path="/e-filing" element={<ProtectedRoute><EFilingPage /></ProtectedRoute>} />
-            <Route path="/audit" element={<ProtectedRoute><ProductionAudit /></ProtectedRoute>} />
+            <Route path="/audit" element={<ProtectedRoute><AuditTrailPage /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
             <Route path="/pdf-viewer-demo" element={<ProtectedRoute><PDFViewerDemo /></ProtectedRoute>} />
             <Route path="/testing" element={<ProtectedRoute><TestingPage /></ProtectedRoute>} />
@@ -102,7 +102,7 @@ function App() {
             
             {/* Auth routes */}
             <Route path="/login" element={<PublicLayout><TrusteeLogin /></PublicLayout>} />
-            <Route path="/client-login" element={<PublicLayout><ClientLogin /></PublicLayout>} />
+            <Route path="/client-login" element={<PublicLayout><ClientLogin /></PublicLogin>} />
           </Routes>
         </AuthProvider>
       </TrackingProvider>
