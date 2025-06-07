@@ -1,16 +1,17 @@
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSettings } from "@/hooks/useSettings";
 import { GeneralSettings } from "@/components/settings/GeneralSettings";
 import { SecuritySettings } from "@/components/settings/SecuritySettings";
 import { AccessControlSettings } from "@/components/settings/AccessControlSettings";
-import { useState } from "react";
+import { SettingsNavigation } from "@/components/settings/SettingsNavigation";
+import { SettingsLayout } from "@/components/settings/SettingsLayout";
 import { toast } from "sonner";
-import { Settings as SettingsIcon, Shield, Users, Database } from "lucide-react";
 
 const SettingsPage = () => {
-  const { settings, saveSettings, isLoading } = useSettings();
+  const { settings, saveSettings } = useSettings();
+  const [activeTab, setActiveTab] = useState("general");
   const [loading, setLoading] = useState(false);
 
   const handleSaveGeneral = async () => {
@@ -37,37 +38,10 @@ const SettingsPage = () => {
     }
   };
 
-  return (
-    <div className="container mx-auto py-8 space-y-8">
-      <div className="flex items-center gap-3">
-        <SettingsIcon className="h-8 w-8 text-primary" />
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Settings</h1>
-          <p className="text-muted-foreground">Manage your account settings and preferences.</p>
-        </div>
-      </div>
-
-      <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="general" className="flex items-center gap-2">
-            <SettingsIcon className="h-4 w-4" />
-            General
-          </TabsTrigger>
-          <TabsTrigger value="security" className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            Security
-          </TabsTrigger>
-          <TabsTrigger value="access-control" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Access Control
-          </TabsTrigger>
-          <TabsTrigger value="integrations" className="flex items-center gap-2">
-            <Database className="h-4 w-4" />
-            Integrations
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="general">
+  const getTabContent = () => {
+    switch (activeTab) {
+      case "general":
+        return (
           <Card>
             <CardHeader>
               <CardTitle>General Settings</CardTitle>
@@ -81,9 +55,10 @@ const SettingsPage = () => {
               />
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="security">
+        );
+      
+      case "security":
+        return (
           <Card>
             <CardHeader>
               <CardTitle>Security Settings</CardTitle>
@@ -97,13 +72,13 @@ const SettingsPage = () => {
               />
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="access-control">
-          <AccessControlSettings />
-        </TabsContent>
-
-        <TabsContent value="integrations">
+        );
+      
+      case "access-control":
+        return <AccessControlSettings />;
+      
+      case "integrations":
+        return (
           <Card>
             <CardHeader>
               <CardTitle>Integrations</CardTitle>
@@ -113,9 +88,48 @@ const SettingsPage = () => {
               <p className="text-muted-foreground">Integration settings will be available soon.</p>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+        );
+      
+      default:
+        return null;
+    }
+  };
+
+  const getTabTitle = () => {
+    const item = [
+      { id: "general", title: "General Settings" },
+      { id: "security", title: "Security Settings" },
+      { id: "access-control", title: "Access Control" },
+      { id: "integrations", title: "Integrations" }
+    ].find(item => item.id === activeTab);
+    
+    return item?.title || "Settings";
+  };
+
+  const getTabDescription = () => {
+    const descriptions = {
+      "general": "Configure your basic application preferences and regional settings",
+      "security": "Manage authentication, encryption, and security preferences",
+      "access-control": "Control user permissions, roles, and access rights",
+      "integrations": "Connect and manage third-party service integrations"
+    };
+    
+    return descriptions[activeTab as keyof typeof descriptions] || "Manage your account settings and preferences";
+  };
+
+  return (
+    <SettingsLayout
+      navigation={
+        <SettingsNavigation 
+          activeTab={activeTab} 
+          onTabChange={setActiveTab} 
+        />
+      }
+      title={getTabTitle()}
+      description={getTabDescription()}
+    >
+      {getTabContent()}
+    </SettingsLayout>
   );
 };
 
