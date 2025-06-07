@@ -167,7 +167,7 @@ export class OSBAnalysisService {
       // Test document analysis with proper type handling - fix the TypeScript error
       const analysisResult = await supabase.functions.invoke('analyze-document', {
         body: {
-          documentId: String(documentId), // Ensure it's a string
+          documentId: documentId, // documentId is already validated as string above
           extractionMode: 'comprehensive',
           includeRegulatory: true
         }
@@ -217,7 +217,7 @@ export class OSBAnalysisService {
 
       const { data, error } = await supabase.functions.invoke('enhanced-osb-analysis', {
         body: {
-          documentId: String(documentId), // Ensure it's a string
+          documentId: documentId, // documentId is already validated as string above
           analysisType: 'deepseek_reasoning_reinforcement',
           customPrompt: customPrompt,
           includeRegulatory: true,
