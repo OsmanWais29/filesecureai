@@ -164,10 +164,10 @@ export class OSBAnalysisService {
 
       console.log('PDF URL generated:', urlData.publicUrl);
 
-      // Test document analysis with proper type handling
+      // Test document analysis with proper type handling - fix the TypeScript error
       const analysisResult = await supabase.functions.invoke('analyze-document', {
         body: {
-          documentId: documentId,
+          documentId: String(documentId), // Ensure it's a string
           extractionMode: 'comprehensive',
           includeRegulatory: true
         }
@@ -217,7 +217,7 @@ export class OSBAnalysisService {
 
       const { data, error } = await supabase.functions.invoke('enhanced-osb-analysis', {
         body: {
-          documentId: documentId,
+          documentId: String(documentId), // Ensure it's a string
           analysisType: 'deepseek_reasoning_reinforcement',
           customPrompt: customPrompt,
           includeRegulatory: true,

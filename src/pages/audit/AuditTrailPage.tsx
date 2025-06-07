@@ -1,12 +1,14 @@
 
 import React from 'react';
-import { AuditTrail } from '@/components/audit/AuditTrail';
+import { AuditTrailDashboard } from '@/components/e-filing/AuditTrail/AuditTrailDashboard';
 import { MainLayout } from '@/components/layout/MainLayout';
 
 const AuditTrailPage: React.FC = () => {
   return (
     <MainLayout>
-      <AuditTrail />
+      <div className="h-full p-6">
+        <AuditTrailDashboard />
+      </div>
     </MainLayout>
   );
 };
