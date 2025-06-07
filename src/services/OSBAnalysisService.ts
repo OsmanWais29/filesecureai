@@ -205,14 +205,14 @@ export class OSBAnalysisService {
       console.log('Triggering DeepSeek analysis for document:', documentId);
       console.log('Custom prompt:', customPrompt);
 
-      // Ensure documentId is properly validated and typed
+      // Validate documentId parameter
       if (!documentId || typeof documentId !== 'string') {
         throw new Error('Invalid document ID provided');
       }
 
       const { data, error } = await supabase.functions.invoke('enhanced-osb-analysis', {
         body: {
-          documentId: documentId,
+          documentId,
           analysisType: 'deepseek_reasoning_reinforcement',
           customPrompt: customPrompt,
           includeRegulatory: true,

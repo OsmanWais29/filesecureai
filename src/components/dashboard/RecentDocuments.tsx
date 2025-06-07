@@ -1,142 +1,70 @@
 
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { FileText, Clock } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
+import React, { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { Card, CardContent } from '@/components/ui/card';
+import { FileText, Calendar, User } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { formatDistanceToNow } from 'date-fns';
 
 interface Document {
   id: string;
   title: string;
   type: string;
   created_at: string;
-  last_accessed: string;
-  client_name?: string;
+  storage_path: string;
+  user_id: string;
+  metadata?: {
+    clientName?: string;
+  };
 }
 
 interface RecentDocumentsProps {
   onDocumentSelect: (documentId: string) => void;
 }
 
-export const RecentDocuments = ({ onDocumentSelect }: RecentDocumentsProps) => {
+export const RecentDocuments: React.FC<RecentDocumentsProps> = ({ onDocumentSelect }) => {
   const [documents, setDocuments] = useState<Document[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchRecentDocuments = async () => {
-      try {
-        setIsLoading(true);
-        
-        // Get recent document access history
-        const { data: accessHistory, error: accessError } = await supabase
-          .from('document_access_history')
-          .select('document_id, accessed_at')
-          .order('accessed_at', { ascending: false })
-          .limit(10);
-          
-        if (accessError) throw accessError;
-        
-        if (!accessHistory || accessHistory.length === 0) {
-          // Fall back to recent documents if no access history
-          const { data: recentDocs, error: recentError } = await supabase
-            .from('documents')
-            .select('*')
-            .eq('is_folder', false)
-            .order('created_at', { ascending: false })
-            .limit(10);
-            
-          if (recentError) throw recentError;
-          
-          const docsWithAccess = recentDocs?.map(doc => {
-            const metadata = doc.metadata as Record<string, any> || {};
-            return {
-              ...doc,
-              last_accessed: doc.updated_at || doc.created_at,
-              client_name: metadata?.client_name
-            };
-          }) || [];
-          
-          setDocuments(docsWithAccess);
-          setIsLoading(false);
-          return;
-        }
-        
-        // Get documents from the access history
-        const documentIds = accessHistory.map(record => record.document_id);
-        const { data: docs, error: docsError } = await supabase
-          .from('documents')
-          .select('*')
-          .in('id', documentIds)
-          .eq('is_folder', false);
-          
-        if (docsError) throw docsError;
-        
-        // Map the access time to each document
-        const accessedDocs = docs?.map(doc => {
-          const accessRecord = accessHistory.find(record => record.document_id === doc.id);
-          const metadata = doc.metadata as Record<string, any> || {};
-          return {
-            ...doc,
-            last_accessed: accessRecord?.accessed_at || doc.updated_at || doc.created_at,
-            client_name: metadata?.client_name
-          };
-        }) || [];
-        
-        // Sort by last accessed time
-        accessedDocs.sort((a, b) => {
-          return new Date(b.last_accessed).getTime() - new Date(a.last_accessed).getTime();
-        });
-        
-        setDocuments(accessedDocs);
-      } catch (error) {
-        console.error('Error fetching recent documents:', error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load recent documents"
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
     fetchRecentDocuments();
-  }, [toast]);
+  }, []);
 
-  const getDocumentTypeColor = (type: string) => {
-    switch (type?.toLowerCase()) {
-      case 'pdf':
-        return 'bg-red-100 text-red-800';
-      case 'excel':
-      case 'xlsx':
-      case 'xls':
-        return 'bg-green-100 text-green-800';
-      case 'word':
-      case 'doc':
-      case 'docx':
-        return 'bg-blue-100 text-blue-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+  const fetchRecentDocuments = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('documents')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_folder', false)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (error) {
+        console.error('Error fetching documents:', error);
+        return;
+      }
+
+      setDocuments(data || []);
+    } catch (error) {
+      console.error('Error in fetchRecentDocuments:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (isLoading) {
+  if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {[...Array(6)].map((_, i) => (
-          <Card key={i}>
-            <CardContent className="p-4">
-              <div className="space-y-3">
-                <Skeleton className="h-6 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-                <Skeleton className="h-4 w-1/4" />
-              </div>
-            </CardContent>
-          </Card>
+      <div className="space-y-3">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="h-16 bg-muted rounded-lg animate-pulse" />
         ))}
       </div>
     );
@@ -144,62 +72,60 @@ export const RecentDocuments = ({ onDocumentSelect }: RecentDocumentsProps) => {
 
   if (documents.length === 0) {
     return (
-      <div className="text-center p-8 border border-dashed rounded-lg">
-        <FileText className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-        <h3 className="text-lg font-medium mb-2">No documents yet</h3>
-        <p className="text-muted-foreground mb-4">
-          Upload your first document to get started
-        </p>
-      </div>
+      <Card>
+        <CardContent className="p-6 text-center">
+          <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <p className="text-muted-foreground">No recent documents found</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Upload your first document to get started
+          </p>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {documents.map(doc => (
-        <Card
-          key={doc.id}
+    <div className="space-y-3">
+      {documents.map((document) => (
+        <Card 
+          key={document.id}
           className="hover:shadow-md transition-shadow cursor-pointer"
-          onClick={() => onDocumentSelect(doc.id)}
+          onClick={() => onDocumentSelect(document.id)}
         >
           <CardContent className="p-4">
-            <div className="space-y-2">
-              <div className="flex items-start justify-between">
-                <h3 className="font-medium truncate" title={doc.title}>
-                  {doc.title}
-                </h3>
-                <Badge 
-                  variant="outline" 
-                  className={`text-xs font-normal ${getDocumentTypeColor(doc.type)}`}
-                >
-                  {doc.type || 'Unknown'}
-                </Badge>
+            <div className="flex items-start justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <FileText className="h-5 w-5 text-primary" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-medium text-sm truncate">
+                    {document.title}
+                  </h3>
+                  <div className="flex items-center space-x-4 mt-1">
+                    <div className="flex items-center text-xs text-muted-foreground">
+                      <Calendar className="h-3 w-3 mr-1" />
+                      {formatDistanceToNow(new Date(document.created_at), { addSuffix: true })}
+                    </div>
+                    {document.metadata?.clientName && (
+                      <div className="flex items-center text-xs text-muted-foreground">
+                        <User className="h-3 w-3 mr-1" />
+                        {document.metadata.clientName}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-              
-              {doc.client_name && (
-                <p className="text-sm">
-                  Client: <span className="font-medium">{doc.client_name}</span>
-                </p>
-              )}
-              
-              <div className="flex items-center text-xs text-muted-foreground">
-                <Clock className="h-3 w-3 mr-1" />
-                Last accessed: {new Date(doc.last_accessed).toLocaleString()}
-              </div>
-              
-              <div className="pt-2">
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="w-full"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDocumentSelect(doc.id);
-                  }}
-                >
-                  Open Document
-                </Button>
-              </div>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDocumentSelect(document.id);
+                }}
+              >
+                View
+              </Button>
             </div>
           </CardContent>
         </Card>
