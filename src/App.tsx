@@ -20,9 +20,13 @@ import TestingPage from "./pages/TestingPage";
 import AnalyticsPage from './pages/AnalyticsPage';
 import ProfilePage from './pages/ProfilePage';
 import ConverterPage from './pages/ConverterPage';
-import SAFAPage from './pages/SAFAPage';
-import EFilingPage from './pages/EFilingPage';
 import NotificationsPage from './pages/NotificationsPage';
+
+// Import the correct SAFA page implementation
+import SAFAPage from './pages/SAFA/SAFAPage';
+
+// Import the correct CRM page
+import CRMPage from './pages/CRMPage';
 
 // Import trustee pages
 import TrusteeIndex from './pages/trustee/Index';
@@ -40,6 +44,10 @@ import TrusteeConverterPage from './pages/trustee/ConverterPage';
 import TrusteeEFilingPage from './pages/trustee/EFilingPage';
 import TrusteeSupport from './pages/trustee/Support';
 import TrusteeConBrandingPage from './pages/trustee/ConBrandingPage';
+
+// Import separate E-Filing and Audit Trail pages
+import EFilingPage from './pages/EFilingPage';
+import ProductionAudit from './pages/audit/ProductionAudit';
 
 // Import client portal
 import ClientPortal from './pages/ClientPortal';
@@ -62,7 +70,9 @@ function App() {
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/converter" element={<ProtectedRoute><ConverterPage /></ProtectedRoute>} />
             <Route path="/SAFA" element={<ProtectedRoute><SAFAPage /></ProtectedRoute>} />
+            <Route path="/crm" element={<ProtectedRoute><CRMPage /></ProtectedRoute>} />
             <Route path="/e-filing" element={<ProtectedRoute><EFilingPage /></ProtectedRoute>} />
+            <Route path="/audit" element={<ProtectedRoute><ProductionAudit /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
             <Route path="/pdf-viewer-demo" element={<ProtectedRoute><PDFViewerDemo /></ProtectedRoute>} />
             <Route path="/testing" element={<ProtectedRoute><TestingPage /></ProtectedRoute>} />
@@ -75,7 +85,6 @@ function App() {
             <Route path="/trustee/activity" element={<ProtectedRoute><TrusteeActivityPage /></ProtectedRoute>} />
             <Route path="/trustee/analytics" element={<ProtectedRoute><TrusteeAnalyticsPage /></ProtectedRoute>} />
             <Route path="/trustee/profile" element={<ProtectedRoute><TrusteeProfilePage /></ProtectedRoute>} />
-            <Route path="/crm" element={<ProtectedRoute><TrusteeCRMPage /></ProtectedRoute>} />
             <Route path="/trustee/crm" element={<ProtectedRoute><TrusteeCRMPage /></ProtectedRoute>} />
             <Route path="/document/:documentId" element={<ProtectedRoute><TrusteeDocumentViewerPage /></ProtectedRoute>} />
             <Route path="/trustee/document/:documentId" element={<ProtectedRoute><TrusteeDocumentViewerPage /></ProtectedRoute>} />

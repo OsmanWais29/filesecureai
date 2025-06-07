@@ -5,7 +5,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { 
   BrainCog, Bell, FileText, Home, MessageCircle, PieChart, Settings, 
-  User, Users, FileCheck, Menu, X, FileSearch, ChevronRight, ChevronLeft 
+  User, Users, FileCheck, Menu, X, FileSearch, ChevronRight, ChevronLeft, 
+  Activity, ShieldCheck
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -55,15 +56,16 @@ export const MainSidebar = () => {
     };
   }, [isCollapsed]);
 
-  // Navigation item definitions with updated paths
+  // Navigation item definitions with corrected paths and icons
   const navigationItems = [
     { icon: Home, label: "Home", path: "/" },
     { icon: FileText, label: "Documents", path: "/documents" },
     { icon: FileSearch, label: "Converter", path: "/converter" },
     { icon: MessageCircle, label: "SAFA", path: "/SAFA" },
     { icon: Users, label: "CRM", path: "/crm" },
-    { icon: BrainCog, label: "Smart Income Expense", path: "/activity" },
-    { icon: FileCheck, label: "E-Filing & Audit", path: "/e-filing" },
+    { icon: Activity, label: "Smart Income Expense", path: "/activity" },
+    { icon: FileCheck, label: "E-Filing", path: "/e-filing" },
+    { icon: ShieldCheck, label: "Audit Trail", path: "/audit" },
     { icon: PieChart, label: "Analytics", path: "/analytics" },
     { icon: Bell, label: "Notifications", path: "/notifications" },
   ];
