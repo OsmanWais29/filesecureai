@@ -116,7 +116,7 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
         .update({ 
           storage_path: filePath,
           metadata: {
-            ...documentData.metadata,
+            ...(documentData.metadata || {}),
             storageFullPath: filePath
           },
           ai_processing_status: isSpecialForm ? 'pending' : 'complete'
