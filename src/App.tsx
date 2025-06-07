@@ -19,6 +19,10 @@ import PDFViewerDemo from './pages/PDFViewerDemo';
 import TestingPage from "./pages/TestingPage";
 import AnalyticsPage from './pages/AnalyticsPage';
 import ProfilePage from './pages/ProfilePage';
+import ConverterPage from './pages/ConverterPage';
+import SAFAPage from './pages/SAFAPage';
+import EFilingPage from './pages/EFilingPage';
+import NotificationsPage from './pages/NotificationsPage';
 
 // Import trustee pages
 import TrusteeIndex from './pages/trustee/Index';
@@ -56,6 +60,10 @@ function App() {
             <Route path="/clients" element={<ProtectedRoute><ClientsPage /></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+            <Route path="/converter" element={<ProtectedRoute><ConverterPage /></ProtectedRoute>} />
+            <Route path="/SAFA" element={<ProtectedRoute><SAFAPage /></ProtectedRoute>} />
+            <Route path="/e-filing" element={<ProtectedRoute><EFilingPage /></ProtectedRoute>} />
+            <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
             <Route path="/pdf-viewer-demo" element={<ProtectedRoute><PDFViewerDemo /></ProtectedRoute>} />
             <Route path="/testing" element={<ProtectedRoute><TestingPage /></ProtectedRoute>} />
             

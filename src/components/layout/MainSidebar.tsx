@@ -55,7 +55,7 @@ export const MainSidebar = () => {
     };
   }, [isCollapsed]);
 
-  // Navigation item definitions with updated SAFA path
+  // Navigation item definitions with updated paths
   const navigationItems = [
     { icon: Home, label: "Home", path: "/" },
     { icon: FileText, label: "Documents", path: "/documents" },
@@ -63,7 +63,7 @@ export const MainSidebar = () => {
     { icon: MessageCircle, label: "SAFA", path: "/SAFA" },
     { icon: Users, label: "CRM", path: "/crm" },
     { icon: BrainCog, label: "Smart Income Expense", path: "/activity" },
-    { icon: FileCheck, label: "Audit Trail", path: "/e-filing" },
+    { icon: FileCheck, label: "E-Filing & Audit", path: "/e-filing" },
     { icon: PieChart, label: "Analytics", path: "/analytics" },
     { icon: Bell, label: "Notifications", path: "/notifications" },
   ];
