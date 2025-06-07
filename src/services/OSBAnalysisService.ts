@@ -159,10 +159,10 @@ export class OSBAnalysisService {
 
       console.log('PDF URL generated:', urlData.publicUrl);
 
-      // Test document analysis with proper type handling
+      // Test document analysis with proper type handling - fix the unknown type issue
       const analysisResult = await supabase.functions.invoke('analyze-document', {
         body: {
-          documentId: String(documentId),
+          documentId: String(documentId), // Ensure it's always a string
           extractionMode: 'comprehensive',
           includeRegulatory: true
         }

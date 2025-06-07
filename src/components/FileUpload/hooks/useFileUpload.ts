@@ -110,13 +110,17 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
       
       logger.info(`Document uploaded to storage path: ${filePath}`);
       
-      // Update document record with storage path and metadata
+      // Update document record with storage path and metadata - fix spread operator issue
+      const existingMetadata = documentData.metadata && typeof documentData.metadata === 'object' && documentData.metadata !== null 
+        ? documentData.metadata as Record<string, any>
+        : {};
+
       const { error: updateError } = await supabase
         .from('documents')
         .update({ 
           storage_path: filePath,
           metadata: {
-            ...(documentData.metadata || {}),
+            ...existingMetadata,
             storageFullPath: filePath
           },
           ai_processing_status: isSpecialForm ? 'pending' : 'complete'
