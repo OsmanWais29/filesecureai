@@ -205,9 +205,12 @@ export class OSBAnalysisService {
       console.log('Triggering DeepSeek analysis for document:', documentId);
       console.log('Custom prompt:', customPrompt);
 
+      // Ensure documentId is properly typed as string
+      const docId = String(documentId);
+
       const { data, error } = await supabase.functions.invoke('enhanced-osb-analysis', {
         body: {
-          documentId: String(documentId), // Explicit string conversion
+          documentId: docId,
           analysisType: 'deepseek_reasoning_reinforcement',
           customPrompt: customPrompt,
           includeRegulatory: true,
