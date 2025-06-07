@@ -28,6 +28,28 @@ export const RecentDocuments: React.FC<RecentDocumentsProps> = ({ onDocumentSele
 
   useEffect(() => {
     fetchRecentDocuments();
+    
+    // Set up real-time subscription for new documents
+    const subscription = supabase
+      .channel('recent-documents')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'documents',
+          filter: 'is_folder=eq.false'
+        },
+        () => {
+          // Refresh the list when new documents are added
+          fetchRecentDocuments();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
   }, []);
 
   const fetchRecentDocuments = async () => {
@@ -44,8 +66,9 @@ export const RecentDocuments: React.FC<RecentDocumentsProps> = ({ onDocumentSele
         .select('*')
         .eq('user_id', user.id)
         .eq('is_folder', false)
+        .not('storage_path', 'is', null) // Only show documents with actual files
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(10); // Increased from 5 to 10 for better visibility
 
       if (error) {
         console.error('Error fetching documents:', error);
@@ -124,6 +147,9 @@ export const RecentDocuments: React.FC<RecentDocumentsProps> = ({ onDocumentSele
                         {document.metadata.clientName}
                       </div>
                     )}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Status: {document.storage_path ? 'Ready' : 'Processing...'}
                   </div>
                 </div>
               </div>

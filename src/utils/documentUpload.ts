@@ -47,6 +47,7 @@ export const uploadDocumentToStorage = async (
         size: file.size,
         user_id: user.id,
         ai_processing_status: 'pending',
+        is_folder: false, // Ensure this is set for proper filtering
         metadata: {
           originalName: file.name,
           clientName: options.clientName,
@@ -68,6 +69,32 @@ export const uploadDocumentToStorage = async (
     }
 
     options.onProgress?.(100);
+
+    // Create notification for successful upload
+    try {
+      await supabase.functions.invoke('handle-notifications', {
+        body: {
+          action: 'create',
+          userId: user.id,
+          notification: {
+            title: 'Document Uploaded',
+            message: `"${file.name}" has been uploaded successfully`,
+            type: 'success',
+            category: 'file_activity',
+            priority: 'normal',
+            action_url: `/document/${documentData.id}`,
+            metadata: {
+              documentId: documentData.id,
+              fileName: file.name,
+              uploadedAt: new Date().toISOString()
+            }
+          }
+        }
+      });
+    } catch (notificationError) {
+      console.warn('Failed to create notification:', notificationError);
+      // Don't fail the upload if notification fails
+    }
 
     return {
       success: true,
