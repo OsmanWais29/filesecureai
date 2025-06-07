@@ -198,7 +198,7 @@ export class OSBAnalysisService {
    * Trigger DeepSeek AI analysis for a document with optional custom prompt
    */
   static async triggerDeepSeekAnalysis(
-    documentId: string | number, 
+    documentId: string, 
     customPrompt?: string
   ): Promise<{
     success: boolean;
@@ -210,17 +210,14 @@ export class OSBAnalysisService {
       console.log('Triggering DeepSeek analysis for document:', documentId);
       console.log('Custom prompt:', customPrompt);
 
-      // Validate and convert documentId parameter to string
-      if (!documentId) {
+      // Validate documentId parameter
+      if (!documentId || typeof documentId !== 'string' || documentId.trim() === '') {
         throw new Error('Invalid document ID provided');
       }
 
-      // Ensure documentId is converted to string properly
-      const documentIdString = typeof documentId === 'string' ? documentId : String(documentId);
-
       const { data, error } = await supabase.functions.invoke('enhanced-osb-analysis', {
         body: {
-          documentId: documentIdString,
+          documentId: documentId,
           analysisType: 'deepseek_reasoning_reinforcement',
           customPrompt: customPrompt,
           includeRegulatory: true,
