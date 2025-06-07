@@ -141,10 +141,8 @@ export class OSBAnalysisService {
     try {
       console.log('Testing PDF analysis for document:', documentId);
 
-      // Ensure documentId is a string and validate it
-      const validDocumentId = typeof documentId === 'string' ? documentId : String(documentId);
-      
-      if (!validDocumentId || validDocumentId.trim() === '') {
+      // Validate documentId parameter
+      if (!documentId || typeof documentId !== 'string' || documentId.trim() === '') {
         throw new Error('Invalid document ID provided');
       }
 
@@ -152,7 +150,7 @@ export class OSBAnalysisService {
       const { data: document, error: docError } = await supabase
         .from('documents')
         .select('storage_path, title')
-        .eq('id', validDocumentId)
+        .eq('id', documentId)
         .single();
 
       if (docError) {
@@ -169,7 +167,7 @@ export class OSBAnalysisService {
       // Test document analysis with proper type handling
       const analysisResult = await supabase.functions.invoke('analyze-document', {
         body: {
-          documentId: validDocumentId,
+          documentId: documentId,
           extractionMode: 'comprehensive',
           includeRegulatory: true
         }
