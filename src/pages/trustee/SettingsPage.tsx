@@ -6,9 +6,7 @@ import SettingsPage from "@/pages/SettingsPage";
 const TrusteeSettingsPage = () => {
   return (
     <MainLayout>
-      <div className="p-6">
-        <SettingsPage />
-      </div>
+      <SettingsPage />
     </MainLayout>
   );
 };

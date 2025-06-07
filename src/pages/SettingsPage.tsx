@@ -1,17 +1,17 @@
 
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useSettings } from "@/hooks/useSettings";
 import { GeneralSettings } from "@/components/settings/GeneralSettings";
 import { SecuritySettings } from "@/components/settings/SecuritySettings";
 import { AccessControlSettings } from "@/components/settings/AccessControlSettings";
-import { SettingsNavigation } from "@/components/settings/SettingsNavigation";
-import { SettingsLayout } from "@/components/settings/SettingsLayout";
 import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Settings as SettingsIcon, Shield, Users, Database } from "lucide-react";
 
 const SettingsPage = () => {
   const { settings, saveSettings } = useSettings();
-  const [activeTab, setActiveTab] = useState("general");
   const [loading, setLoading] = useState(false);
 
   const handleSaveGeneral = async () => {
@@ -38,10 +38,36 @@ const SettingsPage = () => {
     }
   };
 
-  const getTabContent = () => {
-    switch (activeTab) {
-      case "general":
-        return (
+  return (
+    <div className="container mx-auto p-6 max-w-4xl">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-foreground">Settings</h1>
+        <p className="text-muted-foreground mt-2">
+          Manage your account settings and preferences
+        </p>
+      </div>
+
+      <Tabs defaultValue="general" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="general" className="flex items-center gap-2">
+            <SettingsIcon className="h-4 w-4" />
+            General
+          </TabsTrigger>
+          <TabsTrigger value="security" className="flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            Security
+          </TabsTrigger>
+          <TabsTrigger value="access-control" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Access Control
+          </TabsTrigger>
+          <TabsTrigger value="integrations" className="flex items-center gap-2">
+            <Database className="h-4 w-4" />
+            Integrations
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="general" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>General Settings</CardTitle>
@@ -55,10 +81,9 @@ const SettingsPage = () => {
               />
             </CardContent>
           </Card>
-        );
-      
-      case "security":
-        return (
+        </TabsContent>
+
+        <TabsContent value="security" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Security Settings</CardTitle>
@@ -72,13 +97,13 @@ const SettingsPage = () => {
               />
             </CardContent>
           </Card>
-        );
-      
-      case "access-control":
-        return <AccessControlSettings />;
-      
-      case "integrations":
-        return (
+        </TabsContent>
+
+        <TabsContent value="access-control" className="space-y-6">
+          <AccessControlSettings />
+        </TabsContent>
+
+        <TabsContent value="integrations" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Integrations</CardTitle>
@@ -88,48 +113,9 @@ const SettingsPage = () => {
               <p className="text-muted-foreground">Integration settings will be available soon.</p>
             </CardContent>
           </Card>
-        );
-      
-      default:
-        return null;
-    }
-  };
-
-  const getTabTitle = () => {
-    const item = [
-      { id: "general", title: "General Settings" },
-      { id: "security", title: "Security Settings" },
-      { id: "access-control", title: "Access Control" },
-      { id: "integrations", title: "Integrations" }
-    ].find(item => item.id === activeTab);
-    
-    return item?.title || "Settings";
-  };
-
-  const getTabDescription = () => {
-    const descriptions = {
-      "general": "Configure your basic application preferences and regional settings",
-      "security": "Manage authentication, encryption, and security preferences",
-      "access-control": "Control user permissions, roles, and access rights",
-      "integrations": "Connect and manage third-party service integrations"
-    };
-    
-    return descriptions[activeTab as keyof typeof descriptions] || "Manage your account settings and preferences";
-  };
-
-  return (
-    <SettingsLayout
-      navigation={
-        <SettingsNavigation 
-          activeTab={activeTab} 
-          onTabChange={setActiveTab} 
-        />
-      }
-      title={getTabTitle()}
-      description={getTabDescription()}
-    >
-      {getTabContent()}
-    </SettingsLayout>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 
