@@ -162,7 +162,7 @@ export class OSBAnalysisService {
       // Test document analysis with proper type handling
       const analysisResult = await supabase.functions.invoke('analyze-document', {
         body: {
-          documentId: documentId,
+          documentId: String(documentId),
           extractionMode: 'comprehensive',
           includeRegulatory: true
         }
@@ -212,7 +212,7 @@ export class OSBAnalysisService {
 
       const { data, error } = await supabase.functions.invoke('enhanced-osb-analysis', {
         body: {
-          documentId,
+          documentId: String(documentId),
           analysisType: 'deepseek_reasoning_reinforcement',
           customPrompt: customPrompt,
           includeRegulatory: true,

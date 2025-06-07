@@ -63,11 +63,15 @@ export const uploadDocumentToStorage = async (
       throw docError;
     }
 
+    if (!documentData?.id) {
+      throw new Error('Failed to create document record');
+    }
+
     options.onProgress?.(100);
 
     return {
       success: true,
-      documentId: documentData.id
+      documentId: String(documentData.id)
     };
 
   } catch (error) {

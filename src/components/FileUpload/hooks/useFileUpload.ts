@@ -67,7 +67,7 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
       );
 
       // Create database record
-      const documentMetadata: any = {
+      const documentMetadata: Record<string, any> = {
         originalName: file.name,
         fileType: file.type,
         uploadedAt: new Date().toISOString()
@@ -90,11 +90,16 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
         throw documentError;
       }
       
-      logger.info(`Document record created with ID: ${documentData.id}`);
+      if (!documentData?.id) {
+        throw new Error('Failed to create document record');
+      }
+
+      const documentId = String(documentData.id);
+      logger.info(`Document record created with ID: ${documentId}`);
 
       // Prepare and upload file using a standardized format
       const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-      const filePath = `${user.id}/${documentData.id}/${cleanFileName}`;
+      const filePath = `${user.id}/${documentId}/${cleanFileName}`;
       
       // Upload to storage
       const { error: uploadError } = await uploadToStorage(file, user.id, filePath);
@@ -116,7 +121,7 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
           },
           ai_processing_status: isSpecialForm ? 'pending' : 'complete'
         })
-        .eq('id', documentData.id);
+        .eq('id', documentId);
 
       if (updateError) {
         throw updateError;
@@ -128,16 +133,15 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
         'Document Upload Started',
         `"${file.name}" has been uploaded and is being processed`,
         'info',
-        documentData.id,
+        documentId,
         file.name,
         'upload_complete'
       );
       
       // Trigger document analysis for special forms or Excel files
       if (isSpecialForm || isExcel) {
-        logger.info(`Initiating document analysis for ${documentData.id}`);
-        // Fix: Remove the boolean flag that was causing the error (too many arguments)
-        await triggerDocumentAnalysis(documentData.id, file.name, isSpecialForm);
+        logger.info(`Initiating document analysis for ${documentId}`);
+        await triggerDocumentAnalysis(documentId, file.name, isSpecialForm);
       }
       
       // Wait for processing simulation to complete
@@ -145,8 +149,8 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
 
       // Call upload complete callback
       if (onUploadComplete) {
-        logger.info(`Calling onUploadComplete with document ID: ${documentData.id}`);
-        await onUploadComplete(documentData.id);
+        logger.info(`Calling onUploadComplete with document ID: ${documentId}`);
+        await onUploadComplete(documentId);
       }
 
       // Create final notification
@@ -155,7 +159,7 @@ export const useFileUpload = (onUploadComplete: (documentId: string) => Promise<
         'Document Processing Complete',
         `"${file.name}" has been fully processed`,
         'success',
-        documentData.id,
+        documentId,
         file.name,
         'complete'
       );

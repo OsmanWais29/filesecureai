@@ -52,7 +52,18 @@ export const RecentDocuments: React.FC<RecentDocumentsProps> = ({ onDocumentSele
         return;
       }
 
-      setDocuments(data || []);
+      // Properly type the response data
+      const typedDocuments: Document[] = (data || []).map(doc => ({
+        id: String(doc.id),
+        title: String(doc.title),
+        type: String(doc.type || 'document'),
+        created_at: String(doc.created_at),
+        storage_path: String(doc.storage_path || ''),
+        user_id: String(doc.user_id),
+        metadata: doc.metadata as { clientName?: string } || {}
+      }));
+
+      setDocuments(typedDocuments);
     } catch (error) {
       console.error('Error in fetchRecentDocuments:', error);
     } finally {
