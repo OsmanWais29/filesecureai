@@ -40,7 +40,7 @@ export class OSBTestingService {
       // Test document analysis with proper type handling
       const analysisResult = await supabase.functions.invoke('analyze-document', {
         body: {
-          documentId: documentId, // documentId is already validated as string above
+          documentId: documentId as string, // Explicit type assertion since we validated it above
           extractionMode: 'comprehensive',
           includeRegulatory: true
         }
