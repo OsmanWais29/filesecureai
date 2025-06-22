@@ -40,7 +40,7 @@ export class OSBTestingService {
       // Test document analysis - fix the error handling
       const analysisResult = await supabase.functions.invoke('analyze-document', {
         body: {
-          documentId: documentId,
+          documentId: documentId as string,
           extractionMode: 'comprehensive',
           includeRegulatory: true
         }
@@ -52,7 +52,7 @@ export class OSBTestingService {
         pdfAccessible: true,
         extractionSuccess: !analysisResult.error,
         analysisSuccess: analysisResult.data?.success || false,
-        error: analysisResult.error ? (analysisResult.error.message || analysisResult.error.toString()) : undefined
+        error: analysisResult.error ? (typeof analysisResult.error === 'string' ? analysisResult.error : analysisResult.error.message || String(analysisResult.error)) : undefined
       };
 
     } catch (error) {
