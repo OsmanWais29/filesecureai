@@ -50,7 +50,7 @@ export const GenerateBookingLink = () => {
       
       toast.success(`An email with booking instructions has been sent to ${clientName} at ${clientEmail}`);
       
-      logger.info("Sent booking email to:", clientEmail, "for case:", caseNumber);
+      logger.info(`Sent booking email to: ${clientEmail} for case: ${caseNumber}`);
       
       // Reset form
       setClientEmail("");
