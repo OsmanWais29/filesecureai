@@ -1,46 +1,65 @@
 
-export function formatDate(dateString: string): string {
-  if (!dateString) return "Unknown date";
+export const formatDate = (dateString: string | Date): string => {
+  if (!dateString) return 'Unknown';
   
   try {
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Invalid Date';
     
-    // Check if the date is valid
-    if (isNaN(date.getTime())) {
-      return "Invalid date";
-    }
-    
-    // Get current date for comparison
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
     
-    // Format date part
-    let datePart: string;
-    
-    if (date >= today) {
-      datePart = "Today";
-    } else if (date >= yesterday) {
-      datePart = "Yesterday";
-    } else {
-      // Use locale date formatting
-      datePart = date.toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
+    // Less than a minute
+    if (diffInSeconds < 60) {
+      return 'Just now';
     }
     
-    // Format time part
-    const timePart = date.toLocaleTimeString(undefined, {
+    // Less than an hour
+    if (diffInSeconds < 3600) {
+      const minutes = Math.floor(diffInSeconds / 60);
+      return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+    }
+    
+    // Less than a day
+    if (diffInSeconds < 86400) {
+      const hours = Math.floor(diffInSeconds / 3600);
+      return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    }
+    
+    // Less than a week
+    if (diffInSeconds < 604800) {
+      const days = Math.floor(diffInSeconds / 86400);
+      return `${days} day${days > 1 ? 's' : ''} ago`;
+    }
+    
+    // Format as date
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'Invalid Date';
+  }
+};
+
+export const formatDateTime = (dateString: string | Date): string => {
+  if (!dateString) return 'Unknown';
+  
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Invalid Date';
+    
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
     });
-    
-    return `${datePart} at ${timePart}`;
   } catch (error) {
-    console.error("Error formatting date:", error);
-    return dateString || "Unknown date";
+    console.error('Error formatting datetime:', error);
+    return 'Invalid Date';
   }
-}
+};

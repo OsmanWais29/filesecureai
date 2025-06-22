@@ -1,22 +1,29 @@
 
 import React from 'react';
+import { cn } from '@/lib/utils';
 
 interface LoadingSpinnerProps {
   size?: 'small' | 'medium' | 'large';
   className?: string;
 }
 
-export const LoadingSpinner = ({ size = 'medium', className = '' }: LoadingSpinnerProps) => {
-  // Map size to dimensions
-  const dimensions = {
-    small: 'w-4 h-4',
-    medium: 'w-6 h-6',
-    large: 'w-10 h-10'
-  }[size];
+export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
+  size = 'medium', 
+  className 
+}) => {
+  const sizeClasses = {
+    small: 'h-4 w-4',
+    medium: 'h-8 w-8', 
+    large: 'h-12 w-12'
+  };
 
   return (
-    <div className={`flex items-center justify-center ${className}`}>
-      <div className={`${dimensions} animate-spin rounded-full border-2 border-t-transparent border-blue-600`}></div>
-    </div>
+    <div
+      className={cn(
+        'animate-spin rounded-full border-2 border-gray-300 border-t-primary',
+        sizeClasses[size],
+        className
+      )}
+    />
   );
 };

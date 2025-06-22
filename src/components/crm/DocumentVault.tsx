@@ -1,163 +1,163 @@
+
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/lib/supabase";
-import { DocumentStats } from "./DocumentStats";
-import { DocumentUpload } from "./DocumentUpload";
-import { DocumentList } from "./DocumentList";
 import { Button } from "@/components/ui/button";
-import { FolderSync, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { mergeClientFolders } from "@/utils/documents/mergeClientFolders";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { 
+  FileText, 
+  Upload, 
+  Search, 
+  Eye,
+  Download,
+  AlertTriangle,
+  CheckCircle,
+  Clock
+} from "lucide-react";
 
 interface Document {
   id: string;
-  title: string;
-  status: string;
-  created_at: string;
+  name: string;
+  type: string;
+  status: 'pending' | 'reviewed' | 'approved' | 'rejected';
+  uploadDate: string;
+  size: string;
+  riskLevel: 'low' | 'medium' | 'high';
 }
 
-// Type guard to ensure proper Document type
-const ensureDocumentType = (doc: unknown): Document => {
-  const docObj = doc as Record<string, any>;
-  return {
-    id: String(docObj.id || ''),
-    title: String(docObj.title || 'Untitled'),
-    status: String(docObj.status || 'pending'),
-    created_at: String(docObj.created_at || new Date().toISOString())
-  };
-};
-
 export const DocumentVault = () => {
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [clientName, setClientName] = useState("");
-  const [isMerging, setIsMerging] = useState(false);
-  const { toast } = useToast();
+  const [searchTerm, setSearchTerm] = useState("");
+  
+  const documents: Document[] = [
+    {
+      id: "1",
+      name: "Consumer Proposal - Form 47",
+      type: "Legal Document",
+      status: "approved",
+      uploadDate: "2024-06-20",
+      size: "2.3 MB",
+      riskLevel: "low"
+    },
+    {
+      id: "2", 
+      name: "Financial Statement",
+      type: "Financial",
+      status: "pending",
+      uploadDate: "2024-06-19",
+      size: "1.8 MB",
+      riskLevel: "medium"
+    },
+    {
+      id: "3",
+      name: "Bankruptcy Assignment",
+      type: "Legal Document", 
+      status: "reviewed",
+      uploadDate: "2024-06-18",
+      size: "3.1 MB",
+      riskLevel: "high"
+    }
+  ];
 
-  useEffect(() => {
-    fetchDocuments();
-    subscribeToDocumentUpdates();
-  }, []);
-
-  const fetchDocuments = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('documents')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      const typedDocuments = (data || []).map(ensureDocumentType);
-      setDocuments(typedDocuments);
-    } catch (error) {
-      console.error('Error fetching documents:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to fetch documents"
-      });
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'approved': return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'pending': return <Clock className="h-4 w-4 text-yellow-500" />;
+      case 'rejected': return <AlertTriangle className="h-4 w-4 text-red-500" />;
+      default: return <Eye className="h-4 w-4 text-blue-500" />;
     }
   };
 
-  const subscribeToDocumentUpdates = () => {
-    const channel = supabase
-      .channel('document_updates')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'documents'
-        },
-        (payload) => {
-          console.log('Document update:', payload);
-          fetchDocuments();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  };
-
-  const handleMergeFolders = async () => {
-    if (!clientName.trim()) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Please enter a client name"
-      });
-      return;
-    }
-
-    setIsMerging(true);
-    try {
-      const user = await supabase.auth.getUser();
-      if (user.error) throw user.error;
-      
-      const success = await mergeClientFolders(clientName, user.data.user?.id || '');
-      
-      if (success) {
-        toast({
-          title: "Success",
-          description: `Folders for client "${clientName}" have been merged`
-        });
-        setClientName("");
-        fetchDocuments();
-      }
-    } catch (error) {
-      console.error('Error merging folders:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to merge folders"
-      });
-    } finally {
-      setIsMerging(false);
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'approved': return 'success';
+      case 'pending': return 'warning';
+      case 'rejected': return 'destructive';
+      default: return 'secondary';
     }
   };
+
+  const getRiskBadgeVariant = (risk: string) => {
+    switch (risk) {
+      case 'high': return 'destructive';
+      case 'medium': return 'warning';
+      case 'low': return 'success';
+      default: return 'secondary';
+    }
+  };
+
+  const filteredDocuments = documents.filter(doc =>
+    doc.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Secure Document Vault</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            <DocumentStats pendingCount={documents.filter(d => d.status === 'pending').length} />
-            
-            {/* Folder Management Tools */}
-            <Card className="p-4 bg-muted/50">
-              <h3 className="text-sm font-medium mb-2">Folder Management</h3>
-              <div className="flex items-center gap-2">
-                <Input
-                  placeholder="Enter client name"
-                  value={clientName}
-                  onChange={(e) => setClientName(e.target.value)}
-                  className="max-w-xs"
-                />
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleMergeFolders}
-                  disabled={isMerging || !clientName.trim()}
-                >
-                  <FolderSync className="h-4 w-4 mr-2" />
-                  {isMerging ? "Merging..." : "Merge Folders"}
-                </Button>
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Document Vault
+          </CardTitle>
+          <Button size="sm" className="gap-2">
+            <Upload className="h-4 w-4" />
+            Upload
+          </Button>
+        </div>
+        
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input 
+            placeholder="Search documents..." 
+            className="pl-10"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </CardHeader>
+      
+      <CardContent>
+        <ScrollArea className="h-[400px]">
+          <div className="space-y-3">
+            {filteredDocuments.map((doc) => (
+              <div key={doc.id} className="border rounded-lg p-3 hover:bg-gray-50 transition-colors">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex-1">
+                    <h4 className="font-medium text-sm">{doc.name}</h4>
+                    <p className="text-xs text-gray-600 mt-1">{doc.type} • {doc.size}</p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {getStatusIcon(doc.status)}
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex gap-2">
+                    <Badge variant={getStatusBadgeVariant(doc.status)} className="text-xs">
+                      {doc.status}
+                    </Badge>
+                    <Badge variant={getRiskBadgeVariant(doc.riskLevel)} className="text-xs">
+                      {doc.riskLevel} risk
+                    </Badge>
+                  </div>
+                  
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="sm">
+                      <Eye className="h-3 w-3" />
+                    </Button>
+                    <Button variant="ghost" size="sm">
+                      <Download className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="mt-2 text-xs text-gray-500">
+                  Uploaded: {doc.uploadDate}
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Use this tool to merge duplicate folders for the same client.
-              </p>
-            </Card>
-            
-            <DocumentUpload />
-            <DocumentList documents={documents} />
+            ))}
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </ScrollArea>
+      </CardContent>
+    </Card>
   );
 };
