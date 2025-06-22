@@ -48,9 +48,7 @@ export const GenerateBookingLink = () => {
       // For now, we'll simulate sending the email
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      toast.success("Booking email sent to client", {
-        description: `An email with booking instructions has been sent to ${clientName} at ${clientEmail}`
-      });
+      toast.success(`An email with booking instructions has been sent to ${clientName} at ${clientEmail}`);
       
       logger.info("Sent booking email to:", clientEmail, "for case:", caseNumber);
       

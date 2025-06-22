@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { FolderNavigation } from './FolderNavigation';
 import { useCreateFolderStructure } from './hooks/useCreateFolderStructure';
 import { createDocumentHierarchy } from './utils/documentUtils';
-import { convertDocumentListToClientDocument } from '@/utils/typeGuards';
+import { convertToClientDocument } from '@/utils/typeGuards';
 import { Document as DocumentListDocument } from '@/components/DocumentList/types';
 import { Document } from '@/types/client';
 
@@ -19,7 +19,7 @@ export const EnhancedFolderTab = ({
   onRefresh
 }: EnhancedFolderTabProps) => {
   // Convert DocumentList documents to client documents
-  const convertedDocuments: Document[] = documents.map(convertDocumentListToClientDocument);
+  const convertedDocuments: Document[] = documents.map(doc => convertToClientDocument(doc));
   
   // Setup hierarchy for the document tree
   const processedDocuments = createDocumentHierarchy(convertedDocuments);

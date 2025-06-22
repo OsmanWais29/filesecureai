@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
@@ -95,8 +96,7 @@ export const useFileOperations = (storagePath: string, title?: string) => {
         setPublicUrl(url);
         toast({
           title: "Preview Refreshed",
-          description: "Document preview has been refreshed",
-          duration: 2000
+          description: "Document preview has been refreshed"
         });
       } catch (err: any) {
         console.error('Error during refresh:', err);
