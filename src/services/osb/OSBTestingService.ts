@@ -37,10 +37,10 @@ export class OSBTestingService {
 
       console.log('PDF URL generated:', urlData.publicUrl);
 
-      // Test document analysis
+      // Test document analysis - remove the type assertion
       const analysisResult = await supabase.functions.invoke('analyze-document', {
         body: {
-          documentId: documentId as string,
+          documentId: documentId,
           extractionMode: 'comprehensive',
           includeRegulatory: true
         }

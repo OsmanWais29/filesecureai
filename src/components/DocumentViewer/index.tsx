@@ -1,18 +1,13 @@
 
 import { useEffect, useMemo } from "react";
-import DocumentPreview from "./DocumentPreview";
 import { useDocumentViewer } from "./hooks/useDocumentViewer";
-import { Sidebar } from "./Sidebar";
-import { CollaborationPanel } from "./CollaborationPanel";
-import { ViewerLayout } from "./layout/ViewerLayout";
 import { ViewerLoadingState } from "./components/ViewerLoadingState";
 import { ViewerErrorState } from "./components/ViewerErrorState";
 import { ViewerNotFoundState } from "./components/ViewerNotFoundState";
+import { EnhancedDocumentLayout } from "./EnhancedDocumentLayout";
 import { isDocumentForm47 } from "./utils/documentTypeUtils";
-import { TaskManager } from "./TaskManager";
-import { VersionTab } from "./VersionTab";
 import { debugTiming, isDebugMode } from "@/utils/debugMode";
-import { DocumentDetails, Risk } from "./types";
+import { DocumentDetails } from "./types";
 
 interface DocumentViewerProps {
   documentId: string;
@@ -51,12 +46,6 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
       onLoadFailure();
     }
   }, [loadingError, onLoadFailure]);
-
-  // Function to handle document updates (like comments added or analysis completed)
-  const handleDocumentUpdated = () => {
-    console.log("Document updated, refreshing viewer...");
-    handleRefresh();
-  };
 
   // For Form 47, we create a mock document if needed
   const form47Document = useMemo(() => {
@@ -106,40 +95,11 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
 
   // Special handling for Form 47
   if (isForm47 && !document && form47Document) {
-    // Use the mock document for Form 47
     return (
       <div className="h-full overflow-hidden rounded-lg shadow-sm border border-border/20" key={componentKey}>
-        <ViewerLayout
-          isForm47={true}
-          documentTitle={documentTitle || "Form 47 - Consumer Proposal"}
-          documentType="form"
-          sidebar={
-            <Sidebar document={form47Document} onDeadlineUpdated={handleDocumentUpdated} />
-          }
-          mainContent={
-            <DocumentPreview 
-              storagePath="sample-documents/form-47-consumer-proposal.pdf" 
-              title={documentTitle || "Form 47 - Consumer Proposal"}
-              documentId="form47"
-              bypassAnalysis={true}
-              key={`preview-form47`}
-            />
-          }
-          collaborationPanel={
-            <CollaborationPanel document={form47Document} onCommentAdded={handleDocumentUpdated} />
-          }
-          taskPanel={
-            <TaskManager 
-              documentId="form47" 
-              onTaskUpdate={handleDocumentUpdated} 
-            />
-          }
-          versionPanel={
-            <VersionTab 
-              documentId="form47"
-              versions={[]}
-            />
-          }
+        <EnhancedDocumentLayout 
+          document={form47Document} 
+          documentId="form47"
         />
       </div>
     );
@@ -153,56 +113,11 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
     return <ViewerNotFoundState key={`${componentKey}-not-found`} />;
   }
 
-  // If isForm47 is explicitly passed as prop, use that, otherwise check from document
-  const isForm47Document = isForm47 || isDocumentForm47(document);
-  // Use passed documentTitle if available, otherwise use the one from document
-  const displayTitle = documentTitle || document.title;
-  const hasValidAnalysis = document.analysis && document.analysis.length > 0 && document.analysis?.[0]?.content?.extracted_info;
-
-  // Ensure versions have storage_path by adding an empty string for any missing paths
-  const adaptVersions = (versions = []) => {
-    return versions.map(version => ({
-      ...version,
-      storage_path: version.storage_path || ''
-    }));
-  };
-
   return (
     <div className="h-full overflow-hidden rounded-lg shadow-sm border border-border/20" key={componentKey}>
-      <ViewerLayout
-        isForm47={isForm47Document}
-        documentTitle={displayTitle}
-        documentType={document.type}
+      <EnhancedDocumentLayout 
+        document={document} 
         documentId={documentId}
-        hasAnalysis={Boolean(hasValidAnalysis)}
-        onAnalysisComplete={handleDocumentUpdated}
-        sidebar={
-          <Sidebar document={document} onDeadlineUpdated={handleDocumentUpdated} />
-        }
-        mainContent={
-          <DocumentPreview 
-            storagePath={document.storage_path} 
-            title={displayTitle}
-            documentId={documentId}
-            bypassAnalysis={bypassProcessing || isDebugMode()}
-            key={`preview-${documentId}`}
-          />
-        }
-        collaborationPanel={
-          <CollaborationPanel document={document} onCommentAdded={handleDocumentUpdated} />
-        }
-        taskPanel={
-          <TaskManager 
-            documentId={documentId} 
-            onTaskUpdate={handleDocumentUpdated} 
-          />
-        }
-        versionPanel={
-          <VersionTab 
-            documentId={documentId}
-            versions={adaptVersions(document.versions)}
-          />
-        }
       />
     </div>
   );
