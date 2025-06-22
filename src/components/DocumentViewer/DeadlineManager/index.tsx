@@ -23,14 +23,12 @@ export const DeadlineManager: React.FC<DeadlineManagerProps> = ({ document, onDe
         if (hoursDiff <= 24 && hoursDiff > 23) {
           toast({
             title: "24 Hour Alert",
-            description: `Alert: ${deadline.title} must be done in 24 hours`,
-            duration: 10000,
+            description: `Alert: ${deadline.title} must be done in 24 hours`
           });
         } else if (hoursDiff <= 4 && hoursDiff > 3) {
           toast({
             title: "4 Hour Alert",
-            description: `Alert: ${deadline.title} must be done in 4 hours`,
-            duration: 10000,
+            description: `Alert: ${deadline.title} must be done in 4 hours`
           });
         }
       });

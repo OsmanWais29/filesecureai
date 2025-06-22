@@ -12,7 +12,7 @@ import {
   standardizeClientName, 
   getOrCreateClientRecord 
 } from "@/utils/documents/clientUtils";
-import { convertToClientDocument, convertToClientProfile, safeStringCast } from "@/utils/typeGuards";
+import { convertToClientDocument, convertToClientProfile, safeStringCast, convertDocumentArray } from "@/utils/typeGuards";
 
 /**
  * Processes client documents and returns client data and documents
@@ -32,7 +32,7 @@ export const processClientDocuments = async (
     let clientDocs: Document[] = [];
     try {
       const rawClientDocs = await fetchClientDocuments(clientId, searchClientId);
-      clientDocs = Array.isArray(rawClientDocs) ? rawClientDocs.map(convertToClientDocument).filter(doc => doc.id && doc.title) : [];
+      clientDocs = convertDocumentArray(rawClientDocs);
       
       // Improve organization of retrieved documents
       if (clientDocs && clientDocs.length > 0) {
@@ -53,7 +53,7 @@ export const processClientDocuments = async (
             
             // Merge document results, avoiding duplicates
             if (rawAdditionalDocs && rawAdditionalDocs.length > 0) {
-              const additionalDocs = Array.isArray(rawAdditionalDocs) ? rawAdditionalDocs.map(convertToClientDocument).filter(doc => doc.id && doc.title) : [];
+              const additionalDocs = convertDocumentArray(rawAdditionalDocs);
               const existingIds = new Set(clientDocs.map(doc => doc.id));
               const uniqueAdditionalDocs = additionalDocs.filter(doc => !existingIds.has(doc.id));
               
@@ -71,7 +71,7 @@ export const processClientDocuments = async (
       if (joshHartData) {
         return { 
           client: convertToClientProfile(joshHartData.clientData), 
-          documents: joshHartData.clientDocs.map(convertToClientDocument).filter(doc => doc.id && doc.title)
+          documents: convertDocumentArray(joshHartData.clientDocs)
         };
       }
       
@@ -86,7 +86,7 @@ export const processClientDocuments = async (
         const rawForm47Docs = await fetchForm47Documents();
         
         if (rawForm47Docs && rawForm47Docs.length > 0) {
-          const form47Docs = Array.isArray(rawForm47Docs) ? rawForm47Docs.map(convertToClientDocument).filter(doc => doc.id && doc.title) : [];
+          const form47Docs = convertDocumentArray(rawForm47Docs);
           console.log(`Found ${form47Docs.length} Form 47 documents`);
           
           // For Josh Hart, we know this is the correct client for Form 47
@@ -94,7 +94,7 @@ export const processClientDocuments = async (
           if (joshHartData) {
             return { 
               client: convertToClientProfile(joshHartData.clientData), 
-              documents: joshHartData.clientDocs.map(convertToClientDocument).filter(doc => doc.id && doc.title)
+              documents: convertDocumentArray(joshHartData.clientDocs)
             };
           }
         }
@@ -127,7 +127,7 @@ export const processClientDocuments = async (
     if (joshHartData) {
       return { 
         client: convertToClientProfile(joshHartData.clientData), 
-        documents: joshHartData.clientDocs.map(convertToClientDocument).filter(doc => doc.id && doc.title)
+        documents: convertDocumentArray(joshHartData.clientDocs)
       };
     }
     

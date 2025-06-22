@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useDocuments } from "@/components/DocumentList/hooks/useDocuments";
 import { useCreateFolderStructure } from "@/components/folders/enhanced/hooks/useCreateFolderStructure";
 import { useFolderNavigation } from "./useFolderNavigation";
-import { convertDocumentArray, safeStringCast } from "@/utils/typeGuards";
+import { convertDocumentArray, safeStringCast, safeObjectCast } from "@/utils/typeGuards";
 
 interface Client {
   id: string;
@@ -41,12 +41,12 @@ export const useDocumentsPage = () => {
       const uniqueClients = Array.from(
         new Set(
           safeDocuments
-            .filter(doc => doc.metadata && (doc.metadata as any).client_id)
-            .map(doc => safeStringCast((doc.metadata as any).client_id))
+            .filter(doc => doc.metadata && safeObjectCast(doc.metadata).client_id)
+            .map(doc => safeStringCast(safeObjectCast(doc.metadata).client_id))
         )
       ).map(clientId => {
-        const doc = safeDocuments.find(d => safeStringCast((d.metadata as any)?.client_id) === clientId);
-        const metadata = doc?.metadata as any || {};
+        const doc = safeDocuments.find(d => safeStringCast(safeObjectCast(d.metadata || {}).client_id) === clientId);
+        const metadata = safeObjectCast(doc?.metadata || {});
         
         return {
           id: clientId,
