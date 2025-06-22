@@ -33,10 +33,14 @@ export class OSBTestingService {
         throw new Error(`Document fetch error: ${docError.message}`);
       }
 
-      // Test PDF URL generation
+      if (!document.storage_path || typeof document.storage_path !== 'string') {
+        throw new Error('Document storage path is invalid or missing');
+      }
+
+      // Test PDF URL generation with proper string typing
       const { data: urlData } = supabase.storage
         .from('documents')
-        .getPublicUrl(document.storage_path);
+        .getPublicUrl(document.storage_path as string);
 
       console.log('PDF URL generated:', urlData.publicUrl);
 
