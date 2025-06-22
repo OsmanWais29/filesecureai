@@ -19,11 +19,14 @@ export class OSBTestingService {
         throw new Error('Invalid document ID provided');
       }
 
+      // Ensure documentId is treated as string
+      const docId = String(documentId).trim();
+
       // Test PDF accessibility
       const { data: document, error: docError } = await supabase
         .from('documents')
         .select('storage_path, title')
-        .eq('id', documentId)
+        .eq('id', docId)
         .single();
 
       if (docError) {
@@ -37,10 +40,10 @@ export class OSBTestingService {
 
       console.log('PDF URL generated:', urlData.publicUrl);
 
-      // Test document analysis - fix the error handling
+      // Test document analysis
       const analysisResult = await supabase.functions.invoke('analyze-document', {
         body: {
-          documentId: documentId as string,
+          documentId: docId,
           extractionMode: 'comprehensive',
           includeRegulatory: true
         }
