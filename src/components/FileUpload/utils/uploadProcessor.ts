@@ -1,62 +1,66 @@
 
-import { supabase } from '@/lib/supabase';
-import { uploadDocumentToStorage } from '@/utils/documentUpload';
+import { supabase } from "@/lib/supabase";
+import logger from "@/utils/logger";
 
 export const simulateProcessingStages = async (
   isSpecialForm: boolean,
   isExcel: boolean,
-  setUploadProgress: (progress: number) => void,
-  setUploadStep: (step: string) => void
+  setProgress: (progress: number) => void,
+  setStep: (step: string) => void
 ): Promise<void> => {
   const stages = [
-    { progress: 20, step: "Uploading file to secure storage..." },
-    { progress: 40, step: "Extracting document content..." },
-    { progress: 60, step: isSpecialForm ? "Analyzing form structure..." : "Processing document..." },
-    { progress: 80, step: isExcel ? "Validating financial data..." : "Completing analysis..." },
-    { progress: 100, step: "Upload complete!" }
+    { progress: 20, step: "Validating file format...", delay: 500 },
+    { progress: 40, step: "Uploading to secure storage...", delay: 800 },
+    { progress: 60, step: "Extracting document metadata...", delay: 600 },
+    { progress: 80, step: isSpecialForm ? "Running AI analysis..." : "Processing document...", delay: 1000 },
+    { progress: 100, step: "Upload complete!", delay: 300 }
   ];
 
   for (const stage of stages) {
-    setUploadProgress(stage.progress);
-    setUploadStep(stage.step);
-    await new Promise(resolve => setTimeout(resolve, 800));
+    setProgress(stage.progress);
+    setStep(stage.step);
+    await new Promise(resolve => setTimeout(resolve, stage.delay));
   }
 };
 
 export const createDocumentRecord = async (
   file: File,
   userId: string,
-  clientName?: string,
-  isSpecialForm: boolean = false,
-  additionalMetadata: Record<string, any> = {}
+  parentFolderId?: string,
+  isSpecialForm?: boolean,
+  metadata?: Record<string, any>
 ) => {
-  const { data, error } = await supabase
+  return await supabase
     .from('documents')
     .insert({
       title: file.name,
       type: file.type,
       size: file.size,
       user_id: userId,
+      parent_folder_id: parentFolderId,
+      is_folder: false,
       ai_processing_status: isSpecialForm ? 'pending' : 'complete',
       metadata: {
         originalName: file.name,
-        clientName,
         uploadedAt: new Date().toISOString(),
-        ...additionalMetadata
+        ...metadata
       }
     })
     .select()
     .single();
-
-  return { data, error };
 };
 
-export const uploadToStorage = async (file: File, userId: string, filePath: string) => {
-  const { data, error } = await supabase.storage
+export const uploadToStorage = async (
+  file: File,
+  userId: string,
+  filePath: string
+) => {
+  return await supabase.storage
     .from('documents')
-    .upload(filePath, file);
-
-  return { data, error };
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false
+    });
 };
 
 export const triggerDocumentAnalysis = async (
@@ -65,17 +69,22 @@ export const triggerDocumentAnalysis = async (
   isSpecialForm: boolean
 ) => {
   if (!isSpecialForm) return;
-
+  
   try {
-    await supabase.functions.invoke('analyze-document', {
+    const { error } = await supabase.functions.invoke('analyze-document', {
       body: {
         documentId,
         fileName,
-        analysisType: 'comprehensive'
+        extractionMode: 'comprehensive',
+        includeRegulatory: true
       }
     });
-  } catch (error) {
-    console.error('Analysis trigger failed:', error);
+    
+    if (error) {
+      logger.error('Document analysis failed:', error);
+    }
+  } catch (err) {
+    logger.error('Failed to trigger document analysis:', err);
   }
 };
 
@@ -83,10 +92,10 @@ export const createNotification = async (
   userId: string,
   title: string,
   message: string,
-  type: 'info' | 'success' | 'warning' | 'error',
-  documentId?: string,
-  fileName?: string,
-  status?: string
+  type: string,
+  documentId: string,
+  fileName: string,
+  status: string
 ) => {
   try {
     await supabase.functions.invoke('handle-notifications', {
@@ -99,17 +108,17 @@ export const createNotification = async (
           type,
           category: 'file_activity',
           priority: 'normal',
-          action_url: documentId ? `/document/${documentId}` : undefined,
+          action_url: `/document/${documentId}`,
           metadata: {
             documentId,
             fileName,
             status,
-            createdAt: new Date().toISOString()
+            timestamp: new Date().toISOString()
           }
         }
       }
     });
   } catch (error) {
-    console.error('Notification creation failed:', error);
+    logger.error('Failed to create notification:', error);
   }
 };

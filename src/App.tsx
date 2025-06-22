@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import DocumentsPage from './pages/documents/DocumentsPage';
@@ -13,15 +14,13 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Toaster position="top-right" />
-      <Router>
-        <Routes>
-          <Route path="/" element={<DocumentsPage />} />
-          <Route path="/documents" element={<DocumentsPage />} />
-          <Route path="/document-viewer/:documentId" element={<DocumentViewerPage />} />
-          <Route path="/activity" element={<ActivityPage />} />
-          <Route path="/upload-test" element={<UploadTestPage />} />
-        </Routes>
-      </Router>
+      <Routes>
+        <Route path="/" element={<DocumentsPage />} />
+        <Route path="/documents" element={<DocumentsPage />} />
+        <Route path="/document-viewer/:documentId" element={<DocumentViewerPage />} />
+        <Route path="/activity" element={<ActivityPage />} />
+        <Route path="/upload-test" element={<UploadTestPage />} />
+      </Routes>
     </QueryClientProvider>
   );
 }
