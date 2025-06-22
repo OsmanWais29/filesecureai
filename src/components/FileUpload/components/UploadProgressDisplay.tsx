@@ -1,7 +1,8 @@
 
 import React from 'react';
+import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Upload } from "lucide-react";
+import { CheckCircle2, Loader2 } from "lucide-react";
 
 interface UploadProgressDisplayProps {
   uploadProgress: number;
@@ -12,17 +13,157 @@ export const UploadProgressDisplay: React.FC<UploadProgressDisplayProps> = ({
   uploadProgress, 
   uploadStep 
 }) => {
+  const isComplete = uploadProgress >= 100;
+
   return (
-    <div className="w-full space-y-6 p-6 border-2 border-dashed border-gray-300 rounded-lg">
-      <Upload className={`h-8 w-8 mx-auto ${uploadProgress === 100 ? 'text-green-500' : 'text-primary animate-pulse'}`} />
-      <p className="text-center font-medium">{uploadStep}</p>
-      <Progress value={uploadProgress} className="w-full" />
-      <div className="flex justify-between text-xs text-muted-foreground">
-        <span className={uploadProgress >= 10 ? "text-primary" : ""}>Validation</span>
-        <span className={uploadProgress >= 40 ? "text-primary" : ""}>Upload</span>
-        <span className={uploadProgress >= 70 ? "text-primary" : ""}>Processing</span>
-        <span className={uploadProgress >= 100 ? "text-primary" : ""}>Complete</span>
-      </div>
-    </div>
+    <Card className="w-full">
+      <CardContent className="p-6">
+        <div className="flex flex-col items-center space-y-4">
+          {isComplete ? (
+            <CheckCircle2 className="h-12 w-12 text-green-500" />
+          ) : (
+            <Loader2 className="h-12 w-12 animate-spin text-blue-500" />
+          )}
+          
+          <div className="w-full space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>{uploadStep}</span>
+              <span>{uploadProgress}%</span>
+            </div>
+            <Progress value={uploadProgress} className="w-full" />
+          </div>
+          
+          <p className="text-sm text-muted-foreground text-center">
+            {isComplete ? "Upload completed successfully!" : "Please wait while we process your document..."}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
   );
+};
+</UploadProgressDisplay>
+
+<lov-write file_path="src/components/FileUpload/utils/uploadProcessor.ts">
+import { supabase } from "@/lib/supabase";
+import logger from "@/utils/logger";
+
+export const simulateProcessingStages = async (
+  isSpecialForm: boolean,
+  isExcel: boolean,
+  setProgress: (progress: number) => void,
+  setStep: (step: string) => void
+): Promise<void> => {
+  const stages = [
+    { progress: 20, step: "Validating file format...", delay: 500 },
+    { progress: 40, step: "Uploading to secure storage...", delay: 800 },
+    { progress: 60, step: "Extracting document metadata...", delay: 600 },
+    { progress: 80, step: isSpecialForm ? "Running AI analysis..." : "Processing document...", delay: 1000 },
+    { progress: 100, step: "Upload complete!", delay: 300 }
+  ];
+
+  for (const stage of stages) {
+    setProgress(stage.progress);
+    setStep(stage.step);
+    await new Promise(resolve => setTimeout(resolve, stage.delay));
+  }
+};
+
+export const createDocumentRecord = async (
+  file: File,
+  userId: string,
+  parentFolderId?: string,
+  isSpecialForm?: boolean,
+  metadata?: Record<string, any>
+) => {
+  return await supabase
+    .from('documents')
+    .insert({
+      title: file.name,
+      type: file.type,
+      size: file.size,
+      user_id: userId,
+      parent_folder_id: parentFolderId,
+      is_folder: false,
+      ai_processing_status: isSpecialForm ? 'pending' : 'complete',
+      metadata: {
+        originalName: file.name,
+        uploadedAt: new Date().toISOString(),
+        ...metadata
+      }
+    })
+    .select()
+    .single();
+};
+
+export const uploadToStorage = async (
+  file: File,
+  userId: string,
+  filePath: string
+) => {
+  return await supabase.storage
+    .from('documents')
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false
+    });
+};
+
+export const triggerDocumentAnalysis = async (
+  documentId: string,
+  fileName: string,
+  isSpecialForm: boolean
+) => {
+  if (!isSpecialForm) return;
+  
+  try {
+    const { error } = await supabase.functions.invoke('analyze-document', {
+      body: {
+        documentId,
+        fileName,
+        extractionMode: 'comprehensive',
+        includeRegulatory: true
+      }
+    });
+    
+    if (error) {
+      logger.error('Document analysis failed:', error);
+    }
+  } catch (err) {
+    logger.error('Failed to trigger document analysis:', err);
+  }
+};
+
+export const createNotification = async (
+  userId: string,
+  title: string,
+  message: string,
+  type: string,
+  documentId: string,
+  fileName: string,
+  status: string
+) => {
+  try {
+    await supabase.functions.invoke('handle-notifications', {
+      body: {
+        action: 'create',
+        userId,
+        notification: {
+          title,
+          message,
+          type,
+          category: 'file_activity',
+          priority: 'normal',
+          action_url: `/document/${documentId}`,
+          metadata: {
+            documentId,
+            fileName,
+            status,
+            timestamp: new Date().toISOString()
+          }
+        }
+      }
+    });
+  } catch (error) {
+    logger.error('Failed to create notification:', error);
+  }
 };
