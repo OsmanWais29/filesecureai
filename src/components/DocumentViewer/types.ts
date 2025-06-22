@@ -72,7 +72,7 @@ export interface Comment {
   parent_id?: string;
 }
 
-// Risk type
+// Risk type - Updated to include the missing properties
 export interface Risk {
   type: string;
   description: string;
@@ -82,6 +82,9 @@ export interface Risk {
   requiredAction?: string;
   solution?: string;
   deadline?: string;
+  biaCitation?: string;
+  suggestedFix?: string;
+  resolved?: boolean;
 }
 
 // Deadline type

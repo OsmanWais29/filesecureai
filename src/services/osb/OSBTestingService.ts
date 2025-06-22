@@ -37,7 +37,7 @@ export class OSBTestingService {
 
       console.log('PDF URL generated:', urlData.publicUrl);
 
-      // Test document analysis - remove the type assertion
+      // Test document analysis - fix the error handling
       const analysisResult = await supabase.functions.invoke('analyze-document', {
         body: {
           documentId: documentId,
@@ -52,7 +52,7 @@ export class OSBTestingService {
         pdfAccessible: true,
         extractionSuccess: !analysisResult.error,
         analysisSuccess: analysisResult.data?.success || false,
-        error: analysisResult.error?.message
+        error: analysisResult.error ? (analysisResult.error.message || analysisResult.error.toString()) : undefined
       };
 
     } catch (error) {
