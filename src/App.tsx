@@ -9,7 +9,7 @@ import { AuthRoleGuard } from '@/components/auth/AuthRoleGuard';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import ClientLogin from './pages/auth/ClientLogin';
-import ClientPortal from './pages/ClientPortal';
+import ClientPortal from './pages/client-portal/ClientPortal';
 import DocumentsPage from './pages/documents/DocumentsPage';
 import AdvancedFeaturesPage from './pages/AdvancedFeaturesPage';
 import SettingsPage from './pages/SettingsPage';
@@ -26,7 +26,7 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <TooltipProvider>
-          <div className="min-h-screen bg-background">
+          <div className="min-h-screen bg-background w-full">
             <Routes>
               {/* Public routes */}
               <Route path="/login" element={<LoginPage />} />
