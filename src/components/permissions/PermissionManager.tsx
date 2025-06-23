@@ -173,7 +173,7 @@ export const PermissionManager: React.FC<PermissionManagerProps> = ({
                 </div>
                 
                 {permission.role === 'client' && (
-                  <Lock className="h-4 w-4 text-muted-foreground" title="Role-based masking applied" />
+                  <Lock className="h-4 w-4 text-muted-foreground" />
                 )}
               </div>
               

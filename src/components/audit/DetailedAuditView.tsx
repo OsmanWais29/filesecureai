@@ -175,7 +175,7 @@ export const DetailedAuditView: React.FC<DetailedAuditViewProps> = ({
               Detailed Audit: {documentTitle}
             </CardTitle>
             <div className="flex items-center gap-2">
-              <Lock className="h-4 w-4 text-green-600" title="Encrypted & Immutable" />
+              <Lock className="h-4 w-4 text-green-600" />
               {(isAdmin || isTrustee) && (
                 <Button variant="outline" size="sm" onClick={exportDetailedReport}>
                   <Download className="h-4 w-4 mr-2" />

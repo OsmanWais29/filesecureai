@@ -1,3 +1,4 @@
+
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -7,7 +8,7 @@ import { AuthRoleGuard } from '@/components/auth/AuthRoleGuard';
 // Import pages
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
-import ClientLoginPage from './pages/ClientLoginPage';
+import ClientLogin from './pages/auth/ClientLogin';
 import ClientPortal from './pages/ClientPortal';
 import DocumentsPage from './pages/documents/DocumentsPage';
 import AdvancedFeaturesPage from './pages/AdvancedFeaturesPage';
@@ -29,7 +30,7 @@ function App() {
             <Routes>
               {/* Public routes */}
               <Route path="/login" element={<LoginPage />} />
-              <Route path="/client-login" element={<ClientLoginPage />} />
+              <Route path="/client-login" element={<ClientLogin />} />
               
               {/* Client Portal - Protected for clients only */}
               <Route 
