@@ -52,6 +52,14 @@ function App() {
                 } 
               />
               <Route 
+                path="/crm" 
+                element={
+                  <AuthRoleGuard requiredRole="trustee" redirectPath="/login">
+                    <HomePage />
+                  </AuthRoleGuard>
+                } 
+              />
+              <Route 
                 path="/documents" 
                 element={
                   <AuthRoleGuard requiredRole="trustee" redirectPath="/login">
