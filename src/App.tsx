@@ -13,6 +13,7 @@ import SignupPage from './pages/SignupPage';
 import WorkflowPage from './pages/WorkflowPage';
 import SettingsPage from './pages/SettingsPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
+import DocumentsPage from './pages/documents/DocumentsPage';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/" element={<AuthCheck><HomePage /></AuthCheck>} />
+          <Route path="/documents" element={<AuthCheck><DocumentsPage /></AuthCheck>} />
           <Route path="/tasks" element={<AuthCheck><TaskManagementPage /></AuthCheck>} />
           <Route path="/document-viewer/:documentId" element={<AuthCheck><DocumentViewerPage /></AuthCheck>} />
           <Route path="/clients" element={<AuthCheck><ClientPage /></AuthCheck>} />
