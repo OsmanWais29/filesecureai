@@ -9,7 +9,7 @@ import {
   CheckCircle, 
   XCircle, 
   MessageSquare, 
-  Highlight,
+  Highlighter,
   Eye,
   EyeOff,
   Zap
@@ -147,7 +147,7 @@ export const InteractiveDocumentViewer: React.FC<InteractiveDocumentViewerProps>
         <div className="flex items-center gap-2">
           <h3 className="font-medium">{document.title}</h3>
           <Badge variant="outline" className="gap-1">
-            <Highlight className="h-3 w-3" />
+            <Highlighter className="h-3 w-3" />
             {highlights.length} Highlights
           </Badge>
         </div>

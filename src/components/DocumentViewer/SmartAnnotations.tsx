@@ -9,9 +9,8 @@ import {
   MessageSquare, 
   Plus, 
   Reply, 
-  Resolve, 
+  CheckCircle, 
   AlertTriangle,
-  CheckCircle,
   Clock,
   AtSign
 } from 'lucide-react';

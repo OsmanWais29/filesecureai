@@ -6,7 +6,7 @@ import { CollaborationToolbar } from './CollaborationToolbar';
 import { SmartAnnotations } from './SmartAnnotations';
 import { CollaborationPanel } from './CollaborationPanel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MessageSquare, Highlight, Users, BarChart3 } from 'lucide-react';
+import { MessageSquare, Highlighter, Users, BarChart3 } from 'lucide-react';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 
 interface EnhancedDocumentLayoutProps {
@@ -80,7 +80,7 @@ export const EnhancedDocumentLayout: React.FC<EnhancedDocumentLayoutProps> = ({
                       )}
                     </TabsTrigger>
                     <TabsTrigger value="annotations" className="flex items-center gap-1 text-xs">
-                      <Highlight className="h-3 w-3" />
+                      <Highlighter className="h-3 w-3" />
                       Notes
                     </TabsTrigger>
                     <TabsTrigger value="activity" className="flex items-center gap-1 text-xs">
