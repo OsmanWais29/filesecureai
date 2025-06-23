@@ -1,15 +1,15 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Sparkles, Loader2, Zap } from 'lucide-react';
 import { CategorizationDialog } from './CategorizationDialog';
-import { AIDocumentAnalysisService } from '@/services/aiDocumentAnalysis';
-import { AutoCategorizationService } from '@/services/autoCategorization';
+import { EnhancedAutoCategorizationService } from '@/services/enhancedAutoCategorization';
+import { DeepSeekDocumentAnalysisService } from '@/services/deepSeekDocumentAnalysis';
 import { toast } from 'sonner';
 
 interface AutoCategoryButtonProps {
   documentId: string;
-  documentTitle: string;
+  documentTitle: string;    
   onSuccess?: () => void;
 }
 
@@ -23,36 +23,31 @@ export const AutoCategoryButton: React.FC<AutoCategoryButtonProps> = ({
   const [suggestion, setSuggestion] = useState<any>(null);
   const [isApplying, setIsApplying] = useState(false);
 
-  const handleAutoCategory = async () => {
+  const handleEnhancedAutoCategory = async () => {
     setIsAnalyzing(true);
     try {
-      // First check if we already have analysis
-      let analysis = await AIDocumentAnalysisService.getDocumentAnalysis(documentId);
+      // Check if we already have enhanced analysis
+      let analysis = await DeepSeekDocumentAnalysisService.getDocumentAnalysis(documentId);
       
       if (!analysis) {
-        toast.info('Analyzing document...', { description: 'This may take a few moments' });
+        toast.info('Running enhanced DeepSeek analysis...', { 
+          description: 'OCR processing, form recognition, and risk assessment' 
+        });
         
-        // Simulate document content extraction (in production, would extract from storage)
-        const mockContent = `Document analysis for ${documentTitle}. This is placeholder content for demonstration.`;
-        
-        // Perform AI analysis
-        const result = await AIDocumentAnalysisService.analyzeDocument(
-          documentId, 
-          mockContent, 
-          documentTitle
-        );
+        // Perform enhanced DeepSeek analysis
+        const result = await DeepSeekDocumentAnalysisService.analyzeDocument(documentId);
         
         if (!result) {
-          toast.error('Failed to analyze document');
+          toast.error('Enhanced document analysis failed');
           return;
         }
       }
 
-      // Generate categorization suggestion
-      const categorySuggestion = await AutoCategorizationService.categorizeDocument(documentId);
+      // Generate enhanced categorization suggestion
+      const categorySuggestion = await EnhancedAutoCategorizationService.categorizeDocument(documentId);
       
       if (!categorySuggestion) {
-        toast.error('Failed to generate categorization suggestion');
+        toast.error('Failed to generate enhanced categorization suggestion');
         return;
       }
 
@@ -60,8 +55,8 @@ export const AutoCategoryButton: React.FC<AutoCategoryButtonProps> = ({
       setShowDialog(true);
       
     } catch (error) {
-      console.error('Auto-categorization failed:', error);
-      toast.error('Auto-categorization failed');
+      console.error('Enhanced auto-categorization failed:', error);
+      toast.error('Enhanced auto-categorization failed');
     } finally {
       setIsAnalyzing(false);
     }
@@ -70,13 +65,17 @@ export const AutoCategoryButton: React.FC<AutoCategoryButtonProps> = ({
   const handleApprove = async () => {
     setIsApplying(true);
     try {
-      const success = await AutoCategorizationService.applyCategorization(documentId, true);
+      const success = await EnhancedAutoCategorizationService.applyEnhancedCategorization(
+        documentId, 
+        true,
+        suggestion?.riskLevel === 'high' // Override risk if user manually approves
+      );
       if (success) {
         setShowDialog(false);
         onSuccess?.();
       }
     } catch (error) {
-      console.error('Failed to apply categorization:', error);
+      console.error('Failed to apply enhanced categorization:', error);
     } finally {
       setIsApplying(false);
     }
@@ -85,7 +84,7 @@ export const AutoCategoryButton: React.FC<AutoCategoryButtonProps> = ({
   const handleReject = () => {
     setShowDialog(false);
     setSuggestion(null);
-    toast.info('Categorization suggestion rejected');
+    toast.info('Enhanced categorization suggestion rejected');
   };
 
   return (
@@ -93,16 +92,16 @@ export const AutoCategoryButton: React.FC<AutoCategoryButtonProps> = ({
       <Button
         variant="outline"
         size="sm"
-        onClick={handleAutoCategory}
+        onClick={handleEnhancedAutoCategory}
         disabled={isAnalyzing}
         className="gap-2"
       >
         {isAnalyzing ? (
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : (
-          <Sparkles className="h-4 w-4" />
+          <Zap className="h-4 w-4" />
         )}
-        {isAnalyzing ? 'Analyzing...' : 'Auto-Categorize'}
+        {isAnalyzing ? 'Analyzing...' : 'Enhanced AI Analysis'}
       </Button>
 
       <CategorizationDialog

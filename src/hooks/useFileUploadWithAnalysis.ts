@@ -1,8 +1,8 @@
 
 import { useState } from 'react';
 import { useFileUpload } from '@/components/FileUpload/hooks/useFileUpload';
-import { AIDocumentAnalysisService } from '@/services/aiDocumentAnalysis';
-import { AutoCategorizationService } from '@/services/autoCategorization';
+import { DeepSeekDocumentAnalysisService } from '@/services/deepSeekDocumentAnalysis';
+import { EnhancedAutoCategorizationService } from '@/services/enhancedAutoCategorization';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
@@ -10,7 +10,7 @@ export const useFileUploadWithAnalysis = (onUploadComplete?: (documentId: string
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   
   const originalHook = useFileUpload(async (documentId: string) => {
-    // After successful upload, trigger analysis
+    // After successful upload, trigger enhanced analysis
     if (documentId) {
       await handlePostUploadAnalysis(documentId);
     }
@@ -20,10 +20,10 @@ export const useFileUploadWithAnalysis = (onUploadComplete?: (documentId: string
   const handlePostUploadAnalysis = async (documentId: string) => {
     setIsAnalyzing(true);
     try {
-      // Get document details to extract filename
+      // Get document details
       const { data: document, error } = await supabase
         .from('documents')
-        .select('title')
+        .select('title, type, metadata')
         .eq('id', documentId)
         .single();
 
@@ -33,58 +33,74 @@ export const useFileUploadWithAnalysis = (onUploadComplete?: (documentId: string
       }
 
       const fileName = document.title;
+      const fileType = document.type;
       
-      // Check if document should be auto-analyzed (based on file name patterns)
-      const shouldAnalyze = shouldTriggerAnalysis(fileName);
+      // Check if document should be auto-analyzed
+      const shouldAnalyze = shouldTriggerEnhancedAnalysis(fileName, fileType);
       
       if (shouldAnalyze) {
-        toast.info('Analyzing document...', { 
-          description: 'AI is extracting information and suggesting categorization' 
+        toast.info('Analyzing document with DeepSeek AI...', { 
+          description: 'Enhanced form recognition, OCR, and risk assessment in progress' 
         });
 
-        // Simulate document content extraction (in production, would extract from storage)
-        const mockContent = `Document content for ${fileName}. This would be extracted from the actual file.`;
-        
-        // Perform AI analysis
-        const analysisResult = await AIDocumentAnalysisService.analyzeDocument(
-          documentId,
-          mockContent,
-          fileName
-        );
+        // Perform enhanced DeepSeek analysis
+        const analysisResult = await DeepSeekDocumentAnalysisService.analyzeDocument(documentId);
 
         if (analysisResult) {
-          // Generate categorization suggestion
-          const suggestion = await AutoCategorizationService.categorizeDocument(documentId);
+          // Generate enhanced categorization suggestion
+          const suggestion = await EnhancedAutoCategorizationService.categorizeDocument(documentId);
           
-          if (suggestion && suggestion.confidenceLevel === 'high') {
-            // Auto-apply high-confidence categorizations
-            await AutoCategorizationService.applyCategorization(documentId, false);
-            toast.success('Document automatically categorized', {
-              description: `Moved to ${suggestion.suggestedClientFolder} > ${suggestion.suggestedFormCategory}`
-            });
-          } else if (suggestion) {
-            toast.info('Categorization suggestion available', {
-              description: 'Click the document to review the suggestion'
-            });
+          if (suggestion) {
+            // Auto-apply high-confidence, low-risk categorizations
+            if (suggestion.confidenceLevel === 'high' && suggestion.riskLevel === 'low') {
+              await EnhancedAutoCategorizationService.applyEnhancedCategorization(documentId, false);
+              toast.success('Document automatically categorized', {
+                description: `Moved to ${suggestion.suggestedClientFolder} > ${suggestion.suggestedFormCategory}`
+              });
+            } else {
+              // Show suggestion for review
+              const riskEmoji = suggestion.riskLevel === 'high' ? '⚠️' : suggestion.riskLevel === 'medium' ? '⚡' : '✅';
+              toast.info('Enhanced categorization suggestion available', {
+                description: `${riskEmoji} Form ${suggestion.formNumber} detected - Click document to review`
+              });
+            }
           }
         }
       }
     } catch (error) {
-      console.error('Post-upload analysis failed:', error);
-      toast.error('Document uploaded but analysis failed');
+      console.error('Enhanced post-upload analysis failed:', error);
+      toast.error('Document uploaded but enhanced analysis failed');
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  const shouldTriggerAnalysis = (fileName: string): boolean => {
+  // Enhanced analysis trigger logic
+  const shouldTriggerEnhancedAnalysis = (fileName: string, fileType?: string): boolean => {
     const lowerName = fileName.toLowerCase();
-    const analysisPatterns = [
+    
+    // Enhanced patterns for all BIA forms and common document types
+    const enhancedAnalysisPatterns = [
       'form', 'proposal', 'statement', 'bankruptcy', 'consumer',
-      'income', 'expense', 'financial', 'assets', 'liabilities'
+      'income', 'expense', 'financial', 'assets', 'liabilities',
+      'proof', 'claim', 'creditor', 'debtor', 'trustee',
+      'assignment', 'notice', 'certificate', 'dividend',
+      'receipt', 'security', 'appointment', 'affairs'
     ];
     
-    return analysisPatterns.some(pattern => lowerName.includes(pattern));
+    // Check file type for documents that should be analyzed
+    const supportedTypes = ['pdf', 'doc', 'docx', 'txt', 'rtf'];
+    const hasValidType = !fileType || supportedTypes.some(type => 
+      fileType.toLowerCase().includes(type)
+    );
+    
+    // BIA form number patterns (Forms 1-96)
+    const formNumberPattern = /form\s*\d{1,2}/i;
+    
+    return hasValidType && (
+      enhancedAnalysisPatterns.some(pattern => lowerName.includes(pattern)) ||
+      formNumberPattern.test(lowerName)
+    );
   };
 
   return {
