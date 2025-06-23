@@ -7,6 +7,13 @@ export type EventTrend = {
   category: EventCategory;
 };
 
+export interface AnalyticsEvent {
+  category: EventCategory;
+  action: string;
+  metadata?: Record<string, any>;
+  timestamp?: number;
+}
+
 class AnalyticsService {
   private userRole: string = 'user';
   private persistenceEnabled: boolean = true;

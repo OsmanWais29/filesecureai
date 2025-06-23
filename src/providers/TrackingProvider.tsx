@@ -3,7 +3,7 @@ import React, { createContext, useContext, ReactNode } from 'react';
 import { analyticsService, AnalyticsEvent } from '@/services/analyticsService';
 
 interface TrackingContextType {
-  trackEvent: (event: Omit<AnalyticsEvent, 'timestamp'>) => void;
+  trackEvent: (category: AnalyticsEvent['category'], action: string, metadata?: Record<string, any>) => void;
   trackPageView: (pageName: string) => () => void;
   trackInteraction: (component: string, action: string, metadata?: Record<string, any>) => void;
 }

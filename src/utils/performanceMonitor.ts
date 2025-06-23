@@ -216,13 +216,9 @@ export const measureRouteChange = (from: string, to: string) => {
   
   // Track page interaction time
   if (interactionTime) {
-    analyticsService.trackEvent({
-      category: 'Performance',
-      type: 'PageInteraction',
-      metadata: {
-        from,
-        value: Math.round(interactionTime)
-      }
+    analyticsService.trackEvent('navigation', 'PageInteraction', {
+      from,
+      value: Math.round(interactionTime)
     });
   }
   
@@ -234,13 +230,9 @@ export const measureRouteChange = (from: string, to: string) => {
     startTiming(`page-load-${to}`);
     
     // Track navigation event
-    analyticsService.trackEvent({
-      category: 'Navigation',
-      type: 'RouteChange',
-      metadata: {
-        from,
-        to
-      }
+    analyticsService.trackEvent('navigation', 'RouteChange', {
+      from,
+      to
     });
   }, 0);
   
