@@ -6,11 +6,13 @@ import { EnhancedComments } from './Comments/EnhancedComments';
 import { DeadlineManager } from './DeadlineManager';
 import { VersionToggle } from './components/VersionToggle';
 import { ViewerControls } from './components/ViewerControls';
+import { EnhancedAnalysisPanel } from './EnhancedAnalysisPanel';
 import { useDocumentViewer } from '@/hooks/useDocumentViewer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Calendar, MessageSquare, AlertTriangle } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { FileText, Calendar, MessageSquare, AlertTriangle, Brain } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface EnhancedDocumentViewerProps {
@@ -237,22 +239,56 @@ export const EnhancedDocumentViewer: React.FC<EnhancedDocumentViewerProps> = ({
         </div>
       </div>
 
-      {/* Right Panel - Comments and Activity */}
-      <div className="col-span-3 space-y-4 overflow-y-auto max-h-full">
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5 text-green-500" />
-              <CardTitle className="text-base">Comments & Discussion</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <EnhancedComments 
-              documentId={documentId} 
-              onCommentAdded={handleCommentAdded}
+      {/* Right Panel - Enhanced Tabs */}
+      <div className="col-span-3 overflow-y-auto max-h-full">
+        <Tabs defaultValue="analysis" className="h-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="analysis" className="gap-1">
+              <Brain className="h-4 w-4" />
+              Analysis
+            </TabsTrigger>
+            <TabsTrigger value="comments" className="gap-1">
+              <MessageSquare className="h-4 w-4" />
+              Comments
+            </TabsTrigger>
+            <TabsTrigger value="activity" className="gap-1">
+              <Calendar className="h-4 w-4" />
+              Activity
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="analysis" className="mt-4 space-y-4">
+            <EnhancedAnalysisPanel 
+              documentId={documentId}
+              documentTitle={document.title}
             />
-          </CardContent>
-        </Card>
+          </TabsContent>
+          
+          <TabsContent value="comments" className="mt-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Comments & Discussion</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <EnhancedComments 
+                  documentId={documentId} 
+                  onCommentAdded={handleCommentAdded}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="activity" className="mt-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Recent Activity</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">Activity tracking coming soon...</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
