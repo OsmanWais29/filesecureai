@@ -9,7 +9,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "sonner";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 
-// Create a client with fixed configuration
+// Create a single client with fixed configuration
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -20,7 +20,6 @@ const queryClient = new QueryClient({
     },
     mutations: {
       retry: 1,
-      // onError removed - handle errors in individual mutations
     },
   },
 });
