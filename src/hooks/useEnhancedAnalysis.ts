@@ -3,8 +3,6 @@ import { useState, useCallback } from 'react';
 import { EnhancedDocumentAnalysis, EnhancedAnalysisResult } from '@/services/EnhancedDocumentAnalysis';
 import { toast } from 'sonner';
 
-export const useEnhance
-
 export const useEnhancedAnalysis = (documentId?: string) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<EnhancedAnalysisResult | null>(null);
