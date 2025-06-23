@@ -70,7 +70,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
   const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'completed';
 
-  const handleStatusChange = (newStatus: string) => {
+  const handleStatusChange = (newStatus: 'pending' | 'in_progress' | 'completed' | 'cancelled') => {
     onUpdate(task.id, { status: newStatus });
   };
 
