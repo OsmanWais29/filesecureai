@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { DocumentPreview } from './DocumentPreview';
-import { EnhancedComments } from './EnhancedComments';
+import DocumentPreview from './DocumentPreview';
+import { EnhancedComments } from './Comments/EnhancedComments';
 import { DeadlineManager } from './DeadlineManager';
 import { VersionToggle } from './components/VersionToggle';
 import { ViewerControls } from './components/ViewerControls';
