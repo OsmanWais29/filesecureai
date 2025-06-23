@@ -9,6 +9,62 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      ai_document_analysis: {
+        Row: {
+          analysis_type: string
+          client_name_extracted: string | null
+          confidence_score: number
+          created_at: string
+          document_id: string | null
+          error_details: string | null
+          extracted_data: Json
+          form_number: string | null
+          id: string
+          identified_form_type: string | null
+          processing_status: string
+          risk_flags: Json | null
+          updated_at: string
+        }
+        Insert: {
+          analysis_type?: string
+          client_name_extracted?: string | null
+          confidence_score?: number
+          created_at?: string
+          document_id?: string | null
+          error_details?: string | null
+          extracted_data?: Json
+          form_number?: string | null
+          id?: string
+          identified_form_type?: string | null
+          processing_status?: string
+          risk_flags?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          analysis_type?: string
+          client_name_extracted?: string | null
+          confidence_score?: number
+          created_at?: string
+          document_id?: string | null
+          error_details?: string | null
+          extracted_data?: Json
+          form_number?: string | null
+          id?: string
+          identified_form_type?: string | null
+          processing_status?: string
+          risk_flags?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_document_analysis_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       analytics_events: {
         Row: {
           event_type: string
@@ -103,6 +159,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      bia_forms_reference: {
+        Row: {
+          bia_section_references: Json
+          category: string
+          created_at: string
+          filing_deadlines: Json
+          form_number: string
+          form_title: string
+          id: string
+          is_active: boolean
+          required_fields: Json
+          risk_indicators: Json
+          updated_at: string
+          validation_rules: Json
+        }
+        Insert: {
+          bia_section_references?: Json
+          category: string
+          created_at?: string
+          filing_deadlines?: Json
+          form_number: string
+          form_title: string
+          id?: string
+          is_active?: boolean
+          required_fields?: Json
+          risk_indicators?: Json
+          updated_at?: string
+          validation_rules?: Json
+        }
+        Update: {
+          bia_section_references?: Json
+          category?: string
+          created_at?: string
+          filing_deadlines?: Json
+          form_number?: string
+          form_title?: string
+          id?: string
+          is_active?: boolean
+          required_fields?: Json
+          risk_indicators?: Json
+          updated_at?: string
+          validation_rules?: Json
+        }
+        Relationships: []
       }
       branding: {
         Row: {
@@ -472,6 +573,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "document_audit_log_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_categorization: {
+        Row: {
+          auto_applied: boolean
+          categorization_reasoning: string | null
+          confidence_level: string
+          created_at: string
+          document_id: string | null
+          id: string
+          suggested_client_folder: string | null
+          suggested_form_category: string | null
+          updated_at: string
+          user_approved: boolean | null
+        }
+        Insert: {
+          auto_applied?: boolean
+          categorization_reasoning?: string | null
+          confidence_level?: string
+          created_at?: string
+          document_id?: string | null
+          id?: string
+          suggested_client_folder?: string | null
+          suggested_form_category?: string | null
+          updated_at?: string
+          user_approved?: boolean | null
+        }
+        Update: {
+          auto_applied?: boolean
+          categorization_reasoning?: string | null
+          confidence_level?: string
+          created_at?: string
+          document_id?: string | null
+          id?: string
+          suggested_client_folder?: string | null
+          suggested_form_category?: string | null
+          updated_at?: string
+          user_approved?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_categorization_document_id_fkey"
             columns: ["document_id"]
             isOneToOne: false
             referencedRelation: "documents"
