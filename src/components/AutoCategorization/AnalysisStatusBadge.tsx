@@ -22,7 +22,7 @@ export const AnalysisStatusBadge: React.FC<AnalysisStatusBadgeProps> = ({
 
   const loadAnalysis = async () => {
     try {
-      const result = await AIDocumentAnalysisService.getDoc
+      const result = await AIDocumentAnalysisService.getDocumentAnalysis(documentId);
       setAnalysis(result);
     } catch (error) {
       console.error('Failed to load analysis:', error);

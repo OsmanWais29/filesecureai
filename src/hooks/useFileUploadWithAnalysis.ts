@@ -3,22 +3,37 @@ import { useState } from 'react';
 import { useFileUpload } from '@/components/FileUpload/hooks/useFileUpload';
 import { AIDocumentAnalysisService } from '@/services/aiDocumentAnalysis';
 import { AutoCategorizationService } from '@/services/autoCategorization';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
-export const useFileUploadWithAnalysis = (onUploadComplete?: (result: any) => void) => {
+export const useFileUploadWithAnalysis = (onUploadComplete?: (documentId: string) => void) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   
-  const originalHook = useFileUpload((result) => {
+  const originalHook = useFileUpload(async (documentId: string) => {
     // After successful upload, trigger analysis
-    if (result.success && result.documentId) {
-      handlePostUploadAnalysis(result.documentId, result.fileName);
+    if (documentId) {
+      await handlePostUploadAnalysis(documentId);
     }
-    onUploadComplete?.(result);
+    onUploadComplete?.(documentId);
   });
 
-  const handlePostUploadAnalysis = async (documentId: string, fileName: string) => {
+  const handlePostUploadAnalysis = async (documentId: string) => {
     setIsAnalyzing(true);
     try {
+      // Get document details to extract filename
+      const { data: document, error } = await supabase
+        .from('documents')
+        .select('title')
+        .eq('id', documentId)
+        .single();
+
+      if (error || !document) {
+        console.error('Failed to get document details:', error);
+        return;
+      }
+
+      const fileName = document.title;
+      
       // Check if document should be auto-analyzed (based on file name patterns)
       const shouldAnalyze = shouldTriggerAnalysis(fileName);
       
