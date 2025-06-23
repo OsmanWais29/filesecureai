@@ -4,13 +4,25 @@ import { toast } from 'sonner';
 
 export interface DeepSeekAnalysisResult {
   documentId: string;
-  formType: string;
-  formNumber: string;
-  confidence: number;
-  clientName: string;
-  estateNumber: string;
-  trusteeName: string;
-  extractedFields: Record<string, any>;
+  formIdentification: {
+    formNumber: string;
+    formType: string;
+    confidence: number;
+    category: string;
+  };
+  clientExtraction: {
+    debtorName: string;
+    estateNumber: string;
+    trusteeName: string;
+    courtDistrict: string;
+    filingDate: string;
+  };
+  fieldExtraction: {
+    requiredFields: Record<string, any>;
+    optionalFields: Record<string, any>;
+    missingFields: string[];
+    completionPercentage: number;
+  };
   riskAssessment: {
     overallRisk: 'low' | 'medium' | 'high';
     riskFactors: Array<{
@@ -20,17 +32,22 @@ export interface DeepSeekAnalysisResult {
       recommendation: string;
       biaReference: string;
       fieldLocation: string;
+      deadline?: string;
     }>;
-    missingFields: string[];
-    signatureIssues: string[];
-    complianceGaps: string[];
+    complianceStatus: {
+      biaCompliant: boolean;
+      osbCompliant: boolean;
+      criticalIssues: string[];
+      warningIssues: string[];
+    };
   };
-  processingSteps: Array<{
-    step: string;
-    status: 'completed' | 'failed';
-    confidence: number;
-  }>;
-  reasoning: string;
+  metadata: {
+    analysisConfidence: number;
+    processingTime: string;
+    requiresManualReview: boolean;
+    suggestedActions: string[];
+  };
+  deepseekReasoning: string;
 }
 
 export class DeepSeekCoreService {
@@ -41,7 +58,7 @@ export class DeepSeekCoreService {
     try {
       console.log('🧠 DeepSeek Core Analysis Starting:', documentId);
       
-      // Get document details
+      // Get document details and content
       const { data: document, error } = await supabase
         .from('documents')
         .select('*')
@@ -65,17 +82,39 @@ export class DeepSeekCoreService {
         })
         .eq('id', documentId);
 
+      // Extract document text (from storage or metadata)
+      let documentText = '';
+      if (document.storage_path) {
+        try {
+          const { data: fileData } = await supabase.storage
+            .from('documents')
+            .download(document.storage_path);
+          
+          if (fileData) {
+            documentText = await fileData.text();
+          }
+        } catch (storageError) {
+          console.warn('Could not download from storage, checking metadata');
+          documentText = document.metadata?.content || document.title || '';
+        }
+      } else {
+        documentText = document.metadata?.content || document.title || '';
+      }
+
+      if (!documentText.trim()) {
+        throw new Error('No document content available for analysis');
+      }
+
+      // Determine form hint from filename/title
+      const formHint = this.extractFormHint(document.title);
+
       // Call enhanced DeepSeek analysis
-      const { data: analysisResult, error: analysisError } = await supabase.functions.invoke('deepseek-core-analysis', {
+      const { data: analysisResult, error: analysisError } = await supabase.functions.invoke('deepseek-document-analysis', {
         body: {
           documentId,
-          storagePath: document.storage_path,
-          documentTitle: document.title,
-          analysisMode: 'comprehensive',
-          includeFormRecognition: true,
-          includeBIACompliance: true,
-          includeRiskAssessment: true,
-          includeClientExtraction: true
+          documentText,
+          formHint,
+          analysisType: 'comprehensive'
         }
       });
 
@@ -89,11 +128,8 @@ export class DeepSeekCoreService {
 
       const analysis = analysisResult.analysis as DeepSeekAnalysisResult;
 
-      // Store analysis results in database
-      await this.storeAnalysisResults(documentId, analysis);
-
       toast.success('DeepSeek AI analysis completed', {
-        description: `Analyzed ${analysis.formType} with ${analysis.confidence}% confidence`
+        description: `Analyzed ${analysis.formIdentification.formType} with ${analysis.formIdentification.confidence}% confidence`
       });
 
       return analysis;
@@ -121,64 +157,29 @@ export class DeepSeekCoreService {
   }
 
   /**
-   * Store comprehensive analysis results
+   * Extract form hint from document title for better DeepSeek analysis
    */
-  private static async storeAnalysisResults(documentId: string, analysis: DeepSeekAnalysisResult) {
-    try {
-      // Store in document_analysis table
-      await supabase
-        .from('document_analysis')
-        .upsert({
-          document_id: documentId,
-          content: JSON.stringify(analysis),
-          form_type: analysis.formType,
-          form_number: analysis.formNumber,
-          confidence_score: analysis.confidence,
-          client_name: analysis.clientName,
-          estate_number: analysis.estateNumber,
-          risk_level: analysis.riskAssessment.overallRisk,
-          updated_at: new Date().toISOString()
-        });
+  private static extractFormHint(title: string): string {
+    const lowerTitle = title.toLowerCase();
+    
+    // BIA Form patterns
+    const formPatterns = [
+      { pattern: /form\s*(\d+)/, hint: 'BIA Form' },
+      { pattern: /consumer\s*proposal/, hint: 'Consumer Proposal Form 47' },
+      { pattern: /assignment.*bankruptcy/, hint: 'Assignment in Bankruptcy Form 65' },
+      { pattern: /proof.*claim/, hint: 'Proof of Claim Form 31' },
+      { pattern: /statement.*affairs/, hint: 'Statement of Affairs Form 76' },
+      { pattern: /income.*expense/, hint: 'Financial Statement' },
+      { pattern: /trustee.*report/, hint: 'Trustee Report' }
+    ];
 
-      // Store individual risk assessments
-      for (const risk of analysis.riskAssessment.riskFactors) {
-        await supabase
-          .from('osb_risk_assessments')
-          .insert({
-            analysis_id: documentId,
-            risk_type: risk.type,
-            severity: risk.severity,
-            description: risk.description,
-            suggested_action: risk.recommendation,
-            regulation_reference: risk.biaReference,
-            field_location: risk.fieldLocation,
-            created_at: new Date().toISOString()
-          });
+    for (const { pattern, hint } of formPatterns) {
+      if (pattern.test(lowerTitle)) {
+        return hint;
       }
-
-      // Update document metadata with extracted info
-      await supabase
-        .from('documents')
-        .update({
-          ai_processing_status: 'complete',
-          metadata: {
-            deepseek_analysis_complete: true,
-            form_type: analysis.formType,
-            form_number: analysis.formNumber,
-            client_name: analysis.clientName,
-            estate_number: analysis.estateNumber,
-            trustee_name: analysis.trusteeName,
-            confidence_score: analysis.confidence,
-            risk_level: analysis.riskAssessment.overallRisk,
-            extracted_fields: analysis.extractedFields,
-            analysis_completed_at: new Date().toISOString()
-          }
-        })
-        .eq('id', documentId);
-
-    } catch (error) {
-      console.error('Failed to store DeepSeek analysis results:', error);
     }
+
+    return 'Bankruptcy document';
   }
 
   /**
@@ -198,6 +199,126 @@ export class DeepSeekCoreService {
     } catch (error) {
       console.error('Failed to get analysis:', error);
       return null;
+    }
+  }
+
+  /**
+   * Trigger auto-categorization based on DeepSeek results
+   */
+  static async triggerAutoCategorization(analysis: DeepSeekAnalysisResult): Promise<void> {
+    if (!analysis.clientExtraction.debtorName || !analysis.formIdentification.formType) {
+      return;
+    }
+
+    try {
+      // Create client folder structure
+      const { data: clientFolder, error: folderError } = await supabase
+        .from('documents')
+        .upsert({
+          title: analysis.clientExtraction.debtorName,
+          is_folder: true,
+          folder_type: 'client',
+          metadata: {
+            client_name: analysis.clientExtraction.debtorName,
+            estate_number: analysis.clientExtraction.estateNumber,
+            auto_created: true,
+            created_at: new Date().toISOString()
+          }
+        })
+        .select()
+        .single();
+
+      if (!folderError && clientFolder) {
+        // Create form type subfolder
+        const formFolderName = `${analysis.formIdentification.formNumber} - ${analysis.formIdentification.formType}`;
+        const { data: formFolder } = await supabase
+          .from('documents')
+          .upsert({
+            title: formFolderName,
+            is_folder: true,
+            folder_type: 'form',
+            parent_folder_id: clientFolder.id,
+            metadata: {
+              form_number: analysis.formIdentification.formNumber,
+              form_type: analysis.formIdentification.formType,
+              auto_created: true
+            }
+          })
+          .select()
+          .single();
+
+        // Move document to appropriate folder
+        if (formFolder) {
+          await supabase
+            .from('documents')
+            .update({
+              parent_folder_id: formFolder.id,
+              metadata: {
+                auto_categorized: true,
+                categorized_at: new Date().toISOString(),
+                client_name: analysis.clientExtraction.debtorName,
+                form_type: analysis.formIdentification.formType,
+                form_number: analysis.formIdentification.formNumber,
+                estate_number: analysis.clientExtraction.estateNumber
+              }
+            })
+            .eq('id', analysis.documentId);
+        }
+      }
+    } catch (error) {
+      console.error('Auto-categorization failed:', error);
+    }
+  }
+
+  /**
+   * Create tasks from high-risk findings
+   */
+  static async createTasksFromRisks(analysis: DeepSeekAnalysisResult): Promise<void> {
+    const highRiskFactors = analysis.riskAssessment.riskFactors.filter(
+      risk => risk.severity === 'high'
+    );
+
+    for (const risk of highRiskFactors) {
+      await supabase
+        .from('tasks')
+        .insert({
+          title: `HIGH RISK: ${risk.type} - ${analysis.formIdentification.formType}`,
+          description: `${risk.description}\n\nRecommended Action: ${risk.recommendation}\n\nBIA Reference: ${risk.biaReference}\n\nField Location: ${risk.fieldLocation}`,
+          document_id: analysis.documentId,
+          priority: 'high',
+          status: 'pending',
+          ai_generated: true,
+          due_date: risk.deadline || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          metadata: {
+            risk_type: risk.type,
+            severity: risk.severity,
+            field_location: risk.fieldLocation,
+            bia_reference: risk.biaReference,
+            auto_created_by_deepseek: true,
+            analysis_confidence: analysis.metadata.analysisConfidence
+          }
+        });
+    }
+
+    // Create notification for risk findings
+    if (highRiskFactors.length > 0) {
+      await supabase.functions.invoke('handle-notifications', {
+        body: {
+          action: 'create',
+          notification: {
+            title: 'High Risk Issues Detected',
+            message: `${highRiskFactors.length} high-risk issues found in ${analysis.formIdentification.formType}`,
+            type: 'warning',
+            category: 'risk_assessment',
+            priority: 'high',
+            metadata: {
+              documentId: analysis.documentId,
+              riskCount: highRiskFactors.length,
+              formType: analysis.formIdentification.formType
+            }
+          }
+        }
+      });
     }
   }
 }

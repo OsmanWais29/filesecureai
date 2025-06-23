@@ -1,10 +1,11 @@
 
 import { supabase } from '@/lib/supabase';
+import { DeepSeekCoreService } from './DeepSeekCoreService';
 import { toast } from 'sonner';
 
 export interface DocumentProcessingPipeline {
   documentId: string;
-  stage: 'upload' | 'duplicate_check' | 'ai_analysis' | 'categorization' | 'risk_assessment' | 'complete';
+  stage: 'upload' | 'storage' | 'ocr' | 'deepseek_analysis' | 'categorization' | 'risk_assessment' | 'complete';
   progress: number;
   errors: string[];
   metadata: Record<string, any>;
@@ -12,18 +13,160 @@ export interface DocumentProcessingPipeline {
 
 export class DocumentProcessingPipelineService {
   /**
-   * Create enhanced document record with metadata preparation
+   * Complete document processing pipeline with DeepSeek AI as the nucleus
    */
-  static async createDocumentRecord(
+  static async processDocument(
+    file: File,
+    userId: string,
+    options: {
+      skipDuplicateCheck?: boolean;
+      forceAnalysis?: boolean;
+      clientHint?: string;
+    } = {}
+  ): Promise<{ success: boolean; documentId?: string; pipeline?: DocumentProcessingPipeline }> {
+    
+    const pipeline: DocumentProcessingPipeline = {
+      documentId: '',
+      stage: 'upload',
+      progress: 0,
+      errors: [],
+      metadata: {}
+    };
+
+    try {
+      // Stage 1: Create document record and upload to storage
+      pipeline.stage = 'upload';
+      pipeline.progress = 10;
+      
+      const documentId = await this.createDocumentRecord(file, userId, options.clientHint);
+      pipeline.documentId = documentId;
+
+      // Stage 2: Store file in Supabase Storage
+      pipeline.stage = 'storage';
+      pipeline.progress = 25;
+      
+      const storagePath = await this.uploadToStorage(file, userId, documentId);
+      
+      // Stage 3: Extract text content (OCR if needed)
+      pipeline.stage = 'ocr';
+      pipeline.progress = 40;
+      
+      const documentText = await this.extractTextContent(file, storagePath);
+      
+      // Stage 4: DeepSeek AI Analysis (THE NUCLEUS)
+      pipeline.stage = 'deepseek_analysis';
+      pipeline.progress = 55;
+      
+      toast.info('DeepSeek AI Analysis Starting', {
+        description: 'Advanced form recognition and risk assessment in progress'
+      });
+
+      // Store document text in metadata for DeepSeek analysis
+      await supabase
+        .from('documents')
+        .update({
+          storage_path: storagePath,
+          metadata: {
+            content: documentText,
+            processing_stage: 'deepseek_analysis',
+            deepseek_analysis_pending: true
+          }
+        })
+        .eq('id', documentId);
+
+      const analysisResult = await DeepSeekCoreService.analyzeDocument(documentId);
+      
+      if (!analysisResult) {
+        pipeline.errors.push('DeepSeek AI analysis failed');
+        return { success: false, pipeline };
+      }
+
+      pipeline.metadata.analysis = analysisResult;
+
+      // Stage 5: Auto-Categorization Based on DeepSeek Results
+      pipeline.stage = 'categorization';
+      pipeline.progress = 75;
+
+      await DeepSeekCoreService.triggerAutoCategorization(analysisResult);
+
+      // Stage 6: Risk Assessment & Task Generation
+      pipeline.stage = 'risk_assessment';
+      pipeline.progress = 90;
+
+      await DeepSeekCoreService.createTasksFromRisks(analysisResult);
+
+      // Stage 7: Complete
+      pipeline.stage = 'complete';
+      pipeline.progress = 100;
+
+      toast.success('Document processing complete', {
+        description: `${analysisResult.formIdentification.formType} analyzed with ${analysisResult.formIdentification.confidence}% confidence`
+      });
+
+      return { success: true, documentId, pipeline };
+
+    } catch (error) {
+      console.error('Document processing pipeline failed:', error);
+      pipeline.errors.push(error.message);
+      
+      toast.error('Document processing failed', {
+        description: error.message
+      });
+
+      return { success: false, pipeline };
+    }
+  }
+
+  /**
+   * Create document record with enhanced metadata
+   */
+  private static async createDocumentRecord(
     file: File, 
     userId: string, 
     clientHint?: string
   ): Promise<string> {
     const timestamp = new Date().toISOString();
     const fileExt = file.name.split('.').pop();
-    const storagePath = `${userId}/${timestamp.replace(/[:.]/g, '-')}_${file.name}`;
 
-    // Upload to storage first
+    const { data: document, error } = await supabase
+      .from('documents')
+      .insert({
+        title: file.name,
+        type: file.type,
+        size: file.size,
+        user_id: userId,
+        ai_processing_status: 'pending',
+        metadata: {
+          original_name: file.name,
+          uploaded_at: timestamp,
+          file_extension: fileExt,
+          client_hint: clientHint,
+          processing_stage: 'created',
+          deepseek_analysis_pending: true
+        }
+      })
+      .select()
+      .single();
+
+    if (error || !document) {
+      throw new Error(`Document record creation failed: ${error?.message}`);
+    }
+
+    return document.id;
+  }
+
+  /**
+   * Upload file to Supabase Storage
+   */
+  private static async uploadToStorage(
+    file: File,
+    userId: string,
+    documentId: string
+  ): Promise<string> {
+    const timestamp = new Date().toISOString();
+    const fileExt = file.name.split('.').pop();
+    const storagePath = `${userId}/${timestamp.replace(/[:.]/g, '-')}_${documentId}.${fileExt}`;
+
     const { error: uploadError } = await supabase.storage
       .from('documents')
       .upload(storagePath, file);
@@ -32,33 +175,20 @@ export class DocumentProcessingPipelineService {
       throw new Error(`Storage upload failed: ${uploadError.message}`);
     }
 
-    // Create document record with enhanced metadata
-    const { data: document, error: docError } = await supabase
-      .from('documents')
-      .insert({
-        title: file.name,
-        storage_path: storagePath,
-        type: file.type,
-        size: file.size,
-        user_id: userId,
-        ai_processing_status: 'pending',
-        metadata: {
-          originalName: file.name,
-          uploadedAt: timestamp,
-          fileExtension: fileExt,
-          clientHint: clientHint,
-          processingStage: 'created',
-          deepseekAnalysisPending: true
-        }
-      })
-      .select()
-      .single();
+    return storagePath;
+  }
 
-    if (docError || !document) {
-      throw new Error(`Document record creation failed: ${docError?.message}`);
+  /**
+   * Extract text content from uploaded file
+   */
+  private static async extractTextContent(file: File, storagePath: string): Promise<string> {
+    // For now, return basic content - in production this would use OCR
+    if (file.type === 'text/plain') {
+      return await file.text();
     }
-
-    return document.id;
+    
+    // For PDF/images, we'll return the filename and metadata for DeepSeek to work with
+    return `Document: ${file.name}\nType: ${file.type}\nSize: ${file.size} bytes\nStorage: ${storagePath}`;
   }
 
   /**
@@ -92,7 +222,7 @@ export class DocumentProcessingPipelineService {
   private static mapProcessingStage(status: string): DocumentProcessingPipeline['stage'] {
     switch (status) {
       case 'pending': return 'upload';
-      case 'processing': return 'ai_analysis';
+      case 'processing': return 'deepseek_analysis';
       case 'complete': return 'complete';
       case 'failed': return 'complete';
       default: return 'upload';
