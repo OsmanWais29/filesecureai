@@ -99,6 +99,11 @@ export const EnhancedDocumentViewer: React.FC<EnhancedDocumentViewerProps> = ({
     setRefreshKey(prev => prev + 1);
   };
 
+  const handleCommentAdded = () => {
+    // Refresh document to update comment count or other related data
+    fetchDocument();
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -242,7 +247,10 @@ export const EnhancedDocumentViewer: React.FC<EnhancedDocumentViewerProps> = ({
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <EnhancedComments documentId={documentId} />
+            <EnhancedComments 
+              documentId={documentId} 
+              onCommentAdded={handleCommentAdded}
+            />
           </CardContent>
         </Card>
       </div>
