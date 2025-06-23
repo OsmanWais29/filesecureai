@@ -28,7 +28,7 @@
     --ring: 197 100% 21%;
     --radius: 0.75rem;
     
-    /* Enhanced sidebar dimensions */
+    /* Sidebar dimensions - standardized across components */
     --sidebar-width: 16rem;
     --sidebar-collapsed-width: 4rem;
     --document-sidebar-width: 16rem;
@@ -96,14 +96,15 @@
   body {
     @apply bg-background text-foreground antialiased transition-colors duration-300;
     font-feature-settings: "rlig" 1, "calt" 1;
-    font-family: 'Inter', system-ui, sans-serif;
   }
   
+  /* Ensure root element follows theme */
   #root {
     @apply w-full max-w-none m-0 p-0 bg-background text-foreground transition-colors duration-300;
     min-height: 100vh;
   }
   
+  /* Force all elements to respect theme colors */
   .theme-transition * {
     @apply transition-colors duration-300;
   }
@@ -111,7 +112,7 @@
 
 @layer components {
   .glass-panel {
-    @apply bg-card/90 backdrop-blur-lg border border-border/50 shadow-xl;
+    @apply bg-card/80 backdrop-blur-sm border border-border/50 shadow-lg;
   }
   
   .gradient-header {
@@ -125,13 +126,14 @@
   }
 
   .card-highlight {
-    @apply hover:shadow-xl hover:border-primary/30 transition-all duration-300 transform hover:-translate-y-1;
+    @apply hover:shadow-md hover:border-primary/20 transition-all duration-200;
   }
 
   .sidebar-gradient {
     background: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--card)) 100%);
   }
   
+  /* Responsive content containers - updated for consistency */
   .content-container {
     @apply transition-all duration-300 w-full bg-background;
   }
@@ -148,11 +150,144 @@
     width: calc(100% - var(--sidebar-collapsed-width, 4rem));
   }
   
-  .document-card {
-    @apply rounded-lg border bg-card shadow-sm hover:shadow-lg 
-    transition-all duration-300 h-full flex flex-col transform hover:scale-[1.02];
+  .document-content-with-sidebar {
+    @apply transition-all duration-300 bg-background;
+    margin-left: var(--document-sidebar-width, 16rem);
+    width: calc(100% - var(--document-sidebar-width, 16rem));
   }
   
+  .document-content-with-collapsed-sidebar {
+    @apply transition-all duration-300 bg-background;
+    margin-left: var(--document-sidebar-collapsed-width, 4rem);
+    width: calc(100% - var(--document-sidebar-collapsed-width, 4rem));
+  }
+  
+  .client-content-with-sidebar {
+    @apply transition-all duration-300 bg-background;
+    margin-left: var(--client-sidebar-width, 16rem);
+    width: calc(100% - var(--client-sidebar-width, 16rem));
+  }
+  
+  .client-content-with-collapsed-sidebar {
+    @apply transition-all duration-300 bg-background;
+    margin-left: var(--client-sidebar-collapsed-width, 4rem);
+    width: calc(100% - var(--client-sidebar-collapsed-width, 4rem));
+  }
+  
+  .safa-content-with-sidebar {
+    @apply transition-all duration-300 bg-background;
+    margin-left: var(--safa-sidebar-width, 16rem);
+    width: calc(100% - var(--safa-sidebar-width, 16rem));
+  }
+  
+  .safa-content-with-collapsed-sidebar {
+    @apply transition-all duration-300 bg-background;
+    margin-left: var(--safa-sidebar-collapsed-width, 4rem);
+    width: calc(100% - var(--safa-sidebar-collapsed-width, 4rem));
+  }
+  
+  /* Improved responsive grid layouts */
+  .responsive-grid {
+    @apply grid gap-4 transition-all duration-300;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+  
+  /* Enhanced document cards */
+  .document-card {
+    @apply rounded-lg border bg-card shadow-sm hover:shadow-md 
+    transition-all duration-200 h-full flex flex-col;
+  }
+  
+  /* Make footer stick to bottom */
+  .footer-fixed {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 40;
+  }
+  
+  /* Document viewer specific styles */
+  .document-viewer-container {
+    @apply h-full rounded-lg overflow-hidden border border-border/50;
+  }
+  
+  /* Enhanced document viewer styles */
+  .doc-sidebar {
+    @apply bg-card shadow-sm rounded-md overflow-auto;
+  }
+  
+  .doc-content {
+    @apply bg-muted/10 shadow-sm rounded-md overflow-auto;
+  }
+  
+  .doc-collaboration {
+    @apply bg-card shadow-sm rounded-md overflow-auto;
+  }
+
+  /* Document details enhanced styles */
+  .doc-detail-item {
+    @apply flex items-start py-2 border-b border-muted last:border-0;
+  }
+  
+  .doc-detail-label {
+    @apply flex items-center min-w-[180px] mr-2 text-sm text-muted-foreground;
+  }
+  
+  .doc-detail-value {
+    @apply text-sm font-medium;
+  }
+  
+  /* Document risk and task cards */
+  .doc-card {
+    @apply bg-card rounded-md shadow-sm border border-border/30 p-3 hover:shadow-md transition-shadow;
+  }
+  
+  .doc-card-header {
+    @apply flex items-center justify-between mb-2;
+  }
+  
+  .doc-card-title {
+    @apply text-sm font-medium;
+  }
+  
+  .doc-card-content {
+    @apply text-sm text-muted-foreground;
+  }
+
+  /* Better document sidebar readability */
+  .sidebar-section {
+    @apply bg-card rounded-md shadow-sm p-4 mb-4;
+  }
+  
+  .sidebar-section-header {
+    @apply flex items-center gap-2 mb-3 pb-2 border-b border-border/50;
+  }
+  
+  .sidebar-section-title {
+    @apply font-medium text-sm text-foreground;
+  }
+  
+  .collaboration-panel-bottom {
+    @apply fixed bottom-0 left-0 right-0 bg-background border-t border-border/50;
+    height: 300px;
+    z-index: 50;
+    box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+  
+  .document-field-row {
+    @apply flex items-start py-2 border-b border-muted/50 last:border-0;
+  }
+  
+  .document-field-label {
+    @apply flex items-center min-w-[120px] text-xs font-medium text-muted-foreground;
+  }
+  
+  .document-field-value {
+    @apply text-sm text-foreground;
+  }
+
+  /* Animation classes for smoother transitions */
   .fade-in {
     @apply transition-opacity duration-300 ease-in-out;
   }
@@ -162,24 +297,11 @@
   }
   
   .page-transition {
-    @apply animate-in fade-in slide-in-from-bottom-5 duration-500;
-  }
-
-  /* Enhanced animations */
-  .feature-card {
-    @apply transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl;
-  }
-
-  .status-indicator {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium;
-  }
-
-  .gradient-text {
-    @apply bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent;
+    @apply animate-in fade-in slide-in-from-bottom-5 duration-300;
   }
 }
 
-/* Enhanced dark mode transitions */
+/* Dark mode transition - Enhanced */
 html.dark-mode-transition,
 html.dark-mode-transition *,
 .dark-mode-transition,
@@ -187,6 +309,7 @@ html.dark-mode-transition *,
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, fill 0.3s ease, stroke 0.3s ease !important;
 }
 
+/* Force dark mode styles */
 .dark,
 [data-theme="dark"] {
   color-scheme: dark;
@@ -195,46 +318,4 @@ html.dark-mode-transition *,
 .dark *,
 [data-theme="dark"] * {
   @apply border-border;
-}
-
-/* Enhanced scroll bars */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  @apply bg-transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  @apply bg-border rounded-full;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  @apply bg-border/80;
-}
-
-/* Enhanced focus states */
-*:focus-visible {
-  @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
-}
-
-/* Custom animations */
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-}
-
-.float-animation {
-  animation: float 3s ease-in-out infinite;
-}
-
-@keyframes pulse-slow {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-.pulse-slow {
-  animation: pulse-slow 2s ease-in-out infinite;
 }

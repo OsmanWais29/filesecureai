@@ -1,260 +1,238 @@
 
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 import { 
-  Home, 
-  FileText, 
-  Users, 
-  Settings, 
-  Shield,
-  BarChart3,
-  Menu,
-  ChevronLeft,
-  LogOut,
-  Brain,
-  DollarSign,
-  FileSearch,
-  Eye,
-  Lock,
-  CheckSquare,
-  Bell,
-  Calendar,
-  Search,
-  TrendingUp,
-  Activity,
-  Zap
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useAuthState } from '@/hooks/useAuthState';
+  BrainCog, Bell, FileText, Home, MessageCircle, PieChart, Settings, 
+  User, Users, FileCheck, Menu, X, FileSearch, ChevronRight, ChevronLeft, 
+  Activity, ShieldCheck
+} from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 
 export const MainSidebar = () => {
-  const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
-  const { signOut } = useAuthState();
+  const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isMobile = useIsMobile();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const navigation = [
-    { 
-      name: 'Dashboard', 
-      href: '/', 
-      icon: Home,
-      description: 'Main overview and statistics',
-      badge: null
-    },
-    { 
-      name: 'Document Management', 
-      href: '/documents', 
-      icon: FileText,
-      description: 'Upload, organize, and manage documents',
-      badge: null
-    },
-    { 
-      name: 'SAFA - AI Assistant', 
-      href: '/safa', 
-      icon: Brain,
-      description: 'Smart AI Financial Assistant',
-      badge: 'AI'
-    },
-    { 
-      name: 'CRM & Client Portal', 
-      href: '/crm', 
-      icon: Users,
-      description: 'Manage client relationships',
-      badge: null
-    },
-    { 
-      name: 'Advanced Features', 
-      href: '/advanced-features', 
-      icon: Zap,
-      description: 'PDF to XML, Smart Income, Analytics',
-      badge: 'Pro'
-    },
-    { 
-      name: 'Audit Trail', 
-      href: '/audit-trail', 
-      icon: Shield,
-      description: 'Security logs and compliance tracking',
-      badge: null
-    },
-    { 
-      name: 'Advanced Audit', 
-      href: '/audit-advanced', 
-      icon: Eye,
-      description: 'Detailed audit analytics',
-      badge: null
-    },
-    { 
-      name: 'Production Audit', 
-      href: '/audit', 
-      icon: Lock,
-      description: 'Production environment logs',
-      badge: null
-    },
-    { 
-      name: 'Settings', 
-      href: '/settings', 
-      icon: Settings,
-      description: 'Application configuration',
-      badge: null
+  // Close sidebar when route changes on mobile
+  useEffect(() => {
+    if (isMobile) {
+      setIsSidebarOpen(false);
     }
+  }, [location.pathname, isMobile]);
+
+  // Emit custom event when sidebar collapses/expands
+  useEffect(() => {
+    // Create and dispatch a custom event for sidebar collapse
+    const customEvent = new CustomEvent('sidebarCollapse', { 
+      detail: { collapsed: isCollapsed } 
+    });
+    window.dispatchEvent(customEvent);
+
+    // Small delay to allow transition to complete
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [isCollapsed]);
+
+  // Set CSS custom property for sidebar width
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      '--sidebar-width', 
+      isCollapsed ? '4rem' : '16rem'
+    );
+
+    return () => {
+      document.documentElement.style.removeProperty('--sidebar-width');
+    };
+  }, [isCollapsed]);
+
+  // Navigation item definitions with corrected paths and icons
+  const navigationItems = [
+    { icon: Home, label: "Home", path: "/" },
+    { icon: FileText, label: "Documents", path: "/documents" },
+    { icon: FileSearch, label: "Converter", path: "/converter" },
+    { icon: MessageCircle, label: "SAFA", path: "/SAFA" },
+    { icon: Users, label: "CRM", path: "/crm" },
+    { icon: Activity, label: "Smart Income Expense", path: "/activity" },
+    { icon: FileCheck, label: "E-Filing", path: "/e-filing" },
+    { icon: ShieldCheck, label: "Audit Trail", path: "/audit" },
+    { icon: PieChart, label: "Analytics", path: "/analytics" },
+    { icon: Bell, label: "Notifications", path: "/notifications" },
   ];
 
-  const quickActions = [
-    { name: 'Search Documents', icon: Search, action: () => console.log('Search'), color: 'text-blue-600' },
-    { name: 'Notifications', icon: Bell, action: () => console.log('Notifications'), color: 'text-orange-600' },
-    { name: 'Calendar', icon: Calendar, action: () => console.log('Calendar'), color: 'text-green-600' },
-    { name: 'Tasks', icon: CheckSquare, action: () => console.log('Tasks'), color: 'text-purple-600' }
-  ];
-
-  const toggleSidebar = () => {
-    setCollapsed(!collapsed);
-    window.dispatchEvent(new CustomEvent('sidebarCollapse', { 
-      detail: { collapsed: !collapsed } 
-    }));
+  const isActivePath = (path: string) => {
+    if (path === "/") {
+      return location.pathname === "/" || location.pathname === "/index";
+    }
+    return location.pathname.startsWith(path);
   };
 
-  return (
-    <div className={cn(
-      "fixed left-0 top-0 h-full bg-gradient-to-b from-card to-card/95 border-r border-border/50 backdrop-blur-sm transition-all duration-300 z-40 flex flex-col shadow-xl",
-      collapsed ? "w-16" : "w-64"
-    )}>
-      {/* Enhanced Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border/50 bg-gradient-to-r from-primary/5 to-primary/10">
-        {!collapsed && (
-          <div className="flex flex-col">
-            <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-              SecureFiles AI
-            </h1>
-            <p className="text-xs text-muted-foreground">Trustee Portal</p>
-          </div>
-        )}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={toggleSidebar}
-          className="ml-auto hover:bg-primary/10"
-        >
-          {collapsed ? <Menu className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-        </Button>
-      </div>
+  const handleNavigation = (path: string) => {
+    navigate(path);
+    if (isMobile) {
+      setIsSidebarOpen(false);
+    }
+  };
 
-      {/* Navigation */}
-      <nav className="flex-1 p-2 overflow-y-auto">
-        <ul className="space-y-1">
-          {navigation.map((item) => {
-            const isActive = location.pathname === item.href;
-            return (
-              <li key={item.name}>
-                <Link
-                  to={item.href}
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200 group relative overflow-hidden",
-                    isActive 
-                      ? "bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-lg" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-                    collapsed && "justify-center px-2"
-                  )}
-                  title={collapsed ? item.name : ''}
-                >
-                  <item.icon className="h-4 w-4 flex-shrink-0" />
-                  {!collapsed && (
-                    <>
-                      <div className="flex flex-col flex-1">
-                        <span className="flex items-center gap-2">
-                          {item.name}
-                          {item.badge && (
-                            <Badge 
-                              variant={isActive ? "secondary" : "outline"} 
-                              className="text-xs px-1.5 py-0.5"
-                            >
-                              {item.badge}
-                            </Badge>
-                          )}
-                        </span>
-                        <span className="text-xs opacity-70 group-hover:opacity-100 transition-opacity">
-                          {item.description}
-                        </span>
-                      </div>
-                    </>
-                  )}
-                  {isActive && !collapsed && (
-                    <div className="absolute right-0 top-0 bottom-0 w-1 bg-primary-foreground rounded-l-full" />
-                  )}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-
-        {/* Quick Actions */}
-        {!collapsed && (
-          <div className="mt-6 pt-4 border-t border-border/50">
-            <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-              Quick Actions
-            </h3>
-            <ul className="space-y-1">
-              {quickActions.map((action) => (
-                <li key={action.name}>
-                  <Button
-                    variant="ghost"
-                    onClick={action.action}
-                    className="w-full justify-start gap-3 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 h-10"
-                  >
-                    <action.icon className={`h-4 w-4 flex-shrink-0 ${action.color}`} />
-                    <span>{action.name}</span>
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Enhanced Status Indicators */}
-        {!collapsed && (
-          <div className="mt-6 pt-4 border-t border-border/50">
-            <div className="px-3 space-y-3">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">System Status</span>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-green-600 font-medium">Online</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Compliance</span>
-                <div className="flex items-center gap-2">
-                  <CheckSquare className="h-3 w-3 text-green-600" />
-                  <span className="text-green-600 font-medium">98.5%</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">AI Processing</span>
-                <div className="flex items-center gap-2">
-                  <Activity className="h-3 w-3 text-blue-600" />
-                  <span className="text-blue-600 font-medium">Active</span>
-                </div>
-              </div>
+  const SidebarContent = () => (
+    <>
+      {/* App Logo */}
+      <div className="p-4 border-b border-border flex justify-between items-center bg-background">
+        {!isCollapsed && (
+          <Button
+            variant="ghost"
+            className="w-full justify-start px-2 py-4 hover:bg-accent/10 text-foreground"
+            onClick={() => handleNavigation('/')}
+          >
+            <div className="flex items-center gap-2">
+              <img 
+                src="/lovable-uploads/b8620d24-fab6-4068-9af7-3e91ace7b559.png" 
+                alt="Secure Files AI Logo" 
+                className="w-9 h-9"
+              />
+              <span className="font-bold text-lg text-foreground">
+                Secure Files AI
+              </span>
             </div>
-          </div>
+          </Button>
         )}
-      </nav>
 
-      {/* Enhanced Footer */}
-      <div className="p-2 border-t border-border/50 bg-gradient-to-r from-muted/30 to-muted/20">
-        <Button
+        {!isMobile && (
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="rounded-full h-8 w-8 flex-shrink-0 hover:bg-accent/10 text-foreground"
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </Button>
+        )}
+      </div>
+
+      {/* Navigation Links with ScrollArea */}
+      <ScrollArea className="flex-1 bg-background">
+        <nav className="px-3 py-2 space-y-1">
+          {navigationItems.map((item) => (
+            <Button
+              key={item.label}
+              variant="ghost"
+              className={cn(
+                "w-full justify-start gap-3 px-4 py-6 h-auto text-foreground",
+                "hover:bg-accent/10 hover:text-accent transition-colors duration-200",
+                isActivePath(item.path) && "bg-accent/10 text-accent"
+              )}
+              onClick={() => handleNavigation(item.path)}
+              title={isCollapsed ? item.label : undefined}
+            >
+              <item.icon className={cn(
+                "h-5 w-5",
+                isActivePath(item.path) ? "text-accent" : "text-muted-foreground group-hover:text-accent"
+              )} />
+              {!isCollapsed && (
+                <span className={cn(
+                  "text-sm font-medium",
+                  isActivePath(item.path) ? "text-accent" : "text-foreground"
+                )}>
+                  {item.label}
+                </span>
+              )}
+            </Button>
+          ))}
+        </nav>
+      </ScrollArea>
+
+      {/* Bottom Section */}
+      <div className="px-3 py-4 border-t border-border bg-background">
+        <Button 
           variant="ghost"
-          onClick={signOut}
           className={cn(
-            "w-full justify-start gap-3 text-muted-foreground hover:text-foreground hover:bg-destructive/10 hover:text-destructive transition-all",
-            collapsed && "justify-center px-2"
+            "w-full justify-start gap-3 px-4 py-6 h-auto hover:bg-accent/10 hover:text-accent text-foreground",
+            isActivePath("/settings") && "bg-accent/10 text-accent"
           )}
-          title={collapsed ? "Sign Out" : ''}
+          onClick={() => handleNavigation("/settings")}
+          title={isCollapsed ? "Settings" : undefined}
         >
-          <LogOut className="h-4 w-4 flex-shrink-0" />
-          {!collapsed && <span>Sign Out</span>}
+          <Settings className={cn(
+            "h-5 w-5", 
+            isActivePath("/settings") ? "text-accent" : "text-muted-foreground"
+          )} />
+          {!isCollapsed && (
+            <span className={cn(
+              "text-sm font-medium",
+              isActivePath("/settings") ? "text-accent" : "text-foreground"
+            )}>Settings</span>
+          )}
+        </Button>
+        
+        <Button 
+          variant="ghost"
+          className={cn(
+            "w-full justify-start gap-3 px-4 py-6 h-auto hover:bg-accent/10 hover:text-accent text-foreground",
+            isActivePath("/profile") && "bg-accent/10 text-accent"
+          )}
+          onClick={() => handleNavigation("/profile")}
+          title={isCollapsed ? "Profile" : undefined}
+        >
+          <User className={cn(
+            "h-5 w-5", 
+            isActivePath("/profile") ? "text-accent" : "text-muted-foreground"
+          )} />
+          {!isCollapsed && (
+            <span className={cn(
+              "text-sm font-medium",
+              isActivePath("/profile") ? "text-accent" : "text-foreground"
+            )}>Profile</span>
+          )}
         </Button>
       </div>
-    </div>
+    </>
+  );
+
+  // Mobile menu toggle button
+  const MobileMenuButton = () => (
+    <Button 
+      variant="ghost" 
+      size="icon" 
+      className="fixed top-4 left-4 z-50 md:hidden bg-background text-foreground hover:bg-accent/10"
+      onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+    >
+      {isSidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+    </Button>
+  );
+
+  // For mobile: use sheet component
+  if (isMobile) {
+    return (
+      <>
+        <MobileMenuButton />
+        <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
+          <SheetContent side="left" className="p-0 w-64 bg-background">
+            <SidebarContent />
+          </SheetContent>
+        </Sheet>
+      </>
+    );
+  }
+
+  // For desktop: use fixed sidebar
+  return (
+    <aside className={cn(
+      "h-screen flex flex-col fixed left-0 top-0 z-40 border-r border-border shadow-sm transition-all duration-300 bg-background",
+      isCollapsed ? "w-16" : "w-64"
+    )}>
+      <SidebarContent />
+    </aside>
   );
 };

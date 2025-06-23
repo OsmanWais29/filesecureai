@@ -1,9 +1,24 @@
 
 import React from 'react';
-import { Auth } from '@/components/Auth';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 const LoginPage: React.FC = () => {
-  return <Auth isClientPortal={false} />;
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="text-2xl text-center">Login to SecureFiles AI</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Input placeholder="Email" type="email" />
+          <Input placeholder="Password" type="password" />
+          <Button className="w-full">Sign In</Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
 };
 
 export default LoginPage;
