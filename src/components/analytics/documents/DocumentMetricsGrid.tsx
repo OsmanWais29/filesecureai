@@ -10,18 +10,24 @@ export const DocumentMetricsGrid = () => {
         value="320"
         description="+12% from last month"
         icon={Activity}
+        trend="up"
+        change="+12% from last month"
       />
       <MetricCard
         title="Time Saved"
         value="87 hours"
         description="This quarter"
         icon={Clock}
+        trend="up"
+        change="This quarter"
       />
       <MetricCard
         title="Error Reduction"
         value="-65%"
         description="Year over year"
         icon={AlertTriangle}
+        trend="down"
+        change="Year over year"
       />
     </div>
   );

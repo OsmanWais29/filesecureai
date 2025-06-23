@@ -1,4 +1,6 @@
 
+import { LucideIcon } from 'lucide-react';
+
 export interface AnalyticsMetric {
   id: string;
   name: string;
@@ -103,4 +105,18 @@ export interface AnalyticsExport {
     frequency: 'daily' | 'weekly' | 'monthly';
     recipients: string[];
   };
+}
+
+// New types for analytics categories and modules
+export interface AnalyticsModule {
+  id: string;
+  name: string;
+  icon: LucideIcon;
+  component: React.ComponentType<any>;
+}
+
+export interface CategoryData {
+  id: string;
+  name: string;
+  modules: AnalyticsModule[];
 }

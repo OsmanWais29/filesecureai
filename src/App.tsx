@@ -1,16 +1,17 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster"
 import { QueryProvider } from './providers/QueryProvider';
 import TaskManagementPage from './pages/TaskManagementPage';
-import { DocumentViewerPage } from './pages/DocumentViewerPage';
-import { ClientPage } from './pages/ClientPage';
-import { HomePage } from './pages/HomePage';
-import { LoginPage } from './pages/LoginPage';
+import DocumentViewerPage from './pages/DocumentViewerPage';
+import ClientPage from './pages/ClientPage';
+import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
 import { AuthCheck } from './components/AuthCheck';
-import { SignupPage } from './pages/SignupPage';
-import { WorkflowPage } from './pages/WorkflowPage';
-import { SettingsPage } from './pages/SettingsPage';
+import SignupPage from './pages/SignupPage';
+import WorkflowPage from './pages/WorkflowPage';
+import SettingsPage from './pages/SettingsPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 
 function App() {

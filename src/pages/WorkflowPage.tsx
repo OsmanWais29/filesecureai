@@ -1,21 +1,18 @@
 
 import React from 'react';
-import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-const DocumentViewerPage: React.FC = () => {
-  const { documentId } = useParams<{ documentId: string }>();
-
+const WorkflowPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Document Viewer</h1>
+        <h1 className="text-3xl font-bold mb-6">Workflow Management</h1>
         <Card>
           <CardHeader>
-            <CardTitle>Document ID: {documentId}</CardTitle>
+            <CardTitle>Workflows</CardTitle>
           </CardHeader>
           <CardContent>
-            <p>Document viewer coming soon...</p>
+            <p>Workflow features coming soon...</p>
           </CardContent>
         </Card>
       </div>
@@ -23,4 +20,4 @@ const DocumentViewerPage: React.FC = () => {
   );
 };
 
-export default DocumentViewerPage;
+export default WorkflowPage;
