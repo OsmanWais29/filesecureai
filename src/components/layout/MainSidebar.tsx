@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { 
   Home, 
   FileText, 
@@ -12,25 +13,18 @@ import {
   Menu,
   ChevronLeft,
   LogOut,
-  FolderOpen,
-  Search,
+  Brain,
+  DollarSign,
+  FileSearch,
+  Eye,
+  Lock,
+  CheckSquare,
   Bell,
   Calendar,
+  Search,
   TrendingUp,
-  Database,
-  MessageSquare,
-  HelpCircle,
-  Archive,
-  CheckSquare,
-  AlertTriangle,
-  UserCheck,
-  Building,
-  CreditCard,
-  FileCheck,
   Activity,
-  Brain,
-  Lock,
-  Eye
+  Zap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthState } from '@/hooks/useAuthState';
@@ -45,68 +39,76 @@ export const MainSidebar = () => {
       name: 'Dashboard', 
       href: '/', 
       icon: Home,
-      description: 'Main overview and statistics'
+      description: 'Main overview and statistics',
+      badge: null
     },
     { 
       name: 'Document Management', 
       href: '/documents', 
       icon: FileText,
-      description: 'Upload, organize, and manage documents'
+      description: 'Upload, organize, and manage documents',
+      badge: null
     },
     { 
-      name: 'Client Portal', 
-      href: '/crm', 
-      icon: Users,
-      description: 'Manage client relationships and communications'
-    },
-    { 
-      name: 'AI Analysis', 
+      name: 'SAFA - AI Assistant', 
       href: '/safa', 
       icon: Brain,
-      description: 'Advanced AI document analysis and insights'
+      description: 'Smart AI Financial Assistant',
+      badge: 'AI'
     },
     { 
-      name: 'Analytics & Reports', 
+      name: 'CRM & Client Portal', 
+      href: '/crm', 
+      icon: Users,
+      description: 'Manage client relationships',
+      badge: null
+    },
+    { 
+      name: 'Advanced Features', 
       href: '/advanced-features', 
-      icon: BarChart3,
-      description: 'Business intelligence and reporting'
+      icon: Zap,
+      description: 'PDF to XML, Smart Income, Analytics',
+      badge: 'Pro'
     },
     { 
       name: 'Audit Trail', 
       href: '/audit-trail', 
       icon: Shield,
-      description: 'Security logs and compliance tracking'
+      description: 'Security logs and compliance tracking',
+      badge: null
     },
     { 
       name: 'Advanced Audit', 
       href: '/audit-advanced', 
       icon: Eye,
-      description: 'Detailed audit analytics and monitoring'
+      description: 'Detailed audit analytics',
+      badge: null
     },
     { 
       name: 'Production Audit', 
       href: '/audit', 
       icon: Lock,
-      description: 'Production environment audit logs'
+      description: 'Production environment logs',
+      badge: null
     },
     { 
       name: 'Settings', 
       href: '/settings', 
       icon: Settings,
-      description: 'Application configuration and preferences'
+      description: 'Application configuration',
+      badge: null
     }
   ];
 
   const quickActions = [
-    { name: 'Search Documents', icon: Search, action: () => console.log('Search') },
-    { name: 'Notifications', icon: Bell, action: () => console.log('Notifications') },
-    { name: 'Calendar', icon: Calendar, action: () => console.log('Calendar') },
-    { name: 'Tasks', icon: CheckSquare, action: () => console.log('Tasks') }
+    { name: 'Search Documents', icon: Search, action: () => console.log('Search'), color: 'text-blue-600' },
+    { name: 'Notifications', icon: Bell, action: () => console.log('Notifications'), color: 'text-orange-600' },
+    { name: 'Calendar', icon: Calendar, action: () => console.log('Calendar'), color: 'text-green-600' },
+    { name: 'Tasks', icon: CheckSquare, action: () => console.log('Tasks'), color: 'text-purple-600' }
   ];
 
   const toggleSidebar = () => {
     setCollapsed(!collapsed);
-    // Dispatch custom event for layout to listen to
     window.dispatchEvent(new CustomEvent('sidebarCollapse', { 
       detail: { collapsed: !collapsed } 
     }));
@@ -114,14 +116,16 @@ export const MainSidebar = () => {
 
   return (
     <div className={cn(
-      "fixed left-0 top-0 h-full bg-card border-r border-border transition-all duration-300 z-40 flex flex-col",
+      "fixed left-0 top-0 h-full bg-gradient-to-b from-card to-card/95 border-r border-border/50 backdrop-blur-sm transition-all duration-300 z-40 flex flex-col shadow-xl",
       collapsed ? "w-16" : "w-64"
     )}>
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
+      {/* Enhanced Header */}
+      <div className="flex items-center justify-between p-4 border-b border-border/50 bg-gradient-to-r from-primary/5 to-primary/10">
         {!collapsed && (
           <div className="flex flex-col">
-            <h1 className="text-xl font-bold text-primary">SecureFiles AI</h1>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              SecureFiles AI
+            </h1>
             <p className="text-xs text-muted-foreground">Trustee Portal</p>
           </div>
         )}
@@ -129,7 +133,7 @@ export const MainSidebar = () => {
           variant="ghost"
           size="sm"
           onClick={toggleSidebar}
-          className="ml-auto"
+          className="ml-auto hover:bg-primary/10"
         >
           {collapsed ? <Menu className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </Button>
@@ -145,22 +149,37 @@ export const MainSidebar = () => {
                 <Link
                   to={item.href}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors group",
+                    "flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200 group relative overflow-hidden",
                     isActive 
-                      ? "bg-primary text-primary-foreground" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted",
+                      ? "bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-lg" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
                     collapsed && "justify-center px-2"
                   )}
                   title={collapsed ? item.name : ''}
                 >
                   <item.icon className="h-4 w-4 flex-shrink-0" />
                   {!collapsed && (
-                    <div className="flex flex-col">
-                      <span>{item.name}</span>
-                      <span className="text-xs opacity-70 group-hover:opacity-100">
-                        {item.description}
-                      </span>
-                    </div>
+                    <>
+                      <div className="flex flex-col flex-1">
+                        <span className="flex items-center gap-2">
+                          {item.name}
+                          {item.badge && (
+                            <Badge 
+                              variant={isActive ? "secondary" : "outline"} 
+                              className="text-xs px-1.5 py-0.5"
+                            >
+                              {item.badge}
+                            </Badge>
+                          )}
+                        </span>
+                        <span className="text-xs opacity-70 group-hover:opacity-100 transition-opacity">
+                          {item.description}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                  {isActive && !collapsed && (
+                    <div className="absolute right-0 top-0 bottom-0 w-1 bg-primary-foreground rounded-l-full" />
                   )}
                 </Link>
               </li>
@@ -170,19 +189,19 @@ export const MainSidebar = () => {
 
         {/* Quick Actions */}
         {!collapsed && (
-          <div className="mt-6 pt-4 border-t border-border">
-            <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          <div className="mt-6 pt-4 border-t border-border/50">
+            <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
               Quick Actions
             </h3>
-            <ul className="mt-2 space-y-1">
+            <ul className="space-y-1">
               {quickActions.map((action) => (
                 <li key={action.name}>
                   <Button
                     variant="ghost"
                     onClick={action.action}
-                    className="w-full justify-start gap-3 text-sm text-muted-foreground hover:text-foreground"
+                    className="w-full justify-start gap-3 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 h-10"
                   >
-                    <action.icon className="h-4 w-4 flex-shrink-0" />
+                    <action.icon className={`h-4 w-4 flex-shrink-0 ${action.color}`} />
                     <span>{action.name}</span>
                   </Button>
                 </li>
@@ -191,22 +210,29 @@ export const MainSidebar = () => {
           </div>
         )}
 
-        {/* Status Indicators */}
+        {/* Enhanced Status Indicators */}
         {!collapsed && (
-          <div className="mt-6 pt-4 border-t border-border">
-            <div className="px-3 space-y-2">
+          <div className="mt-6 pt-4 border-t border-border/50">
+            <div className="px-3 space-y-3">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">System Status</span>
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-green-600">Online</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-green-600 font-medium">Online</span>
                 </div>
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Compliance</span>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
                   <CheckSquare className="h-3 w-3 text-green-600" />
-                  <span className="text-green-600">98.5%</span>
+                  <span className="text-green-600 font-medium">98.5%</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">AI Processing</span>
+                <div className="flex items-center gap-2">
+                  <Activity className="h-3 w-3 text-blue-600" />
+                  <span className="text-blue-600 font-medium">Active</span>
                 </div>
               </div>
             </div>
@@ -214,13 +240,13 @@ export const MainSidebar = () => {
         )}
       </nav>
 
-      {/* Footer */}
-      <div className="p-2 border-t border-border">
+      {/* Enhanced Footer */}
+      <div className="p-2 border-t border-border/50 bg-gradient-to-r from-muted/30 to-muted/20">
         <Button
           variant="ghost"
           onClick={signOut}
           className={cn(
-            "w-full justify-start gap-3 text-muted-foreground hover:text-foreground",
+            "w-full justify-start gap-3 text-muted-foreground hover:text-foreground hover:bg-destructive/10 hover:text-destructive transition-all",
             collapsed && "justify-center px-2"
           )}
           title={collapsed ? "Sign Out" : ''}
