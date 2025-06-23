@@ -93,7 +93,7 @@ export class DeepSeekCoreService {
       await this.storeAnalysisResults(documentId, analysis);
 
       // Auto-categorize based on analysis
-      await this.autoCategorizeBas edOnAnalysis(documentId, analysis);
+      await this.autoCategorizeBasedOnAnalysis(documentId, analysis);
 
       // Auto-create tasks from high-risk findings
       await this.autoCreateTasksFromRisks(documentId, analysis);
@@ -190,7 +190,7 @@ export class DeepSeekCoreService {
   /**
    * Auto-categorize document based on DeepSeek analysis
    */
-  private static async autoCategorizeBas edOnAnalysis(documentId: string, analysis: DeepSeekAnalysisResult) {
+  private static async autoCategorizeBasedOnAnalysis(documentId: string, analysis: DeepSeekAnalysisResult) {
     try {
       if (analysis.clientName && analysis.formType) {
         const clientFolderName = analysis.clientName.trim();
