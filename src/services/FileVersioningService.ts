@@ -185,7 +185,19 @@ export class FileVersioningService {
         throw new Error(`Failed to get version history: ${error.message}`);
       }
 
-      return versions || [];
+      // Transform database response to match DocumentVersion interface
+      return (versions || []).map(version => ({
+        id: version.id,
+        documentId: version.document_id,
+        versionNumber: version.version_number,
+        storagePath: version.storage_path,
+        title: version.title,
+        isCurrent: version.is_current,
+        createdAt: version.created_at,
+        createdBy: version.created_by,
+        changeNotes: version.change_notes,
+        fileSize: version.file_size
+      }));
     } catch (error) {
       console.error('Failed to get version history:', error);
       return [];
