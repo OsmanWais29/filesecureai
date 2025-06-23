@@ -1,48 +1,64 @@
 
-import { Card, CardContent } from "@/components/ui/card";
-import { LucideIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { memo } from "react";
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { LucideIcon, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 interface MetricCardProps {
   title: string;
   value: string;
   description: string;
   icon: LucideIcon;
-  trend?: "up" | "down" | "neutral";
+  trend: 'up' | 'down' | 'neutral';
+  change?: string;
+  className?: string;
 }
 
-export const MetricCard = memo(({ title, value, description, icon: Icon, trend }: MetricCardProps) => {
+export const MetricCard: React.FC<MetricCardProps> = ({
+  title,
+  value,
+  description,
+  icon: Icon,
+  trend,
+  change,
+  className = ''
+}) => {
+  const getTrendIcon = () => {
+    switch (trend) {
+      case 'up':
+        return <TrendingUp className="h-4 w-4 text-green-600" />;
+      case 'down':
+        return <TrendingDown className="h-4 w-4 text-red-600" />;
+      default:
+        return <Minus className="h-4 w-4 text-gray-400" />;
+    }
+  };
+
+  const getTrendColor = () => {
+    switch (trend) {
+      case 'up':
+        return 'text-green-600';
+      case 'down':
+        return 'text-red-600';
+      default:
+        return 'text-gray-500';
+    }
+  };
+
   return (
-    <Card className="border border-border/40 shadow-sm hover:shadow transition-shadow duration-200">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
-          <div className="p-2 rounded-full bg-primary/10">
-            <Icon className="h-4 w-4 text-primary" />
-          </div>
+    <Card className={className}>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <Icon className="h-4 w-4 text-muted-foreground" />
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold">{value}</div>
+        <div className="flex items-center gap-2 mt-1">
+          {getTrendIcon()}
+          <p className={`text-xs ${getTrendColor()}`}>
+            {change || description}
+          </p>
         </div>
-        <div className="space-y-1">
-          <p className="text-3xl font-bold tracking-tight">{value}</p>
-          <p className="text-xs text-muted-foreground">{description}</p>
-        </div>
-        {trend && (
-          <div className="mt-3">
-            <span className={cn(
-              "text-xs px-2 py-1 rounded-full font-medium",
-              trend === "up" ? "bg-green-100 text-green-700" : 
-              trend === "down" ? "bg-red-100 text-red-700" : 
-              "bg-gray-100 text-gray-700"
-            )}>
-              {trend === "up" ? "↑ Positive" : 
-               trend === "down" ? "↓ Negative" : 
-               "→ Neutral"}
-            </span>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
-});
-
-MetricCard.displayName = "MetricCard";
+};

@@ -1,142 +1,59 @@
 
 import { useState, useEffect } from 'react';
-
-interface ComplianceMetrics {
-  complianceRate: number;
-  highRiskCases: number;
-  previousHighRiskCases: number;
-  auditsCompleted: number;
-  auditTarget: number;
-  avgResolutionDays: number;
-  previousResolutionDays: number;
-}
-
-interface ComplianceHistory {
-  month: string;
-  rate: number;
-  target: number;
-}
-
-interface RiskDistribution {
-  name: string;
-  value: number;
-}
-
-interface AuditData {
-  date: string;
-  type: string;
-  issuesFound: number;
-  status: string;
-}
-
-interface ComplianceBreach {
-  month: string;
-  documentation: number;
-  deadlines: number;
-  financials: number;
-  other: number;
-}
-
-interface RiskTrend {
-  month: string;
-  high: number;
-  medium: number;
-  low: number;
-}
+import { ComplianceMetric } from '../../types';
 
 export const useComplianceData = () => {
-  const [complianceMetrics, setComplianceMetrics] = useState<ComplianceMetrics>({
-    complianceRate: 0,
-    highRiskCases: 0,
-    previousHighRiskCases: 0,
-    auditsCompleted: 0,
-    auditTarget: 0,
-    avgResolutionDays: 0,
-    previousResolutionDays: 0
+  const [complianceMetrics, setComplianceMetrics] = useState<ComplianceMetric>({
+    complianceRate: 94.2,
+    highRiskCases: 8,
+    auditsCompleted: 12,
+    avgResolutionDays: 4.2,
+    previousHighRiskCases: 11,
+    auditTarget: 15,
+    previousResolutionDays: 5.8
   });
 
-  const [complianceRateHistory, setComplianceRateHistory] = useState<ComplianceHistory[]>([]);
-  const [riskDistribution, setRiskDistribution] = useState<RiskDistribution[]>([]);
-  const [auditData, setAuditData] = useState<AuditData[]>([]);
-  const [complianceBreaches, setComplianceBreaches] = useState<ComplianceBreach[]>([]);
-  const [riskTrends, setRiskTrends] = useState<RiskTrend[]>([]);
+  const [complianceRateHistory] = useState([
+    { month: 'Jul', rate: 91.2, target: 95 },
+    { month: 'Aug', rate: 92.1, target: 95 },
+    { month: 'Sep', rate: 93.5, target: 95 },
+    { month: 'Oct', rate: 93.8, target: 95 },
+    { month: 'Nov', rate: 94.0, target: 95 },
+    { month: 'Dec', rate: 94.2, target: 95 }
+  ]);
 
-  useEffect(() => {
-    // In a real application, this would fetch data from an API
-    // For now, we'll use mock data
-    
-    // Set compliance metrics
-    setComplianceMetrics({
-      complianceRate: 93,
-      highRiskCases: 18,
-      previousHighRiskCases: 22,
-      auditsCompleted: 12,
-      auditTarget: 12,
-      avgResolutionDays: 5,
-      previousResolutionDays: 7
-    });
+  const [riskDistribution] = useState([
+    { name: 'Low Risk', value: 156 },
+    { name: 'Medium Risk', value: 42 },
+    { name: 'High Risk', value: 8 },
+    { name: 'Critical', value: 2 }
+  ]);
 
-    // Set compliance rate history
-    setComplianceRateHistory([
-      { month: 'Jan', rate: 88, target: 95 },
-      { month: 'Feb', rate: 89, target: 95 },
-      { month: 'Mar', rate: 90, target: 95 },
-      { month: 'Apr', rate: 91, target: 95 },
-      { month: 'May', rate: 92, target: 95 },
-      { month: 'Jun', rate: 93, target: 95 },
-      { month: 'Jul', rate: 93, target: 95 },
-      { month: 'Aug', rate: 94, target: 95 },
-      { month: 'Sep', rate: 94, target: 95 },
-      { month: 'Oct', rate: 95, target: 95 },
-      { month: 'Nov', rate: 95, target: 95 },
-      { month: 'Dec', rate: 96, target: 95 }
-    ]);
+  const [auditData] = useState([
+    { date: '2024-01-15', type: 'Internal', issuesFound: 3, status: 'Completed' },
+    { date: '2024-01-08', type: 'Compliance', issuesFound: 1, status: 'Completed' },
+    { date: '2024-12-28', type: 'Risk Assessment', issuesFound: 5, status: 'In Progress' },
+    { date: '2024-12-20', type: 'Process Review', issuesFound: 2, status: 'Completed' },
+    { date: '2024-12-15', type: 'Documentation', issuesFound: 0, status: 'Completed' }
+  ]);
 
-    // Set risk distribution
-    setRiskDistribution([
-      { name: 'Low Risk', value: 318 },
-      { name: 'Medium Risk', value: 124 },
-      { name: 'High Risk', value: 18 },
-      { name: 'Critical', value: 3 }
-    ]);
+  const [complianceBreaches] = useState([
+    { month: 'Jul', documentation: 3, deadlines: 2, financials: 1, other: 1 },
+    { month: 'Aug', documentation: 2, deadlines: 3, financials: 2, other: 0 },
+    { month: 'Sep', documentation: 1, deadlines: 1, financials: 1, other: 2 },
+    { month: 'Oct', documentation: 2, deadlines: 0, financials: 1, other: 1 },
+    { month: 'Nov', documentation: 1, deadlines: 2, financials: 0, other: 0 },
+    { month: 'Dec', documentation: 0, deadlines: 1, financials: 1, other: 1 }
+  ]);
 
-    // Set audit data
-    setAuditData([
-      { date: '2023-12-15', type: 'Document Compliance', issuesFound: 3, status: 'Completed' },
-      { date: '2023-11-28', type: 'Financial Reporting', issuesFound: 1, status: 'Completed' },
-      { date: '2023-11-10', type: 'Process Adherence', issuesFound: 5, status: 'Completed' },
-      { date: '2023-10-22', type: 'Client Communication', issuesFound: 2, status: 'Completed' },
-      { date: '2023-10-05', type: 'Regulatory Compliance', issuesFound: 4, status: 'Completed' },
-      { date: '2023-09-18', type: 'Document Compliance', issuesFound: 3, status: 'Completed' }
-    ]);
-
-    // Set compliance breaches
-    setComplianceBreaches([
-      { month: 'Jul', documentation: 6, deadlines: 4, financials: 2, other: 1 },
-      { month: 'Aug', documentation: 5, deadlines: 3, financials: 3, other: 2 },
-      { month: 'Sep', documentation: 4, deadlines: 4, financials: 2, other: 1 },
-      { month: 'Oct', documentation: 3, deadlines: 3, financials: 2, other: 1 },
-      { month: 'Nov', documentation: 3, deadlines: 2, financials: 1, other: 1 },
-      { month: 'Dec', documentation: 2, deadlines: 2, financials: 1, other: 0 }
-    ]);
-
-    // Set risk trends
-    setRiskTrends([
-      { month: 'Jan', high: 26, medium: 102, low: 284 },
-      { month: 'Feb', high: 24, medium: 108, low: 290 },
-      { month: 'Mar', high: 22, medium: 112, low: 298 },
-      { month: 'Apr', high: 23, medium: 115, low: 305 },
-      { month: 'May', high: 22, medium: 118, low: 312 },
-      { month: 'Jun', high: 20, medium: 120, low: 320 },
-      { month: 'Jul', high: 19, medium: 122, low: 326 },
-      { month: 'Aug', high: 18, medium: 123, low: 328 },
-      { month: 'Sep', high: 19, medium: 122, low: 330 },
-      { month: 'Oct', high: 18, medium: 124, low: 334 },
-      { month: 'Nov', high: 17, medium: 124, low: 336 },
-      { month: 'Dec', high: 18, medium: 124, low: 318 }
-    ]);
-
-  }, []);
+  const [riskTrends] = useState([
+    { month: 'Jul', high: 12, medium: 38, low: 142 },
+    { month: 'Aug', high: 10, medium: 41, low: 147 },
+    { month: 'Sep', high: 9, medium: 39, low: 152 },
+    { month: 'Oct', high: 11, medium: 42, low: 149 },
+    { month: 'Nov', high: 8, medium: 40, low: 158 },
+    { month: 'Dec', high: 8, medium: 42, low: 156 }
+  ]);
 
   return {
     complianceMetrics,

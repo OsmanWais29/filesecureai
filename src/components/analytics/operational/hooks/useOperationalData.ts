@@ -1,111 +1,49 @@
 
-import { useState, useEffect } from 'react';
-
-interface OperationalMetrics {
-  avgCasesPerStaff: number;
-  targetCasesPerStaff: number;
-  taskCompletionRate: number;
-  avgResponseHours: number;
-  processEfficiency: number;
-  previousEfficiency: number;
-}
-
-interface StaffProductivity {
-  name: string;
-  activeCases: number;
-  completedCases: number;
-}
-
-interface TaskCompletion {
-  week: string;
-  completionRate: number;
-  responseTime: number;
-}
-
-interface ProcessingTime {
-  process: string;
-  current: number;
-  target: number;
-}
-
-interface Bottleneck {
-  stage: string;
-  delay: number;
-  impact: string;
-  trend: string;
-}
+import { useState } from 'react';
+import { OperationalMetric } from '../../types';
 
 export const useOperationalData = () => {
-  const [operationalMetrics, setOperationalMetrics] = useState<OperationalMetrics>({
-    avgCasesPerStaff: 0,
-    targetCasesPerStaff: 0,
-    taskCompletionRate: 0,
-    avgResponseHours: 0,
-    processEfficiency: 0,
-    previousEfficiency: 0
+  const [operationalMetrics] = useState<OperationalMetric>({
+    avgCasesPerStaff: 12.4,
+    taskCompletionRate: 87,
+    avgResponseHours: 18.5,
+    processEfficiency: 78.3,
+    targetCasesPerStaff: 15,
+    previousEfficiency: 75.1
   });
 
-  const [staffProductivityData, setStaffProductivityData] = useState<StaffProductivity[]>([]);
-  const [taskCompletionData, setTaskCompletionData] = useState<TaskCompletion[]>([]);
-  const [processingTimeData, setProcessingTimeData] = useState<ProcessingTime[]>([]);
-  const [workflowBottlenecks, setWorkflowBottlenecks] = useState<Bottleneck[]>([]);
+  const [staffProductivityData] = useState([
+    { name: 'John Smith', activeCases: 15, completedCases: 8, efficiency: 89 },
+    { name: 'Sarah Johnson', activeCases: 12, completedCases: 12, efficiency: 92 },
+    { name: 'Mike Wilson', activeCases: 18, completedCases: 6, efficiency: 73 },
+    { name: 'Lisa Davis', activeCases: 9, completedCases: 14, efficiency: 95 },
+    { name: 'David Brown', activeCases: 13, completedCases: 9, efficiency: 84 }
+  ]);
 
-  useEffect(() => {
-    // In a real application, this would fetch data from an API
-    // For now, we'll use mock data
-    
-    // Set operational metrics
-    setOperationalMetrics({
-      avgCasesPerStaff: 24,
-      targetCasesPerStaff: 20,
-      taskCompletionRate: 87,
-      avgResponseHours: 18,
-      processEfficiency: 83,
-      previousEfficiency: 79
-    });
+  const [taskCompletionData] = useState([
+    { week: 'Week 1', completionRate: 85, responseTime: 22 },
+    { week: 'Week 2', completionRate: 88, responseTime: 19 },
+    { week: 'Week 3', completionRate: 82, responseTime: 24 },
+    { week: 'Week 4', completionRate: 91, responseTime: 16 },
+    { week: 'Week 5', completionRate: 87, responseTime: 18 }
+  ]);
 
-    // Set staff productivity data
-    setStaffProductivityData([
-      { name: 'John D.', activeCases: 28, completedCases: 12 },
-      { name: 'Sarah M.', activeCases: 23, completedCases: 15 },
-      { name: 'Robert K.', activeCases: 25, completedCases: 11 },
-      { name: 'Emma L.', activeCases: 19, completedCases: 14 },
-      { name: 'Michael T.', activeCases: 27, completedCases: 9 },
-      { name: 'Jessica W.', activeCases: 22, completedCases: 13 }
-    ]);
+  const [processingTimeData] = useState([
+    { process: 'Document Review', current: 24, target: 20 },
+    { process: 'Risk Assessment', current: 18, target: 15 },
+    { process: 'Client Onboarding', current: 32, target: 30 },
+    { process: 'Compliance Check', current: 14, target: 12 },
+    { process: 'Final Review', current: 28, target: 25 },
+    { process: 'Filing Submission', current: 8, target: 6 }
+  ]);
 
-    // Set task completion data
-    setTaskCompletionData([
-      { week: 'Week 1', completionRate: 82, responseTime: 22 },
-      { week: 'Week 2', completionRate: 84, responseTime: 20 },
-      { week: 'Week 3', completionRate: 85, responseTime: 19 },
-      { week: 'Week 4', completionRate: 87, responseTime: 18 },
-      { week: 'Week 5', completionRate: 86, responseTime: 17 },
-      { week: 'Week 6', completionRate: 88, responseTime: 16 },
-      { week: 'Week 7', completionRate: 89, responseTime: 15 },
-      { week: 'Week 8', completionRate: 91, responseTime: 14 }
-    ]);
-
-    // Set processing time data
-    setProcessingTimeData([
-      { process: 'Document Review', current: 5, target: 3 },
-      { process: 'Form Filing', current: 8, target: 6 },
-      { process: 'Client Approval', current: 12, target: 8 },
-      { process: 'Financial Assessment', current: 15, target: 10 },
-      { process: 'Court Submission', current: 10, target: 7 },
-      { process: 'Creditor Negotiation', current: 22, target: 15 }
-    ]);
-
-    // Set workflow bottlenecks
-    setWorkflowBottlenecks([
-      { stage: 'Creditor Documentation', delay: 12.5, impact: 'High', trend: '↑ Increasing' },
-      { stage: 'Court Filing', delay: 8.2, impact: 'Medium', trend: '↓ Decreasing' },
-      { stage: 'Client Document Collection', delay: 9.7, impact: 'High', trend: '→ Stable' },
-      { stage: 'Financial Assessment', delay: 5.3, impact: 'Medium', trend: '↓ Decreasing' },
-      { stage: 'Trustee Review', delay: 3.1, impact: 'Low', trend: '→ Stable' }
-    ]);
-
-  }, []);
+  const [workflowBottlenecks] = useState([
+    { stage: 'Document Verification', delay: 3.2, impact: 'High', trend: 'Increasing' },
+    { stage: 'Client Response', delay: 5.1, impact: 'Medium', trend: 'Stable' },
+    { stage: 'Risk Assessment', delay: 2.8, impact: 'Medium', trend: 'Decreasing' },
+    { stage: 'Compliance Review', delay: 1.9, impact: 'Low', trend: 'Stable' },
+    { stage: 'Final Approval', delay: 4.3, impact: 'High', trend: 'Increasing' }
+  ]);
 
   return {
     operationalMetrics,
