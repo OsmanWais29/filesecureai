@@ -1,290 +1,124 @@
 
-import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-import DocumentPreview from './DocumentPreview';
-import { EnhancedComments } from './Comments/EnhancedComments';
-import { DeadlineManager } from './DeadlineManager';
-import { VersionToggle } from './components/VersionToggle';
-import { ViewerControls } from './components/ViewerControls';
-import { EnhancedAnalysisPanel } from './EnhancedAnalysisPanel';
-import { useDocumentViewer } from '@/hooks/useDocumentViewer';
+import React, { useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { useAuditLogger } from '@/hooks/useAuditLogger';
+import { AuditLogger } from '@/components/audit/AuditLogger';
+import { PermissionManager } from '@/components/permissions/PermissionManager';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Calendar, MessageSquare, AlertTriangle, Brain } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { FileText, Shield, Eye, Edit } from 'lucide-react';
 
-interface EnhancedDocumentViewerProps {
-  documentId: string;
-  documentTitle?: string;
-}
-
-export const EnhancedDocumentViewer: React.FC<EnhancedDocumentViewerProps> = ({
-  documentId,
-  documentTitle
-}) => {
-  const [document, setDocument] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [currentStoragePath, setCurrentStoragePath] = useState<string>('');
-  const [refreshKey, setRefreshKey] = useState(0);
-  const { toast } = useToast();
-  
-  const {
-    zoomLevel,
-    rotation,
-    isFullscreen,
-    containerRef,
-    handleZoomIn,
-    handleZoomOut,
-    handleRotate,
-    handleFullscreen,
-    handleDownload,
-    handlePrint,
-    handleRefresh,
-    handleFullscreenChange
-  } = useDocumentViewer();
+export const EnhancedDocumentViewer: React.FC = () => {
+  const { documentId } = useParams<{ documentId: string }>();
+  const { logView } = useAuditLogger();
+  const { role, isAdmin, isTrustee } = useUserRole();
 
   useEffect(() => {
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, [handleFullscreenChange]);
-
-  useEffect(() => {
-    fetchDocument();
-  }, [documentId, refreshKey]);
-
-  const fetchDocument = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('documents')
-        .select('*')
-        .eq('id', documentId)
-        .single();
-
-      if (error) throw error;
-
-      setDocument(data);
-      setCurrentStoragePath(data.storage_path || '');
-    } catch (error) {
-      console.error('Error fetching document:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load document"
+    if (documentId) {
+      // Log document view
+      logView(documentId, {
+        access_type: 'direct_link',
+        referrer: document.referrer
       });
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [documentId, logView]);
 
-  const handleVersionChange = (versionId: string, storagePath: string) => {
-    setCurrentStoragePath(storagePath);
-    setRefreshKey(prev => prev + 1);
-  };
-
-  const handleDocumentDownload = () => {
-    if (currentStoragePath && document?.title) {
-      const { data } = supabase.storage
-        .from('documents')
-        .getPublicUrl(currentStoragePath);
-      
-      if (data.publicUrl) {
-        handleDownload(data.publicUrl, document.title);
-      }
-    }
-  };
-
-  const handleDocumentRefresh = () => {
-    handleRefresh();
-    setRefreshKey(prev => prev + 1);
-  };
-
-  const handleCommentAdded = () => {
-    // Refresh document to update comment count or other related data
-    fetchDocument();
-  };
-
-  if (loading) {
+  if (!documentId) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
-      </div>
-    );
-  }
-
-  if (!document) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Document Not Found</h3>
-          <p className="text-muted-foreground">The requested document could not be loaded.</p>
-        </div>
+      <div className="p-6">
+        <Card>
+          <CardContent className="p-6">
+            <p>Document not found</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-12 gap-4 h-full" ref={containerRef}>
-      {/* Left Panel - Document Details */}
-      <div className="col-span-3 space-y-4 overflow-y-auto max-h-full">
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-blue-500" />
-              <CardTitle className="text-base">Document Details</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <h4 className="font-medium text-sm mb-1">Title</h4>
-              <p className="text-sm text-muted-foreground">{document.title}</p>
-            </div>
-            
-            <div>
-              <h4 className="font-medium text-sm mb-1">Type</h4>
-              <Badge variant="secondary" className="text-xs">
-                {document.type || 'Unknown'}
-              </Badge>
-            </div>
-            
-            <div>
-              <h4 className="font-medium text-sm mb-1">Size</h4>
-              <p className="text-sm text-muted-foreground">
-                {document.size ? `${(document.size / 1024).toFixed(1)} KB` : 'Unknown'}
-              </p>
-            </div>
-            
-            <div>
-              <h4 className="font-medium text-sm mb-1">Upload Date</h4>
-              <p className="text-sm text-muted-foreground">
-                {new Date(document.created_at).toLocaleDateString()}
-              </p>
-            </div>
-
-            <div>
-              <h4 className="font-medium text-sm mb-1">Processing Status</h4>
-              <Badge 
-                variant={document.ai_processing_status === 'complete' ? 'default' : 'secondary'}
-                className="text-xs"
-              >
-                {document.ai_processing_status || 'pending'}
-              </Badge>
-            </div>
-
-            {document.metadata && Object.keys(document.metadata).length > 0 && (
-              <div>
-                <h4 className="font-medium text-sm mb-2">Metadata</h4>
-                <div className="space-y-1">
-                  {Object.entries(document.metadata as Record<string, any>).map(([key, value]) => (
-                    <div key={key} className="text-xs">
-                      <span className="font-medium">{key}:</span>{' '}
-                      <span className="text-muted-foreground">{String(value)}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Deadlines Manager */}
-        <DeadlineManager 
-          document={document} 
-          onDeadlineUpdated={fetchDocument}
-        />
-      </div>
-
-      {/* Center Panel - Document Viewer */}
-      <div className="col-span-6 flex flex-col h-full">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-4">
-            <h2 className="text-lg font-semibold truncate">
-              {documentTitle || document.title}
-            </h2>
-            <VersionToggle 
-              documentId={documentId}
-              onVersionChange={handleVersionChange}
-            />
+    <div className="min-h-screen bg-background p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Document Viewer</h1>
+            <p className="text-muted-foreground">Document ID: {documentId}</p>
           </div>
-          
-          <ViewerControls
-            zoomLevel={zoomLevel}
-            onZoomIn={handleZoomIn}
-            onZoomOut={handleZoomOut}
-            onRotate={handleRotate}
-            onFullscreen={handleFullscreen}
-            onDownload={handleDocumentDownload}
-            onPrint={handlePrint}
-            onRefresh={handleDocumentRefresh}
-            isFullscreen={isFullscreen}
-          />
+          <Badge variant="outline" className="flex items-center gap-1">
+            <Shield className="h-3 w-3" />
+            Audit Enabled
+          </Badge>
         </div>
 
-        <div 
-          className="flex-1 border rounded-lg overflow-hidden"
-          style={{
-            transform: `rotate(${rotation}deg) scale(${zoomLevel / 100})`,
-            transformOrigin: 'center center'
-          }}
-        >
-          <DocumentPreview
-            key={refreshKey}
-            storagePath={currentStoragePath}
-            documentId={documentId}
-            title={document.title}
-          />
-        </div>
-      </div>
-
-      {/* Right Panel - Enhanced Tabs */}
-      <div className="col-span-3 overflow-y-auto max-h-full">
-        <Tabs defaultValue="analysis" className="h-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="analysis" className="gap-1">
-              <Brain className="h-4 w-4" />
-              Analysis
+        <Tabs defaultValue="content" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="content" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Content
             </TabsTrigger>
-            <TabsTrigger value="comments" className="gap-1">
-              <MessageSquare className="h-4 w-4" />
-              Comments
+            <TabsTrigger value="audit" className="flex items-center gap-2">
+              <Eye className="h-4 w-4" />
+              Audit Trail
             </TabsTrigger>
-            <TabsTrigger value="activity" className="gap-1">
-              <Calendar className="h-4 w-4" />
-              Activity
+            <TabsTrigger value="permissions" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              Permissions
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex items-center gap-2">
+              <Edit className="h-4 w-4" />
+              Change History
             </TabsTrigger>
           </TabsList>
-          
-          <TabsContent value="analysis" className="mt-4 space-y-4">
-            <EnhancedAnalysisPanel 
-              documentId={documentId}
-              documentTitle={document.title}
-            />
-          </TabsContent>
-          
-          <TabsContent value="comments" className="mt-4">
+
+          <TabsContent value="content">
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Comments & Discussion</CardTitle>
+              <CardHeader>
+                <CardTitle>Document Content</CardTitle>
               </CardHeader>
-              <CardContent className="p-0">
-                <EnhancedComments 
-                  documentId={documentId} 
-                  onCommentAdded={handleCommentAdded}
-                />
+              <CardContent>
+                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
+                  <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">Document content would be displayed here</p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    All interactions are being logged for audit purposes
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
-          
-          <TabsContent value="activity" className="mt-4">
+
+          <TabsContent value="audit">
+            <AuditLogger documentId={documentId} showFilters={true} />
+          </TabsContent>
+
+          <TabsContent value="permissions">
+            {(isAdmin || isTrustee) ? (
+              <PermissionManager 
+                resourceType="document" 
+                resourceId={documentId}
+              />
+            ) : (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">
+                    You don't have permission to view document permissions
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="history">
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Recent Activity</CardTitle>
+              <CardHeader>
+                <CardTitle>Change History</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">Activity tracking coming soon...</p>
+                <p className="text-muted-foreground text-center py-8">
+                  Detailed change history would be displayed here with before/after values
+                </p>
               </CardContent>
             </Card>
           </TabsContent>
