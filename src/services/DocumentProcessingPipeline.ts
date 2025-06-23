@@ -1,11 +1,10 @@
-
 import { supabase } from '@/lib/supabase';
 import { DeepSeekCoreService } from './DeepSeekCoreService';
 import { toast } from 'sonner';
 
 export interface DocumentProcessingPipeline {
   documentId: string;
-  stage: 'upload' | 'storage' | 'ocr' | 'deepseek_analysis' | 'categorization' | 'risk_assessment' | 'complete';
+  stage: 'upload' | 'storage' | 'ocr' | 'deepseek_analysis' | 'categorization' | 'risk_assessment' | 'complete' | 'duplicate_check' | 'ai_analysis';
   progress: number;
   errors: string[];
   metadata: Record<string, any>;
@@ -118,9 +117,9 @@ export class DocumentProcessingPipelineService {
   }
 
   /**
-   * Create document record with enhanced metadata
+   * Create document record with enhanced metadata - Made public
    */
-  private static async createDocumentRecord(
+  static async createDocumentRecord(
     file: File, 
     userId: string, 
     clientHint?: string
@@ -156,9 +155,9 @@ export class DocumentProcessingPipelineService {
   }
 
   /**
-   * Upload file to Supabase Storage
+   * Upload file to Supabase Storage - Made public
    */
-  private static async uploadToStorage(
+  static async uploadToStorage(
     file: File,
     userId: string,
     documentId: string
@@ -179,9 +178,9 @@ export class DocumentProcessingPipelineService {
   }
 
   /**
-   * Extract text content from uploaded file
+   * Extract text content from uploaded file - Made public
    */
-  private static async extractTextContent(file: File, storagePath: string): Promise<string> {
+  static async extractTextContent(file: File, storagePath: string): Promise<string> {
     // For now, return basic content - in production this would use OCR
     if (file.type === 'text/plain') {
       return await file.text();

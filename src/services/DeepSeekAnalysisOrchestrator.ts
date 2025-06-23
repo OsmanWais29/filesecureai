@@ -94,7 +94,7 @@ export class DeepSeekAnalysisOrchestrator {
       pipeline.progress = 100;
 
       toast.success('Document processing complete', {
-        description: `${analysisResult.formType} analyzed with ${analysisResult.confidence}% confidence`
+        description: `${analysisResult.formIdentification.formType} analyzed with ${analysisResult.formIdentification.confidence}% confidence`
       });
 
       return { success: true, documentId, pipeline };
