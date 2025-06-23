@@ -3,36 +3,10 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { 
-  AlertTriangle, 
-  Shield, 
-  CheckCircle, 
-  ExternalLink, 
-  FileText,
-  Clock,
-  User,
-  MapPin
-} from 'lucide-react';
-
-interface RiskFactor {
-  type: string;
-  severity: 'low' | 'medium' | 'high';
-  description: string;
-  recommendation: string;
-  biaReference: string;
-  fieldLocation: string;
-  deadline?: string;
-  assignedTo?: string;
-}
-
-interface ColorCodedRiskDisplayProps {
-  risks: RiskFactor[];
-  overallRisk: 'low' | 'medium' | 'high';
-  onJumpToField?: (fieldLocation: string) => void;
-  onViewBIAReference?: (reference: string) => void;
-  onCreateTask?: (risk: RiskFactor) => void;
-}
+import { Shield, CheckCircle } from 'lucide-react';
+import { RiskFactor, ColorCodedRiskDisplayProps } from './RiskDisplay/RiskDisplayTypes';
+import { RiskItemComponent } from './RiskDisplay/RiskItemComponent';
+import { getRiskColor, getRiskIcon } from './RiskDisplay/RiskUtilities';
 
 export const ColorCodedRiskDisplay = ({ 
   risks, 
@@ -43,22 +17,14 @@ export const ColorCodedRiskDisplay = ({
 }: ColorCodedRiskDisplayProps) => {
   const [expandedRisks, setExpandedRisks] = useState<Set<number>>(new Set());
 
-  const getRiskColor = (severity: string) => {
-    switch (severity) {
-      case 'high': return 'destructive';
-      case 'medium': return 'secondary';
-      case 'low': return 'outline';
-      default: return 'outline';
+  const toggleRiskExpansion = (index: number) => {
+    const newExpanded = new Set(expandedRisks);
+    if (newExpanded.has(index)) {
+      newExpanded.delete(index);
+    } else {
+      newExpanded.add(index);
     }
-  };
-
-  const getRiskIcon = (severity: string) => {
-    switch (severity) {
-      case 'high': return <AlertTriangle className="h-4 w-4 text-red-500" />;
-      case 'medium': return <Shield className="h-4 w-4 text-yellow-500" />;
-      case 'low': return <CheckCircle className="h-4 w-4 text-green-500" />;
-      default: return <Shield className="h-4 w-4" />;
-    }
+    setExpandedRisks(newExpanded);
   };
 
   const getOverallRiskDisplay = () => {
@@ -68,9 +34,17 @@ export const ColorCodedRiskDisplay = ({
       low: 'bg-green-100 border-green-200 text-green-800'
     };
 
+    const OverallRiskIcon = getRiskIcon(overallRisk);
+
     return (
       <Alert className={colors[overallRisk]}>
-        {getRiskIcon(overallRisk)}
+        <OverallRiskIcon className={`h-4 w-4 ${
+          overallRisk === 'high' 
+            ? 'text-red-500' 
+            : overallRisk === 'medium'
+            ? 'text-yellow-500'
+            : 'text-green-500'
+        }`} />
         <AlertDescription>
           <div className="flex items-center justify-between">
             <div>
@@ -89,16 +63,6 @@ export const ColorCodedRiskDisplay = ({
         </AlertDescription>
       </Alert>
     );
-  };
-
-  const toggleRiskExpansion = (index: number) => {
-    const newExpanded = new Set(expandedRisks);
-    if (newExpanded.has(index)) {
-      newExpanded.delete(index);
-    } else {
-      newExpanded.add(index);
-    }
-    setExpandedRisks(newExpanded);
   };
 
   if (risks.length === 0) {
@@ -135,116 +99,16 @@ export const ColorCodedRiskDisplay = ({
         
         <div className="space-y-3">
           {risks.map((risk, index) => (
-            <div 
+            <RiskItemComponent
               key={index}
-              className={`p-4 border rounded-lg transition-all ${
-                risk.severity === 'high' 
-                  ? 'border-red-200 bg-red-50' 
-                  : risk.severity === 'medium'
-                  ? 'border-yellow-200 bg-yellow-50'
-                  : 'border-green-200 bg-green-50'
-              }`}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    {getRiskIcon(risk.severity)}
-                    <h4 className="font-medium text-sm">{risk.type}</h4>
-                    <Badge variant={getRiskColor(risk.severity)}>
-                      {risk.severity.toUpperCase()}
-                    </Badge>
-                  </div>
-                  
-                  <p className="text-sm text-muted-foreground mb-3">
-                    {risk.description}
-                  </p>
-
-                  {expandedRisks.has(index) && (
-                    <div className="space-y-3 pt-3 border-t border-gray-200">
-                      <div>
-                        <span className="text-sm font-medium">Recommendation:</span>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {risk.recommendation}
-                        </p>
-                      </div>
-                      
-                      {risk.biaReference && (
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm font-medium">BIA Reference:</span>
-                          <Button
-                            variant="link"
-                            size="sm"
-                            className="p-0 h-auto text-blue-600"
-                            onClick={() => onViewBIAReference?.(risk.biaReference)}
-                          >
-                            {risk.biaReference}
-                            <ExternalLink className="h-3 w-3 ml-1" />
-                          </Button>
-                        </div>
-                      )}
-                      
-                      {risk.fieldLocation && (
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm font-medium">Field Location:</span>
-                          <Button
-                            variant="link"
-                            size="sm"
-                            className="p-0 h-auto text-blue-600"
-                            onClick={() => onJumpToField?.(risk.fieldLocation)}
-                          >
-                            {risk.fieldLocation}
-                          </Button>
-                        </div>
-                      )}
-                      
-                      {risk.deadline && (
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm font-medium">Deadline:</span>
-                          <span className="text-sm text-muted-foreground">
-                            {new Date(risk.deadline).toLocaleDateString()}
-                          </span>
-                        </div>
-                      )}
-                      
-                      {risk.assignedTo && (
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm font-medium">Assigned to:</span>
-                          <span className="text-sm text-muted-foreground">
-                            {risk.assignedTo}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex flex-col gap-1 ml-4">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleRiskExpansion(index)}
-                    className="text-xs"
-                  >
-                    {expandedRisks.has(index) ? 'Less' : 'More'}
-                  </Button>
-                  
-                  {onCreateTask && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onCreateTask(risk)}
-                      className="text-xs"
-                    >
-                      Create Task
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
+              risk={risk}
+              index={index}
+              isExpanded={expandedRisks.has(index)}
+              onToggleExpansion={toggleRiskExpansion}
+              onJumpToField={onJumpToField}
+              onViewBIAReference={onViewBIAReference}
+              onCreateTask={onCreateTask}
+            />
           ))}
         </div>
       </CardContent>

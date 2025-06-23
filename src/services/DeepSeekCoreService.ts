@@ -89,14 +89,8 @@ export class DeepSeekCoreService {
 
       const analysis = analysisResult.analysis as DeepSeekAnalysisResult;
 
-      // Store analysis results
+      // Store analysis results in database
       await this.storeAnalysisResults(documentId, analysis);
-
-      // Auto-categorize based on analysis
-      await this.autoCategorizeBasedOnAnalysis(documentId, analysis);
-
-      // Auto-create tasks from high-risk findings
-      await this.autoCreateTasksFromRisks(documentId, analysis);
 
       toast.success('DeepSeek AI analysis completed', {
         description: `Analyzed ${analysis.formType} with ${analysis.confidence}% confidence`
@@ -184,108 +178,6 @@ export class DeepSeekCoreService {
 
     } catch (error) {
       console.error('Failed to store DeepSeek analysis results:', error);
-    }
-  }
-
-  /**
-   * Auto-categorize document based on DeepSeek analysis
-   */
-  private static async autoCategorizeBasedOnAnalysis(documentId: string, analysis: DeepSeekAnalysisResult) {
-    try {
-      if (analysis.clientName && analysis.formType) {
-        const clientFolderName = analysis.clientName.trim();
-        const documentType = `${analysis.formNumber} - ${analysis.formType}`;
-
-        // Create or get client folder
-        const { data: clientFolder, error: folderError } = await supabase
-          .from('document_folders')
-          .upsert({
-            name: clientFolderName,
-            type: 'client',
-            parent_id: null,
-            metadata: {
-              client_name: analysis.clientName,
-              estate_number: analysis.estateNumber
-            }
-          })
-          .select()
-          .single();
-
-        if (!folderError && clientFolder) {
-          // Create form type subfolder
-          const { data: formFolder } = await supabase
-            .from('document_folders')
-            .upsert({
-              name: documentType,
-              type: 'form',
-              parent_id: clientFolder.id,
-              metadata: {
-                form_number: analysis.formNumber,
-                form_type: analysis.formType
-              }
-            })
-            .select()
-            .single();
-
-          // Move document to proper folder
-          if (formFolder) {
-            await supabase
-              .from('documents')
-              .update({
-                parent_folder_id: formFolder.id,
-                metadata: {
-                  auto_categorized: true,
-                  categorized_at: new Date().toISOString(),
-                  client_name: analysis.clientName,
-                  form_type: analysis.formType,
-                  form_number: analysis.formNumber
-                }
-              })
-              .eq('id', documentId);
-
-            console.log(`✅ Auto-categorized document to: ${clientFolderName} > ${documentType}`);
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Auto-categorization failed:', error);
-    }
-  }
-
-  /**
-   * Auto-create tasks from high-risk findings
-   */
-  private static async autoCreateTasksFromRisks(documentId: string, analysis: DeepSeekAnalysisResult) {
-    try {
-      const highRiskFactors = analysis.riskAssessment.riskFactors.filter(
-        risk => risk.severity === 'high'
-      );
-
-      for (const risk of highRiskFactors) {
-        await supabase
-          .from('tasks')
-          .insert({
-            title: `${risk.type}: ${analysis.formNumber}`,
-            description: `${risk.description}\n\nRecommendation: ${risk.recommendation}\n\nBIA Reference: ${risk.biaReference}`,
-            document_id: documentId,
-            priority: 'high',
-            status: 'todo',
-            auto_created: true,
-            due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
-            metadata: {
-              risk_type: risk.type,
-              field_location: risk.fieldLocation,
-              bia_reference: risk.biaReference,
-              created_by_deepseek: true
-            }
-          });
-      }
-
-      if (highRiskFactors.length > 0) {
-        console.log(`✅ Auto-created ${highRiskFactors.length} tasks from high-risk findings`);
-      }
-    } catch (error) {
-      console.error('Auto-task creation failed:', error);
     }
   }
 

@@ -3,21 +3,13 @@ import { useState, useEffect } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, FileX, RefreshCw, Upload } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import { Badge } from '@/components/ui/badge';
+import { BlankFileAnalysisService, BlankFileAnalysis } from './BlankFileAnalysis/BlankFileAnalysisService';
+import { BlankFileDetails } from './BlankFileAnalysis/BlankFileDetails';
 
 interface BlankFileDetectionWarningProps {
   documentId: string;
   onReupload?: () => void;
-}
-
-interface BlankFileAnalysis {
-  isBlank: boolean;
-  confidence: number;
-  issues: string[];
-  suggestions: string[];
-  fileSize: number;
-  pageCount?: number;
 }
 
 export const BlankFileDetectionWarning = ({ documentId, onReupload }: BlankFileDetectionWarningProps) => {
@@ -32,44 +24,8 @@ export const BlankFileDetectionWarning = ({ documentId, onReupload }: BlankFileD
   const analyzeBlankFile = async () => {
     setIsAnalyzing(true);
     try {
-      // Get document details
-      const { data: document, error } = await supabase
-        .from('documents')
-        .select('*')
-        .eq('id', documentId)
-        .single();
-
-      if (error || !document) return;
-
-      // Check file size first - very small files are likely blank
-      const isSmallFile = document.size < 1024; // Less than 1KB
-      
-      // Call blank file detection edge function
-      const { data: result, error: analysisError } = await supabase.functions.invoke('detect-blank-file', {
-        body: {
-          documentId,
-          storagePath: document.storage_path,
-          fileSize: document.size,
-          fileType: document.type
-        }
-      });
-
-      if (analysisError) {
-        console.error('Blank file analysis failed:', analysisError);
-        return;
-      }
-
-      const blankAnalysis: BlankFileAnalysis = {
-        isBlank: result?.isBlank || isSmallFile,
-        confidence: result?.confidence || (isSmallFile ? 95 : 0),
-        issues: result?.issues || (isSmallFile ? ['File size extremely small'] : []),
-        suggestions: result?.suggestions || [],
-        fileSize: document.size,
-        pageCount: result?.pageCount
-      };
-
-      setAnalysis(blankAnalysis);
-
+      const result = await BlankFileAnalysisService.analyzeBlankFile(documentId);
+      setAnalysis(result);
     } catch (error) {
       console.error('Blank file detection error:', error);
     } finally {
@@ -79,14 +35,6 @@ export const BlankFileDetectionWarning = ({ documentId, onReupload }: BlankFileD
 
   const handleReanalyze = () => {
     analyzeBlankFile();
-  };
-
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   if (isAnalyzing) {
@@ -157,51 +105,7 @@ export const BlankFileDetectionWarning = ({ documentId, onReupload }: BlankFileD
         )}
       </div>
 
-      {showDetails && (
-        <div className="p-4 border rounded-lg bg-muted/30">
-          <h4 className="font-medium mb-3">File Analysis Details</h4>
-          
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <span className="text-sm font-medium">File Size:</span>
-              <p className="text-sm text-muted-foreground">
-                {formatFileSize(analysis.fileSize)}
-              </p>
-            </div>
-            
-            {analysis.pageCount !== undefined && (
-              <div>
-                <span className="text-sm font-medium">Page Count:</span>
-                <p className="text-sm text-muted-foreground">
-                  {analysis.pageCount} pages
-                </p>
-              </div>
-            )}
-          </div>
-
-          {analysis.issues.length > 0 && (
-            <div className="mb-4">
-              <span className="text-sm font-medium">Issues Detected:</span>
-              <ul className="mt-1 text-sm text-muted-foreground list-disc list-inside">
-                {analysis.issues.map((issue, index) => (
-                  <li key={index}>{issue}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {analysis.suggestions.length > 0 && (
-            <div>
-              <span className="text-sm font-medium">Suggestions:</span>
-              <ul className="mt-1 text-sm text-muted-foreground list-disc list-inside">
-                {analysis.suggestions.map((suggestion, index) => (
-                  <li key={index}>{suggestion}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      )}
+      {showDetails && <BlankFileDetails analysis={analysis} />}
     </div>
   );
 };
