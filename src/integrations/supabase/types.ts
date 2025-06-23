@@ -1610,49 +1610,268 @@ export type Database = {
           },
         ]
       }
+      task_assignments: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          assigned_to: string | null
+          id: string
+          is_active: boolean | null
+          notes: string | null
+          task_id: string | null
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          assigned_to?: string | null
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          task_id?: string | null
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          assigned_to?: string | null
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          task_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_assignments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_comments: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          is_system_comment: boolean | null
+          task_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          is_system_comment?: boolean | null
+          task_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_system_comment?: boolean | null
+          task_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_comments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_deadlines: {
+        Row: {
+          bia_section: string | null
+          buffer_days: number | null
+          created_at: string | null
+          deadline_date: string
+          deadline_type: string
+          form_number: string | null
+          id: string
+          reminder_sent: boolean | null
+          task_id: string | null
+        }
+        Insert: {
+          bia_section?: string | null
+          buffer_days?: number | null
+          created_at?: string | null
+          deadline_date: string
+          deadline_type: string
+          form_number?: string | null
+          id?: string
+          reminder_sent?: boolean | null
+          task_id?: string | null
+        }
+        Update: {
+          bia_section?: string | null
+          buffer_days?: number | null
+          created_at?: string | null
+          deadline_date?: string
+          deadline_type?: string
+          form_number?: string | null
+          id?: string
+          reminder_sent?: boolean | null
+          task_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_deadlines_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_templates: {
+        Row: {
+          bia_section: string | null
+          category: string
+          compliance_requirements: Json | null
+          created_at: string | null
+          deadline_rules: Json | null
+          default_assignee_role: string | null
+          description: string | null
+          estimated_duration: number | null
+          form_number: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          priority: string | null
+          template_steps: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          bia_section?: string | null
+          category: string
+          compliance_requirements?: Json | null
+          created_at?: string | null
+          deadline_rules?: Json | null
+          default_assignee_role?: string | null
+          description?: string | null
+          estimated_duration?: number | null
+          form_number?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          priority?: string | null
+          template_steps?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          bia_section?: string | null
+          category?: string
+          compliance_requirements?: Json | null
+          created_at?: string | null
+          deadline_rules?: Json | null
+          default_assignee_role?: string | null
+          description?: string | null
+          estimated_duration?: number | null
+          form_number?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          priority?: string | null
+          template_steps?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
+          actual_duration: number | null
+          ai_confidence_score: number | null
+          ai_generated: boolean | null
           assigned_to: string | null
+          auto_assigned: boolean | null
+          bia_section: string | null
+          category: string | null
+          completion_percentage: number | null
+          compliance_deadline: string | null
           created_at: string | null
           created_by: string
+          dependencies: Json | null
           description: string | null
           document_id: string | null
           due_date: string | null
+          estimated_duration: number | null
+          form_number: string | null
           id: string
+          priority: string | null
           regulation: string | null
+          risk_id: string | null
           severity: string
           solution: string | null
           status: string | null
+          tags: Json | null
+          task_template_id: string | null
           title: string
           updated_at: string | null
         }
         Insert: {
+          actual_duration?: number | null
+          ai_confidence_score?: number | null
+          ai_generated?: boolean | null
           assigned_to?: string | null
+          auto_assigned?: boolean | null
+          bia_section?: string | null
+          category?: string | null
+          completion_percentage?: number | null
+          compliance_deadline?: string | null
           created_at?: string | null
           created_by: string
+          dependencies?: Json | null
           description?: string | null
           document_id?: string | null
           due_date?: string | null
+          estimated_duration?: number | null
+          form_number?: string | null
           id?: string
+          priority?: string | null
           regulation?: string | null
+          risk_id?: string | null
           severity: string
           solution?: string | null
           status?: string | null
+          tags?: Json | null
+          task_template_id?: string | null
           title: string
           updated_at?: string | null
         }
         Update: {
+          actual_duration?: number | null
+          ai_confidence_score?: number | null
+          ai_generated?: boolean | null
           assigned_to?: string | null
+          auto_assigned?: boolean | null
+          bia_section?: string | null
+          category?: string | null
+          completion_percentage?: number | null
+          compliance_deadline?: string | null
           created_at?: string | null
           created_by?: string
+          dependencies?: Json | null
           description?: string | null
           document_id?: string | null
           due_date?: string | null
+          estimated_duration?: number | null
+          form_number?: string | null
           id?: string
+          priority?: string | null
           regulation?: string | null
+          risk_id?: string | null
           severity?: string
           solution?: string | null
           status?: string | null
+          tags?: Json | null
+          task_template_id?: string | null
           title?: string
           updated_at?: string | null
         }
@@ -1860,6 +2079,10 @@ export type Database = {
       }
     }
     Functions: {
+      assign_task_by_expertise: {
+        Args: { task_id: string; form_number?: string }
+        Returns: string
+      }
       get_risk_summary: {
         Args: { analysis_uuid: string }
         Returns: {
