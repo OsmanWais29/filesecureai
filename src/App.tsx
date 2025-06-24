@@ -13,6 +13,7 @@ import WorkflowPage from './pages/WorkflowPage';
 import SettingsPage from './pages/SettingsPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import DocumentsPage from './pages/documents/DocumentsPage';
+import ConverterPage from './pages/ConverterPage';
 
 function App() {
   return (
@@ -22,12 +23,13 @@ function App() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/" element={<AuthCheck><HomePage /></AuthCheck>} />
         <Route path="/documents" element={<AuthCheck><DocumentsPage /></AuthCheck>} />
+        <Route path="/converter" element={<AuthCheck><ConverterPage /></AuthCheck>} />
         <Route path="/tasks" element={<AuthCheck><TaskManagementPage /></AuthCheck>} />
         <Route path="/document-viewer/:documentId" element={<AuthCheck><DocumentViewerPage /></AuthCheck>} />
         <Route path="/clients" element={<AuthCheck><ClientPage /></AuthCheck>} />
         <Route path="/workflows" element={<AuthCheck><WorkflowPage /></AuthCheck>} />
         <Route path="/settings" element={<AuthCheck><SettingsPage /></AuthCheck>} />
-        <Route path="/analytics" element={<AnalyticsPage />} />
+        <Route path="/analytics" element={<AuthCheck><AnalyticsPage /></AuthCheck>} />
       </Routes>
       <Toaster />
     </div>

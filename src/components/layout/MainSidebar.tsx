@@ -1,238 +1,111 @@
 
-import { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { 
-  BrainCog, Bell, FileText, Home, MessageCircle, PieChart, Settings, 
-  User, Users, FileCheck, Menu, X, FileSearch, ChevronRight, ChevronLeft, 
-  Activity, ShieldCheck
+import {
+  Home,
+  FileText,
+  Users,
+  CheckSquare,
+  BarChart3,
+  Settings,
+  ChevronLeft,
+  ChevronRight,
+  FileSearch,
+  Workflow
 } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { useTheme } from "@/contexts/ThemeContext";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
 
 export const MainSidebar = () => {
+  const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
-  const { theme } = useTheme();
-  const isMobile = useIsMobile();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
 
-  // Close sidebar when route changes on mobile
-  useEffect(() => {
-    if (isMobile) {
-      setIsSidebarOpen(false);
-    }
-  }, [location.pathname, isMobile]);
-
-  // Emit custom event when sidebar collapses/expands
-  useEffect(() => {
-    // Create and dispatch a custom event for sidebar collapse
-    const customEvent = new CustomEvent('sidebarCollapse', { 
-      detail: { collapsed: isCollapsed } 
-    });
-    window.dispatchEvent(customEvent);
-
-    // Small delay to allow transition to complete
-    const timer = setTimeout(() => {
-      window.dispatchEvent(new Event('resize'));
-    }, 300);
-    
-    return () => clearTimeout(timer);
-  }, [isCollapsed]);
-
-  // Set CSS custom property for sidebar width
-  useEffect(() => {
-    document.documentElement.style.setProperty(
-      '--sidebar-width', 
-      isCollapsed ? '4rem' : '16rem'
-    );
-
-    return () => {
-      document.documentElement.style.removeProperty('--sidebar-width');
-    };
-  }, [isCollapsed]);
-
-  // Navigation item definitions with corrected paths and icons
   const navigationItems = [
-    { icon: Home, label: "Home", path: "/" },
-    { icon: FileText, label: "Documents", path: "/documents" },
-    { icon: FileSearch, label: "Converter", path: "/converter" },
-    { icon: MessageCircle, label: "SAFA", path: "/SAFA" },
-    { icon: Users, label: "CRM", path: "/crm" },
-    { icon: Activity, label: "Smart Income Expense", path: "/activity" },
-    { icon: FileCheck, label: "E-Filing", path: "/e-filing" },
-    { icon: ShieldCheck, label: "Audit Trail", path: "/audit" },
-    { icon: PieChart, label: "Analytics", path: "/analytics" },
-    { icon: Bell, label: "Notifications", path: "/notifications" },
+    { name: "Dashboard", href: "/", icon: Home },
+    { name: "Documents", href: "/documents", icon: FileText },
+    { name: "Converter", href: "/converter", icon: FileSearch },
+    { name: "Clients", href: "/clients", icon: Users },
+    { name: "Tasks", href: "/tasks", icon: CheckSquare },
+    { name: "Workflows", href: "/workflows", icon: Workflow },
+    { name: "Analytics", href: "/analytics", icon: BarChart3 },
+    { name: "Settings", href: "/settings", icon: Settings },
   ];
 
-  const isActivePath = (path: string) => {
-    if (path === "/") {
-      return location.pathname === "/" || location.pathname === "/index";
-    }
-    return location.pathname.startsWith(path);
+  const toggleSidebar = () => {
+    setCollapsed(!collapsed);
+    // Dispatch custom event for layout to listen to
+    window.dispatchEvent(new CustomEvent('sidebarCollapse', { 
+      detail: { collapsed: !collapsed } 
+    }));
   };
 
-  const handleNavigation = (path: string) => {
-    navigate(path);
-    if (isMobile) {
-      setIsSidebarOpen(false);
-    }
-  };
-
-  const SidebarContent = () => (
-    <>
-      {/* App Logo */}
-      <div className="p-4 border-b border-border flex justify-between items-center bg-background">
-        {!isCollapsed && (
+  return (
+    <div 
+      className={cn(
+        "fixed left-0 top-0 h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 z-40 transition-all duration-300",
+        collapsed ? "w-16" : "w-64"
+      )}
+    >
+      <div className="flex flex-col h-full">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
+          {!collapsed && (
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                <FileText className="h-4 w-4 text-white" />
+              </div>
+              <span className="font-semibold text-lg">SecureFiles AI</span>
+            </div>
+          )}
           <Button
             variant="ghost"
-            className="w-full justify-start px-2 py-4 hover:bg-accent/10 text-foreground"
-            onClick={() => handleNavigation('/')}
+            size="icon"
+            onClick={toggleSidebar}
+            className="h-8 w-8"
           >
-            <div className="flex items-center gap-2">
-              <img 
-                src="/lovable-uploads/b8620d24-fab6-4068-9af7-3e91ace7b559.png" 
-                alt="Secure Files AI Logo" 
-                className="w-9 h-9"
-              />
-              <span className="font-bold text-lg text-foreground">
-                Secure Files AI
-              </span>
+            {collapsed ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronLeft className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+
+        {/* Navigation */}
+        <ScrollArea className="flex-1 py-4">
+          <nav className="space-y-1 px-3">
+            {navigationItems.map((item) => {
+              const isActive = location.pathname === item.href;
+              return (
+                <Link key={item.name} to={item.href}>
+                  <Button
+                    variant={isActive ? "secondary" : "ghost"}
+                    className={cn(
+                      "w-full justify-start gap-3 h-10",
+                      collapsed && "justify-center px-2",
+                      isActive && "bg-primary/10 text-primary border-primary/20"
+                    )}
+                    title={collapsed ? item.name : undefined}
+                  >
+                    <item.icon className="h-4 w-4 flex-shrink-0" />
+                    {!collapsed && <span>{item.name}</span>}
+                  </Button>
+                </Link>
+              );
+            })}
+          </nav>
+        </ScrollArea>
+
+        {/* Footer */}
+        {!collapsed && (
+          <div className="p-4 border-t border-gray-200 dark:border-gray-800">
+            <div className="text-xs text-gray-500 text-center">
+              SecureFiles AI v1.0
             </div>
-          </Button>
-        )}
-
-        {!isMobile && (
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="rounded-full h-8 w-8 flex-shrink-0 hover:bg-accent/10 text-foreground"
-            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          </Button>
+          </div>
         )}
       </div>
-
-      {/* Navigation Links with ScrollArea */}
-      <ScrollArea className="flex-1 bg-background">
-        <nav className="px-3 py-2 space-y-1">
-          {navigationItems.map((item) => (
-            <Button
-              key={item.label}
-              variant="ghost"
-              className={cn(
-                "w-full justify-start gap-3 px-4 py-6 h-auto text-foreground",
-                "hover:bg-accent/10 hover:text-accent transition-colors duration-200",
-                isActivePath(item.path) && "bg-accent/10 text-accent"
-              )}
-              onClick={() => handleNavigation(item.path)}
-              title={isCollapsed ? item.label : undefined}
-            >
-              <item.icon className={cn(
-                "h-5 w-5",
-                isActivePath(item.path) ? "text-accent" : "text-muted-foreground group-hover:text-accent"
-              )} />
-              {!isCollapsed && (
-                <span className={cn(
-                  "text-sm font-medium",
-                  isActivePath(item.path) ? "text-accent" : "text-foreground"
-                )}>
-                  {item.label}
-                </span>
-              )}
-            </Button>
-          ))}
-        </nav>
-      </ScrollArea>
-
-      {/* Bottom Section */}
-      <div className="px-3 py-4 border-t border-border bg-background">
-        <Button 
-          variant="ghost"
-          className={cn(
-            "w-full justify-start gap-3 px-4 py-6 h-auto hover:bg-accent/10 hover:text-accent text-foreground",
-            isActivePath("/settings") && "bg-accent/10 text-accent"
-          )}
-          onClick={() => handleNavigation("/settings")}
-          title={isCollapsed ? "Settings" : undefined}
-        >
-          <Settings className={cn(
-            "h-5 w-5", 
-            isActivePath("/settings") ? "text-accent" : "text-muted-foreground"
-          )} />
-          {!isCollapsed && (
-            <span className={cn(
-              "text-sm font-medium",
-              isActivePath("/settings") ? "text-accent" : "text-foreground"
-            )}>Settings</span>
-          )}
-        </Button>
-        
-        <Button 
-          variant="ghost"
-          className={cn(
-            "w-full justify-start gap-3 px-4 py-6 h-auto hover:bg-accent/10 hover:text-accent text-foreground",
-            isActivePath("/profile") && "bg-accent/10 text-accent"
-          )}
-          onClick={() => handleNavigation("/profile")}
-          title={isCollapsed ? "Profile" : undefined}
-        >
-          <User className={cn(
-            "h-5 w-5", 
-            isActivePath("/profile") ? "text-accent" : "text-muted-foreground"
-          )} />
-          {!isCollapsed && (
-            <span className={cn(
-              "text-sm font-medium",
-              isActivePath("/profile") ? "text-accent" : "text-foreground"
-            )}>Profile</span>
-          )}
-        </Button>
-      </div>
-    </>
-  );
-
-  // Mobile menu toggle button
-  const MobileMenuButton = () => (
-    <Button 
-      variant="ghost" 
-      size="icon" 
-      className="fixed top-4 left-4 z-50 md:hidden bg-background text-foreground hover:bg-accent/10"
-      onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-    >
-      {isSidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-    </Button>
-  );
-
-  // For mobile: use sheet component
-  if (isMobile) {
-    return (
-      <>
-        <MobileMenuButton />
-        <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
-          <SheetContent side="left" className="p-0 w-64 bg-background">
-            <SidebarContent />
-          </SheetContent>
-        </Sheet>
-      </>
-    );
-  }
-
-  // For desktop: use fixed sidebar
-  return (
-    <aside className={cn(
-      "h-screen flex flex-col fixed left-0 top-0 z-40 border-r border-border shadow-sm transition-all duration-300 bg-background",
-      isCollapsed ? "w-16" : "w-64"
-    )}>
-      <SidebarContent />
-    </aside>
+    </div>
   );
 };
