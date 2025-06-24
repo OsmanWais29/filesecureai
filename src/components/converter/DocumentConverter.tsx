@@ -1,78 +1,29 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileUpload } from '@/components/FileUpload';
+import { Button } from '@/components/ui/button';
+import { FileUploader } from './FileUploader';
 import { ProcessingOptions } from './ProcessingOptions';
 import { ConversionResults } from './ConversionResults';
-import { FileText, Zap } from 'lucide-react';
-import { toast } from 'sonner';
-
-export interface ProcessingOptions {
-  useOcr: boolean;
-  extractTables: boolean;
-  detectSections: boolean;
-  dateFormat: string;
-  outputFormat: "xml" | "json";
-  confidence: number;
-}
+import { ProcessingStatus } from './ProcessingStatus';
+import { useConverter } from './hooks/useConverter';
+import { FileText } from 'lucide-react';
 
 export const DocumentConverter = () => {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [conversionResult, setConversionResult] = useState<any>(null);
-  const [options, setOptions] = useState<ProcessingOptions>({
-    useOcr: true,
-    extractTables: true,
-    detectSections: true,
-    dateFormat: 'YYYY-MM-DD',
-    outputFormat: 'xml',
-    confidence: 0.8
-  });
-
-  const handleFileSelect = (file: File) => {
-    setSelectedFile(file);
-    setConversionResult(null);
-  };
-
-  const handleOptionsChange = (newOptions: Partial<ProcessingOptions>) => {
-    setOptions(prev => ({ ...prev, ...newOptions }));
-  };
-
-  const handleStartProcessing = async () => {
-    if (!selectedFile) return;
-
-    setIsProcessing(true);
-    try {
-      // Simulate processing
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // Mock conversion result
-      const mockResult = {
-        success: true,
-        outputFormat: options.outputFormat,
-        extractedData: {
-          title: selectedFile.name,
-          pages: 5,
-          tables: options.extractTables ? 2 : 0,
-          sections: options.detectSections ? 8 : 0
-        },
-        content: options.outputFormat === 'xml' 
-          ? `<?xml version="1.0"?>\n<document>\n  <title>${selectedFile.name}</title>\n  <pages>5</pages>\n</document>`
-          : `{"title": "${selectedFile.name}", "pages": 5, "confidence": ${options.confidence}}`
-      };
-
-      setConversionResult(mockResult);
-      toast.success('Document converted successfully!');
-    } catch (error) {
-      toast.error('Conversion failed. Please try again.');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleBatchProcessing = () => {
-    toast.info('Batch processing feature coming soon');
-  };
+  const {
+    uploadedFile,
+    uploadProgress,
+    processingOptions,
+    processingStatus,
+    conversionResult,
+    isProcessing,
+    handleFileUpload,
+    handleRemoveFile,
+    handleOptionsChange,
+    handleStartProcessing,
+    handleBatchProcessing,
+    handleDownloadXml
+  } = useConverter();
 
   return (
     <div className="space-y-6">
@@ -84,21 +35,39 @@ export const DocumentConverter = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <FileUpload onUploadComplete={(docId) => console.log('Uploaded:', docId)} />
+          <FileUploader
+            onFileUpload={handleFileUpload}
+            onRemoveFile={handleRemoveFile}
+            uploadedFile={uploadedFile}
+            uploadProgress={uploadProgress}
+          />
         </CardContent>
       </Card>
 
-      <ProcessingOptions
-        options={options}
-        onChange={handleOptionsChange}
-        onStartProcessing={handleStartProcessing}
-        onBatchProcessing={handleBatchProcessing}
-        isProcessing={isProcessing}
-        file={selectedFile}
-      />
+      {uploadedFile && (
+        <>
+          <ProcessingOptions
+            options={processingOptions}
+            onChange={handleOptionsChange}
+            onStartProcessing={handleStartProcessing}
+            onBatchProcessing={handleBatchProcessing}
+            isProcessing={isProcessing}
+            file={uploadedFile}
+          />
 
-      {conversionResult && (
-        <ConversionResults result={conversionResult} />
+          {isProcessing && (
+            <ProcessingStatus
+              status={processingStatus}
+            />
+          )}
+
+          {conversionResult && (
+            <ConversionResults
+              result={conversionResult}
+              onDownload={handleDownloadXml}
+            />
+          )}
+        </>
       )}
     </div>
   );
