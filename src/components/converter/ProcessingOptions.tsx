@@ -88,7 +88,7 @@ export const ProcessingOptions: React.FC<ProcessingOptionsProps> = ({
                 <Label htmlFor="output-format">Output Format</Label>
                 <Select
                   value={options.outputFormat}
-                  onValueChange={(value) => onChange({ outputFormat: value })}
+                  onValueChange={(value) => onChange({ outputFormat: value as "xml" | "json" })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select output format" />
