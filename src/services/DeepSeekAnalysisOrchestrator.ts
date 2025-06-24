@@ -6,7 +6,6 @@ import { DuplicatePreventionService } from './DuplicatePreventionService';
 import { DocumentProcessingPipelineService, DocumentProcessingPipeline } from './DocumentProcessingPipeline';
 import { AutoCategorizationService } from './AutoCategorizationService';
 import { RiskAssessmentTaskService } from './RiskAssessmentTaskService';
-import { DynamicFormTableService } from './DynamicFormTableService';
 import { toast } from 'sonner';
 
 export class DeepSeekAnalysisOrchestrator {
@@ -74,48 +73,28 @@ export class DeepSeekAnalysisOrchestrator {
 
       pipeline.metadata.analysis = analysisResult;
 
-      // Stage 4: Dynamic Table Creation & Data Storage
+      // Stage 4: Auto-Categorization Based on AI Results
       pipeline.stage = 'categorization';
-      pipeline.progress = 55;
+      pipeline.progress = 65;
 
-      // Generate and create dynamic table for this form type
-      const tableSchema = await DynamicFormTableService.generateFormTableFromAnalysis(analysisResult);
-      if (tableSchema) {
-        const tableCreated = await DynamicFormTableService.createFormTable(tableSchema);
-        if (tableCreated) {
-          // Insert the extracted data into the form-specific table
-          await DynamicFormTableService.insertFormData(
-            analysisResult.formIdentification.formNumber,
-            documentId,
-            {
-              client_name: analysisResult.clientExtraction.debtorName,
-              estate_number: analysisResult.clientExtraction.estateNumber,
-              ...analysisResult.fieldExtraction.requiredFields,
-              ...analysisResult.fieldExtraction.optionalFields
-            }
-          );
-        }
-      }
-
-      // Stage 5: Auto-Categorization Based on AI Results
-      pipeline.progress = 70;
       await AutoCategorizationService.handleAutoCategorization(documentId, analysisResult);
 
-      // Stage 6: Risk Assessment & Task Generation
+      // Stage 5: Risk Assessment & Task Generation
       pipeline.stage = 'risk_assessment';
-      pipeline.progress = 85;
+      pipeline.progress = 80;
+
       await RiskAssessmentTaskService.handleRiskAssessmentTasks(documentId, analysisResult);
 
-      // Stage 7: Version Management
-      pipeline.progress = 95;
-      await FileVersioningService.createVersion(documentId, file, 'Initial upload with AI analysis');
+      // Stage 6: Version Management
+      pipeline.progress = 90;
+      await FileVersioningService.createVersion(documentId, file, 'Initial upload');
 
-      // Stage 8: Complete
+      // Stage 7: Complete
       pipeline.stage = 'complete';
       pipeline.progress = 100;
 
       toast.success('Document processing complete', {
-        description: `${analysisResult.formIdentification.formType} analyzed and stored in dynamic table`
+        description: `${analysisResult.formIdentification.formType} analyzed with ${analysisResult.formIdentification.confidence}% confidence`
       });
 
       return { success: true, documentId, pipeline };
@@ -137,28 +116,5 @@ export class DeepSeekAnalysisOrchestrator {
    */
   static async getPipelineStatus(documentId: string): Promise<DocumentProcessingPipeline | null> {
     return DocumentProcessingPipelineService.getPipelineStatus(documentId);
-  }
-
-  /**
-   * Get available dynamic tables created by AI
-   */
-  static async getAvailableDynamicTables() {
-    return DynamicFormTableService.getAvailableTables();
-  }
-
-  /**
-   * Manually trigger dynamic table creation for a specific form
-   */
-  static async createTableForForm(formNumber: string, formTitle: string, sampleAnalysis: any) {
-    const schema = await DynamicFormTableService.generateFormTableFromAnalysis({
-      formIdentification: { formNumber, formType: formTitle },
-      fieldExtraction: sampleAnalysis.fieldExtraction || {},
-      riskAssessment: sampleAnalysis.riskAssessment || {}
-    });
-
-    if (schema) {
-      return DynamicFormTableService.createFormTable(schema);
-    }
-    return false;
   }
 }
