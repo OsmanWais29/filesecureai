@@ -13,6 +13,9 @@ export function useDocuments() {
   const analytics = useAnalytics();
 
   const fetchDocuments = useCallback(async () => {
+    // Prevent multiple simultaneous fetches
+    if (isLoading) return;
+    
     setIsLoading(true);
     setError(null);
     
@@ -29,16 +32,16 @@ export function useDocuments() {
       }
       
       // Transform data to match Document interface with proper type handling
-      const transformedData: Document[] = data.map(item => ({
+      const transformedData: Document[] = (data || []).map(item => ({
         id: item.id,
-        title: item.title || 'Untitled Document', // Ensure title is always a string
+        title: item.title || 'Untitled Document',
         created_at: item.created_at,
         updated_at: item.updated_at,
         is_folder: item.is_folder || false,
         folder_type: item.folder_type,
         parent_folder_id: item.parent_folder_id,
         storage_path: item.storage_path,
-        metadata: typeof item.metadata === 'object' ? item.metadata : {}, // Ensure metadata is always an object
+        metadata: typeof item.metadata === 'object' && item.metadata ? item.metadata : {},
         type: item.type,
         size: item.size || 0,
       }));
@@ -47,33 +50,44 @@ export function useDocuments() {
       analytics.trackEvent('documents_fetch_success', { count: transformedData.length });
     } catch (err) {
       console.error('Error fetching documents:', err);
-      setError(err instanceof Error ? err : new Error('Failed to fetch documents'));
-      analytics.trackEvent('documents_fetch_error', { error: err instanceof Error ? err.message : 'Unknown error' });
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch documents';
+      setError(new Error(errorMessage));
+      analytics.trackEvent('documents_fetch_error', { error: errorMessage });
       
       toast({
         variant: "destructive",
         title: "Error fetching documents",
-        description: err instanceof Error ? err.message : "An unknown error occurred",
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
     }
-  }, [analytics, toast]);
+  }, [analytics, toast]); // Removed isLoading from dependencies to prevent infinite loop
 
   useEffect(() => {
-    const controller = new AbortController();
+    let isMounted = true;
     
-    fetchDocuments();
+    const loadDocuments = async () => {
+      if (isMounted) {
+        await fetchDocuments();
+      }
+    };
+    
+    loadDocuments();
     
     return () => {
-      controller.abort();
+      isMounted = false;
     };
+  }, []); // Empty dependency array to run only once on mount
+
+  const refetch = useCallback(() => {
+    fetchDocuments();
   }, [fetchDocuments]);
 
   return {
     documents,
     isLoading,
     error,
-    refetch: fetchDocuments
+    refetch
   };
 }

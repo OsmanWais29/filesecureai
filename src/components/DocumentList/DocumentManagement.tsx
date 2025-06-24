@@ -14,7 +14,7 @@ export const DocumentManagement = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   
-  const { documents, isLoading, refetch } = useDocuments();
+  const { documents, isLoading, error, refetch } = useDocuments();
 
   useEffect(() => {
     console.log("DocumentManagement loaded successfully");
@@ -29,6 +29,21 @@ export const DocumentManagement = () => {
   const handleDocumentClick = (document: { id: string; title: string; storage_path: string }) => {
     console.log("Document clicked:", document);
   };
+
+  // Show error state if there's an error
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold tracking-tight text-destructive">Error Loading Documents</h1>
+          <p className="text-muted-foreground mt-2">{error.message}</p>
+          <Button onClick={refetch} className="mt-4">
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   const filteredDocuments = documents?.filter(doc => 
     doc.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
