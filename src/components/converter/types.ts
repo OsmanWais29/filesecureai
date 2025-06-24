@@ -20,3 +20,21 @@ export interface ConversionResult {
   content: string;
   error?: string;
 }
+
+export interface ProcessingStatus {
+  stage: ProcessingStage;
+  progress: number;
+  message: string;
+  isComplete: boolean;
+  hasError: boolean;
+}
+
+export enum ProcessingStage {
+  IDLE = 'idle',
+  READING = 'reading',
+  EXTRACTING = 'extracting',
+  ANALYZING = 'analyzing',
+  CONVERTING = 'converting',
+  COMPLETE = 'complete',
+  ERROR = 'error'
+}
