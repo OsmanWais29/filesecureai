@@ -9,7 +9,7 @@ import {
   FileText, 
   Download, 
   RefreshCw, 
-  CheckCircle, 
+  CheckCircle,
   AlertCircle,
   Code,
   FileCode,
@@ -108,11 +108,6 @@ const ConverterPage = () => {
               <div className="space-y-4">
                 <FileUpload 
                   onUploadComplete={handleFileUpload}
-                  acceptedFileTypes={{
-                    'application/pdf': ['.pdf'],
-                    'image/png': ['.png'],
-                    'image/jpeg': ['.jpg', '.jpeg']
-                  }}
                 />
                 
                 {isConverting && (
