@@ -1,8 +1,10 @@
 
-import React, { useState, useCallback } from "react";
-import { Upload, UploadCloud, X, File, FileCheck } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
+import React, { useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Upload, FileText, X } from 'lucide-react';
 
 interface FileUploaderProps {
   onFileUpload: (file: File) => void;
@@ -11,143 +13,75 @@ interface FileUploaderProps {
   uploadProgress: number;
 }
 
-export const FileUploader: React.FC<FileUploaderProps> = ({ 
-  onFileUpload, 
-  onRemoveFile, 
+export const FileUploader: React.FC<FileUploaderProps> = ({
+  onFileUpload,
+  onRemoveFile,
   uploadedFile,
-  uploadProgress 
+  uploadProgress
 }) => {
-  const [isDragging, setIsDragging] = useState(false);
-  
-  const handleDragEnter = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  }, []);
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  }, []);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    
-    if (e.dataTransfer.files?.length) {
-      const file = e.dataTransfer.files[0];
-      onFileUpload(file);
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    if (acceptedFiles.length > 0) {
+      onFileUpload(acceptedFiles[0]);
     }
   }, [onFileUpload]);
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.length) {
-      const file = e.target.files[0];
-      onFileUpload(file);
-    }
-  }, [onFileUpload]);
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'application/pdf': ['.pdf']
+    },
+    multiple: false
+  });
 
-  return (
-    <div className="max-w-2xl mx-auto">
-      {!uploadedFile ? (
-        <div
-          className={`border-2 border-dashed rounded-lg p-10 text-center ${
-            isDragging 
-              ? "border-primary bg-primary/5" 
-              : "border-muted hover:border-primary/50 hover:bg-primary/5 transition-all"
-          }`}
-          onDragEnter={handleDragEnter}
-          onDragLeave={handleDragLeave}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-        >
-          <div className="flex flex-col items-center justify-center space-y-4">
-            <div className={`rounded-full p-4 ${isDragging ? 'bg-primary/20' : 'bg-primary/10'}`}>
-              <UploadCloud className={`h-10 w-10 ${isDragging ? 'text-primary' : 'text-primary/80'}`} />
-            </div>
-            
-            <div className="space-y-2">
-              <h3 className="text-lg font-medium">Upload PDF Document</h3>
-              <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                Drag and drop your PDF file here, or click the button below to select a file
-              </p>
-            </div>
-            
-            <div>
-              <label htmlFor="file-upload">
-                <Button 
-                  className="cursor-pointer" 
-                  variant="default"
-                  size="sm"
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Select PDF File
-                </Button>
-                <input
-                  id="file-upload"
-                  type="file"
-                  className="hidden"
-                  accept=".pdf"
-                  onChange={handleFileChange}
-                />
-              </label>
-            </div>
-            
-            <p className="text-xs text-muted-foreground">
-              Maximum file size: 10MB. Supported format: PDF
-            </p>
-          </div>
-        </div>
-      ) : (
-        <div className="border rounded-lg p-4 bg-background">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-3">
-              <div className="bg-primary/10 p-2 rounded-full">
-                <File className="h-6 w-6 text-primary" />
-              </div>
-              
+  if (uploadedFile) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <FileText className="h-8 w-8 text-blue-500" />
               <div>
-                <h4 className="text-base font-medium">{uploadedFile.name}</h4>
-                <p className="text-xs text-muted-foreground">
-                  {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB • PDF Document
-                </p>
+                <p className="font-medium">{uploadedFile.name}</p>
+                <p className="text-sm text-gray-500">{(uploadedFile.size / 1024 / 1024).toFixed(2)} MB</p>
               </div>
             </div>
-            
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onRemoveFile}
-              className="hover:bg-destructive/10 hover:text-destructive transition-colors"
-            >
+            <Button variant="outline" size="sm" onClick={onRemoveFile}>
               <X className="h-4 w-4" />
             </Button>
           </div>
-          
-          {uploadProgress < 100 ? (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Uploading file...</span>
-                <span className="font-medium">{uploadProgress}%</span>
-              </div>
-              <Progress value={uploadProgress} className="h-1" />
-            </div>
-          ) : (
-            <div className="flex items-center text-xs text-green-600">
-              <FileCheck className="h-4 w-4 mr-1.5" />
-              File uploaded successfully
+          {uploadProgress < 100 && (
+            <div className="mt-4">
+              <Progress value={uploadProgress} className="h-2" />
+              <p className="text-sm text-gray-500 mt-2">Uploading... {uploadProgress}%</p>
             </div>
           )}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardContent className="p-6">
+        <div
+          {...getRootProps()}
+          className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+            isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
+          }`}
+        >
+          <input {...getInputProps()} />
+          <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-lg font-medium text-gray-900 mb-2">
+            {isDragActive ? 'Drop the PDF here' : 'Upload PDF Document'}
+          </p>
+          <p className="text-gray-500 mb-4">
+            Drag and drop your PDF file or click to browse
+          </p>
+          <Button variant="outline">
+            Select File
+          </Button>
         </div>
-      )}
-    </div>
+      </CardContent>
+    </Card>
   );
 };

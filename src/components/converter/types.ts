@@ -11,14 +11,36 @@ export interface ProcessingOptions {
 export interface ConversionResult {
   success: boolean;
   outputFormat: string;
+  xml: string;
+  json?: any;
   extractedData: {
-    title: string;
-    pages: number;
-    tables: number;
-    sections: number;
+    metadata: {
+      filename: string;
+      pageCount: number;
+      processingTime: number;
+      success: boolean;
+    };
+    sections: Array<{
+      name: string;
+      fields: Array<{
+        name: string;
+        value: string;
+        confidence: number;
+      }>;
+    }>;
   };
   content: string;
+  validationErrors: string[];
+  validationWarnings: string[];
   error?: string;
+}
+
+export interface ProcessingStage {
+  id: string;
+  name: string;
+  status: 'pending' | 'processing' | 'complete' | 'error';
+  progress: number;
+  message?: string;
 }
 
 export interface ProcessingStatus {
@@ -27,6 +49,13 @@ export interface ProcessingStatus {
   message: string;
   isComplete: boolean;
   hasError: boolean;
+  overallProgress: number;
+  currentStage: string;
+  stages: ProcessingStage[];
+  startTime: Date;
+  estimatedTimeRemaining?: number;
+  errors: string[];
+  warnings: string[];
 }
 
 export enum ProcessingStage {
