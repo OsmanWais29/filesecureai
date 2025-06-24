@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
 type Theme = 'light' | 'dark' | 'system';
 
@@ -11,24 +11,36 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+interface ThemeProviderProps {
+  children: ReactNode;
+}
+
+export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>('system');
   
   useEffect(() => {
     // Try to get the theme from localStorage
-    const savedTheme = localStorage.getItem('theme') as Theme;
-    
-    // Check if there's a saved theme or if the user prefers dark mode
-    if (savedTheme) {
-      setTheme(savedTheme);
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setTheme('dark');
+    try {
+      const savedTheme = localStorage.getItem('theme') as Theme;
+      
+      // Check if there's a saved theme or if the user prefers dark mode
+      if (savedTheme) {
+        setTheme(savedTheme);
+      } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        setTheme('dark');
+      }
+    } catch (error) {
+      console.warn('Failed to load theme from localStorage:', error);
     }
   }, []);
 
   useEffect(() => {
     // Save the theme to localStorage whenever it changes
-    localStorage.setItem('theme', theme);
+    try {
+      localStorage.setItem('theme', theme);
+    } catch (error) {
+      console.warn('Failed to save theme to localStorage:', error);
+    }
     
     // Apply the theme to the document
     const root = document.documentElement;
@@ -45,7 +57,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     if (theme === 'system') {
       // Check system preference
-      const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
       if (isDarkMode) {
         root.classList.add('dark');
         root.setAttribute('data-theme', 'dark');
@@ -78,8 +90,14 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setTheme(prevTheme => (prevTheme === 'light' ? 'dark' : 'light'));
   };
 
+  const contextValue: ThemeContextType = {
+    theme,
+    setTheme,
+    toggleTheme
+  };
+
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
+    <ThemeContext.Provider value={contextValue}>
       {children}
     </ThemeContext.Provider>
   );
