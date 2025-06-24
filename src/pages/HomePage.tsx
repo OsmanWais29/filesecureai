@@ -12,7 +12,8 @@ import {
   Upload,
   FileSearch,
   CheckSquare,
-  Workflow
+  Workflow,
+  MessageSquare
 } from 'lucide-react';
 
 const HomePage = () => {
@@ -32,6 +33,13 @@ const HomePage = () => {
       icon: FileSearch,
       path: '/converter',
       color: 'bg-green-500'
+    },
+    {
+      title: 'AI Assistant',
+      description: 'Chat with SAFA AI for document analysis',
+      icon: MessageSquare,
+      path: '/safa',
+      color: 'bg-emerald-500'
     },
     {
       title: 'Manage Clients',

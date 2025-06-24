@@ -14,7 +14,8 @@ import {
   ChevronLeft,
   ChevronRight,
   FileSearch,
-  Workflow
+  Workflow,
+  MessageSquare
 } from "lucide-react";
 
 export const MainSidebar = () => {
@@ -25,6 +26,7 @@ export const MainSidebar = () => {
     { name: "Dashboard", href: "/", icon: Home },
     { name: "Documents", href: "/documents", icon: FileText },
     { name: "Converter", href: "/converter", icon: FileSearch },
+    { name: "AI Assistant", href: "/safa", icon: MessageSquare },
     { name: "Clients", href: "/clients", icon: Users },
     { name: "Tasks", href: "/tasks", icon: CheckSquare },
     { name: "Workflows", href: "/workflows", icon: Workflow },

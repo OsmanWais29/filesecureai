@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { TaskManagement } from '@/components/tasks/TaskManagement';
 
 const TaskManagementPage = () => {
   return (
@@ -10,9 +11,7 @@ const TaskManagementPage = () => {
           <h1 className="text-3xl font-bold text-gray-900">Task Management</h1>
           <p className="text-gray-600 mt-1">Manage and track your tasks and workflows.</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-gray-600">Task management features coming soon...</p>
-        </div>
+        <TaskManagement />
       </div>
     </MainLayout>
   );

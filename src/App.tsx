@@ -14,6 +14,7 @@ import SettingsPage from './pages/SettingsPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import DocumentsPage from './pages/documents/DocumentsPage';
 import ConverterPage from './pages/ConverterPage';
+import SAFAPage from './pages/SAFA/SAFAPage';
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
         <Route path="/workflows" element={<AuthCheck><WorkflowPage /></AuthCheck>} />
         <Route path="/settings" element={<AuthCheck><SettingsPage /></AuthCheck>} />
         <Route path="/analytics" element={<AuthCheck><AnalyticsPage /></AuthCheck>} />
+        <Route path="/safa" element={<AuthCheck><SAFAPage /></AuthCheck>} />
       </Routes>
       <Toaster />
     </div>

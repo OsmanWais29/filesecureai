@@ -1,173 +1,262 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { 
-  BarChart3, 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line
+} from 'recharts';
+import { 
   FileText, 
   Users, 
-  Shield, 
-  TrendingUp, 
-  Calendar,
-  Download,
-  Filter,
-  Settings
+  CheckSquare, 
+  AlertTriangle, 
+  TrendingUp,
+  Clock,
+  Shield,
+  Zap
 } from 'lucide-react';
-import { DocumentAnalytics } from './documents/DocumentAnalytics';
-import { ComplianceAnalytics } from './compliance/ComplianceAnalytics';
-import { ClientManagementAnalytics } from './client/ClientManagementAnalytics';
-import { OperationalEfficiencyAnalytics } from './operational/OperationalEfficiencyAnalytics';
-import { GeographicAnalytics } from './geographic/GeographicAnalytics';
-import { MarketingAnalytics } from './marketing/MarketingAnalytics';
-import { useEnhancedAnalytics } from '@/hooks/useEnhancedAnalytics';
 
-export const AnalyticsDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('overview');
-  const [dateRange, setDateRange] = useState('30d');
-  
-  const analytics = useEnhancedAnalytics({
-    pageName: 'Analytics Dashboard',
-    userRole: 'trustee',
-    enablePersistence: true
-  });
+const documentData = [
+  { name: 'Form 47', count: 45, processed: 42 },
+  { name: 'Form 76', count: 32, processed: 30 },
+  { name: 'Form 31', count: 28, processed: 25 },
+  { name: 'Form 65', count: 18, processed: 18 },
+  { name: 'Other', count: 25, processed: 22 }
+];
 
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    analytics.trackInteraction('Analytics', 'TabChange', { tab: value });
-  };
+const riskData = [
+  { name: 'Low Risk', value: 65, color: '#10B981' },
+  { name: 'Medium Risk', value: 25, color: '#F59E0B' },
+  { name: 'High Risk', value: 10, color: '#EF4444' }
+];
 
-  const handleExportReport = () => {
-    analytics.trackInteraction('Analytics', 'ExportReport', { tab: activeTab });
-    // Export logic would go here
-  };
+const processTimeData = [
+  { month: 'Jan', time: 2.4 },
+  { month: 'Feb', time: 2.1 },
+  { month: 'Mar', time: 1.8 },
+  { month: 'Apr', time: 1.6 },
+  { month: 'May', time: 1.4 },
+  { month: 'Jun', time: 1.2 }
+];
 
+export const AnalyticsDashboard = () => {
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
-          <p className="text-muted-foreground">
-            Comprehensive insights into your SecureFiles AI operations
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <Button variant="outline" onClick={handleExportReport}>
-            <Download className="h-4 w-4 mr-2" />
-            Export Report
-          </Button>
-          <Button variant="outline">
-            <Filter className="h-4 w-4 mr-2" />
-            Filters
-          </Button>
-          <Button variant="outline">
-            <Settings className="h-4 w-4 mr-2" />
-            Settings
-          </Button>
-        </div>
+    <div className="space-y-6">
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Documents</p>
+                <p className="text-2xl font-bold">1,247</p>
+                <p className="text-xs text-green-600 flex items-center mt-1">
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  +12% from last month
+                </p>
+              </div>
+              <FileText className="h-8 w-8 text-blue-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Active Clients</p>
+                <p className="text-2xl font-bold">89</p>
+                <p className="text-xs text-green-600 flex items-center mt-1">
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  +5% from last month
+                </p>
+              </div>
+              <Users className="h-8 w-8 text-green-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Pending Tasks</p>
+                <p className="text-2xl font-bold">23</p>
+                <p className="text-xs text-red-600 flex items-center mt-1">
+                  <AlertTriangle className="h-3 w-3 mr-1" />
+                  3 overdue
+                </p>
+              </div>
+              <CheckSquare className="h-8 w-8 text-orange-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Avg. Process Time</p>
+                <p className="text-2xl font-bold">1.2h</p>
+                <p className="text-xs text-green-600 flex items-center mt-1">
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  -15% improvement
+                </p>
+              </div>
+              <Clock className="h-8 w-8 text-purple-600" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="overview" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="documents" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Documents
-          </TabsTrigger>
-          <TabsTrigger value="compliance" className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            Compliance
-          </TabsTrigger>
-          <TabsTrigger value="clients" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Clients
-          </TabsTrigger>
-          <TabsTrigger value="operations" className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
-            Operations
-          </TabsTrigger>
-          <TabsTrigger value="geographic" className="flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            Geographic
-          </TabsTrigger>
-        </TabsList>
+      {/* Document Processing Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Document Processing by Type</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={documentData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="count" fill="#3B82F6" name="Total" />
+              <Bar dataKey="processed" fill="#10B981" name="Processed" />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
 
-        <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Documents</CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">2,847</div>
-                <p className="text-xs text-muted-foreground">+12% from last month</p>
-              </CardContent>
-            </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Risk Assessment Distribution */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Risk Assessment Distribution</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
+                <Pie
+                  data={riskData}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  dataKey="value"
+                  label={({ name, value }) => `${name}: ${value}%`}
+                >
+                  {riskData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Cases</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">186</div>
-                <p className="text-xs text-muted-foreground">+4 new this week</p>
-              </CardContent>
-            </Card>
+        {/* Processing Time Trend */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Average Processing Time Trend</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={processTimeData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip formatter={(value) => [`${value}h`, 'Avg Time']} />
+                <Line 
+                  type="monotone" 
+                  dataKey="time" 
+                  stroke="#8B5CF6" 
+                  strokeWidth={2}
+                  dot={{ fill: '#8B5CF6' }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Compliance Rate</CardTitle>
-                <Shield className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">94.2%</div>
-                <p className="text-xs text-muted-foreground">+2.1% improvement</p>
-              </CardContent>
-            </Card>
+      {/* Performance Indicators */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Shield className="h-5 w-5 text-green-600" />
+              Compliance Score
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm">Overall Compliance</span>
+                <span className="text-sm font-medium">94%</span>
+              </div>
+              <Progress value={94} className="h-2" />
+              <Badge variant="secondary" className="text-xs">
+                Excellent
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Processing Time</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">18.5h</div>
-                <p className="text-xs text-muted-foreground">-3.2h faster</p>
-              </CardContent>
-            </Card>
-          </div>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Zap className="h-5 w-5 text-yellow-600" />
+              Processing Efficiency
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm">Automation Rate</span>
+                <span className="text-sm font-medium">87%</span>
+              </div>
+              <Progress value={87} className="h-2" />
+              <Badge variant="secondary" className="text-xs">
+                Very Good
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <MarketingAnalytics />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="documents">
-          <DocumentAnalytics />
-        </TabsContent>
-
-        <TabsContent value="compliance">
-          <ComplianceAnalytics />
-        </TabsContent>
-
-        <TabsContent value="clients">
-          <ClientManagementAnalytics />
-        </TabsContent>
-
-        <TabsContent value="operations">
-          <OperationalEfficiencyAnalytics />
-        </TabsContent>
-
-        <TabsContent value="geographic">
-          <GeographicAnalytics />
-        </TabsContent>
-      </Tabs>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <CheckSquare className="h-5 w-5 text-blue-600" />
+              Task Completion
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm">On-Time Delivery</span>
+                <span className="text-sm font-medium">91%</span>
+              </div>
+              <Progress value={91} className="h-2" />
+              <Badge variant="secondary" className="text-xs">
+                Excellent
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

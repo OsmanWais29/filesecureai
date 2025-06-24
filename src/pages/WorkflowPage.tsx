@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { WorkflowManagement } from '@/components/workflows/WorkflowManagement';
 
 const WorkflowPage = () => {
   return (
@@ -10,9 +11,7 @@ const WorkflowPage = () => {
           <h1 className="text-3xl font-bold text-gray-900">Workflows</h1>
           <p className="text-gray-600 mt-1">Manage your automated workflows and processes.</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-gray-600">Workflow management features coming soon...</p>
-        </div>
+        <WorkflowManagement />
       </div>
     </MainLayout>
   );
