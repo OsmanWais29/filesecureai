@@ -1,12 +1,20 @@
 
 import React from 'react';
-import { EnhancedTaskDashboard } from '@/components/TaskManagement/EnhancedTaskDashboard';
+import { MainLayout } from '@/components/layout/MainLayout';
 
-export const TaskManagementPage: React.FC = () => {
+const TaskManagementPage = () => {
   return (
-    <div className="container mx-auto p-6">
-      <EnhancedTaskDashboard />
-    </div>
+    <MainLayout>
+      <div className="p-6">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">Task Management</h1>
+          <p className="text-gray-600 mt-1">Manage and track your tasks and workflows.</p>
+        </div>
+        <div className="bg-white rounded-lg shadow p-6">
+          <p className="text-gray-600">Task management features coming soon...</p>
+        </div>
+      </div>
+    </MainLayout>
   );
 };
 

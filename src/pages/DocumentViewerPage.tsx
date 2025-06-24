@@ -1,25 +1,23 @@
 
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { MainLayout } from '@/components/layout/MainLayout';
 
-const DocumentViewerPage: React.FC = () => {
-  const { documentId } = useParams<{ documentId: string }>();
+const DocumentViewerPage = () => {
+  const { documentId } = useParams();
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Document Viewer</h1>
-        <Card>
-          <CardHeader>
-            <CardTitle>Document ID: {documentId}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>Document viewer coming soon...</p>
-          </CardContent>
-        </Card>
+    <MainLayout>
+      <div className="p-6">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">Document Viewer</h1>
+          <p className="text-gray-600 mt-1">Viewing document: {documentId}</p>
+        </div>
+        <div className="bg-white rounded-lg shadow p-6">
+          <p className="text-gray-600">Document viewer for document ID: {documentId}</p>
+        </div>
       </div>
-    </div>
+    </MainLayout>
   );
 };
 
