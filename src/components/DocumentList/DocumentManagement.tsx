@@ -2,46 +2,74 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, Upload, Search, Filter, AlertCircle } from "lucide-react";
+import { FileText, Upload, Search, Filter, AlertCircle, Database, Wifi, WifiOff } from "lucide-react";
 import { EnhancedFileUpload } from "@/components/FileUpload/EnhancedFileUpload";
 import { useDocuments } from "./hooks/useDocuments";
 import { DocumentGrid } from "./components/DocumentGrid";
 import { SearchBar } from "./SearchBar";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export const DocumentManagement = () => {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState<string>("");
+  const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
   
   const { documents, isLoading, error, refetch } = useDocuments();
 
+  // Test connection on mount
   useEffect(() => {
-    console.log("DocumentManagement loaded successfully");
-    console.log("Documents state:", { documents, isLoading, error });
+    console.log("🏠 DocumentManagement mounted");
     
-    // Add debug information
-    const debug = `
-      Documents: ${documents?.length || 0}
-      Loading: ${isLoading}
-      Error: ${error?.message || 'none'}
-      Route: ${window.location.pathname}
-    `;
-    setDebugInfo(debug);
-  }, [documents, isLoading, error]);
+    const testConnection = async () => {
+      try {
+        console.log("🔌 Testing database connection...");
+        const { error } = await supabase.from('documents').select('count(*)', { count: 'exact', head: true });
+        
+        if (error) {
+          console.error("❌ Connection test failed:", error);
+          setConnectionStatus('disconnected');
+        } else {
+          console.log("✅ Connection test successful");
+          setConnectionStatus('connected');
+        }
+      } catch (err) {
+        console.error("💥 Connection test error:", err);
+        setConnectionStatus('disconnected');
+      }
+    };
+    
+    testConnection();
+  }, []);
 
   const handleUploadComplete = (documentId: string) => {
-    console.log("Upload completed:", documentId);
+    console.log("📤 Upload completed:", documentId);
     toast.success("Document uploaded successfully");
     refetch();
     setUploadDialogOpen(false);
   };
 
   const handleDocumentClick = (document: { id: string; title: string; storage_path: string }) => {
-    console.log("Document clicked:", document);
+    console.log("👆 Document clicked:", document);
     toast.info(`Clicked: ${document.title}`);
   };
+
+  // Show connection error state
+  if (connectionStatus === 'disconnected') {
+    return (
+      <div className="p-6">
+        <div className="text-center space-y-4">
+          <WifiOff className="h-12 w-12 text-destructive mx-auto" />
+          <h1 className="text-3xl font-bold tracking-tight text-destructive">Database Connection Failed</h1>
+          <p className="text-muted-foreground">Unable to connect to the database. Please check your connection.</p>
+          <Button onClick={() => window.location.reload()}>
+            Retry Connection
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   // Show error state if there's an error
   if (error) {
@@ -51,9 +79,6 @@ export const DocumentManagement = () => {
           <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
           <h1 className="text-3xl font-bold tracking-tight text-destructive">Error Loading Documents</h1>
           <p className="text-muted-foreground">{error.message}</p>
-          <div className="bg-muted p-4 rounded-lg text-left text-sm">
-            <pre>{debugInfo}</pre>
-          </div>
           <div className="space-x-2">
             <Button onClick={refetch}>
               Try Again
@@ -91,11 +116,13 @@ export const DocumentManagement = () => {
     return acc;
   }, {} as Record<string, { documents: any[], lastUpdated: Date | null, types: Set<string> }>);
 
-  if (isLoading) {
+  if (isLoading || connectionStatus === 'checking') {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        <span className="ml-2">Loading documents...</span>
+        <span className="ml-2">
+          {connectionStatus === 'checking' ? 'Connecting to database...' : 'Loading documents...'}
+        </span>
       </div>
     );
   }
@@ -108,30 +135,25 @@ export const DocumentManagement = () => {
           <p className="text-muted-foreground">
             Manage and organize your documents with AI-powered analysis
           </p>
+          <div className="flex items-center gap-2 mt-2">
+            {connectionStatus === 'connected' ? (
+              <>
+                <Wifi className="h-4 w-4 text-green-500" />
+                <span className="text-sm text-green-600">Database Connected</span>
+              </>
+            ) : (
+              <>
+                <Database className="h-4 w-4 text-yellow-500" />
+                <span className="text-sm text-yellow-600">Checking Connection...</span>
+              </>
+            )}
+          </div>
         </div>
         <Button onClick={() => setUploadDialogOpen(true)} className="flex items-center gap-2">
           <Upload className="h-4 w-4" />
           Upload Documents
         </Button>
       </div>
-
-      {/* Debug Panel - Remove in production */}
-      <Card className="bg-muted/50">
-        <CardHeader>
-          <CardTitle className="text-sm">Debug Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <pre className="text-xs">{debugInfo}</pre>
-          <div className="mt-2 space-x-2">
-            <Button size="sm" variant="outline" onClick={() => console.log("Current state:", { documents, isLoading, error })}>
-              Log State
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => refetch()}>
-              Refetch Data
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
 
       <div className="flex items-center gap-4">
         <SearchBar 
