@@ -1,201 +1,107 @@
 
-import { useState, useEffect, useMemo } from "react";
-import { useDocumentsWithSearch } from "./hooks/useDocumentsWithSearch";
-import { cn } from "@/lib/utils";
-import { Toolbar } from "./components/Toolbar";
-import { Sidebar } from "./components/Sidebar";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { UncategorizedDocuments } from "./components/UncategorizedDocuments";
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { FileText, Upload, Search, Filter } from "lucide-react";
+import { EnhancedFileUpload } from "@/components/FileUpload/EnhancedFileUpload";
+import { useDocuments } from "./hooks/useDocuments";
 import { DocumentGrid } from "./components/DocumentGrid";
-import PreviewDialog from "./components/PreviewDialog";
-import { Document } from "./types";
+import { SearchBar } from "./SearchBar";
+import { toast } from "sonner";
 
-interface DocumentManagementProps {
-  onDocumentSelect?: (id: string) => void;
-}
+export const DocumentManagement = () => {
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  const { documents, isLoading, refetch } = useDocuments();
 
-export const DocumentManagement: React.FC<DocumentManagementProps> = ({ onDocumentSelect }) => {
-  const { documents, isLoading, searchQuery, setSearchQuery } = useDocumentsWithSearch();
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isGridView, setIsGridView] = useState(true);
-  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
-  const [previewDocument, setPreviewDocument] = useState<{ id: string; title: string; storage_path: string } | null>(null);
-  const [filterType, setFilterType] = useState<string | null>(null);
-
-  // Update the document grid whenever sidebar state changes
   useEffect(() => {
-    // Force a small delay to let transitions complete
-    const resizeTimer = setTimeout(() => {
-      window.dispatchEvent(new Event('resize'));
-    }, 300);
-    
-    return () => clearTimeout(resizeTimer);
-  }, [isSidebarCollapsed]);
+    console.log("DocumentManagement loaded successfully");
+  }, []);
 
-  // Emit document sidebar collapse event to update other components
-  useEffect(() => {
-    const event = new CustomEvent('documentSidebarCollapse', { 
-      detail: { collapsed: isSidebarCollapsed } 
-    });
-    window.dispatchEvent(event);
-
-    // Set CSS variable for document sidebar width
-    document.documentElement.style.setProperty(
-      '--document-sidebar-width',
-      isSidebarCollapsed ? '4rem' : '16rem'
-    );
-    
-    document.documentElement.style.setProperty(
-      '--document-sidebar-collapsed-width',
-      '4rem'
-    );
-    
-    return () => {
-      document.documentElement.style.removeProperty('--document-sidebar-width');
-      document.documentElement.style.removeProperty('--document-sidebar-collapsed-width');
-    };
-  }, [isSidebarCollapsed]);
-
-  // Filter documents based on search, folder, and type
-  const filteredDocuments = useMemo(() => {
-    return documents.filter(doc => {
-      const matchesSearch = !searchQuery || 
-        (doc.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        (doc.metadata && doc.metadata.client_name?.toLowerCase().includes(searchQuery.toLowerCase())));
-      
-      const matchesFolder = !selectedFolder ? true : 
-        selectedFolder === 'Uncategorized' 
-          ? !doc.parent_folder_id && (!doc.metadata || !doc.metadata.client_name)
-          : (doc.metadata && doc.metadata.client_name === selectedFolder) || doc.parent_folder_id === selectedFolder;
-      
-      const matchesType = !filterType || doc.type === filterType;
-
-      return matchesSearch && matchesFolder && matchesType;
-    });
-  }, [documents, searchQuery, selectedFolder, filterType]);
-
-  // Group documents by client
-  const groupedByClient = useMemo(() => {
-    return filteredDocuments.reduce((acc, doc) => {
-      let clientName = 'Uncategorized';
-      
-      if (doc.metadata && doc.metadata.client_name) {
-        clientName = doc.metadata.client_name;
-      } else if (doc.parent_folder_id) {
-        const parentDoc = documents.find(d => d.id === doc.parent_folder_id);
-        if (parentDoc && parentDoc.metadata && parentDoc.metadata.client_name) {
-          clientName = parentDoc.metadata.client_name;
-        }
-      }
-
-      if (!acc[clientName]) {
-        acc[clientName] = {
-          documents: [],
-          lastUpdated: null as Date | null,
-          types: new Set<string>()
-        };
-      }
-      
-      acc[clientName].documents.push(doc);
-      acc[clientName].types.add(doc.type || 'Other');
-      
-      // Use optional chaining and nullish coalescing to handle optional properties
-      const updatedAt = doc.updated_at ? new Date(doc.updated_at) : new Date();
-      if (!acc[clientName].lastUpdated || updatedAt > acc[clientName].lastUpdated!) {
-        acc[clientName].lastUpdated = updatedAt;
-      }
-      
-      return acc;
-    }, {} as Record<string, { 
-      documents: Document[], 
-      lastUpdated: Date | null,
-      types: Set<string>
-    }>);
-  }, [filteredDocuments, documents]);
-
-  const handleDocumentClick = (document: { id: string; title: string; storage_path: string }) => {
-    setPreviewDocument(document);
+  const handleUploadSuccess = () => {
+    toast.success("Document uploaded successfully");
+    refetch();
+    setUploadDialogOpen(false);
   };
 
-  const renderContent = () => {
-    if (selectedFolder === 'Uncategorized') {
-      const uncategorizedDocs = filteredDocuments.filter(
-        doc => !doc.parent_folder_id && (!doc.metadata || !doc.metadata.client_name)
-      );
-      
-      return (
-        <UncategorizedDocuments 
-          documents={uncategorizedDocs}
-          onDocumentClick={handleDocumentClick}
-        />
-      );
-    }
+  const filteredDocuments = documents?.filter(doc => 
+    doc.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    doc.metadata?.client_name?.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || [];
 
+  if (isLoading) {
     return (
-      <DocumentGrid
-        isGridView={isGridView}
-        groupedByClient={groupedByClient}
-        selectedFolder={selectedFolder}
-        onFolderSelect={setSelectedFolder}
-        onDocumentClick={handleDocumentClick}
-      />
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
     );
-  };
+  }
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] transition-all duration-300">
-      <Sidebar
-        isSidebarCollapsed={isSidebarCollapsed}
-        setIsSidebarCollapsed={setIsSidebarCollapsed}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        groupedByClient={groupedByClient}
-        selectedFolder={selectedFolder}
-        setSelectedFolder={setSelectedFolder}
-      />
-
-      <main className={cn(
-        "flex-1 overflow-y-auto transition-all duration-300",
-        isSidebarCollapsed 
-          ? "document-content-with-collapsed-sidebar" 
-          : "document-content-with-sidebar"
-      )}>
-        <div className="p-4 md:p-6 space-y-6">
-          <Toolbar
-            selectedFolder={selectedFolder}
-            isGridView={isGridView}
-            setIsGridView={setIsGridView}
-            onFilterChange={setFilterType}
-            currentFilter={filterType}
-          />
-
-          <ScrollArea className="h-[calc(100vh-12rem)]">
-            {isLoading ? (
-              <div className={cn(
-                "grid gap-4",
-                isGridView ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-1"
-              )}>
-                {[...Array(6)].map((_, i) => (
-                  <div 
-                    key={i}
-                    className="h-[200px] rounded-lg border bg-card animate-pulse"
-                  />
-                ))}
-              </div>
-            ) : renderContent()}
-          </ScrollArea>
+    <div className="space-y-6 p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Document Management</h1>
+          <p className="text-muted-foreground">
+            Manage and organize your documents with AI-powered analysis
+          </p>
         </div>
-      </main>
+        <Button onClick={() => setUploadDialogOpen(true)} className="flex items-center gap-2">
+          <Upload className="h-4 w-4" />
+          Upload Documents
+        </Button>
+      </div>
 
-      <PreviewDialog
-        document={previewDocument}
-        onClose={() => setPreviewDocument(null)}
-        onAnalysisComplete={(id) => {
-          if (onDocumentSelect) {
-            onDocumentSelect(id);
-          }
-        }}
-      />
+      <div className="flex items-center gap-4">
+        <SearchBar 
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="Search documents..."
+        />
+        <Button variant="outline" size="sm">
+          <Filter className="h-4 w-4 mr-2" />
+          Filter
+        </Button>
+      </div>
+
+      <div className="grid gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Documents ({filteredDocuments.length})
+            </CardTitle>
+            <CardDescription>
+              View and manage all uploaded documents
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <DocumentGrid documents={filteredDocuments} />
+          </CardContent>
+        </Card>
+      </div>
+
+      {uploadDialogOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background p-6 rounded-lg max-w-2xl w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Upload Documents</h2>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setUploadDialogOpen(false)}
+              >
+                ×
+              </Button>
+            </div>
+            <EnhancedFileUpload 
+              onUploadSuccess={handleUploadSuccess}
+              onError={(error) => toast.error(error)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
