@@ -16,13 +16,31 @@ import DocumentsPage from './pages/documents/DocumentsPage';
 import ConverterPage from './pages/ConverterPage';
 import SAFAPage from './pages/SAFA/SAFAPage';
 
+// Trustee Portal Pages
+import TrusteeDashboardPage from './pages/trustee/DashboardPage';
+import TrusteeDocumentsPage from './pages/trustee/DocumentsPage';
+import TrusteeCRMPage from './pages/trustee/CRMPage';
+import TrusteeAnalyticsPage from './pages/trustee/AnalyticsPage';
+import TrusteeClientViewerPage from './pages/trustee/ClientViewerPage';
+
 function App() {
   return (
     <div className="min-h-screen bg-background">
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
-        <Route path="/" element={<AuthCheck><HomePage /></AuthCheck>} />
+        
+        {/* Main Dashboard - redirect to trustee dashboard */}
+        <Route path="/" element={<AuthCheck><TrusteeDashboardPage /></AuthCheck>} />
+        
+        {/* Trustee Portal Routes */}
+        <Route path="/trustee/dashboard" element={<AuthCheck><TrusteeDashboardPage /></AuthCheck>} />
+        <Route path="/trustee/documents" element={<AuthCheck><TrusteeDocumentsPage /></AuthCheck>} />
+        <Route path="/trustee/crm" element={<AuthCheck><TrusteeCRMPage /></AuthCheck>} />
+        <Route path="/trustee/analytics" element={<AuthCheck><TrusteeAnalyticsPage /></AuthCheck>} />
+        <Route path="/trustee/client/:clientId" element={<AuthCheck><TrusteeClientViewerPage /></AuthCheck>} />
+        
+        {/* General Routes */}
         <Route path="/documents" element={<AuthCheck><DocumentsPage /></AuthCheck>} />
         <Route path="/converter" element={<AuthCheck><ConverterPage /></AuthCheck>} />
         <Route path="/tasks" element={<AuthCheck><TaskManagementPage /></AuthCheck>} />

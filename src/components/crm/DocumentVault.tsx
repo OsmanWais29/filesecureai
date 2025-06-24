@@ -1,162 +1,121 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   FileText, 
-  Upload, 
-  Search, 
-  Eye,
-  Download,
-  AlertTriangle,
-  CheckCircle,
+  Download, 
+  Eye, 
+  Upload,
+  Shield,
   Clock
 } from "lucide-react";
 
-interface Document {
-  id: string;
-  name: string;
-  type: string;
-  status: 'pending' | 'reviewed' | 'approved' | 'rejected';
-  uploadDate: string;
-  size: string;
-  riskLevel: 'low' | 'medium' | 'high';
-}
-
 export const DocumentVault = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  
-  const documents: Document[] = [
+  const documents = [
     {
       id: "1",
-      name: "Consumer Proposal - Form 47",
-      type: "Legal Document",
-      status: "approved",
+      name: "Form 47 - Consumer Proposal",
+      client: "Josh Hart",
       uploadDate: "2024-06-20",
-      size: "2.3 MB",
-      riskLevel: "low"
+      status: "Processed",
+      riskLevel: "Low",
+      size: "2.4 MB"
     },
     {
       id: "2", 
-      name: "Financial Statement",
-      type: "Financial",
-      status: "pending",
-      uploadDate: "2024-06-19",
-      size: "1.8 MB",
-      riskLevel: "medium"
+      name: "Form 65 - Assignment in Bankruptcy",
+      client: "Sarah Johnson",
+      uploadDate: "2024-06-18",
+      status: "Under Review",
+      riskLevel: "High",
+      size: "1.8 MB"
     },
     {
       id: "3",
-      name: "Bankruptcy Assignment",
-      type: "Legal Document", 
-      status: "reviewed",
-      uploadDate: "2024-06-18",
-      size: "3.1 MB",
-      riskLevel: "high"
+      name: "Financial Statements",
+      client: "Michael Chen", 
+      uploadDate: "2024-06-15",
+      status: "Approved",
+      riskLevel: "Medium",
+      size: "3.2 MB"
     }
   ];
 
-  const getStatusIcon = (status: string) => {
+  const getStatusBadgeColor = (status: string) => {
     switch (status) {
-      case 'approved': return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'pending': return <Clock className="h-4 w-4 text-yellow-500" />;
-      case 'rejected': return <AlertTriangle className="h-4 w-4 text-red-500" />;
-      default: return <Eye className="h-4 w-4 text-blue-500" />;
+      case "Processed": return "bg-green-100 text-green-800";
+      case "Under Review": return "bg-yellow-100 text-yellow-800";
+      case "Approved": return "bg-blue-100 text-blue-800";
+      default: return "bg-gray-100 text-gray-800";
     }
   };
 
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'approved': return 'success';
-      case 'pending': return 'warning';
-      case 'rejected': return 'destructive';
-      default: return 'secondary';
-    }
-  };
-
-  const getRiskBadgeVariant = (risk: string) => {
+  const getRiskBadgeColor = (risk: string) => {
     switch (risk) {
-      case 'high': return 'destructive';
-      case 'medium': return 'warning';
-      case 'low': return 'success';
-      default: return 'secondary';
+      case "High": return "bg-red-100 text-red-800";
+      case "Medium": return "bg-yellow-100 text-yellow-800";
+      case "Low": return "bg-green-100 text-green-800";
+      default: return "bg-gray-100 text-gray-800";
     }
   };
-
-  const filteredDocuments = documents.filter(doc =>
-    doc.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Document Vault
+            <Shield className="h-5 w-5" />
+            Secure Document Vault
           </CardTitle>
           <Button size="sm" className="gap-2">
             <Upload className="h-4 w-4" />
             Upload
           </Button>
         </div>
-        
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input 
-            placeholder="Search documents..." 
-            className="pl-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
       </CardHeader>
-      
       <CardContent>
-        <ScrollArea className="h-[400px]">
-          <div className="space-y-3">
-            {filteredDocuments.map((doc) => (
-              <div key={doc.id} className="border rounded-lg p-3 hover:bg-gray-50 transition-colors">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
-                    <h4 className="font-medium text-sm">{doc.name}</h4>
-                    <p className="text-xs text-gray-600 mt-1">{doc.type} • {doc.size}</p>
+        <div className="space-y-4">
+          {documents.map((doc) => (
+            <div key={doc.id} className="border rounded-lg p-4 space-y-3">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <FileText className="h-4 w-4 text-blue-600" />
+                    <h4 className="font-medium">{doc.name}</h4>
                   </div>
-                  <div className="flex items-center gap-1">
-                    {getStatusIcon(doc.status)}
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="flex gap-2">
-                    <Badge variant={getStatusBadgeVariant(doc.status)} className="text-xs">
-                      {doc.status}
-                    </Badge>
-                    <Badge variant={getRiskBadgeVariant(doc.riskLevel)} className="text-xs">
-                      {doc.riskLevel} risk
-                    </Badge>
-                  </div>
-                  
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="sm">
-                      <Eye className="h-3 w-3" />
-                    </Button>
-                    <Button variant="ghost" size="sm">
-                      <Download className="h-3 w-3" />
-                    </Button>
+                  <p className="text-sm text-gray-600 mb-2">Client: {doc.client}</p>
+                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {doc.uploadDate}
+                    </span>
+                    <span>{doc.size}</span>
                   </div>
                 </div>
-                
-                <div className="mt-2 text-xs text-gray-500">
-                  Uploaded: {doc.uploadDate}
+                <div className="flex flex-col gap-1">
+                  <Badge className={getStatusBadgeColor(doc.status)}>
+                    {doc.status}
+                  </Badge>
+                  <Badge className={getRiskBadgeColor(doc.riskLevel)}>
+                    {doc.riskLevel} Risk
+                  </Badge>
                 </div>
               </div>
-            ))}
-          </div>
-        </ScrollArea>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm">
+                  <Eye className="h-3 w-3 mr-1" />
+                  View
+                </Button>
+                <Button variant="outline" size="sm">
+                  <Download className="h-3 w-3 mr-1" />
+                  Download
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
       </CardContent>
     </Card>
   );

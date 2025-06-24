@@ -15,7 +15,10 @@ import {
   ChevronRight,
   FileSearch,
   Workflow,
-  MessageSquare
+  MessageSquare,
+  Shield,
+  Calendar,
+  AlertTriangle
 } from "lucide-react";
 
 export const MainSidebar = () => {
@@ -24,13 +27,14 @@ export const MainSidebar = () => {
 
   const navigationItems = [
     { name: "Dashboard", href: "/", icon: Home },
-    { name: "Documents", href: "/documents", icon: FileText },
-    { name: "Converter", href: "/converter", icon: FileSearch },
+    { name: "Document Analysis", href: "/trustee/documents", icon: FileText },
+    { name: "Client Management", href: "/trustee/crm", icon: Users },
+    { name: "Risk Assessment", href: "/trustee/analytics", icon: AlertTriangle },
+    { name: "Analytics", href: "/analytics", icon: BarChart3 },
+    { name: "Document Converter", href: "/converter", icon: FileSearch },
     { name: "AI Assistant", href: "/safa", icon: MessageSquare },
-    { name: "Clients", href: "/clients", icon: Users },
     { name: "Tasks", href: "/tasks", icon: CheckSquare },
     { name: "Workflows", href: "/workflows", icon: Workflow },
-    { name: "Analytics", href: "/analytics", icon: BarChart3 },
     { name: "Settings", href: "/settings", icon: Settings },
   ];
 
@@ -55,9 +59,12 @@ export const MainSidebar = () => {
           {!collapsed && (
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <FileText className="h-4 w-4 text-white" />
+                <Shield className="h-4 w-4 text-white" />
               </div>
-              <span className="font-semibold text-lg">SecureFiles AI</span>
+              <div>
+                <span className="font-semibold text-lg">SecureFiles AI</span>
+                <p className="text-xs text-gray-500">Trustee Portal</p>
+              </div>
             </div>
           )}
           <Button
@@ -78,7 +85,8 @@ export const MainSidebar = () => {
         <ScrollArea className="flex-1 py-4">
           <nav className="space-y-1 px-3">
             {navigationItems.map((item) => {
-              const isActive = location.pathname === item.href;
+              const isActive = location.pathname === item.href || 
+                             (item.href === "/" && location.pathname === "/trustee/dashboard");
               return (
                 <Link key={item.name} to={item.href}>
                   <Button
@@ -103,6 +111,9 @@ export const MainSidebar = () => {
         {!collapsed && (
           <div className="p-4 border-t border-gray-200 dark:border-gray-800">
             <div className="text-xs text-gray-500 text-center">
+              Licensed Insolvency Trustee Portal
+            </div>
+            <div className="text-xs text-gray-400 text-center">
               SecureFiles AI v1.0
             </div>
           </div>
