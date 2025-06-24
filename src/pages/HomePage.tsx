@@ -8,79 +8,51 @@ import {
   FileText, 
   Users, 
   BarChart3, 
-  Settings, 
-  Upload,
-  FileSearch,
   CheckSquare,
-  Workflow,
   MessageSquare,
   DollarSign,
   Activity,
   FileCode,
   Shield,
   Calendar,
-  Bell
+  Bell,
+  AlertTriangle,
+  TrendingUp,
+  Clock,
+  FileBarChart
 } from 'lucide-react';
 
 const HomePage = () => {
   const navigate = useNavigate();
 
-  const quickActions = [
-    {
-      title: 'Document Analysis',
-      description: 'AI-powered bankruptcy form analysis',
-      icon: FileText,
-      path: '/trustee/documents',
-      color: 'bg-blue-500'
-    },
-    {
-      title: 'SAFA AI Assistant',
-      description: 'Smart AI Financial Assistant',
-      icon: MessageSquare,
-      path: '/safa',
-      color: 'bg-purple-500'
-    },
-    {
-      title: 'Client Management',
-      description: 'CRM and client relationship tools',
+  const stats = [
+    { 
+      title: "Active Cases", 
+      value: "127", 
+      change: "+12 this month", 
       icon: Users,
-      path: '/trustee/crm',
-      color: 'bg-green-500'
+      color: "text-blue-600"
     },
-    {
-      title: 'PDF to XML Converter',
-      description: 'Convert documents to structured data',
-      icon: FileCode,
-      path: '/converter',
-      color: 'bg-orange-500'
+    { 
+      title: "Documents Processed", 
+      value: "1,247", 
+      change: "+89 this week", 
+      icon: FileText,
+      color: "text-green-600"
     },
-    {
-      title: 'Income & Expense',
-      description: 'Smart surplus income monitoring',
-      icon: DollarSign,
-      path: '/income-expense',
-      color: 'bg-emerald-500'
+    { 
+      title: "AI Analyses", 
+      value: "456", 
+      change: "+67 today", 
+      icon: MessageSquare,
+      color: "text-purple-600"
     },
-    {
-      title: 'Risk Assessment',
-      description: 'Compliance and analytics dashboard',
-      icon: BarChart3,
-      path: '/trustee/analytics',
-      color: 'bg-red-500'
-    },
-    {
-      title: 'Audit Trail',
-      description: 'Security and compliance tracking',
-      icon: Activity,
-      path: '/audit',
-      color: 'bg-indigo-500'
-    },
-    {
-      title: 'Task Management',
-      description: 'Track and manage workflows',
-      icon: CheckSquare,
-      path: '/tasks',
-      color: 'bg-teal-500'
+    { 
+      title: "Compliance Score", 
+      value: "98%", 
+      change: "+2% improvement", 
+      icon: Shield,
+      color: "text-emerald-600"
     }
   ];
 
@@ -89,100 +61,84 @@ const HomePage = () => {
       action: "Form 47 Analysis Completed", 
       client: "John Smith - Estate #12345", 
       time: "2 hours ago",
-      type: "analysis"
+      type: "analysis",
+      status: "completed"
     },
     { 
       action: "New Client Onboarded", 
       client: "Sarah Johnson - Consumer Proposal", 
       time: "4 hours ago",
-      type: "client"
+      type: "client",
+      status: "new"
     },
     { 
       action: "Risk Assessment Generated", 
       client: "Mike Wilson - High Priority Review", 
       time: "1 day ago",
-      type: "risk"
+      type: "risk",
+      status: "attention"
     },
     { 
       action: "Monthly Report Generated", 
       client: "Portfolio Analysis - June 2024", 
       time: "2 days ago",
-      type: "report"
+      type: "report",
+      status: "completed"
     }
   ];
 
-  const stats = [
-    { title: "Active Cases", value: "127", change: "+12 this month", icon: Users },
-    { title: "Documents Processed", value: "1,247", change: "+89 this week", icon: FileText },
-    { title: "AI Analyses", value: "456", change: "+67 today", icon: MessageSquare },
-    { title: "Compliance Score", value: "98%", change: "+2% improvement", icon: Shield }
+  const urgentTasks = [
+    { task: "Review Form 65 - Estate #12456", deadline: "Today", priority: "high" },
+    { task: "Client Meeting - Sarah Johnson", deadline: "Tomorrow", priority: "medium" },
+    { task: "BIA Compliance Review", deadline: "This Week", priority: "high" },
+    { task: "Monthly Surplus Income Report", deadline: "Friday", priority: "medium" }
   ];
 
   return (
     <MainLayout>
       <div className="p-6 space-y-6">
-        {/* Welcome Header */}
-        <div className="text-center space-y-4 py-8">
-          <div className="flex items-center justify-center gap-3">
-            <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-3 rounded-full">
-              <Shield className="h-8 w-8 text-white" />
-            </div>
-            <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                SecureFiles AI
-              </h1>
-              <p className="text-gray-600">Licensed Insolvency Trustee Professional Portal</p>
-            </div>
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <p className="text-gray-600">Welcome back to SecureFiles AI - Licensed Insolvency Trustee Portal</p>
           </div>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Comprehensive bankruptcy document management, AI-powered analysis, and client relationship tools for licensed professionals
-          </p>
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/trustee/notifications')}
+              className="relative"
+            >
+              <Bell className="h-4 w-4 mr-2" />
+              Notifications
+              <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
+            </Button>
+            <Button onClick={() => navigate('/trustee/calendar')}>
+              <Calendar className="h-4 w-4 mr-2" />
+              Today's Schedule
+            </Button>
+          </div>
         </div>
 
         {/* Key Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {stats.map((stat, index) => (
-            <Card key={index}>
+            <Card key={index} className="hover:shadow-lg transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                <stat.icon className="h-4 w-4 text-muted-foreground" />
+                <stat.icon className={`h-4 w-4 ${stat.color}`} />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-muted-foreground">{stat.change}</p>
+                <p className="text-xs text-gray-600">{stat.change}</p>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {quickActions.map((action, index) => (
-            <Card key={index} className="hover:shadow-lg transition-shadow cursor-pointer group">
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className={`p-3 rounded-full ${action.color} text-white group-hover:scale-110 transition-transform`}>
-                    <action.icon className="h-6 w-6" />
-                  </div>
-                  <CardTitle className="text-lg">{action.title}</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 mb-4">{action.description}</p>
-                <Button 
-                  onClick={() => navigate(action.path)}
-                  className="w-full"
-                >
-                  Access {action.title}
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Recent Activity */}
-          <Card>
+          <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Activity className="h-5 w-5" />
@@ -193,9 +149,16 @@ const HomePage = () => {
               <div className="space-y-4">
                 {recentActivity.map((activity, index) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                    <div>
-                      <p className="font-medium">{activity.action}</p>
-                      <p className="text-sm text-gray-600">{activity.client}</p>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-2 h-2 rounded-full ${
+                        activity.status === 'completed' ? 'bg-green-500' :
+                        activity.status === 'attention' ? 'bg-red-500' :
+                        'bg-blue-500'
+                      }`}></div>
+                      <div>
+                        <p className="font-medium">{activity.action}</p>
+                        <p className="text-sm text-gray-600">{activity.client}</p>
+                      </div>
                     </div>
                     <span className="text-xs text-gray-500">{activity.time}</span>
                   </div>
@@ -204,52 +167,79 @@ const HomePage = () => {
             </CardContent>
           </Card>
 
-          {/* Quick Access Panel */}
+          {/* Urgent Tasks */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Workflow className="h-5 w-5" />
-                Quick Access
+                <AlertTriangle className="h-5 w-5 text-orange-500" />
+                Urgent Tasks
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => navigate('/trustee/notifications')}
-                >
-                  <Bell className="h-4 w-4 mr-2" />
-                  View Notifications (12 new)
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => navigate('/trustee/calendar')}
-                >
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Today's Schedule (6 meetings)
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => navigate('/trustee/reports')}
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Generate Reports
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => navigate('/settings')}
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  System Settings
-                </Button>
+                {urgentTasks.map((task, index) => (
+                  <div key={index} className="p-3 border rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        task.priority === 'high' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {task.priority.toUpperCase()}
+                      </span>
+                      <span className="text-xs text-gray-500">{task.deadline}</span>
+                    </div>
+                    <p className="text-sm font-medium">{task.task}</p>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
         </div>
+
+        {/* Quick Actions */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Quick Actions
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Button 
+                variant="outline" 
+                className="h-20 flex flex-col gap-2"
+                onClick={() => navigate('/trustee/documents')}
+              >
+                <FileText className="h-6 w-6" />
+                <span className="text-sm">Analyze Document</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                className="h-20 flex flex-col gap-2"
+                onClick={() => navigate('/safa')}
+              >
+                <MessageSquare className="h-6 w-6" />
+                <span className="text-sm">SAFA Assistant</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                className="h-20 flex flex-col gap-2"
+                onClick={() => navigate('/income-expense')}
+              >
+                <DollarSign className="h-6 w-6" />
+                <span className="text-sm">Income Analysis</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                className="h-20 flex flex-col gap-2"
+                onClick={() => navigate('/trustee/reports')}
+              >
+                <FileBarChart className="h-6 w-6" />
+                <span className="text-sm">Generate Report</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </MainLayout>
   );
