@@ -18,7 +18,10 @@ import {
   MessageSquare,
   Shield,
   Calendar,
-  AlertTriangle
+  AlertTriangle,
+  Bell,
+  FileBarChart,
+  UserCheck
 } from "lucide-react";
 
 export const MainSidebar = () => {
@@ -26,14 +29,16 @@ export const MainSidebar = () => {
   const location = useLocation();
 
   const navigationItems = [
-    { name: "Dashboard", href: "/", icon: Home },
+    { name: "Dashboard", href: "/trustee/dashboard", icon: Home },
     { name: "Document Analysis", href: "/trustee/documents", icon: FileText },
     { name: "Client Management", href: "/trustee/crm", icon: Users },
     { name: "Risk Assessment", href: "/trustee/analytics", icon: AlertTriangle },
-    { name: "Analytics", href: "/analytics", icon: BarChart3 },
-    { name: "Document Converter", href: "/converter", icon: FileSearch },
+    { name: "Reports & Forms", href: "/trustee/reports", icon: FileBarChart },
+    { name: "Calendar & Meetings", href: "/trustee/calendar", icon: Calendar },
+    { name: "Notifications", href: "/trustee/notifications", icon: Bell },
     { name: "AI Assistant", href: "/safa", icon: MessageSquare },
-    { name: "Tasks", href: "/tasks", icon: CheckSquare },
+    { name: "Document Converter", href: "/converter", icon: FileSearch },
+    { name: "Task Management", href: "/tasks", icon: CheckSquare },
     { name: "Workflows", href: "/workflows", icon: Workflow },
     { name: "Settings", href: "/settings", icon: Settings },
   ];
@@ -63,7 +68,7 @@ export const MainSidebar = () => {
               </div>
               <div>
                 <span className="font-semibold text-lg">SecureFiles AI</span>
-                <p className="text-xs text-gray-500">Trustee Portal</p>
+                <p className="text-xs text-gray-500">Licensed Insolvency Trustee</p>
               </div>
             </div>
           )}
@@ -86,7 +91,7 @@ export const MainSidebar = () => {
           <nav className="space-y-1 px-3">
             {navigationItems.map((item) => {
               const isActive = location.pathname === item.href || 
-                             (item.href === "/" && location.pathname === "/trustee/dashboard");
+                             (item.href === "/trustee/dashboard" && location.pathname === "/");
               return (
                 <Link key={item.name} to={item.href}>
                   <Button
@@ -114,7 +119,7 @@ export const MainSidebar = () => {
               Licensed Insolvency Trustee Portal
             </div>
             <div className="text-xs text-gray-400 text-center">
-              SecureFiles AI v1.0
+              SecureFiles AI v2.1
             </div>
           </div>
         )}

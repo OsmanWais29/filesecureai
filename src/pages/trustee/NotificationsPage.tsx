@@ -5,80 +5,72 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Bell, 
-  AlertTriangle, 
-  FileText, 
+  Bell,
+  AlertTriangle,
+  FileText,
   Calendar,
-  Mail,
-  Settings,
-  Check
+  Users,
+  CheckCircle,
+  Clock,
+  X
 } from "lucide-react";
 
 const TrusteeNotificationsPage = () => {
   const notifications = [
     {
-      id: 1,
-      type: "alert",
-      title: "High Risk Case Detected",
-      message: "Client John Doe's case requires immediate attention due to irregular income patterns.",
+      id: "1",
+      type: "risk",
+      title: "High Risk Alert",
+      message: "Client John Smith has missing financial statements",
       time: "2 hours ago",
-      read: false,
-      priority: "high"
+      priority: "high",
+      unread: true
     },
     {
-      id: 2,
+      id: "2", 
       type: "document",
-      title: "Document Analysis Complete", 
-      message: "Form 47 analysis for Jane Smith has been completed with 3 risk indicators identified.",
-      time: "4 hours ago",
-      read: false,
-      priority: "medium"
+      title: "Document Analysis Complete",
+      message: "Form 47 analysis completed for Sarah Johnson",
+      time: "4 hours ago", 
+      priority: "medium",
+      unread: true
     },
     {
-      id: 3,
-      type: "calendar",
-      title: "Upcoming Deadline",
-      message: "Consumer proposal filing deadline for Mike Johnson is due in 3 days.",
-      time: "1 day ago", 
-      read: true,
-      priority: "high"
+      id: "3",
+      type: "meeting",
+      title: "Upcoming Meeting",
+      message: "Client consultation scheduled for 2:00 PM today",
+      time: "6 hours ago",
+      priority: "medium", 
+      unread: false
     },
     {
-      id: 4,
-      type: "email",
-      title: "Client Response Required",
-      message: "Sarah Wilson has responded to your email regarding missing documentation.",
-      time: "2 days ago",
-      read: true,
-      priority: "low"
-    },
-    {
-      id: 5,
-      type: "system",
-      title: "System Update",
-      message: "SecureFiles AI has been updated with enhanced risk assessment features.",
-      time: "3 days ago",
-      read: true,
-      priority: "low"
+      id: "4",
+      type: "compliance",
+      title: "Compliance Review Due", 
+      message: "Monthly compliance review due in 3 days",
+      time: "1 day ago",
+      priority: "high",
+      unread: false
     }
   ];
 
   const getIcon = (type: string) => {
     switch (type) {
-      case "alert": return AlertTriangle;
+      case "risk": return AlertTriangle;
       case "document": return FileText;
-      case "calendar": return Calendar;
-      case "email": return Mail;
+      case "meeting": return Calendar;
+      case "compliance": return CheckCircle;
       default: return Bell;
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "high": return "bg-red-100 text-red-800 border-red-200";
-      case "medium": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "low": return "bg-blue-100 text-blue-800 border-blue-200";
-      default: return "bg-gray-100 text-gray-800 border-gray-200";
+      case "high": return "bg-red-100 text-red-800";
+      case "medium": return "bg-yellow-100 text-yellow-800";
+      case "low": return "bg-green-100 text-green-800";
+      default: return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -88,54 +80,44 @@ const TrusteeNotificationsPage = () => {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Notifications</h1>
-            <p className="text-gray-600 mt-1">Stay updated with your cases and system alerts.</p>
+            <h1 className="text-3xl font-bold text-gray-900">Notifications Center</h1>
+            <p className="text-gray-600 mt-1">Stay updated with real-time alerts and important updates.</p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline">
-              <Check className="h-4 w-4 mr-2" />
-              Mark All Read
-            </Button>
-            <Button variant="outline">
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
-            </Button>
-          </div>
+          <Button variant="outline">
+            <CheckCircle className="h-4 w-4 mr-2" />
+            Mark All Read
+          </Button>
         </div>
 
-        {/* Stats */}
+        {/* Notification Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Notifications</CardTitle>
+              <CardTitle className="text-sm font-medium">Unread</CardTitle>
               <Bell className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{notifications.length}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Unread</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">
-                {notifications.filter(n => !n.read).length}
-              </div>
+              <div className="text-2xl font-bold">12</div>
             </CardContent>
           </Card>
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">High Priority</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+              <AlertTriangle className="h-4 w-4 text-red-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-600">
-                {notifications.filter(n => n.priority === 'high').length}
-              </div>
+              <div className="text-2xl font-bold">3</div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Today</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">8</div>
             </CardContent>
           </Card>
           
@@ -145,9 +127,7 @@ const TrusteeNotificationsPage = () => {
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {notifications.filter(n => n.time.includes('day') || n.time.includes('hour')).length}
-              </div>
+              <div className="text-2xl font-bold">27</div>
             </CardContent>
           </Card>
         </div>
@@ -164,42 +144,33 @@ const TrusteeNotificationsPage = () => {
                 return (
                   <div 
                     key={notification.id} 
-                    className={`p-4 border rounded-lg transition-colors hover:bg-gray-50 ${
-                      !notification.read ? 'bg-blue-50 border-blue-200' : 'bg-white'
+                    className={`flex items-start gap-4 p-4 rounded-lg border ${
+                      notification.unread ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'
                     }`}
                   >
-                    <div className="flex items-start gap-4">
-                      <div className={`p-2 rounded-full ${
-                        notification.type === 'alert' ? 'bg-red-100 text-red-600' :
-                        notification.type === 'document' ? 'bg-blue-100 text-blue-600' :
-                        notification.type === 'calendar' ? 'bg-green-100 text-green-600' :
-                        notification.type === 'email' ? 'bg-purple-100 text-purple-600' :
-                        'bg-gray-100 text-gray-600'
-                      }`}>
-                        <IconComponent className="h-4 w-4" />
-                      </div>
-                      
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold">{notification.title}</h3>
-                          {!notification.read && (
-                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                          )}
-                          <Badge className={`text-xs ${getPriorityColor(notification.priority)}`}>
+                    <div className={`p-2 rounded-full ${
+                      notification.type === 'risk' ? 'bg-red-100' :
+                      notification.type === 'document' ? 'bg-blue-100' :
+                      notification.type === 'meeting' ? 'bg-green-100' :
+                      'bg-yellow-100'
+                    }`}>
+                      <IconComponent className="h-4 w-4" />
+                    </div>
+                    
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <h3 className="font-medium">{notification.title}</h3>
+                        <div className="flex items-center gap-2">
+                          <Badge className={getPriorityColor(notification.priority)}>
                             {notification.priority}
                           </Badge>
-                        </div>
-                        <p className="text-gray-600 text-sm mb-2">{notification.message}</p>
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-gray-500">{notification.time}</span>
-                          <div className="flex gap-2">
-                            {!notification.read && (
-                              <Button variant="outline" size="sm">Mark as Read</Button>
-                            )}
-                            <Button variant="outline" size="sm">View Details</Button>
-                          </div>
+                          <Button variant="ghost" size="sm">
+                            <X className="h-3 w-3" />
+                          </Button>
                         </div>
                       </div>
+                      <p className="text-sm text-gray-600 mb-2">{notification.message}</p>
+                      <p className="text-xs text-gray-500">{notification.time}</p>
                     </div>
                   </div>
                 );
