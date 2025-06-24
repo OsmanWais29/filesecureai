@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { Search, LogOut, Menu, User, Bell, Sun } from "lucide-react";
+import { Search, LogOut, Menu, User, Bell, Sun, Moon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -24,7 +24,7 @@ import { NotificationsList } from "../notifications/NotificationsList";
 import { supabase } from "@/lib/supabase";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useIsTablet } from "@/hooks/use-tablet";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme } from "next-themes";
 
 export const MainHeader = () => {
   const [showNotifications, setShowNotifications] = useState(false);
@@ -35,7 +35,7 @@ export const MainHeader = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
 
   const handleSignOut = async () => {
     try {
@@ -53,6 +53,10 @@ export const MainHeader = () => {
         description: "There was a problem signing you out. Please try again."
       });
     }
+  };
+
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
   };
 
   return (
@@ -89,7 +93,7 @@ export const MainHeader = () => {
             className="rounded-full h-9 w-9"
             title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
           >
-            <Sun className="h-5 w-5" />
+            {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
 
           {/* Notifications */}
