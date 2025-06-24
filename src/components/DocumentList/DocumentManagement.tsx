@@ -12,6 +12,7 @@ import { toast } from "sonner";
 export const DocumentManagement = () => {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   
   const { documents, isLoading, refetch } = useDocuments();
 
@@ -19,16 +20,39 @@ export const DocumentManagement = () => {
     console.log("DocumentManagement loaded successfully");
   }, []);
 
-  const handleUploadSuccess = () => {
+  const handleUploadComplete = (documentId: string) => {
     toast.success("Document uploaded successfully");
     refetch();
     setUploadDialogOpen(false);
+  };
+
+  const handleDocumentClick = (document: { id: string; title: string; storage_path: string }) => {
+    console.log("Document clicked:", document);
   };
 
   const filteredDocuments = documents?.filter(doc => 
     doc.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     doc.metadata?.client_name?.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
+
+  // Group documents by client name for the DocumentGrid
+  const groupedByClient = filteredDocuments.reduce((acc, doc) => {
+    const clientName = doc.metadata?.client_name || 'Uncategorized';
+    if (!acc[clientName]) {
+      acc[clientName] = {
+        documents: [],
+        lastUpdated: null,
+        types: new Set<string>()
+      };
+    }
+    acc[clientName].documents.push(doc);
+    acc[clientName].types.add(doc.type || 'Unknown');
+    const docDate = new Date(doc.updated_at);
+    if (!acc[clientName].lastUpdated || docDate > acc[clientName].lastUpdated) {
+      acc[clientName].lastUpdated = docDate;
+    }
+    return acc;
+  }, {} as Record<string, { documents: any[], lastUpdated: Date | null, types: Set<string> }>);
 
   if (isLoading) {
     return (
@@ -55,9 +79,8 @@ export const DocumentManagement = () => {
 
       <div className="flex items-center gap-4">
         <SearchBar 
-          value={searchQuery}
-          onChange={setSearchQuery}
-          placeholder="Search documents..."
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
         />
         <Button variant="outline" size="sm">
           <Filter className="h-4 w-4 mr-2" />
@@ -77,7 +100,13 @@ export const DocumentManagement = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <DocumentGrid documents={filteredDocuments} />
+            <DocumentGrid 
+              isGridView={true}
+              groupedByClient={groupedByClient}
+              selectedFolder={selectedFolder}
+              onFolderSelect={setSelectedFolder}
+              onDocumentClick={handleDocumentClick}
+            />
           </CardContent>
         </Card>
       </div>
@@ -96,8 +125,7 @@ export const DocumentManagement = () => {
               </Button>
             </div>
             <EnhancedFileUpload 
-              onUploadSuccess={handleUploadSuccess}
-              onError={(error) => toast.error(error)}
+              onUploadComplete={handleUploadComplete}
             />
           </div>
         </div>
