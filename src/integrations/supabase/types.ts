@@ -65,36 +65,6 @@ export type Database = {
           },
         ]
       }
-      ai_generated_schemas: {
-        Row: {
-          created_at: string
-          field_mappings: Json | null
-          form_number: string
-          id: string
-          schema_definition: Json
-          sql_creation_script: string
-          validation_rules: Json | null
-        }
-        Insert: {
-          created_at?: string
-          field_mappings?: Json | null
-          form_number: string
-          id?: string
-          schema_definition: Json
-          sql_creation_script: string
-          validation_rules?: Json | null
-        }
-        Update: {
-          created_at?: string
-          field_mappings?: Json | null
-          form_number?: string
-          id?: string
-          schema_definition?: Json
-          sql_creation_script?: string
-          validation_rules?: Json | null
-        }
-        Relationships: []
-      }
       analytics_events: {
         Row: {
           event_type: string
@@ -539,45 +509,27 @@ export type Database = {
       }
       document_analysis: {
         Row: {
-          client_name: string | null
-          confidence_score: number | null
-          content: Json
-          created_at: string
+          content: string | null
+          created_at: string | null
           document_id: string | null
-          estate_number: string | null
-          form_number: string | null
-          form_type: string | null
           id: string
-          risk_level: string | null
-          updated_at: string
+          updated_at: string | null
           user_id: string
         }
         Insert: {
-          client_name?: string | null
-          confidence_score?: number | null
-          content?: Json
-          created_at?: string
+          content?: string | null
+          created_at?: string | null
           document_id?: string | null
-          estate_number?: string | null
-          form_number?: string | null
-          form_type?: string | null
           id?: string
-          risk_level?: string | null
-          updated_at?: string
-          user_id: string
+          updated_at?: string | null
+          user_id?: string
         }
         Update: {
-          client_name?: string | null
-          confidence_score?: number | null
-          content?: Json
-          created_at?: string
+          content?: string | null
+          created_at?: string | null
           document_id?: string | null
-          estate_number?: string | null
-          form_number?: string | null
-          form_type?: string | null
           id?: string
-          risk_level?: string | null
-          updated_at?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: [
@@ -875,39 +827,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      dynamic_form_tables: {
-        Row: {
-          created_at: string
-          created_by_ai: boolean | null
-          form_number: string
-          form_title: string
-          id: string
-          last_updated: string
-          table_name: string
-          table_schema: Json
-        }
-        Insert: {
-          created_at?: string
-          created_by_ai?: boolean | null
-          form_number: string
-          form_title: string
-          id?: string
-          last_updated?: string
-          table_name: string
-          table_schema: Json
-        }
-        Update: {
-          created_at?: string
-          created_by_ai?: boolean | null
-          form_number?: string
-          form_title?: string
-          id?: string
-          last_updated?: string
-          table_name?: string
-          table_schema?: Json
-        }
-        Relationships: []
       }
       financial_analysis: {
         Row: {
