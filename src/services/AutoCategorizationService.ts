@@ -1,66 +1,112 @@
 
 import { supabase } from '@/lib/supabase';
+import { DeepSeekAnalysisResult } from './DeepSeekCoreService';
+import { toast } from 'sonner';
 
 export class AutoCategorizationService {
-  /**
-   * Handle auto-categorization based on DeepSeek analysis
-   */
-  static async handleAutoCategorization(documentId: string, analysis: any) {
-    if (!analysis.clientName || !analysis.formType) return;
-
+  static async handleAutoCategorization(documentId: string, analysis: DeepSeekAnalysisResult): Promise<void> {
     try {
+      if (!analysis.clientExtraction?.debtorName || !analysis.formIdentification?.formType) {
+        console.log('Insufficient data for auto-categorization');
+        return;
+      }
+
       // Create client folder structure
-      const { data: clientFolder, error: folderError } = await supabase
-        .from('document_folders')
-        .upsert({
-          name: analysis.clientName,
-          type: 'client',
-          metadata: {
-            clientName: analysis.clientName,
-            estateNumber: analysis.estateNumber,
-            autoCreated: true,
-            createdAt: new Date().toISOString()
-          }
-        })
-        .select()
+      const clientName = analysis.clientExtraction.debtorName;
+      const formType = analysis.formIdentification.formType;
+      const formNumber = analysis.formIdentification.formNumber;
+
+      // Check if client folder exists
+      let { data: clientFolder } = await supabase
+        .from('documents')
+        .select('id')
+        .eq('title', clientName)
+        .eq('is_folder', true)
+        .eq('folder_type', 'client')
         .single();
 
-      if (!folderError && clientFolder) {
-        // Create form type subfolder
-        const formFolderName = `${analysis.formNumber} - ${analysis.formType}`;
-        const { data: formFolder } = await supabase
-          .from('document_folders')
-          .upsert({
-            name: formFolderName,
-            type: 'form',
-            parent_id: clientFolder.id,
+      // Create client folder if it doesn't exist
+      if (!clientFolder) {
+        const { data: newClientFolder, error: clientError } = await supabase
+          .from('documents')
+          .insert({
+            title: clientName,
+            is_folder: true,
+            folder_type: 'client',
             metadata: {
-              formNumber: analysis.formNumber,
-              formType: analysis.formType,
-              autoCreated: true
+              client_name: clientName,
+              estate_number: analysis.clientExtraction.estateNumber,
+              auto_created: true,
+              created_at: new Date().toISOString()
             }
           })
-          .select()
+          .select('id')
           .single();
 
-        // Move document to appropriate folder
-        if (formFolder) {
-          await supabase
-            .from('documents')
-            .update({
-              parent_folder_id: formFolder.id,
-              metadata: {
-                autoCategorized: true,
-                categorizedAt: new Date().toISOString(),
-                clientName: analysis.clientName,
-                formType: analysis.formType,
-                formNumber: analysis.formNumber,
-                estateNumber: analysis.estateNumber
-              }
-            })
-            .eq('id', documentId);
+        if (clientError) {
+          console.error('Failed to create client folder:', clientError);
+          return;
         }
+        clientFolder = newClientFolder;
       }
+
+      // Create form type subfolder
+      const formFolderName = `${formNumber} - ${formType}`;
+      let { data: formFolder } = await supabase
+        .from('documents')
+        .select('id')
+        .eq('title', formFolderName)
+        .eq('parent_folder_id', clientFolder.id)
+        .eq('is_folder', true)
+        .single();
+
+      if (!formFolder) {
+        const { data: newFormFolder, error: formError } = await supabase
+          .from('documents')
+          .insert({
+            title: formFolderName,
+            is_folder: true,
+            folder_type: 'form',
+            parent_folder_id: clientFolder.id,
+            metadata: {
+              form_number: formNumber,
+              form_type: formType,
+              auto_created: true
+            }
+          })
+          .select('id')
+          .single();
+
+        if (formError) {
+          console.error('Failed to create form folder:', formError);
+          return;
+        }
+        formFolder = newFormFolder;
+      }
+
+      // Move document to appropriate folder
+      const { error: moveError } = await supabase
+        .from('documents')
+        .update({
+          parent_folder_id: formFolder.id,
+          metadata: {
+            auto_categorized: true,
+            categorized_at: new Date().toISOString(),
+            client_name: clientName,
+            form_type: formType,
+            form_number: formNumber,
+            estate_number: analysis.clientExtraction.estateNumber
+          }
+        })
+        .eq('id', documentId);
+
+      if (moveError) {
+        console.error('Failed to move document:', moveError);
+        return;
+      }
+
+      toast.success(`Document auto-categorized under ${clientName}/${formFolderName}`);
+
     } catch (error) {
       console.error('Auto-categorization failed:', error);
     }
