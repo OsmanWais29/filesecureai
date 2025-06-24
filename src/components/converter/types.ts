@@ -57,13 +57,3 @@ export interface ProcessingStatus {
   errors: string[];
   warnings: string[];
 }
-
-export enum ProcessingStage {
-  IDLE = 'idle',
-  READING = 'reading',
-  EXTRACTING = 'extracting',
-  ANALYZING = 'analyzing',
-  CONVERTING = 'converting',
-  COMPLETE = 'complete',
-  ERROR = 'error'
-}
