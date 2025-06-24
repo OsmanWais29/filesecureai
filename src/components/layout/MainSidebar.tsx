@@ -21,7 +21,9 @@ import {
   AlertTriangle,
   Bell,
   FileBarChart,
-  UserCheck
+  DollarSign,
+  Activity,
+  FileCode
 } from "lucide-react";
 
 export const MainSidebar = () => {
@@ -36,8 +38,10 @@ export const MainSidebar = () => {
     { name: "Reports & Forms", href: "/trustee/reports", icon: FileBarChart },
     { name: "Calendar & Meetings", href: "/trustee/calendar", icon: Calendar },
     { name: "Notifications", href: "/trustee/notifications", icon: Bell },
-    { name: "AI Assistant", href: "/safa", icon: MessageSquare },
-    { name: "Document Converter", href: "/converter", icon: FileSearch },
+    { name: "SAFA AI Assistant", href: "/safa", icon: MessageSquare },
+    { name: "PDF to XML Converter", href: "/converter", icon: FileCode },
+    { name: "Income & Expense", href: "/income-expense", icon: DollarSign },
+    { name: "Audit Trail", href: "/audit", icon: Activity },
     { name: "Task Management", href: "/tasks", icon: CheckSquare },
     { name: "Workflows", href: "/workflows", icon: Workflow },
     { name: "Settings", href: "/settings", icon: Settings },
@@ -63,11 +67,13 @@ export const MainSidebar = () => {
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
           {!collapsed && (
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                 <Shield className="h-4 w-4 text-white" />
               </div>
               <div>
-                <span className="font-semibold text-lg">SecureFiles AI</span>
+                <span className="font-semibold text-lg bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  SecureFiles AI
+                </span>
                 <p className="text-xs text-gray-500">Licensed Insolvency Trustee</p>
               </div>
             </div>
@@ -99,7 +105,7 @@ export const MainSidebar = () => {
                     className={cn(
                       "w-full justify-start gap-3 h-10",
                       collapsed && "justify-center px-2",
-                      isActive && "bg-primary/10 text-primary border-primary/20"
+                      isActive && "bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 border border-blue-200"
                     )}
                     title={collapsed ? item.name : undefined}
                   >
@@ -119,7 +125,7 @@ export const MainSidebar = () => {
               Licensed Insolvency Trustee Portal
             </div>
             <div className="text-xs text-gray-400 text-center">
-              SecureFiles AI v2.1
+              SecureFiles AI v2.1 - Professional Edition
             </div>
           </div>
         )}
