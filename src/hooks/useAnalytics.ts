@@ -1,25 +1,68 @@
 
-import { useCallback } from 'react';
+// Define types for analytics events
+export type EventCategory = 'document' | 'folder' | 'user' | 'system';
 
-interface AnalyticsEvent {
-  [key: string]: any;
+export interface EventSubcategory {
+  [key: string]: string | number | boolean;
 }
 
-export const useAnalytics = () => {
-  const trackEvent = useCallback((eventName: string, properties?: AnalyticsEvent) => {
-    // Prevent excessive logging by checking if we've already logged this event recently
-    const lastLog = sessionStorage.getItem(`analytics_${eventName}`);
-    const now = Date.now();
-    
-    if (lastLog && now - parseInt(lastLog) < 1000) {
-      // Skip logging if same event was logged within last second
-      return;
-    }
-    
-    sessionStorage.setItem(`analytics_${eventName}`, now.toString());
-    
-    console.info(`[Analytics] Event: ${eventName}`, properties || {});
-  }, []);
+export interface AnalyticsHook {
+  trackEvent: (eventName: string, data?: EventSubcategory) => void;
+  trackPageView: (pageName: string) => void;
+  trackUserAction: (action: string, data?: EventSubcategory) => void;
+  getMetrics: () => {
+    totalEvents: number;
+    pageViews: number;
+    uniquePages: number;
+    interactions: number;
+    sessionDuration: number;
+  };
+  getPageViewData: () => Array<{name: string, views: number}>;
+}
 
-  return { trackEvent };
-};
+// Analytics implementation
+export function useAnalytics(): AnalyticsHook {
+  const trackEvent = (eventName: string, data?: EventSubcategory) => {
+    console.log(`[Analytics] Event: ${eventName}`, data);
+    // In a real implementation, this would send data to an analytics service
+  };
+
+  const trackPageView = (pageName: string) => {
+    console.log(`[Analytics] Page View: ${pageName}`);
+    // In a real implementation, this would track page views
+  };
+
+  const trackUserAction = (action: string, data?: EventSubcategory) => {
+    console.log(`[Analytics] User Action: ${action}`, data);
+    // In a real implementation, this would track user actions
+  };
+
+  const getMetrics = () => {
+    // Simplified mock implementation
+    return {
+      totalEvents: Math.floor(Math.random() * 100),
+      pageViews: Math.floor(Math.random() * 50),
+      uniquePages: Math.floor(Math.random() * 10),
+      interactions: Math.floor(Math.random() * 75),
+      sessionDuration: Math.floor(Math.random() * 300),
+    };
+  };
+
+  const getPageViewData = () => {
+    // Simplified mock implementation
+    return [
+      { name: 'Dashboard', views: Math.floor(Math.random() * 100) },
+      { name: 'Documents', views: Math.floor(Math.random() * 80) },
+      { name: 'Analytics', views: Math.floor(Math.random() * 60) },
+      { name: 'Settings', views: Math.floor(Math.random() * 40) },
+    ];
+  };
+
+  return {
+    trackEvent,
+    trackPageView,
+    trackUserAction,
+    getMetrics,
+    getPageViewData
+  };
+}

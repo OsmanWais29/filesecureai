@@ -1,227 +1,201 @@
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { FileText, Upload, Search, Filter, AlertCircle, Database, Wifi, WifiOff } from "lucide-react";
-import { EnhancedFileUpload } from "@/components/FileUpload/EnhancedFileUpload";
-import { useDocuments } from "./hooks/useDocuments";
+import { useState, useEffect, useMemo } from "react";
+import { useDocumentsWithSearch } from "./hooks/useDocumentsWithSearch";
+import { cn } from "@/lib/utils";
+import { Toolbar } from "./components/Toolbar";
+import { Sidebar } from "./components/Sidebar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { UncategorizedDocuments } from "./components/UncategorizedDocuments";
 import { DocumentGrid } from "./components/DocumentGrid";
-import { SearchBar } from "./SearchBar";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import PreviewDialog from "./components/PreviewDialog";
+import { Document } from "./types";
 
-export const DocumentManagement = () => {
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+interface DocumentManagementProps {
+  onDocumentSelect?: (id: string) => void;
+}
+
+export const DocumentManagement: React.FC<DocumentManagementProps> = ({ onDocumentSelect }) => {
+  const { documents, isLoading, searchQuery, setSearchQuery } = useDocumentsWithSearch();
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isGridView, setIsGridView] = useState(true);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
-  const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
-  
-  const { documents, isLoading, error, refetch } = useDocuments();
+  const [previewDocument, setPreviewDocument] = useState<{ id: string; title: string; storage_path: string } | null>(null);
+  const [filterType, setFilterType] = useState<string | null>(null);
 
-  // Test connection on mount
+  // Update the document grid whenever sidebar state changes
   useEffect(() => {
-    console.log("🏠 DocumentManagement mounted");
+    // Force a small delay to let transitions complete
+    const resizeTimer = setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 300);
     
-    const testConnection = async () => {
-      try {
-        console.log("🔌 Testing database connection...");
-        const { error } = await supabase.from('documents').select('count(*)', { count: 'exact', head: true });
-        
-        if (error) {
-          console.error("❌ Connection test failed:", error);
-          setConnectionStatus('disconnected');
-        } else {
-          console.log("✅ Connection test successful");
-          setConnectionStatus('connected');
-        }
-      } catch (err) {
-        console.error("💥 Connection test error:", err);
-        setConnectionStatus('disconnected');
-      }
-    };
-    
-    testConnection();
-  }, []);
+    return () => clearTimeout(resizeTimer);
+  }, [isSidebarCollapsed]);
 
-  const handleUploadComplete = (documentId: string) => {
-    console.log("📤 Upload completed:", documentId);
-    toast.success("Document uploaded successfully");
-    refetch();
-    setUploadDialogOpen(false);
-  };
+  // Emit document sidebar collapse event to update other components
+  useEffect(() => {
+    const event = new CustomEvent('documentSidebarCollapse', { 
+      detail: { collapsed: isSidebarCollapsed } 
+    });
+    window.dispatchEvent(event);
+
+    // Set CSS variable for document sidebar width
+    document.documentElement.style.setProperty(
+      '--document-sidebar-width',
+      isSidebarCollapsed ? '4rem' : '16rem'
+    );
+    
+    document.documentElement.style.setProperty(
+      '--document-sidebar-collapsed-width',
+      '4rem'
+    );
+    
+    return () => {
+      document.documentElement.style.removeProperty('--document-sidebar-width');
+      document.documentElement.style.removeProperty('--document-sidebar-collapsed-width');
+    };
+  }, [isSidebarCollapsed]);
+
+  // Filter documents based on search, folder, and type
+  const filteredDocuments = useMemo(() => {
+    return documents.filter(doc => {
+      const matchesSearch = !searchQuery || 
+        (doc.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        (doc.metadata && doc.metadata.client_name?.toLowerCase().includes(searchQuery.toLowerCase())));
+      
+      const matchesFolder = !selectedFolder ? true : 
+        selectedFolder === 'Uncategorized' 
+          ? !doc.parent_folder_id && (!doc.metadata || !doc.metadata.client_name)
+          : (doc.metadata && doc.metadata.client_name === selectedFolder) || doc.parent_folder_id === selectedFolder;
+      
+      const matchesType = !filterType || doc.type === filterType;
+
+      return matchesSearch && matchesFolder && matchesType;
+    });
+  }, [documents, searchQuery, selectedFolder, filterType]);
+
+  // Group documents by client
+  const groupedByClient = useMemo(() => {
+    return filteredDocuments.reduce((acc, doc) => {
+      let clientName = 'Uncategorized';
+      
+      if (doc.metadata && doc.metadata.client_name) {
+        clientName = doc.metadata.client_name;
+      } else if (doc.parent_folder_id) {
+        const parentDoc = documents.find(d => d.id === doc.parent_folder_id);
+        if (parentDoc && parentDoc.metadata && parentDoc.metadata.client_name) {
+          clientName = parentDoc.metadata.client_name;
+        }
+      }
+
+      if (!acc[clientName]) {
+        acc[clientName] = {
+          documents: [],
+          lastUpdated: null as Date | null,
+          types: new Set<string>()
+        };
+      }
+      
+      acc[clientName].documents.push(doc);
+      acc[clientName].types.add(doc.type || 'Other');
+      
+      // Use optional chaining and nullish coalescing to handle optional properties
+      const updatedAt = doc.updated_at ? new Date(doc.updated_at) : new Date();
+      if (!acc[clientName].lastUpdated || updatedAt > acc[clientName].lastUpdated!) {
+        acc[clientName].lastUpdated = updatedAt;
+      }
+      
+      return acc;
+    }, {} as Record<string, { 
+      documents: Document[], 
+      lastUpdated: Date | null,
+      types: Set<string>
+    }>);
+  }, [filteredDocuments, documents]);
 
   const handleDocumentClick = (document: { id: string; title: string; storage_path: string }) => {
-    console.log("👆 Document clicked:", document);
-    toast.info(`Clicked: ${document.title}`);
+    setPreviewDocument(document);
   };
 
-  // Show connection error state
-  if (connectionStatus === 'disconnected') {
-    return (
-      <div className="p-6">
-        <div className="text-center space-y-4">
-          <WifiOff className="h-12 w-12 text-destructive mx-auto" />
-          <h1 className="text-3xl font-bold tracking-tight text-destructive">Database Connection Failed</h1>
-          <p className="text-muted-foreground">Unable to connect to the database. Please check your connection.</p>
-          <Button onClick={() => window.location.reload()}>
-            Retry Connection
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  // Show error state if there's an error
-  if (error) {
-    return (
-      <div className="p-6">
-        <div className="text-center space-y-4">
-          <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
-          <h1 className="text-3xl font-bold tracking-tight text-destructive">Error Loading Documents</h1>
-          <p className="text-muted-foreground">{error.message}</p>
-          <div className="space-x-2">
-            <Button onClick={refetch}>
-              Try Again
-            </Button>
-            <Button variant="outline" onClick={() => window.location.reload()}>
-              Reload Page
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const filteredDocuments = documents?.filter(doc => 
-    doc.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    doc.metadata?.client_name?.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
-
-  // Group documents by client name for the DocumentGrid
-  const groupedByClient = filteredDocuments.reduce((acc, doc) => {
-    const clientName = doc.metadata?.client_name || 'Uncategorized';
-    if (!acc[clientName]) {
-      acc[clientName] = {
-        documents: [],
-        lastUpdated: null,
-        types: new Set<string>()
-      };
+  const renderContent = () => {
+    if (selectedFolder === 'Uncategorized') {
+      const uncategorizedDocs = filteredDocuments.filter(
+        doc => !doc.parent_folder_id && (!doc.metadata || !doc.metadata.client_name)
+      );
+      
+      return (
+        <UncategorizedDocuments 
+          documents={uncategorizedDocs}
+          onDocumentClick={handleDocumentClick}
+        />
+      );
     }
-    acc[clientName].documents.push(doc);
-    acc[clientName].types.add(doc.type || 'Unknown');
-    const docDate = new Date(doc.updated_at);
-    if (!acc[clientName].lastUpdated || docDate > acc[clientName].lastUpdated) {
-      acc[clientName].lastUpdated = docDate;
-    }
-    return acc;
-  }, {} as Record<string, { documents: any[], lastUpdated: Date | null, types: Set<string> }>);
 
-  if (isLoading || connectionStatus === 'checking') {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        <span className="ml-2">
-          {connectionStatus === 'checking' ? 'Connecting to database...' : 'Loading documents...'}
-        </span>
-      </div>
+      <DocumentGrid
+        isGridView={isGridView}
+        groupedByClient={groupedByClient}
+        selectedFolder={selectedFolder}
+        onFolderSelect={setSelectedFolder}
+        onDocumentClick={handleDocumentClick}
+      />
     );
-  }
+  };
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Document Management</h1>
-          <p className="text-muted-foreground">
-            Manage and organize your documents with AI-powered analysis
-          </p>
-          <div className="flex items-center gap-2 mt-2">
-            {connectionStatus === 'connected' ? (
-              <>
-                <Wifi className="h-4 w-4 text-green-500" />
-                <span className="text-sm text-green-600">Database Connected</span>
-              </>
-            ) : (
-              <>
-                <Database className="h-4 w-4 text-yellow-500" />
-                <span className="text-sm text-yellow-600">Checking Connection...</span>
-              </>
-            )}
-          </div>
-        </div>
-        <Button onClick={() => setUploadDialogOpen(true)} className="flex items-center gap-2">
-          <Upload className="h-4 w-4" />
-          Upload Documents
-        </Button>
-      </div>
+    <div className="flex h-[calc(100vh-3.5rem)] transition-all duration-300">
+      <Sidebar
+        isSidebarCollapsed={isSidebarCollapsed}
+        setIsSidebarCollapsed={setIsSidebarCollapsed}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        groupedByClient={groupedByClient}
+        selectedFolder={selectedFolder}
+        setSelectedFolder={setSelectedFolder}
+      />
 
-      <div className="flex items-center gap-4">
-        <SearchBar 
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-        />
-        <Button variant="outline" size="sm">
-          <Filter className="h-4 w-4 mr-2" />
-          Filter
-        </Button>
-      </div>
+      <main className={cn(
+        "flex-1 overflow-y-auto transition-all duration-300",
+        isSidebarCollapsed 
+          ? "document-content-with-collapsed-sidebar" 
+          : "document-content-with-sidebar"
+      )}>
+        <div className="p-4 md:p-6 space-y-6">
+          <Toolbar
+            selectedFolder={selectedFolder}
+            isGridView={isGridView}
+            setIsGridView={setIsGridView}
+            onFilterChange={setFilterType}
+            currentFilter={filterType}
+          />
 
-      <div className="grid gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Documents ({filteredDocuments.length})
-            </CardTitle>
-            <CardDescription>
-              View and manage all uploaded documents
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {filteredDocuments.length === 0 ? (
-              <div className="text-center py-8 space-y-4">
-                <FileText className="h-12 w-12 text-muted-foreground mx-auto" />
-                <h3 className="text-lg font-medium">No documents found</h3>
-                <p className="text-muted-foreground">
-                  {documents === null ? "Failed to load documents" : "Upload your first document to get started"}
-                </p>
-                <Button onClick={() => setUploadDialogOpen(true)}>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload Document
-                </Button>
+          <ScrollArea className="h-[calc(100vh-12rem)]">
+            {isLoading ? (
+              <div className={cn(
+                "grid gap-4",
+                isGridView ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-1"
+              )}>
+                {[...Array(6)].map((_, i) => (
+                  <div 
+                    key={i}
+                    className="h-[200px] rounded-lg border bg-card animate-pulse"
+                  />
+                ))}
               </div>
-            ) : (
-              <DocumentGrid 
-                isGridView={true}
-                groupedByClient={groupedByClient}
-                selectedFolder={selectedFolder}
-                onFolderSelect={setSelectedFolder}
-                onDocumentClick={handleDocumentClick}
-              />
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {uploadDialogOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-background p-6 rounded-lg max-w-2xl w-full mx-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">Upload Documents</h2>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => setUploadDialogOpen(false)}
-              >
-                ×
-              </Button>
-            </div>
-            <EnhancedFileUpload 
-              onUploadComplete={handleUploadComplete}
-            />
-          </div>
+            ) : renderContent()}
+          </ScrollArea>
         </div>
-      )}
+      </main>
+
+      <PreviewDialog
+        document={previewDocument}
+        onClose={() => setPreviewDocument(null)}
+        onAnalysisComplete={(id) => {
+          if (onDocumentSelect) {
+            onDocumentSelect(id);
+          }
+        }}
+      />
     </div>
   );
 };

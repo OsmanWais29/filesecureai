@@ -24,19 +24,19 @@ interface DocumentAnalyticsProps {
 }
 
 export const DocumentAnalytics = ({ data }: DocumentAnalyticsProps) => {
-  const { trackEvent } = useAnalytics();
+  const analytics = useAnalytics();
   const [activeTab, setActiveTab] = useState("realtime");
   
   // Track tab change
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    trackEvent("analytics_tab_change", { tab: value });
+    analytics.trackUserAction("TabChange", { tab: value });
   };
   
   useEffect(() => {
     // Track component view
-    trackEvent("analytics_view", { component: "DocumentAnalytics" });
-  }, [trackEvent]);
+    analytics.trackUserAction("View");
+  }, [analytics]);
 
   return (
     <div className="space-y-6">
