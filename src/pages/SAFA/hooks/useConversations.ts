@@ -84,7 +84,7 @@ export const useConversations = (activeTab?: string): UseConversationsResult => 
 
       // Call DeepSeek API
       const { data: aiData, error: aiError } = await supabase.functions.invoke('deepseek-chat', {
-        body: { message: content }
+        body: { message: content, category }
       });
 
       if (aiError) {
@@ -93,7 +93,7 @@ export const useConversations = (activeTab?: string): UseConversationsResult => 
 
       const aiMessage: ChatMessage = {
         id: `ai-${Date.now()}`,
-        content: aiData.response || 'I apologize, but I encountered an error processing your request.',
+        content: aiData?.response || 'I apologize, but I encountered an error processing your request.',
         role: 'assistant',
         timestamp: new Date().toISOString(),
         category
