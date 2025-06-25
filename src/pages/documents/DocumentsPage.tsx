@@ -9,6 +9,7 @@ const DocumentsPage = () => {
   const {
     filteredDocuments,
     clients,
+    selectedClient,
     handleClientSelect
   } = useDocumentsPage();
 
@@ -19,6 +20,7 @@ const DocumentsPage = () => {
         <div className="w-72 flex-shrink-0 bg-background border-r border-border">
           <ClientList 
             clients={clients}
+            selectedClientId={selectedClient}
             onClientSelect={handleClientSelect}
           />
         </div>
@@ -28,7 +30,9 @@ const DocumentsPage = () => {
           <div className="mb-4">
             <h1 className="text-2xl font-bold text-foreground">Documents</h1>
             <p className="text-sm text-muted-foreground">
-              Select a client to view their documents and folders
+              {selectedClient 
+                ? `Viewing documents for ${clients.find(c => c.id === selectedClient)?.name}` 
+                : "Select a client to view their documents and folders"}
             </p>
           </div>
           

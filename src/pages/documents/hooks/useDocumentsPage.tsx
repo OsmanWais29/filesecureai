@@ -1,6 +1,6 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 type DocumentStatus = "needs-review" | "complete" | "needs-signature" | undefined;
 type FolderType = 'client' | 'estate' | 'form' | 'financials' | 'default';
@@ -190,8 +190,21 @@ export const useDocumentsPage = () => {
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
 
   const handleClientSelect = (clientId: string) => {
-    console.log("Selected client:", clientId);
+    console.log("useDocumentsPage: Selected client:", clientId);
+    
+    // Update selected client state
     setSelectedClient(clientId);
+    
+    // Show toast notification
+    const clientName = clients.find(c => c.id === clientId)?.name || clientId;
+    toast.info(`Opening ${clientName}'s profile`, {
+      description: "Navigating to client viewer..."
+    });
+    
+    // Navigate to client viewer page
+    setTimeout(() => {
+      navigate(`/client-viewer/${clientId}`);
+    }, 300); // Small delay for smooth UX
   };
 
   // Filter documents based on selected client
