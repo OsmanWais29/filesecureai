@@ -55,7 +55,7 @@ export const PDFToXMLConverter = () => {
         </div>
       </div>
 
-      {/* File Upload Section - Now at the top */}
+      {/* File Upload Section - At the top */}
       <Card>
         <CardContent className="p-6">
           <FileUploader 
