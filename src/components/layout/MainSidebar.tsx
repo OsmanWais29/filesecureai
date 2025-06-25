@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -17,7 +16,8 @@ import {
   DollarSign,
   Activity,
   FileCode,
-  User
+  User,
+  MessageSquare
 } from "lucide-react";
 
 export const MainSidebar = () => {
@@ -28,6 +28,7 @@ export const MainSidebar = () => {
     { name: "Dashboard", href: "/", icon: Home },
     { name: "Documents", href: "/documents", icon: FileText },
     { name: "PDF to XML Converter", href: "/converter", icon: FileCode },
+    { name: "SAFA", href: "/safa", icon: MessageSquare },
     { name: "CRM", href: "/trustee/crm", icon: Users },
     { name: "Smart Income Expense", href: "/income-expense", icon: DollarSign },
     { name: "Audit Trail", href: "/audit", icon: Activity },
