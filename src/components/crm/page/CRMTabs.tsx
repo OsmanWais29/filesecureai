@@ -4,8 +4,8 @@ import { IntelligentScheduling } from "@/components/crm/IntelligentScheduling";
 import { DocumentVault } from "@/components/crm/DocumentVault";
 import { AIWorkflow } from "@/components/crm/AIWorkflow";
 import { ClientView } from "@/components/crm/ClientView";
-import { MeetingsList } from "@/components/crm/meetings/MeetingsList";
-import { TaskList } from "@/components/crm/tasks/TaskList";
+import { MeetingsContainer } from "@/components/crm/meetings/MeetingsContainer";
+import { TasksContainer } from "@/components/crm/tasks/TasksContainer";
 import { IntegrationsSection } from "@/components/crm/integrations/IntegrationsSection";
 import { Calendar, FileCheck, BrainCog, Users, Calendar as CalendarIcon, CheckSquare, Settings } from "lucide-react";
 
@@ -64,7 +64,7 @@ export const CRMTabs = () => {
           <div className="space-y-4">
             <h2 className="text-xl font-bold">Meetings Management</h2>
             <p className="text-muted-foreground">Schedule, manage, and track all your client meetings.</p>
-            <MeetingsList />
+            <MeetingsContainer />
           </div>
         </TabsContent>
 
@@ -72,7 +72,7 @@ export const CRMTabs = () => {
           <div className="space-y-4">
             <h2 className="text-xl font-bold">Task Management</h2>
             <p className="text-muted-foreground">Organize and track tasks for your cases and clients.</p>
-            <TaskList />
+            <TasksContainer />
           </div>
         </TabsContent>
         
