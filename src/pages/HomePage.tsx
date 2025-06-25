@@ -1,10 +1,9 @@
 
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { HomePage as DashboardHomePage } from '@/components/dashboard/HomePage';
 
 const HomePage = () => {
-  // Redirect to trustee dashboard as the main homepage
-  return <Navigate to="/trustee/dashboard" replace />;
+  return <DashboardHomePage />;
 };
 
 export default HomePage;
