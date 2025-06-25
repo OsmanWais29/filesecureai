@@ -27,14 +27,7 @@ const SAFAContent = () => {
   };
 
   const getMessagesForTab = () => {
-    const messages = categoryMessages[activeTab] || [];
-    return messages.map(msg => ({
-      id: msg.id,
-      content: msg.content,
-      role: msg.role,
-      timestamp: msg.timestamp,
-      module: activeTab
-    }));
+    return categoryMessages[activeTab] || [];
   };
 
   return (
