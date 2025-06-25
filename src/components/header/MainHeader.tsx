@@ -24,7 +24,7 @@ import { NotificationsList } from "../notifications/NotificationsList";
 import { supabase } from "@/lib/supabase";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useIsTablet } from "@/hooks/use-tablet";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export const MainHeader = () => {
   const [showNotifications, setShowNotifications] = useState(false);
@@ -35,7 +35,7 @@ export const MainHeader = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
-  const { theme, setTheme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
 
   const handleSignOut = async () => {
     try {
@@ -53,10 +53,6 @@ export const MainHeader = () => {
         description: "There was a problem signing you out. Please try again."
       });
     }
-  };
-
-  const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
   };
 
   return (

@@ -5,10 +5,9 @@ import App from "./App.tsx";
 import "./index.css";
 import { BrowserRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "@/hooks/use-toast";
 import { Toaster as SonnerToaster } from "sonner";
-import { ThemeProvider } from "@/components/ui/theme-provider";
-import { ThemeProvider as CustomThemeProvider } from "@/contexts/ThemeContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 
 // Create a single client with fixed configuration
 const queryClient = new QueryClient({
@@ -34,14 +33,12 @@ if (!rootElement) {
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <CustomThemeProvider>
-          <BrowserRouter>
-            <App />
-            <Toaster />
-            <SonnerToaster position="top-right" />
-          </BrowserRouter>
-        </CustomThemeProvider>
+      <ThemeProvider>
+        <BrowserRouter>
+          <App />
+          <Toaster />
+          <SonnerToaster position="top-right" />
+        </BrowserRouter>
       </ThemeProvider>
     </QueryClientProvider>
   </React.StrictMode>
