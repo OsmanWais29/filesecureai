@@ -4,9 +4,13 @@ export interface ChatMessage {
   content: string;
   role: 'user' | 'assistant';
   timestamp: string;
-  category?: string;
+  category: string;
 }
 
-export interface MessageProps {
-  message: ChatMessage;
+export interface ConversationState {
+  messages: ChatMessage[];
+  isLoading: boolean;
+  error?: string;
 }
+
+export type TabType = 'document' | 'legal' | 'help' | 'client';

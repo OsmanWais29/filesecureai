@@ -18,7 +18,12 @@ export const TrainingUpload: React.FC<TrainingUploadProps> = ({ onClose }) => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const { toast } = useToast();
-  const { handleUpload, isUploading, uploadProgress } = useFileUpload(() => {});
+  const { handleUpload, isUploading, uploadProgress } = useFileUpload(() => {
+    toast({
+      title: "Training Complete",
+      description: "Your documents have been processed for AI training.",
+    });
+  });
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
