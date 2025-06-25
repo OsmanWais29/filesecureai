@@ -37,7 +37,7 @@ function App() {
         <Route path="/signup" element={<SignupPage />} />
         
         {/* Main Dashboard - redirect to trustee dashboard */}
-        <Route path="/" element={<AuthCheck><TrusteeDashboardPage /></AuthCheck>} />
+        <Route path="/" element={<AuthCheck><HomePage /></AuthCheck>} />
         
         {/* Trustee Portal Routes */}
         <Route path="/trustee/dashboard" element={<AuthCheck><TrusteeDashboardPage /></AuthCheck>} />
