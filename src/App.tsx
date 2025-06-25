@@ -21,6 +21,7 @@ import ProductionAudit from './pages/audit/ProductionAudit';
 import NotificationsPage from './pages/NotificationsPage';
 import ProfilePage from './pages/ProfilePage';
 import CRMPage from './pages/CRMPage';
+import ClientViewerPage from './pages/ClientViewerPage';
 
 // Trustee Portal Pages
 import TrusteeDashboardPage from './pages/trustee/DashboardPage';
@@ -52,6 +53,9 @@ function App() {
         <Route path="/notifications" element={<AuthCheck><NotificationsPage /></AuthCheck>} />
         <Route path="/settings" element={<AuthCheck><SettingsPage /></AuthCheck>} />
         <Route path="/profile" element={<AuthCheck><ProfilePage /></AuthCheck>} />
+        
+        {/* Client Viewer Route */}
+        <Route path="/client-viewer/:clientId" element={<AuthCheck><ClientViewerPage /></AuthCheck>} />
         
         {/* Trustee Portal Routes */}
         <Route path="/trustee/dashboard" element={<AuthCheck><TrusteeDashboardPage /></AuthCheck>} />
