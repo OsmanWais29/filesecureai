@@ -6,7 +6,7 @@ import { SAFAInterface } from "./components/SAFAInterface";
 const SAFAPage = () => {
   return (
     <MainLayout>
-      <div className="h-full overflow-hidden">
+      <div className="h-full">
         <SAFAInterface />
       </div>
     </MainLayout>
