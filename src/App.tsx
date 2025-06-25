@@ -18,6 +18,9 @@ import SAFAPage from './pages/SAFA/SAFAPage';
 import IncomeExpensePage from './pages/income-expense/IncomeExpensePage';
 import AuditTrailPage from './pages/audit/AuditTrailPage';
 import ProductionAudit from './pages/audit/ProductionAudit';
+import NotificationsPage from './pages/NotificationsPage';
+import ProfilePage from './pages/ProfilePage';
+import CRMPage from './pages/CRMPage';
 
 // Trustee Portal Pages
 import TrusteeDashboardPage from './pages/trustee/DashboardPage';
@@ -36,8 +39,19 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         
-        {/* Main Dashboard - redirect to trustee dashboard */}
+        {/* Main Dashboard */}
         <Route path="/" element={<AuthCheck><HomePage /></AuthCheck>} />
+        
+        {/* Core Application Routes */}
+        <Route path="/documents" element={<AuthCheck><DocumentsPage /></AuthCheck>} />
+        <Route path="/converter" element={<AuthCheck><ConverterPage /></AuthCheck>} />
+        <Route path="/income-expense" element={<AuthCheck><IncomeExpensePage /></AuthCheck>} />
+        <Route path="/audit" element={<AuthCheck><AuditTrailPage /></AuthCheck>} />
+        <Route path="/audit/production" element={<AuthCheck><ProductionAudit /></AuthCheck>} />
+        <Route path="/analytics" element={<AuthCheck><AnalyticsPage /></AuthCheck>} />
+        <Route path="/notifications" element={<AuthCheck><NotificationsPage /></AuthCheck>} />
+        <Route path="/settings" element={<AuthCheck><SettingsPage /></AuthCheck>} />
+        <Route path="/profile" element={<AuthCheck><ProfilePage /></AuthCheck>} />
         
         {/* Trustee Portal Routes */}
         <Route path="/trustee/dashboard" element={<AuthCheck><TrusteeDashboardPage /></AuthCheck>} />
@@ -49,21 +63,12 @@ function App() {
         <Route path="/trustee/reports" element={<AuthCheck><TrusteeReportsPage /></AuthCheck>} />
         <Route path="/trustee/calendar" element={<AuthCheck><TrusteeCalendarPage /></AuthCheck>} />
         
-        {/* Core Application Routes */}
-        <Route path="/documents" element={<AuthCheck><DocumentsPage /></AuthCheck>} />
-        <Route path="/converter" element={<AuthCheck><ConverterPage /></AuthCheck>} />
+        {/* Additional Routes */}
         <Route path="/safa" element={<AuthCheck><SAFAPage /></AuthCheck>} />
-        <Route path="/income-expense" element={<AuthCheck><IncomeExpensePage /></AuthCheck>} />
-        <Route path="/audit" element={<AuthCheck><AuditTrailPage /></AuthCheck>} />
-        <Route path="/audit/production" element={<AuthCheck><ProductionAudit /></AuthCheck>} />
-        
-        {/* General Routes */}
         <Route path="/tasks" element={<AuthCheck><TaskManagementPage /></AuthCheck>} />
         <Route path="/document-viewer/:documentId" element={<AuthCheck><DocumentViewerPage /></AuthCheck>} />
         <Route path="/clients" element={<AuthCheck><ClientPage /></AuthCheck>} />
         <Route path="/workflows" element={<AuthCheck><WorkflowPage /></AuthCheck>} />
-        <Route path="/settings" element={<AuthCheck><SettingsPage /></AuthCheck>} />
-        <Route path="/analytics" element={<AuthCheck><AnalyticsPage /></AuthCheck>} />
       </Routes>
       <Toaster />
     </div>

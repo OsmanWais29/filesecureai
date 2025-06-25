@@ -8,22 +8,16 @@ import {
   Home,
   FileText,
   Users,
-  CheckSquare,
   BarChart3,
   Settings,
   ChevronLeft,
   ChevronRight,
-  FileSearch,
-  Workflow,
-  MessageSquare,
   Shield,
-  Calendar,
-  AlertTriangle,
   Bell,
-  FileBarChart,
   DollarSign,
   Activity,
-  FileCode
+  FileCode,
+  User
 } from "lucide-react";
 
 export const MainSidebar = () => {
@@ -31,20 +25,16 @@ export const MainSidebar = () => {
   const location = useLocation();
 
   const navigationItems = [
-    { name: "Dashboard", href: "/trustee/dashboard", icon: Home },
-    { name: "Document Analysis", href: "/trustee/documents", icon: FileText },
-    { name: "Client Management", href: "/trustee/crm", icon: Users },
-    { name: "Risk Assessment", href: "/trustee/analytics", icon: AlertTriangle },
-    { name: "Reports & Forms", href: "/trustee/reports", icon: FileBarChart },
-    { name: "Calendar & Meetings", href: "/trustee/calendar", icon: Calendar },
-    { name: "Notifications", href: "/trustee/notifications", icon: Bell },
-    { name: "SAFA AI Assistant", href: "/safa", icon: MessageSquare },
+    { name: "Dashboard", href: "/", icon: Home },
+    { name: "Documents", href: "/documents", icon: FileText },
     { name: "PDF to XML Converter", href: "/converter", icon: FileCode },
-    { name: "Income & Expense", href: "/income-expense", icon: DollarSign },
+    { name: "CRM", href: "/trustee/crm", icon: Users },
+    { name: "Smart Income Expense", href: "/income-expense", icon: DollarSign },
     { name: "Audit Trail", href: "/audit", icon: Activity },
-    { name: "Task Management", href: "/tasks", icon: CheckSquare },
-    { name: "Workflows", href: "/workflows", icon: Workflow },
+    { name: "Analytics", href: "/analytics", icon: BarChart3 },
+    { name: "Notifications", href: "/notifications", icon: Bell },
     { name: "Settings", href: "/settings", icon: Settings },
+    { name: "Profile", href: "/profile", icon: User },
   ];
 
   const toggleSidebar = () => {
@@ -97,7 +87,7 @@ export const MainSidebar = () => {
           <nav className="space-y-1 px-3">
             {navigationItems.map((item) => {
               const isActive = location.pathname === item.href || 
-                             (item.href === "/trustee/dashboard" && location.pathname === "/");
+                             (item.href === "/" && location.pathname === "/");
               return (
                 <Link key={item.name} to={item.href}>
                   <Button
