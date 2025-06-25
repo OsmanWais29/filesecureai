@@ -1,16 +1,9 @@
 
 import React from "react";
-import { MainLayout } from "@/components/layout/MainLayout";
-import SAFAContent from "./components/SAFAContent";
+import { SAFAInterface } from "./components/SAFAInterface";
 
 const SAFAPage = () => {
-  return (
-    <MainLayout>
-      <div className="h-[calc(100vh-4rem)] overflow-hidden">
-        <SAFAContent />
-      </div>
-    </MainLayout>
-  );
+  return <SAFAInterface />;
 };
 
 export default SAFAPage;
