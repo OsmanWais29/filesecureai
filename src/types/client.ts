@@ -75,11 +75,14 @@ export interface MeetingData {
   description?: string;
   start_time: string;
   end_time: string;
+  duration?: number;
   client_id?: string;
+  client_name?: string;
   attendees?: any[];
   status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
   meeting_type?: string;
   location?: string;
+  meeting_url?: string;
   metadata?: Record<string, any>;
   created_at?: string;
   updated_at?: string;

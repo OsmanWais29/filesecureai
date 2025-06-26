@@ -3,16 +3,13 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, User, Video, Phone, MapPin, Edit, Trash2, CheckCircle } from "lucide-react";
+import { Calendar, Clock, User, Video, Phone, MapPin, ExternalLink, Share2, Copy } from "lucide-react";
 import { MeetingData } from "@/types/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface MeetingsListProps {
   meetings: MeetingData[];
   isLoading: boolean;
-  onAdd: () => void;
-  onEdit: (meeting: MeetingData) => void;
-  onDelete: (meeting: MeetingData) => void;
-  onStatusChange: (meetingId: string, status: 'scheduled' | 'completed' | 'cancelled' | 'rescheduled') => void;
 }
 
 const getStatusColor = (status: string) => {
@@ -45,12 +42,74 @@ const getMeetingIcon = (type: string) => {
 
 export const MeetingsList: React.FC<MeetingsListProps> = ({
   meetings,
-  isLoading,
-  onAdd,
-  onEdit,
-  onDelete,
-  onStatusChange
+  isLoading
 }) => {
+  const { toast } = useToast();
+
+  const handleJoinMeeting = (meeting: MeetingData) => {
+    if (meeting.meeting_url) {
+      window.open(meeting.meeting_url, '_blank');
+      toast({
+        title: "Joining Meeting",
+        description: `Opening ${meeting.title} in a new tab`,
+      });
+    } else {
+      toast({
+        title: "No Meeting Link",
+        description: "This meeting doesn't have a join link available",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleShareMeeting = async (meeting: MeetingData) => {
+    const meetingDetails = `
+Meeting: ${meeting.title}
+Date: ${new Date(meeting.start_time).toLocaleString()}
+${meeting.meeting_url ? `Join: ${meeting.meeting_url}` : ''}
+${meeting.description ? `Description: ${meeting.description}` : ''}
+    `.trim();
+
+    try {
+      await navigator.clipboard.writeText(meetingDetails);
+      toast({
+        title: "Meeting Details Copied",
+        description: "Meeting information copied to clipboard",
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to Copy",
+        description: "Could not copy meeting details",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleSendToClient = (meeting: MeetingData) => {
+    const subject = encodeURIComponent(`Meeting Invitation: ${meeting.title}`);
+    const body = encodeURIComponent(`
+Dear ${meeting.client_name || 'Client'},
+
+You are invited to join our meeting:
+
+Title: ${meeting.title}
+Date: ${new Date(meeting.start_time).toLocaleString()}
+${meeting.meeting_url ? `Join Link: ${meeting.meeting_url}` : ''}
+${meeting.description ? `Description: ${meeting.description}` : ''}
+
+Please join the meeting at the scheduled time.
+
+Best regards,
+Your Trustee
+    `);
+
+    window.open(`mailto:?subject=${subject}&body=${body}`);
+    toast({
+      title: "Email Client Opened",
+      description: "Meeting invitation ready to send to client",
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -64,25 +123,18 @@ export const MeetingsList: React.FC<MeetingsListProps> = ({
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Client Meetings</h2>
-          <p className="text-gray-600 mt-1">Schedule and manage meetings with your clients</p>
+          <p className="text-gray-600 mt-1">Join meetings and share links with your clients</p>
         </div>
-        <Button onClick={onAdd} className="bg-blue-600 hover:bg-blue-700">
-          <Calendar className="h-4 w-4 mr-2" />
-          Schedule Meeting
-        </Button>
       </div>
 
       {meetings.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Calendar className="h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No meetings scheduled</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No meetings available</h3>
             <p className="text-gray-500 text-center mb-4">
-              Get started by scheduling your first meeting with a client.
+              Schedule meetings from the main Meetings page to see them here.
             </p>
-            <Button onClick={onAdd} className="bg-blue-600 hover:bg-blue-700">
-              Schedule Meeting
-            </Button>
           </CardContent>
         </Card>
       ) : (
@@ -93,7 +145,7 @@ export const MeetingsList: React.FC<MeetingsListProps> = ({
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      {getMeetingIcon(meeting.meeting_type)}
+                      {getMeetingIcon(meeting.meeting_type || 'video')}
                     </div>
                     <div>
                       <CardTitle className="text-lg">{meeting.title}</CardTitle>
@@ -129,35 +181,34 @@ export const MeetingsList: React.FC<MeetingsListProps> = ({
 
                 <div className="flex items-center justify-between">
                   <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onEdit(meeting)}
-                    >
-                      <Edit className="h-4 w-4 mr-1" />
-                      Edit
-                    </Button>
-                    
                     {meeting.status === 'scheduled' && (
                       <Button
-                        variant="outline"
+                        onClick={() => handleJoinMeeting(meeting)}
+                        className="bg-green-600 hover:bg-green-700"
                         size="sm"
-                        onClick={() => onStatusChange(meeting.id, 'completed')}
-                        className="text-green-600 border-green-200 hover:bg-green-50"
                       >
-                        <CheckCircle className="h-4 w-4 mr-1" />
-                        Mark Complete
+                        <ExternalLink className="h-4 w-4 mr-1" />
+                        Join Meeting
                       </Button>
                     )}
                     
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => onDelete(meeting)}
-                      className="text-red-600 border-red-200 hover:bg-red-50"
+                      onClick={() => handleShareMeeting(meeting)}
                     >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Cancel
+                      <Copy className="h-4 w-4 mr-1" />
+                      Copy Details
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSendToClient(meeting)}
+                      className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                    >
+                      <Share2 className="h-4 w-4 mr-1" />
+                      Send to Client
                     </Button>
                   </div>
                   
