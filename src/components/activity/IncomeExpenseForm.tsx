@@ -1,11 +1,8 @@
-
 import { Button } from "@/components/ui/button";
 import { ClientProfileSection } from "./form/ClientProfileSection";
-import { EnhancedIncomeSection } from "./form/EnhancedIncomeSection";
-import { NonDiscretionaryExpensesSection } from "./form/NonDiscretionaryExpensesSection";
-import { EssentialExpensesSection } from "./form/EssentialExpensesSection";
-import { DiscretionaryExpensesSection } from "./form/DiscretionaryExpensesSection";
-import { SavingsInsuranceSection } from "./form/SavingsInsuranceSection";
+import { IncomeTable } from "./form/IncomeTable";
+import { ExpenseTable } from "./form/ExpenseTable";
+import { SavingsInsuranceTable } from "./form/SavingsInsuranceTable";
 import { SurplusIncomeSection } from "./form/SurplusIncomeSection";
 import { SignatureConsentSection } from "./form/SignatureConsentSection";
 import { HistoricalComparison } from "./components/HistoricalComparison";
@@ -19,7 +16,6 @@ import { FormAlerts } from "./form/FormAlerts";
 import { NoClientSelected } from "./form/NoClientSelected";
 import { PeriodSelection } from "./form/PeriodSelection";
 import { useFormSubmission } from "./hooks/useFormSubmission";
-import { supabase } from "@/lib/supabase";
 import { useEditableFields } from "./hooks/useEditableFields";
 
 interface IncomeExpenseFormProps {
@@ -142,55 +138,25 @@ export const IncomeExpenseForm = ({ selectedClient }: IncomeExpenseFormProps) =>
             onToggleFieldEdit={toggleFieldEdit}
           />
           
-          {/* Enhanced Income Section */}
-          <EnhancedIncomeSection 
+          {/* Income Table */}
+          <IncomeTable 
             formData={formData} 
             previousMonthData={previousMonthData}
             onChange={handleChange}
-            onFrequencyChange={handleFrequencyChange('income')}
-            isViewMode={!isFirstLoad}
-            isFieldEditable={isFieldEditable}
-            onToggleFieldEdit={toggleFieldEdit}
           />
           
-          {/* Non-Discretionary Expenses Section */}
-          <NonDiscretionaryExpensesSection
+          {/* Expense Table */}
+          <ExpenseTable
             formData={formData}
             previousMonthData={previousMonthData}
             onChange={handleChange}
-            isViewMode={!isFirstLoad}
-            isFieldEditable={isFieldEditable}
-            onToggleFieldEdit={toggleFieldEdit}
           />
           
-          {/* Essential Expenses Section */}
-          <EssentialExpensesSection 
+          {/* Savings & Insurance Table */}
+          <SavingsInsuranceTable 
             formData={formData} 
             previousMonthData={previousMonthData}
             onChange={handleChange}
-            isViewMode={!isFirstLoad}
-            isFieldEditable={isFieldEditable}
-            onToggleFieldEdit={toggleFieldEdit}
-          />
-          
-          {/* Discretionary Expenses Section */}
-          <DiscretionaryExpensesSection 
-            formData={formData} 
-            previousMonthData={previousMonthData}
-            onChange={handleChange}
-            isViewMode={!isFirstLoad}
-            isFieldEditable={isFieldEditable}
-            onToggleFieldEdit={toggleFieldEdit}
-          />
-          
-          {/* Savings & Insurance Section */}
-          <SavingsInsuranceSection 
-            formData={formData} 
-            previousMonthData={previousMonthData}
-            onChange={handleChange}
-            isViewMode={!isFirstLoad}
-            isFieldEditable={isFieldEditable}
-            onToggleFieldEdit={toggleFieldEdit}
           />
           
           {/* Surplus Income Section */}
