@@ -8,11 +8,12 @@ import { PredictiveAnalysis } from "@/components/activity/PredictiveAnalysis";
 import { ClientSelector } from "@/components/activity/form/ClientSelector";
 import { Client } from "@/components/activity/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useLocation } from "react-router-dom";
 import { IncomeExpenseButton } from "@/components/activity/components/IncomeExpenseButton";
 import { TrusteeCoPliotButton } from "@/components/activity/components/TrusteeCoPliot/TrusteeCoPliotButton"; 
-import { UserRound } from "lucide-react";
+import { UserRound, Plus, FileText, TrendingUp } from "lucide-react";
 
 // Valid UUID format mockup
 const MOCK_CLIENTS = [
@@ -85,78 +86,159 @@ export const ActivityPage = () => {
 
   return (
     <MainLayout>
-      <div className="min-h-screen bg-gray-50">
-        {/* Header */}
-        <div className="bg-white border-b px-6 py-8">
-          <div className="max-w-7xl mx-auto">
-            <h1 className="text-3xl font-bold text-gray-900">Smart Income & Expense Management</h1>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-teal-50">
+        {/* Header Section */}
+        <div className="bg-white border-b border-gray-200 shadow-sm">
+          <div className="max-w-7xl mx-auto px-6 py-8">
+            <div className="text-center">
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                Smart Income & Expense Management
+              </h1>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                Streamline your financial data collection with AI-powered forms and predictive analysis
+              </p>
+            </div>
           </div>
         </div>
-        
+
         {/* Main Content */}
-        <div className="max-w-4xl mx-auto px-6 py-8">
-          {/* Client Information Card */}
-          <Card className="shadow-sm border-0 bg-white mb-8">
-            <CardHeader className="text-center pb-4">
-              <CardTitle className="text-2xl text-gray-800">Client Information</CardTitle>
-              <CardDescription className="text-gray-600">
-                Select a client or create a new form
-              </CardDescription>
-            </CardHeader>
-            
-            <CardContent className="px-8 pb-8">
-              <div className="flex items-center gap-4">
-                {/* Client Selector - Takes up most of the space */}
-                <div className="flex-1">
-                  <ClientSelector 
-                    selectedClient={selectedClient}
-                    onClientSelect={handleClientSelect}
-                    availableClients={clients}
-                  />
+        <div className="max-w-6xl mx-auto px-6 py-12">
+          {/* Client Selection Section */}
+          <div className="mb-12">
+            <Card className="bg-white shadow-lg border-0">
+              <CardHeader className="text-center pb-6">
+                <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                  <UserRound className="h-8 w-8 text-blue-600" />
                 </div>
-                
-                {/* Create Button */}
-                <div className="flex-shrink-0">
-                  <IncomeExpenseButton 
-                    onClientCreated={handleClientCreated}
-                    size="default"
-                    className="bg-teal-600 hover:bg-teal-700"
-                  />
+                <CardTitle className="text-2xl text-gray-800">Client Selection</CardTitle>
+                <CardDescription className="text-gray-600">
+                  Choose an existing client or create a new income & expense form
+                </CardDescription>
+              </CardHeader>
+              
+              <CardContent className="px-8 pb-8">
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+                  {/* Client Selector */}
+                  <div className="w-full sm:w-80">
+                    <ClientSelector 
+                      selectedClient={selectedClient}
+                      onClientSelect={handleClientSelect}
+                      availableClients={clients}
+                    />
+                  </div>
+                  
+                  {/* Create New Form Button */}
+                  <div className="flex-shrink-0">
+                    <IncomeExpenseButton 
+                      onClientCreated={handleClientCreated}
+                      size="lg"
+                      className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-3 text-lg font-medium"
+                    />
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          {/* Tabs */}
-          <div className="bg-white rounded-lg shadow-sm border-0">
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Action Cards Section */}
+          <div className="grid md:grid-cols-3 gap-8 mb-12">
+            {/* Form Management Card */}
+            <Card className="bg-white shadow-lg border-0 hover:shadow-xl transition-shadow duration-300">
+              <CardHeader className="text-center pb-4">
+                <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-3">
+                  <FileText className="h-6 w-6 text-green-600" />
+                </div>
+                <CardTitle className="text-lg text-gray-800">Form Management</CardTitle>
+                <CardDescription className="text-sm text-gray-600">
+                  Create and manage income & expense forms
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="text-center">
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => setActiveTab("form")}
+                >
+                  View Forms
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Analytics Card */}
+            <Card className="bg-white shadow-lg border-0 hover:shadow-xl transition-shadow duration-300">
+              <CardHeader className="text-center pb-4">
+                <div className="mx-auto w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mb-3">
+                  <TrendingUp className="h-6 w-6 text-purple-600" />
+                </div>
+                <CardTitle className="text-lg text-gray-800">Analytics Dashboard</CardTitle>
+                <CardDescription className="text-sm text-gray-600">
+                  View financial insights and trends
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="text-center">
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => setActiveTab("dashboard")}
+                >
+                  View Analytics
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Predictive Analysis Card */}
+            <Card className="bg-white shadow-lg border-0 hover:shadow-xl transition-shadow duration-300">
+              <CardHeader className="text-center pb-4">
+                <div className="mx-auto w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mb-3">
+                  <TrendingUp className="h-6 w-6 text-orange-600" />
+                </div>
+                <CardTitle className="text-lg text-gray-800">Predictive Analysis</CardTitle>
+                <CardDescription className="text-sm text-gray-600">
+                  AI-powered financial forecasting
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="text-center">
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => setActiveTab("predictive")}
+                >
+                  View Predictions
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Tabs Section */}
+          <div className="bg-white rounded-xl shadow-lg border-0">
             <Tabs 
               defaultValue="form" 
               className="w-full"
               value={activeTab}
               onValueChange={setActiveTab}
             >
-              <TabsList className="grid grid-cols-3 w-full rounded-none bg-gray-100 p-1">
+              <TabsList className="grid grid-cols-3 w-full rounded-t-xl bg-gray-50 p-2">
                 <TabsTrigger 
                   value="form" 
-                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm py-3"
                 >
-                  Income & Expense Form
+                  Income & Expense Forms
                 </TabsTrigger>
                 <TabsTrigger 
                   value="dashboard"
-                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm py-3"
                 >
-                  Dashboard
+                  Financial Dashboard
                 </TabsTrigger>
                 <TabsTrigger 
                   value="predictive"
-                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm py-3"
                 >
                   Predictive Analysis
                 </TabsTrigger>
               </TabsList>
 
-              <div className="p-6">
+              <div className="p-8">
                 <TabsContent value="form" className="mt-0">
                   <IncomeExpenseForm selectedClient={selectedClient} />
                 </TabsContent>
