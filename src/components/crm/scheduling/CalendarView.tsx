@@ -1,9 +1,9 @@
 
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { format, addDays, startOfWeek, startOfMonth, eachDayOfInterval, endOfMonth } from "date-fns";
-import { MeetingData } from "@/hooks/useMeetingManagement";
 import { Badge } from "@/components/ui/badge";
+import { format, addDays, startOfWeek, startOfMonth, eachDayOfInterval, endOfMonth, isSameDay, isToday } from "date-fns";
+import { Clock, MapPin, User } from "lucide-react";
 
 interface CalendarViewProps {
   selectedDate: Date;
@@ -19,9 +19,26 @@ export function CalendarView({
   calendarView,
   appointments,
 }: CalendarViewProps) {
+  
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high': return 'bg-red-500 text-white';
+      case 'medium': return 'bg-amber-500 text-white';
+      default: return 'bg-blue-500 text-white';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'confirmed': return 'border-green-500';
+      case 'pending': return 'border-amber-500';
+      case 'self-booked': return 'border-blue-500';
+      default: return 'border-gray-300';
+    }
+  };
+
   // Day view
   const renderDayView = () => {
-    // Filter appointments for the selected date
     const today = new Date(selectedDate);
     today.setHours(0, 0, 0, 0);
     
@@ -29,52 +46,79 @@ export function CalendarView({
     tomorrow.setDate(tomorrow.getDate() + 1);
     
     const todaysAppointments = appointments.filter((appointment) => {
-      const appointmentDate = new Date(appointment.start_time || appointment.date);
+      const appointmentDate = new Date(appointment.date);
       return appointmentDate >= today && appointmentDate < tomorrow;
     });
     
-    // Generate time slots for the day (9am to 5pm)
-    const timeSlots = Array.from({ length: 9 }, (_, i) => {
-      const hour = 9 + i;
-      return `${hour}:00${hour < 12 ? 'am' : 'pm'}`;
+    const timeSlots = Array.from({ length: 12 }, (_, i) => {
+      const hour = 8 + i;
+      return {
+        time: `${hour}:00`,
+        displayTime: format(new Date().setHours(hour, 0, 0, 0), 'h:mm a')
+      };
     });
     
     return (
-      <div className="p-4 border rounded-md bg-card">
-        <h3 className="text-lg font-medium mb-4">
-          {format(selectedDate, 'EEEE, MMMM d, yyyy')}
-        </h3>
+      <div className="bg-white rounded-lg">
+        <div className="p-4 border-b bg-gradient-to-r from-blue-50 to-purple-50">
+          <h3 className="text-lg font-semibold text-gray-900">
+            {format(selectedDate, 'EEEE, MMMM d, yyyy')}
+          </h3>
+          <p className="text-sm text-gray-600">{todaysAppointments.length} appointments scheduled</p>
+        </div>
         
-        <div className="space-y-2">
-          {timeSlots.map((timeSlot) => {
-            // Find appointments for this time slot
+        <div className="divide-y divide-gray-100">
+          {timeSlots.map((slot) => {
+            const slotHour = parseInt(slot.time.split(':')[0]);
             const slotAppointments = todaysAppointments.filter((appointment) => {
-              const appointmentHour = new Date(appointment.start_time || appointment.date).getHours();
-              const slotHour = parseInt(timeSlot.split(':')[0]);
+              const appointmentHour = new Date(appointment.date).getHours();
               return appointmentHour === slotHour;
             });
             
             return (
-              <div key={timeSlot} className="flex border-b pb-2">
-                <div className="w-20 font-medium">{timeSlot}</div>
-                <div className="flex-1">
+              <div key={slot.time} className="flex min-h-[80px] hover:bg-gray-50 transition-colors">
+                <div className="w-24 p-4 text-sm font-medium text-gray-500 border-r">
+                  {slot.displayTime}
+                </div>
+                <div className="flex-1 p-4">
                   {slotAppointments.length > 0 ? (
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       {slotAppointments.map((appointment) => (
                         <div 
                           key={appointment.id}
-                          className={`p-2 rounded-md ${appointment.color || 'bg-primary/10'}`}
+                          className={`p-3 rounded-lg shadow-sm border-l-4 ${getStatusColor(appointment.status)} bg-white hover:shadow-md transition-shadow cursor-pointer`}
                         >
-                          <div className="font-medium">{appointment.title}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {format(new Date(appointment.start_time || appointment.date), 'h:mm a')} - 
-                            {appointment.end_time && format(new Date(appointment.end_time), ' h:mm a')}
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-gray-900">{appointment.title}</h4>
+                              <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
+                                <User className="h-3 w-3" />
+                                {appointment.clientName}
+                              </p>
+                              <p className="text-sm text-gray-500 flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {appointment.time}
+                              </p>
+                            </div>
+                            <Badge className={getPriorityColor(appointment.priority)}>
+                              {appointment.priority}
+                            </Badge>
                           </div>
+                          {appointment.alert && (
+                            <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-800">
+                              {appointment.alert}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="p-2 text-muted-foreground">No appointments</div>
+                    <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+                      <div className="text-center">
+                        <Clock className="h-6 w-6 mx-auto mb-1 opacity-50" />
+                        <p>Available</p>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
@@ -87,60 +131,65 @@ export function CalendarView({
   
   // Week view
   const renderWeekView = () => {
-    const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 }); // Start from Monday
-    
-    // Generate days for the week
+    const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
     const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
     
     return (
-      <div className="p-4 border rounded-md bg-card">
-        <h3 className="text-lg font-medium mb-4">
-          {format(weekDays[0], 'MMM d')} - {format(weekDays[6], 'MMM d, yyyy')}
-        </h3>
+      <div className="bg-white rounded-lg overflow-hidden">
+        <div className="grid grid-cols-8 border-b bg-gray-50">
+          <div className="p-3 text-sm font-medium text-gray-500"></div>
+          {weekDays.map((day) => (
+            <div 
+              key={day.toISOString()}
+              className={`p-3 text-center cursor-pointer hover:bg-gray-100 transition-colors ${
+                isToday(day) ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-700'
+              }`}
+              onClick={() => setSelectedDate(day)}
+            >
+              <div className="text-xs uppercase tracking-wide">{format(day, 'EEE')}</div>
+              <div className={`text-lg ${isToday(day) ? 'font-bold' : 'font-medium'}`}>
+                {format(day, 'd')}
+              </div>
+            </div>
+          ))}
+        </div>
         
-        <div className="grid grid-cols-7 gap-1">
-          {weekDays.map((day) => {
-            const dayAppointments = appointments.filter((appointment) => {
-              const appointmentDate = new Date(appointment.start_time || appointment.date);
-              return (
-                appointmentDate.getDate() === day.getDate() &&
-                appointmentDate.getMonth() === day.getMonth() &&
-                appointmentDate.getFullYear() === day.getFullYear()
-              );
-            });
-            
-            const isToday = day.toDateString() === new Date().toDateString();
-            const isSelected = day.toDateString() === selectedDate.toDateString();
+        <div className="divide-y divide-gray-100">
+          {Array.from({ length: 12 }, (_, i) => {
+            const hour = 8 + i;
+            const timeLabel = format(new Date().setHours(hour, 0, 0, 0), 'h a');
             
             return (
-              <div 
-                key={day.toISOString()}
-                className={`
-                  p-2 border rounded-md min-h-[100px] cursor-pointer
-                  ${isToday ? 'bg-primary/10' : ''}
-                  ${isSelected ? 'ring-2 ring-primary' : ''}
-                `}
-                onClick={() => setSelectedDate(day)}
-              >
-                <div className="text-center font-medium mb-2">
-                  <div>{format(day, 'EEE')}</div>
-                  <div>{format(day, 'd')}</div>
+              <div key={hour} className="grid grid-cols-8 min-h-[60px]">
+                <div className="p-2 text-xs text-gray-500 border-r bg-gray-50 flex items-start">
+                  {timeLabel}
                 </div>
-                
-                <div className="space-y-1">
-                  {dayAppointments.map((appointment) => (
-                    <div 
-                      key={appointment.id}
-                      className={`p-1 text-xs rounded ${appointment.color || 'bg-primary/10'}`}
-                    >
-                      {format(new Date(appointment.start_time || appointment.date), 'h:mm a')} - {appointment.title}
-                    </div>
-                  ))}
+                {weekDays.map((day) => {
+                  const dayAppointments = appointments.filter((appointment) => {
+                    const appointmentDate = new Date(appointment.date);
+                    const appointmentHour = appointmentDate.getHours();
+                    return (
+                      isSameDay(appointmentDate, day) && appointmentHour === hour
+                    );
+                  });
                   
-                  {dayAppointments.length === 0 && (
-                    <div className="text-xs text-muted-foreground text-center">No events</div>
-                  )}
-                </div>
+                  return (
+                    <div 
+                      key={`${day.toISOString()}-${hour}`}
+                      className="p-1 border-r border-gray-100 hover:bg-gray-50 transition-colors"
+                    >
+                      {dayAppointments.map((appointment) => (
+                        <div 
+                          key={appointment.id}
+                          className={`p-1 text-xs rounded mb-1 border-l-2 ${getStatusColor(appointment.status)} bg-white shadow-sm cursor-pointer hover:shadow-md transition-shadow`}
+                        >
+                          <div className="font-medium truncate">{appointment.title}</div>
+                          <div className="text-gray-600 truncate">{appointment.clientName}</div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
               </div>
             );
           })}
@@ -155,14 +204,12 @@ export function CalendarView({
     const monthEnd = endOfMonth(selectedDate);
     const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
     
-    // Add days from previous month to start the calendar from Monday
-    const firstDay = monthStart.getDay() || 7; // 0 is Sunday, we want Monday as 1
+    const firstDay = monthStart.getDay() || 7;
     const prevMonthDays = Array.from(
       { length: firstDay - 1 },
       (_, i) => new Date(monthStart.getFullYear(), monthStart.getMonth(), -i)
     ).reverse();
     
-    // Calculate rows needed (always 6 rows for consistency)
     const calendarDays = [...prevMonthDays, ...monthDays];
     while (calendarDays.length < 42) {
       const nextDay = new Date(calendarDays[calendarDays.length - 1]);
@@ -171,64 +218,55 @@ export function CalendarView({
     }
     
     return (
-      <div className="p-4 border rounded-md bg-card">
-        <h3 className="text-lg font-medium mb-4 text-center">
-          {format(monthStart, 'MMMM yyyy')}
-        </h3>
-        
-        <div className="grid grid-cols-7 gap-0">
-          {/* Day headers */}
+      <div className="bg-white rounded-lg overflow-hidden">
+        <div className="grid grid-cols-7 border-b bg-gray-50">
           {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-            <div key={day} className="text-center font-medium p-2 text-xs">
+            <div key={day} className="p-3 text-center text-sm font-medium text-gray-700">
               {day}
             </div>
           ))}
-          
-          {/* Calendar days */}
+        </div>
+        
+        <div className="grid grid-cols-7">
           {calendarDays.map((day) => {
-            const dayAppointments = appointments.filter((appointment) => {
-              const appointmentDate = new Date(appointment.start_time || appointment.date);
-              return (
-                appointmentDate.getDate() === day.getDate() &&
-                appointmentDate.getMonth() === day.getMonth() &&
-                appointmentDate.getFullYear() === day.getFullYear()
-              );
-            });
+            const dayAppointments = appointments.filter((appointment) => 
+              isSameDay(new Date(appointment.date), day)
+            );
             
             const isCurrentMonth = day.getMonth() === selectedDate.getMonth();
-            const isToday = day.toDateString() === new Date().toDateString();
-            const isSelected = day.toDateString() === selectedDate.toDateString();
+            const isDayToday = isToday(day);
+            const isSelected = isSameDay(day, selectedDate);
             
             return (
               <div 
                 key={day.toISOString()}
-                className={`
-                  p-1 border min-h-[80px] cursor-pointer
-                  ${!isCurrentMonth ? 'bg-muted/30 text-muted-foreground' : ''}
-                  ${isToday ? 'bg-primary/10' : ''}
-                  ${isSelected ? 'ring-2 ring-primary' : ''}
-                `}
+                className={`min-h-[120px] p-2 border-r border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ${
+                  !isCurrentMonth ? 'bg-gray-50/50 text-gray-400' : ''
+                } ${isDayToday ? 'bg-blue-50' : ''} ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
                 onClick={() => setSelectedDate(day)}
               >
-                <div className={`text-right text-xs ${isSelected ? 'font-bold' : ''}`}>
+                <div className={`text-sm mb-1 ${
+                  isDayToday ? 'font-bold text-blue-700' : isSelected ? 'font-semibold' : 'font-medium'
+                }`}>
                   {format(day, 'd')}
                 </div>
                 
-                <div className="space-y-1 mt-1">
+                <div className="space-y-1">
                   {dayAppointments.slice(0, 3).map((appointment) => (
                     <div 
                       key={appointment.id}
-                      className={`p-0.5 text-xs rounded truncate ${appointment.color || 'bg-primary/10'}`}
-                      title={appointment.title}
+                      className={`p-1 text-xs rounded truncate border-l-2 ${getStatusColor(appointment.status)} bg-white shadow-sm`}
+                      title={`${appointment.title} - ${appointment.clientName} at ${appointment.time}`}
                     >
-                      {appointment.title}
+                      <div className="font-medium">{appointment.title}</div>
+                      <div className="text-gray-600">{appointment.time}</div>
                     </div>
                   ))}
                   
                   {dayAppointments.length > 3 && (
-                    <Badge variant="secondary" className="text-xs">
+                    <div className="text-xs text-gray-500 font-medium">
                       +{dayAppointments.length - 3} more
-                    </Badge>
+                    </div>
                   )}
                 </div>
               </div>
@@ -240,12 +278,10 @@ export function CalendarView({
   };
 
   return (
-    <Card>
-      <CardContent className="p-0">
-        {calendarView === "day" && renderDayView()}
-        {calendarView === "week" && renderWeekView()}
-        {calendarView === "month" && renderMonthView()}
-      </CardContent>
-    </Card>
+    <div className="p-4">
+      {calendarView === "day" && renderDayView()}
+      {calendarView === "week" && renderWeekView()}
+      {calendarView === "month" && renderMonthView()}
+    </div>
   );
 }
