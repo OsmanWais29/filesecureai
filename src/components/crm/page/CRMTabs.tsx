@@ -2,13 +2,14 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientView } from "@/components/crm/ClientView";
 import { MeetingsContainer } from "@/components/crm/meetings/MeetingsContainer";
-import { Users, BarChart3, Activity, FileText, Calendar } from "lucide-react";
+import { TasksContainer } from "@/components/crm/tasks/TasksContainer";
+import { Users, BarChart3, Activity, FileText, Calendar, CheckSquare } from "lucide-react";
 
 export const CRMTabs = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid grid-cols-5 w-full">
+        <TabsList className="grid grid-cols-6 w-full">
           <TabsTrigger value="profile" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             <span className="hidden sm:inline">Client Profile</span>
@@ -28,6 +29,10 @@ export const CRMTabs = () => {
           <TabsTrigger value="meetings" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             <span className="hidden sm:inline">Meetings</span>
+          </TabsTrigger>
+          <TabsTrigger value="tasks" className="flex items-center gap-2">
+            <CheckSquare className="h-4 w-4" />
+            <span className="hidden sm:inline">Tasks</span>
           </TabsTrigger>
         </TabsList>
         
@@ -122,6 +127,14 @@ export const CRMTabs = () => {
             <h2 className="text-xl font-bold">Meetings Management</h2>
             <p className="text-muted-foreground">Schedule, manage, and track all your client meetings.</p>
             <MeetingsContainer />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="tasks" className="space-y-4">
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold">Task Management</h2>
+            <p className="text-muted-foreground">Create, assign, and track tasks for client cases.</p>
+            <TasksContainer />
           </div>
         </TabsContent>
       </Tabs>
