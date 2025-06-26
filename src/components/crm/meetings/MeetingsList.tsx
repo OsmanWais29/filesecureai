@@ -46,7 +46,7 @@ const mockMeetings: MeetingData[] = [
     id: '1',
     title: 'Initial Consultation - John Smith',
     description: 'Discuss bankruptcy options and financial assessment',
-    start_time: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours from now
+    start_time: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
     end_time: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(),
     duration: 60,
     client_id: 'client-001',
@@ -60,7 +60,7 @@ const mockMeetings: MeetingData[] = [
     id: '2',
     title: 'Follow-up Meeting - Sarah Johnson',
     description: 'Review submitted documents and next steps',
-    start_time: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // tomorrow
+    start_time: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     end_time: new Date(Date.now() + 25 * 60 * 60 * 1000).toISOString(),
     duration: 60,
     client_id: 'client-002',
@@ -74,7 +74,7 @@ const mockMeetings: MeetingData[] = [
     id: '3',
     title: 'Document Signing - Mike Davis',
     description: 'Sign bankruptcy papers and finalize process',
-    start_time: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(), // 2 days from now
+    start_time: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
     end_time: new Date(Date.now() + 49 * 60 * 60 * 1000).toISOString(),
     duration: 60,
     client_id: 'client-003',
@@ -92,7 +92,7 @@ export const MeetingsList: React.FC<MeetingsListProps> = ({
   const { toast } = useToast();
   
   // Use mock data if no meetings are provided
-  const displayMeetings = meetings.length > 0 ? meetings : mockMeetings;
+  const displayMeetings = meetings?.length > 0 ? meetings : mockMeetings;
 
   const handleJoinMeeting = (meeting: MeetingData) => {
     if (meeting.meeting_url) {
@@ -166,95 +166,100 @@ Your Trustee
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Client Meetings</h2>
-          <p className="text-gray-600 mt-1">Join meetings and share links with your clients</p>
-        </div>
-      </div>
+  if (!displayMeetings || displayMeetings.length === 0) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-8">
+          <Calendar className="h-12 w-12 text-gray-400 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No Active Meetings</h3>
+          <p className="text-gray-500 text-center">
+            There are no scheduled or in-progress meetings at the moment.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
-      <div className="grid gap-4">
-        {displayMeetings.map((meeting) => (
-          <Card key={meeting.id} className="hover:shadow-md transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                    {getMeetingIcon(meeting.meeting_type || 'video')}
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">{meeting.title}</CardTitle>
-                    <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
-                      <div className="flex items-center gap-1">
-                        <User className="h-4 w-4" />
-                        {meeting.client_name || 'Client'}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        {new Date(meeting.start_time).toLocaleString()}
-                      </div>
+  return (
+    <div className="grid gap-4">
+      {displayMeetings.map((meeting) => (
+        <Card key={meeting.id} className="hover:shadow-md transition-shadow">
+          <CardHeader className="pb-3">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                  {getMeetingIcon(meeting.meeting_type || 'video')}
+                </div>
+                <div>
+                  <CardTitle className="text-lg">{meeting.title}</CardTitle>
+                  <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                    <div className="flex items-center gap-1">
+                      <User className="h-4 w-4" />
+                      {meeting.client_name || 'Client'}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-4 w-4" />
+                      {new Date(meeting.start_time).toLocaleString()}
                     </div>
                   </div>
                 </div>
-                <Badge className={getStatusColor(meeting.status)}>
-                  {meeting.status.replace('_', ' ')}
-                </Badge>
               </div>
-            </CardHeader>
+              <Badge className={getStatusColor(meeting.status)}>
+                {meeting.status.replace('_', ' ')}
+              </Badge>
+            </div>
+          </CardHeader>
+          
+          <CardContent>
+            {meeting.description && (
+              <p className="text-gray-600 mb-4">{meeting.description}</p>
+            )}
             
-            <CardContent>
-              {meeting.description && (
-                <p className="text-gray-600 mb-4">{meeting.description}</p>
-              )}
-              
-              {meeting.location && (
-                <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-                  <MapPin className="h-4 w-4" />
-                  {meeting.location}
-                </div>
-              )}
-
-              <div className="flex items-center justify-between">
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => handleJoinMeeting(meeting)}
-                    className="bg-green-600 hover:bg-green-700"
-                    size="sm"
-                  >
-                    <ExternalLink className="h-4 w-4 mr-1" />
-                    Join Meeting
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleShareMeeting(meeting)}
-                  >
-                    <Copy className="h-4 w-4 mr-1" />
-                    Copy Details
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleSendToClient(meeting)}
-                    className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                  >
-                    <Share2 className="h-4 w-4 mr-1" />
-                    Send to Client
-                  </Button>
-                </div>
-                
-                <div className="text-xs text-gray-500">
-                  Duration: {meeting.duration || 60} minutes
-                </div>
+            {meeting.location && (
+              <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
+                <MapPin className="h-4 w-4" />
+                {meeting.location}
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            )}
+
+            <div className="flex items-center justify-between">
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => handleJoinMeeting(meeting)}
+                  className="bg-green-600 hover:bg-green-700"
+                  size="sm"
+                >
+                  <ExternalLink className="h-4 w-4 mr-1" />
+                  Join Meeting
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleShareMeeting(meeting)}
+                >
+                  <Copy className="h-4 w-4 mr-1" />
+                  Copy Details
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleSendToClient(meeting)}
+                  className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                >
+                  <Share2 className="h-4 w-4 mr-1" />
+                  Send to Client
+                </Button>
+              </div>
+              
+              <div className="text-xs text-gray-500">
+                Duration: {meeting.duration || 60} minutes
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 };

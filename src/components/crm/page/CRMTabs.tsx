@@ -14,8 +14,8 @@ export const CRMTabs = () => {
   };
 
   return (
-    <Tabs defaultValue="activity-timeline" className="space-y-4">
-      <TabsList>
+    <Tabs defaultValue="client-profile" className="space-y-4">
+      <TabsList className="grid w-full grid-cols-5">
         <TabsTrigger value="client-profile">Client Profile</TabsTrigger>
         <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
         <TabsTrigger value="activity-timeline">Activity Timeline</TabsTrigger>
@@ -23,26 +23,26 @@ export const CRMTabs = () => {
         <TabsTrigger value="meetings">Meetings</TabsTrigger>
       </TabsList>
 
-      <TabsContent value="client-profile">
+      <TabsContent value="client-profile" className="space-y-4">
         <ClientProfileView />
       </TabsContent>
       
-      <TabsContent value="dashboard">
+      <TabsContent value="dashboard" className="space-y-4">
         <IntelligentScheduling />
       </TabsContent>
       
-      <TabsContent value="activity-timeline">
+      <TabsContent value="activity-timeline" className="space-y-4">
         <ClientActivityTimeline />
       </TabsContent>
       
-      <TabsContent value="documents">
+      <TabsContent value="documents" className="space-y-4">
         <ClientDocumentsManager 
           clientId={mockClient.id}
           clientName={mockClient.name}
         />
       </TabsContent>
       
-      <TabsContent value="meetings">
+      <TabsContent value="meetings" className="space-y-4">
         <MeetingsContainer />
       </TabsContent>
     </Tabs>
