@@ -1,6 +1,6 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ClientView } from "@/components/crm/ClientView";
+import { ClientProfileView } from "../components/profile/ClientProfileView";
 import { MeetingsContainer } from "@/components/crm/meetings/MeetingsContainer";
 import { TasksContainer } from "@/components/crm/tasks/TasksContainer";
 import { Users, BarChart3, Activity, FileText, Calendar, CheckSquare } from "lucide-react";
@@ -37,11 +37,7 @@ export const CRMTabs = () => {
         </TabsList>
         
         <TabsContent value="profile" className="space-y-4">
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold">Client Profile</h2>
-            <p className="text-muted-foreground">Manage client information and view detailed profiles.</p>
-            <ClientView />
-          </div>
+          <ClientProfileView />
         </TabsContent>
         
         <TabsContent value="dashboard" className="space-y-4">
