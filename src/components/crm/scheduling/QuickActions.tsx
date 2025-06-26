@@ -1,40 +1,76 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { 
-  UserPlus, 
-  CalendarPlus, 
-  ListPlus, 
-  Mail, 
-  Phone
-} from "lucide-react";
+import { Calendar, Phone, Mail, FileText, Clock, Users, Plus } from "lucide-react";
+import { toast } from "sonner";
 
 export function QuickActions() {
+  const handleQuickAction = (action: string) => {
+    toast.success(`${action} initiated`);
+  };
+
   return (
-    <div className="grid grid-cols-2 gap-2">
-      <Button variant="outline" className="flex flex-col h-auto py-4 gap-2">
-        <UserPlus className="h-5 w-5 text-blue-500" />
-        <span className="text-xs">Add Client</span>
+    <div className="space-y-3">
+      <Button 
+        variant="outline" 
+        className="w-full justify-start gap-2"
+        onClick={() => handleQuickAction("Schedule Appointment")}
+      >
+        <Calendar className="h-4 w-4" />
+        Schedule Appointment
       </Button>
       
-      <Button variant="outline" className="flex flex-col h-auto py-4 gap-2">
-        <CalendarPlus className="h-5 w-5 text-green-500" />
-        <span className="text-xs">Schedule</span>
+      <Button 
+        variant="outline" 
+        className="w-full justify-start gap-2"
+        onClick={() => handleQuickAction("Call Client")}
+      >
+        <Phone className="h-4 w-4" />
+        Call Client
       </Button>
       
-      <Button variant="outline" className="flex flex-col h-auto py-4 gap-2">
-        <ListPlus className="h-5 w-5 text-amber-500" />
-        <span className="text-xs">New Task</span>
+      <Button 
+        variant="outline" 
+        className="w-full justify-start gap-2"
+        onClick={() => handleQuickAction("Send Email")}
+      >
+        <Mail className="h-4 w-4" />
+        Send Email
       </Button>
       
-      <Button variant="outline" className="flex flex-col h-auto py-4 gap-2">
-        <Mail className="h-5 w-5 text-purple-500" />
-        <span className="text-xs">Send Email</span>
+      <Button 
+        variant="outline" 
+        className="w-full justify-start gap-2"
+        onClick={() => handleQuickAction("Generate Report")}
+      >
+        <FileText className="h-4 w-4" />
+        Generate Report
       </Button>
       
-      <Button variant="outline" className="flex flex-col h-auto py-4 gap-2 col-span-2">
-        <Phone className="h-5 w-5 text-red-500" />
-        <span className="text-xs">Log Call</span>
+      <Button 
+        variant="outline" 
+        className="w-full justify-start gap-2"
+        onClick={() => handleQuickAction("Block Time")}
+      >
+        <Clock className="h-4 w-4" />
+        Block Time
+      </Button>
+      
+      <Button 
+        variant="outline" 
+        className="w-full justify-start gap-2"
+        onClick={() => handleQuickAction("Group Meeting")}
+      >
+        <Users className="h-4 w-4" />
+        Group Meeting
+      </Button>
+      
+      <Button 
+        className="w-full justify-start gap-2"
+        onClick={() => handleQuickAction("Add New Client")}
+      >
+        <Plus className="h-4 w-4" />
+        Add New Client
       </Button>
     </div>
   );

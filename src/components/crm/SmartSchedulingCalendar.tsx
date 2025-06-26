@@ -22,7 +22,7 @@ import { QuickActions } from "./scheduling/QuickActions";
 import { FilterDialog } from "./scheduling/FilterDialog";
 import { QuickBookDialog } from "./scheduling/QuickBookDialog";
 
-// Import mock data from the new location
+// Import mock data
 import { appointments, staffAvailability, aiSuggestions } from "./scheduling/mockData";
 
 export const SmartSchedulingCalendar = () => {
@@ -53,6 +53,48 @@ export const SmartSchedulingCalendar = () => {
   
   return (
     <div className="space-y-6">
+      {/* Dashboard Header */}
+      <div className="text-center space-y-2">
+        <h2 className="text-2xl font-bold">Dashboard Modules</h2>
+        <p className="text-muted-foreground">Access tools and features to manage your clients efficiently.</p>
+      </div>
+
+      {/* Module Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <Card className="border-2 border-primary">
+          <CardContent className="p-4 text-center">
+            <CalendarIcon className="h-8 w-8 mx-auto mb-2 text-primary" />
+            <h3 className="font-semibold">Scheduling</h3>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <AlertCircle className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+            <h3 className="font-semibold text-muted-foreground">Documents</h3>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+            <h3 className="font-semibold text-muted-foreground">AI Workflow</h3>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <Clock4 className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+            <h3 className="font-semibold text-muted-foreground">Analytics</h3>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Sub-navigation */}
+      <div className="flex justify-center space-x-1 bg-muted p-1 rounded-lg w-fit mx-auto">
+        <Button variant="default" size="sm">Calendar View</Button>
+        <Button variant="ghost" size="sm">Client Self-Booking</Button>
+        <Button variant="ghost" size="sm">Scheduling Analytics</Button>
+      </div>
+
+      {/* Main Smart Scheduling System */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Smart Scheduling System</h2>
         <div className="flex gap-2">
