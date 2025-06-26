@@ -32,7 +32,6 @@ import TrusteeClientViewerPage from './pages/trustee/ClientViewerPage';
 import TrusteeNotificationsPage from './pages/trustee/NotificationsPage';
 import TrusteeReportsPage from './pages/trustee/ReportsPage';
 import TrusteeCalendarPage from './pages/trustee/CalendarPage';
-import TrusteeMessagesPage from './pages/trustee/MessagesPage';
 
 function App() {
   return (
@@ -67,7 +66,6 @@ function App() {
         <Route path="/trustee/notifications" element={<AuthCheck><TrusteeNotificationsPage /></AuthCheck>} />
         <Route path="/trustee/reports" element={<AuthCheck><TrusteeReportsPage /></AuthCheck>} />
         <Route path="/trustee/calendar" element={<AuthCheck><TrusteeCalendarPage /></AuthCheck>} />
-        <Route path="/trustee/messages" element={<AuthCheck><TrusteeMessagesPage /></AuthCheck>} />
         
         {/* Additional Routes */}
         <Route path="/safa" element={<AuthCheck><SAFAPage /></AuthCheck>} />
