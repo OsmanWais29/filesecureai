@@ -8,11 +8,12 @@ import { toast } from "sonner";
 export const TasksContainer = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<TaskData | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
     tasks,
     isLoading,
-    createTask,
+    addTask,
     updateTask,
     deleteTask
   } = useTaskManagement();
@@ -46,18 +47,21 @@ export const TasksContainer = () => {
   };
 
   const handleFormSubmit = async (data: Partial<TaskData>) => {
+    setIsSubmitting(true);
     try {
       if (editingTask) {
         await updateTask(editingTask.id, data);
         toast.success("Task updated successfully");
       } else {
-        await createTask(data);
+        await addTask(data as Omit<TaskData, 'id' | 'created_at' | 'updated_at'>);
         toast.success("Task created successfully");
       }
       setIsFormOpen(false);
       setEditingTask(null);
     } catch (error) {
       toast.error("Failed to save task");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -73,13 +77,17 @@ export const TasksContainer = () => {
       />
       
       <TaskFormDialog
-        isOpen={isFormOpen}
-        onClose={() => {
-          setIsFormOpen(false);
-          setEditingTask(null);
+        open={isFormOpen}
+        onOpenChange={(open) => {
+          setIsFormOpen(open);
+          if (!open) {
+            setEditingTask(null);
+          }
         }}
-        onSubmit={handleFormSubmit}
-        task={editingTask}
+        onSave={handleFormSubmit}
+        task={editingTask || undefined}
+        isSubmitting={isSubmitting}
+        title={editingTask ? "Edit Task" : "Create Task"}
       />
     </>
   );

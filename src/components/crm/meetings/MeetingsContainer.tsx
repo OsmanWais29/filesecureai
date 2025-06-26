@@ -8,11 +8,12 @@ import { toast } from "sonner";
 export const MeetingsContainer = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingMeeting, setEditingMeeting] = useState<MeetingData | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
     meetings,
     isLoading,
-    createMeeting,
+    addMeeting,
     updateMeeting,
     deleteMeeting
   } = useMeetingManagement();
@@ -36,7 +37,7 @@ export const MeetingsContainer = () => {
     }
   };
 
-  const handleStatusChange = async (meetingId: string, status: 'scheduled' | 'completed' | 'cancelled' | 'rescheduled') => {
+  const handleStatusChange = async (meetingId: string, status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled') => {
     try {
       await updateMeeting(meetingId, { status });
       toast.success("Meeting status updated");
@@ -46,18 +47,21 @@ export const MeetingsContainer = () => {
   };
 
   const handleFormSubmit = async (data: Partial<MeetingData>) => {
+    setIsSubmitting(true);
     try {
       if (editingMeeting) {
         await updateMeeting(editingMeeting.id, data);
         toast.success("Meeting updated successfully");
       } else {
-        await createMeeting(data);
+        await addMeeting(data as Omit<MeetingData, 'id' | 'created_at' | 'updated_at'>);
         toast.success("Meeting created successfully");
       }
       setIsFormOpen(false);
       setEditingMeeting(null);
     } catch (error) {
       toast.error("Failed to save meeting");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -73,13 +77,17 @@ export const MeetingsContainer = () => {
       />
       
       <MeetingFormDialog
-        isOpen={isFormOpen}
-        onClose={() => {
-          setIsFormOpen(false);
-          setEditingMeeting(null);
+        open={isFormOpen}
+        onOpenChange={(open) => {
+          setIsFormOpen(open);
+          if (!open) {
+            setEditingMeeting(null);
+          }
         }}
-        onSubmit={handleFormSubmit}
-        meeting={editingMeeting}
+        onSave={handleFormSubmit}
+        meeting={editingMeeting || undefined}
+        isSubmitting={isSubmitting}
+        title={editingMeeting ? "Edit Meeting" : "Create Meeting"}
       />
     </>
   );
