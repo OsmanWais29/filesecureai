@@ -37,9 +37,11 @@ export const MeetingsContainer = () => {
     }
   };
 
-  const handleStatusChange = async (meetingId: string, status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled') => {
+  const handleStatusChange = async (meetingId: string, status: 'scheduled' | 'completed' | 'cancelled' | 'rescheduled') => {
     try {
-      await updateMeeting(meetingId, { status });
+      // Map rescheduled to scheduled for our backend
+      const backendStatus = status === 'rescheduled' ? 'scheduled' : status;
+      await updateMeeting(meetingId, { status: backendStatus as 'scheduled' | 'in_progress' | 'completed' | 'cancelled' });
       toast.success("Meeting status updated");
     } catch (error) {
       toast.error("Failed to update meeting status");
