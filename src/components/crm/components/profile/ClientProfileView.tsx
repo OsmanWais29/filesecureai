@@ -6,12 +6,12 @@ import { ClientIntelligencePanel } from './ClientIntelligencePanel';
 import { useClientInsights } from './hooks/useClientInsights';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { RefreshCw, Users, ChevronDown, MessageSquare } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { RefreshCw, Users, ChevronDown, MessageSquare, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const ClientProfileView = () => {
-  const { insights, isLoading, selectedClient, setSelectedClient, refreshInsights } = useClientInsights();
+  const { insights, isLoading, selectedClient, setSelectedClient, refreshInsights, availableClients } = useClientInsights();
 
   const handleRefresh = async () => {
     await refreshInsights();
@@ -25,6 +25,11 @@ export const ClientProfileView = () => {
   const handleClientSelect = (clientName: string) => {
     setSelectedClient(clientName);
     toast.success(`Switched to ${clientName}'s profile`);
+  };
+
+  const handleViewAllClients = () => {
+    toast.info('Navigating to all clients view...');
+    // In a real app, this would navigate to a clients list page
   };
 
   return (
@@ -60,21 +65,21 @@ export const ClientProfileView = () => {
                 <ChevronDown className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={() => handleClientSelect('Jane Smith')}>
-                <Users className="h-4 w-4 mr-2" />
-                Jane Smith Profile
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleClientSelect('Mike Johnson')}>
-                <Users className="h-4 w-4 mr-2" />
-                Mike Johnson Profile
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleClientSelect('Sarah Wilson')}>
-                <Users className="h-4 w-4 mr-2" />
-                Sarah Wilson Profile
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleClientAction('View All Clients')}>
-                <Users className="h-4 w-4 mr-2" />
+            <DropdownMenuContent align="end" className="w-56">
+              {availableClients
+                .filter(client => client !== selectedClient)
+                .map((clientName) => (
+                  <DropdownMenuItem 
+                    key={clientName}
+                    onClick={() => handleClientSelect(clientName)}
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    {clientName} Profile
+                  </DropdownMenuItem>
+                ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleViewAllClients}>
+                <Eye className="h-4 w-4 mr-2" />
                 View All Clients
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -89,6 +94,16 @@ export const ClientProfileView = () => {
             <div className="text-sm">
               <span className="text-muted-foreground">Active Client:</span>
               <span className="ml-2 font-medium">{selectedClient}</span>
+            </div>
+            <div className="text-sm">
+              <span className="text-muted-foreground">Risk Level:</span>
+              <span className={`ml-2 font-medium ${
+                insights.riskLevel === 'high' ? 'text-red-600' :
+                insights.riskLevel === 'medium' ? 'text-amber-600' :
+                'text-green-600'
+              }`}>
+                {insights.riskLevel.charAt(0).toUpperCase() + insights.riskLevel.slice(1)}
+              </span>
             </div>
           </div>
           <div className="flex items-center gap-2">
