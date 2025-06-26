@@ -44,16 +44,19 @@ export const useClientInsights = () => {
     },
     aiSuggestions: [
       {
+        id: '1',
         type: 'warning',
         message: 'Client has not responded to document request for 5 days',
         action: 'Send follow-up reminder',
       },
       {
+        id: '2',
         type: 'info',
         message: 'Consider scheduling a status update meeting',
         action: 'Schedule Meeting',
       },
       {
+        id: '3',
         type: 'urgent',
         message: 'Deadline approaching for Form 47 submission',
         action: 'Review deadline',

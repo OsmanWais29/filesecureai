@@ -6,7 +6,8 @@ import { ClientIntelligencePanel } from './ClientIntelligencePanel';
 import { useClientInsights } from './hooks/useClientInsights';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, UserPlus, MessageSquare, Calendar } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { RefreshCw, Users, ChevronDown, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const ClientProfileView = () => {
@@ -17,8 +18,13 @@ export const ClientProfileView = () => {
     toast.success('Client insights refreshed');
   };
 
-  const handleQuickAction = (action: string) => {
-    toast.success(`${action} initiated for ${selectedClient}`);
+  const handleClientAction = (action: string) => {
+    toast.success(`${action} initiated`);
+  };
+
+  const handleClientSelect = (clientName: string) => {
+    setSelectedClient(clientName);
+    toast.success(`Switched to ${clientName}'s profile`);
   };
 
   return (
@@ -42,15 +48,37 @@ export const ClientProfileView = () => {
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleQuickAction('New Client')}
-            className="flex items-center gap-2"
-          >
-            <UserPlus className="h-4 w-4" />
-            New Client
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <Users className="h-4 w-4" />
+                Client Options
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => handleClientSelect('Jane Smith')}>
+                <Users className="h-4 w-4 mr-2" />
+                Jane Smith Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleClientSelect('Mike Johnson')}>
+                <Users className="h-4 w-4 mr-2" />
+                Mike Johnson Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleClientSelect('Sarah Wilson')}>
+                <Users className="h-4 w-4 mr-2" />
+                Sarah Wilson Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleClientAction('View All Clients')}>
+                <Users className="h-4 w-4 mr-2" />
+                View All Clients
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -67,18 +95,10 @@ export const ClientProfileView = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleQuickAction('Send Message')}
+              onClick={() => handleClientAction('Send Message')}
             >
               <MessageSquare className="h-4 w-4 mr-1" />
               Message
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleQuickAction('Schedule Meeting')}
-            >
-              <Calendar className="h-4 w-4 mr-1" />
-              Schedule
             </Button>
           </div>
         </div>
