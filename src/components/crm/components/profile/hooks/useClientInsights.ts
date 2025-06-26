@@ -6,7 +6,38 @@ export const useClientInsights = () => {
   const [insights, setInsights] = useState<ClientInsightData>({
     riskLevel: 'medium',
     riskScore: 75,
+    complianceStatus: 'issues',
     caseProgress: 65,
+    pendingTasks: [
+      {
+        id: 'task-1',
+        title: 'Complete Form 47 review',
+        priority: 'high',
+      },
+      {
+        id: 'task-2', 
+        title: 'Follow up on missing documents',
+        priority: 'medium',
+      },
+    ],
+    missingDocuments: [
+      'Bank Statement - November 2024',
+      'Income Verification Letter',
+    ],
+    upcomingDeadlines: [
+      {
+        id: 'deadline-1',
+        title: 'Form 47 Submission',
+        date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        priority: 'high',
+      },
+      {
+        id: 'deadline-2',
+        title: 'Monthly Review Meeting',
+        date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+        priority: 'medium',
+      },
+    ],
     recentActivities: [
       {
         id: '1',
