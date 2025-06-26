@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { IntelligentScheduling } from "../IntelligentScheduling";
 import { ClientProfileView } from "../components/profile/ClientProfileView";
 import { ClientDocumentsManager } from "../components/documents/ClientDocumentsManager";
-import { AnalyticsDashboard } from "@/components/analytics/AnalyticsDashboard";
+import { MeetingsContainer } from "../meetings/MeetingsContainer";
 import { ClientActivityTimeline } from "../components/activity/ClientActivityTimeline";
 
 export const CRMTabs = () => {
@@ -20,7 +20,7 @@ export const CRMTabs = () => {
         <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
         <TabsTrigger value="activity-timeline">Activity Timeline</TabsTrigger>
         <TabsTrigger value="documents">Documents</TabsTrigger>
-        <TabsTrigger value="analytics">Analytics</TabsTrigger>
+        <TabsTrigger value="meetings">Meetings</TabsTrigger>
       </TabsList>
 
       <TabsContent value="client-profile">
@@ -42,8 +42,8 @@ export const CRMTabs = () => {
         />
       </TabsContent>
       
-      <TabsContent value="analytics">
-        <AnalyticsDashboard />
+      <TabsContent value="meetings">
+        <MeetingsContainer />
       </TabsContent>
     </Tabs>
   );

@@ -1,51 +1,10 @@
 
-import React, { useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { MeetingData } from "@/hooks/useMeetingManagement";
-import { format } from "date-fns";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { 
-  CalendarCheck, 
-  CheckCircle, 
-  Edit, 
-  MoreHorizontal, 
-  Plus, 
-  Trash2,
-  X
-} from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Calendar, Clock, User, Video, Phone, MapPin, Edit, Trash2, CheckCircle } from "lucide-react";
+import { MeetingData } from "@/types/client";
 
 interface MeetingsListProps {
   meetings: MeetingData[];
@@ -56,206 +15,161 @@ interface MeetingsListProps {
   onStatusChange: (meetingId: string, status: 'scheduled' | 'completed' | 'cancelled' | 'rescheduled') => void;
 }
 
-export function MeetingsList({ meetings, isLoading, onAdd, onEdit, onDelete, onStatusChange }: MeetingsListProps) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [deleteConfirm, setDeleteConfirm] = useState<MeetingData | null>(null);
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'scheduled':
+      return 'bg-blue-100 text-blue-800';
+    case 'in_progress':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'completed':
+      return 'bg-green-100 text-green-800';
+    case 'cancelled':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+};
 
-  const statusColors = {
-    scheduled: "bg-blue-100 text-blue-800",
-    completed: "bg-green-100 text-green-800",
-    cancelled: "bg-red-100 text-red-800",
-    rescheduled: "bg-amber-100 text-amber-800",
-  };
+const getMeetingIcon = (type: string) => {
+  switch (type) {
+    case 'video':
+      return <Video className="h-4 w-4" />;
+    case 'phone':
+      return <Phone className="h-4 w-4" />;
+    case 'in_person':
+      return <MapPin className="h-4 w-4" />;
+    default:
+      return <Calendar className="h-4 w-4" />;
+  }
+};
 
-  const handleStatusChange = (meetingId: string, status: 'scheduled' | 'completed' | 'cancelled' | 'rescheduled') => {
-    onStatusChange(meetingId, status);
-  };
-
-  const filteredMeetings = meetings.filter((meeting) => {
-    const matchesSearch = meeting.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         (meeting.description || "").toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesStatus = statusFilter === "all" || meeting.status === statusFilter;
-    const matchesType = typeFilter === "all" || meeting.meeting_type === typeFilter;
-    
-    return matchesSearch && matchesStatus && matchesType;
-  });
-
-  const meetingTypes = [
-    { value: 'consultation', label: 'Initial Consultation' },
-    { value: 'followup', label: 'Follow-up Meeting' },
-    { value: 'document_review', label: 'Document Review' },
-    { value: 'court_preparation', label: 'Court Preparation' },
-    { value: 'closing', label: 'Closing Meeting' },
-    { value: 'other', label: 'Other' }
-  ];
-
-  const getMeetingTypeLabel = (value: string | undefined): string => {
-    if (!value) return 'Unknown';
-    const type = meetingTypes.find(t => t.value === value);
-    return type ? type.label : value;
-  };
+export const MeetingsList: React.FC<MeetingsListProps> = ({
+  meetings,
+  isLoading,
+  onAdd,
+  onEdit,
+  onDelete,
+  onStatusChange
+}) => {
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg">Loading meetings...</div>
+      </div>
+    );
+  }
 
   return (
-    <>
-      <Card className="shadow-md">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <CalendarCheck className="h-5 w-5" />
-              <CardTitle>Meeting Schedule</CardTitle>
-            </div>
-            <Button onClick={onAdd} className="gap-1">
-              <Plus className="h-4 w-4" />
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Client Meetings</h2>
+          <p className="text-gray-600 mt-1">Schedule and manage meetings with your clients</p>
+        </div>
+        <Button onClick={onAdd} className="bg-blue-600 hover:bg-blue-700">
+          <Calendar className="h-4 w-4 mr-2" />
+          Schedule Meeting
+        </Button>
+      </div>
+
+      {meetings.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Calendar className="h-12 w-12 text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No meetings scheduled</h3>
+            <p className="text-gray-500 text-center mb-4">
+              Get started by scheduling your first meeting with a client.
+            </p>
+            <Button onClick={onAdd} className="bg-blue-600 hover:bg-blue-700">
               Schedule Meeting
             </Button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-3">
-            <Input
-              placeholder="Search meetings..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="col-span-1"
-            />
-            <Select
-              value={statusFilter}
-              onValueChange={setStatusFilter}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="scheduled">Scheduled</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-                <SelectItem value="rescheduled">Rescheduled</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={typeFilter}
-              onValueChange={setTypeFilter}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Filter by meeting type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                {meetingTypes.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
-                    {type.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
-            </div>
-          ) : filteredMeetings.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>No meetings found</p>
-              <Button variant="outline" onClick={onAdd} className="mt-2">
-                Schedule your first meeting
-              </Button>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Date & Time</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredMeetings.map((meeting) => (
-                    <TableRow key={meeting.id}>
-                      <TableCell className="font-medium">{meeting.title}</TableCell>
-                      <TableCell>{getMeetingTypeLabel(meeting.meeting_type)}</TableCell>
-                      <TableCell>
-                        <div>
-                          {format(new Date(meeting.start_time), 'MMM d, yyyy')}
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4">
+          {meetings.map((meeting) => (
+            <Card key={meeting.id} className="hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      {getMeetingIcon(meeting.meeting_type)}
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">{meeting.title}</CardTitle>
+                      <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                        <div className="flex items-center gap-1">
+                          <User className="h-4 w-4" />
+                          {meeting.client_name || 'Client'}
                         </div>
-                        <div className="text-sm text-muted-foreground">
-                          {format(new Date(meeting.start_time), 'h:mm a')} - {format(new Date(meeting.end_time), 'h:mm a')}
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          {new Date(meeting.start_time).toLocaleString()}
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={statusColors[meeting.status as keyof typeof statusColors]}>
-                          {meeting.status.charAt(0).toUpperCase() + meeting.status.slice(1)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Open menu</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => onEdit(meeting)}>
-                              <Edit className="mr-2 h-4 w-4" /> Edit
-                            </DropdownMenuItem>
-                            {meeting.status !== 'completed' && (
-                              <DropdownMenuItem onClick={() => handleStatusChange(meeting.id, 'completed')}>
-                                <CheckCircle className="mr-2 h-4 w-4" /> Mark Complete
-                              </DropdownMenuItem>
-                            )}
-                            {meeting.status !== 'cancelled' && (
-                              <DropdownMenuItem onClick={() => handleStatusChange(meeting.id, 'cancelled')}>
-                                <X className="mr-2 h-4 w-4" /> Cancel Meeting
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem onClick={() => setDeleteConfirm(meeting)} className="text-red-600">
-                              <Trash2 className="mr-2 h-4 w-4" /> Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                      </div>
+                    </div>
+                  </div>
+                  <Badge className={getStatusColor(meeting.status)}>
+                    {meeting.status.replace('_', ' ')}
+                  </Badge>
+                </div>
+              </CardHeader>
+              
+              <CardContent>
+                {meeting.description && (
+                  <p className="text-gray-600 mb-4">{meeting.description}</p>
+                )}
+                
+                {meeting.location && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
+                    <MapPin className="h-4 w-4" />
+                    {meeting.location}
+                  </div>
+                )}
 
-      <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete the meeting "{deleteConfirm?.title}".
-              This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (deleteConfirm) {
-                  onDelete(deleteConfirm);
-                  setDeleteConfirm(null);
-                }
-              }}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+                <div className="flex items-center justify-between">
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onEdit(meeting)}
+                    >
+                      <Edit className="h-4 w-4 mr-1" />
+                      Edit
+                    </Button>
+                    
+                    {meeting.status === 'scheduled' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onStatusChange(meeting.id, 'completed')}
+                        className="text-green-600 border-green-200 hover:bg-green-50"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        Mark Complete
+                      </Button>
+                    )}
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onDelete(meeting)}
+                      className="text-red-600 border-red-200 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Cancel
+                    </Button>
+                  </div>
+                  
+                  <div className="text-xs text-gray-500">
+                    Duration: {meeting.duration || 60} minutes
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
   );
-}
+};
