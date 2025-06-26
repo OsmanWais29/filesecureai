@@ -1,279 +1,256 @@
 
-import React, { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState } from "react";
+import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { MonthView } from './MonthView';
-import { WeekView } from './WeekView';
-import { DayView } from './DayView';
-import { CalendarHeader } from './CalendarHeader';
-import { useCalendarNavigation } from './useCalendarNavigation';
-import { useAppointmentUtils } from './useAppointmentUtils';
-import { Clock, Calendar as CalendarIcon, Users, Plus, FileText, Bell, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
-import { format, isToday, isTomorrow, addDays } from 'date-fns';
+import { Badge } from "@/components/ui/badge";
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  Clock, 
+  User, 
+  Calendar as CalendarIcon,
+  Users,
+  TrendingUp,
+  AlertCircle
+} from "lucide-react";
+import { format, addMonths, subMonths } from "date-fns";
 
-interface CalendarViewProps {
-  selectedDate: Date;
-  setSelectedDate: (date: Date) => void;
-  calendarView: 'month' | 'week' | 'day';
-  setCalendarView: (view: 'month' | 'week' | 'day') => void;
-  appointments: any[];
-}
+export const CalendarView = () => {
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
 
-export const CalendarView = ({
-  selectedDate,
-  setSelectedDate,
-  calendarView,
-  setCalendarView,
-  appointments
-}: CalendarViewProps) => {
-  const [notes, setNotes] = useState('');
-  const { handlePrevious, handleNext } = useCalendarNavigation(
-    selectedDate,
-    calendarView,
-    setSelectedDate
-  );
-  
-  const { getAppointmentColorClass } = useAppointmentUtils();
+  const handlePreviousMonth = () => {
+    setCurrentMonth(subMonths(currentMonth, 1));
+  };
 
-  // Mock data for today's appointments and upcoming
+  const handleNextMonth = () => {
+    setCurrentMonth(addMonths(currentMonth, 1));
+  };
+
+  // Mock data for appointments
   const todaysAppointments = [
-    { id: 1, time: '9:00 AM', client: 'John Smith', type: 'Initial Consultation', priority: 'high' },
-    { id: 2, time: '11:30 AM', client: 'Sarah Johnson', type: 'Document Review', priority: 'medium' },
-    { id: 3, time: '2:00 PM', client: 'Mike Chen', type: 'Status Update', priority: 'normal' },
-    { id: 4, time: '4:00 PM', client: 'Emily Davis', type: 'Final Meeting', priority: 'high' }
+    { id: 1, time: "9:00 AM", client: "John Smith", type: "Consultation", priority: "high" },
+    { id: 2, time: "11:30 AM", client: "Sarah Johnson", type: "Review", priority: "medium" },
+    { id: 3, time: "2:00 PM", client: "Mike Davis", type: "Initial Meeting", priority: "high" },
+    { id: 4, time: "4:00 PM", client: "Lisa Brown", type: "Follow-up", priority: "low" }
   ];
 
   const upcomingAppointments = [
-    { id: 5, date: 'Tomorrow', time: '10:00 AM', client: 'Robert Wilson', type: 'Asset Review' },
-    { id: 6, date: 'Thu, Dec 28', time: '1:00 PM', client: 'Lisa Anderson', type: 'Court Hearing' },
-    { id: 7, date: 'Fri, Dec 29', time: '3:30 PM', client: 'David Brown', type: 'Consultation' }
+    { id: 5, date: "Tomorrow", time: "10:00 AM", client: "Tom Wilson", type: "Consultation" },
+    { id: 6, date: "Friday", time: "2:30 PM", client: "Emma Thompson", type: "Review" },
+    { id: 7, date: "Monday", time: "9:15 AM", client: "David Lee", type: "Initial Meeting" }
+  ];
+
+  const teamStatus = [
+    { name: "Alex Thompson", status: "Available", caseload: 12, color: "bg-green-500" },
+    { name: "Sarah Mitchell", status: "In Meeting", caseload: 8, color: "bg-yellow-500" },
+    { name: "John Rodriguez", status: "Busy", caseload: 15, color: "bg-red-500" },
+    { name: "Emily Chen", status: "Available", caseload: 10, color: "bg-green-500" }
   ];
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high': return 'bg-red-100 text-red-800 border-red-200';
       case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      default: return 'bg-green-100 text-green-800 border-green-200';
+      case 'low': return 'bg-green-100 text-green-800 border-green-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 h-full">
-          {/* Main Calendar Section - Takes up 3/4 of the width */}
-          <div className="xl:col-span-3 space-y-6">
-            <Card className="shadow-2xl border-0 bg-white/80 backdrop-blur-sm dark:bg-gray-900/80">
-              {/* Enhanced Header */}
-              <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-8 text-white rounded-t-xl">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl shadow-lg">
-                      <CalendarIcon className="h-8 w-8" />
-                    </div>
-                    <div>
-                      <h1 className="text-3xl font-bold">Calendar Management</h1>
-                      <p className="text-blue-100 text-lg">Organize your schedule with precision</p>
-                    </div>
-                  </div>
-                  <Button className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border-white/30 text-white px-6 py-3 text-lg font-medium shadow-lg">
-                    <Plus className="h-5 w-5 mr-2" />
-                    New Appointment
-                  </Button>
-                </div>
-
-                {/* Enhanced Calendar Navigation */}
-                <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                  <Button 
-                    variant="ghost" 
-                    size="lg" 
-                    onClick={handlePrevious}
-                    className="text-white hover:bg-white/20 p-3 rounded-lg"
-                  >
-                    <ChevronLeft className="h-6 w-6" />
-                  </Button>
-                  
-                  <div className="text-center">
-                    <h2 className="text-2xl font-bold">
-                      {format(selectedDate, calendarView === 'month' ? 'MMMM yyyy' : 'PPPP')}
-                    </h2>
-                    <p className="text-blue-100 text-sm mt-1">
-                      {format(new Date(), 'EEEE, MMMM do')}
-                    </p>
-                  </div>
-                  
-                  <Button 
-                    variant="ghost" 
-                    size="lg" 
-                    onClick={handleNext}
-                    className="text-white hover:bg-white/20 p-3 rounded-lg"
-                  >
-                    <ChevronRight className="h-6 w-6" />
-                  </Button>
-                </div>
-              </div>
-              
-              {/* Calendar Content */}
-              <div className="p-8">
-                <Tabs value={calendarView} onValueChange={(value) => setCalendarView(value as 'month' | 'week' | 'day')}>
-                  <TabsList className="grid w-full grid-cols-3 mb-8 bg-gray-100 dark:bg-gray-800 h-12 rounded-xl p-1">
-                    <TabsTrigger 
-                      value="month" 
-                      className="data-[state=active]:bg-white data-[state=active]:shadow-md rounded-lg font-medium text-lg"
-                    >
-                      Month View
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="week" 
-                      className="data-[state=active]:bg-white data-[state=active]:shadow-md rounded-lg font-medium text-lg"
-                    >
-                      Week View
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="day" 
-                      className="data-[state=active]:bg-white data-[state=active]:shadow-md rounded-lg font-medium text-lg"
-                    >
-                      Day View
-                    </TabsTrigger>
-                  </TabsList>
-
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-inner p-6 min-h-[600px]">
-                    <TabsContent value="month" className="mt-0">
-                      <MonthView
-                        selectedDate={selectedDate}
-                        setSelectedDate={setSelectedDate}
-                        appointments={appointments}
-                        calendarView={calendarView}
-                      />
-                    </TabsContent>
-
-                    <TabsContent value="week" className="mt-0">
-                      <WeekView
-                        selectedDate={selectedDate}
-                        setSelectedDate={setSelectedDate}
-                        appointments={appointments}
-                        getAppointmentColorClass={getAppointmentColorClass}
-                      />
-                    </TabsContent>
-
-                    <TabsContent value="day" className="mt-0">
-                      <DayView
-                        selectedDate={selectedDate}
-                        appointments={appointments}
-                        getAppointmentColorClass={getAppointmentColorClass}
-                      />
-                    </TabsContent>
-                  </div>
-                </Tabs>
-              </div>
-            </Card>
-          </div>
-
-          {/* Right Sidebar - Takes up 1/4 of the width */}
-          <div className="xl:col-span-1 space-y-6">
-            {/* Today's Schedule */}
-            <Card className="border-0 shadow-xl bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-950/30 dark:to-indigo-950/30 backdrop-blur-sm">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <div className="p-3 bg-blue-500 rounded-xl shadow-lg">
-                    <Clock className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-blue-900 dark:text-blue-100">Today's Schedule</div>
-                    <div className="text-sm text-blue-600 dark:text-blue-300 font-normal">
-                      {todaysAppointments.length} appointments
-                    </div>
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {todaysAppointments.map((appointment) => (
-                  <div key={appointment.id} className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 dark:border-gray-700">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <span className="font-bold text-lg bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-lg">
-                          {appointment.time}
-                        </span>
-                        <Badge className={`text-xs font-medium ${getPriorityColor(appointment.priority)}`}>
-                          {appointment.priority.toUpperCase()}
-                        </Badge>
-                      </div>
-                      <Button variant="ghost" size="sm" className="hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg">
-                        <Users className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <h4 className="font-semibold text-gray-900 dark:text-white text-lg">{appointment.client}</h4>
-                    <p className="text-gray-600 dark:text-gray-400">{appointment.type}</p>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            {/* Coming Up */}
-            <Card className="border-0 shadow-xl bg-gradient-to-br from-orange-50 to-amber-100 dark:from-orange-950/30 dark:to-amber-950/30 backdrop-blur-sm">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <div className="p-3 bg-orange-500 rounded-xl shadow-lg">
-                    <Bell className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-orange-900 dark:text-orange-100">Coming Up</div>
-                    <div className="text-sm text-orange-600 dark:text-orange-300 font-normal">
-                      Next {upcomingAppointments.length} appointments
-                    </div>
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {upcomingAppointments.map((appointment) => (
-                  <div key={appointment.id} className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 dark:border-gray-700">
-                    <div className="flex items-center gap-3 mb-3">
-                      <span className="text-sm font-bold text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 px-3 py-1 rounded-lg">
-                        {appointment.date}
-                      </span>
-                      <span className="text-lg font-semibold text-gray-900 dark:text-white">{appointment.time}</span>
-                    </div>
-                    <h4 className="font-semibold text-gray-900 dark:text-white text-lg">{appointment.client}</h4>
-                    <p className="text-gray-600 dark:text-gray-400">{appointment.type}</p>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            {/* Quick Notes */}
-            <Card className="border-0 shadow-xl bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-950/30 dark:to-emerald-950/30 backdrop-blur-sm">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-3 text-xl">
-                  <div className="p-3 bg-green-500 rounded-xl shadow-lg">
-                    <FileText className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-green-900 dark:text-green-100">Quick Notes</div>
-                    <div className="text-sm text-green-600 dark:text-green-300 font-normal">
-                      Jot down your thoughts
-                    </div>
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Textarea
-                  placeholder="Add your notes here..."
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="min-h-[140px] resize-none border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl text-base"
-                />
-                <Button className="w-full mt-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg py-3 text-lg font-medium rounded-xl">
-                  <Sparkles className="h-5 w-5 mr-2" />
-                  Save Notes
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+    <div className="p-6 space-y-6 bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Smart Calendar
+          </h1>
+          <p className="text-gray-600 mt-1">Manage your schedule and team workload</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm">
+            <CalendarIcon className="h-4 w-4 mr-2" />
+            Today
+          </Button>
+          <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+            New Appointment
+          </Button>
         </div>
       </div>
+
+      {/* Main Grid Layout */}
+      <div className="grid grid-cols-12 gap-6">
+        {/* Large Calendar - Takes up 8 columns */}
+        <div className="col-span-8">
+          <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xl font-semibold text-gray-800">
+                  {format(currentMonth, "MMMM yyyy")}
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePreviousMonth}
+                    className="h-8 w-8 p-0"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleNextMonth}
+                    className="h-8 w-8 p-0"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="calendar-container" style={{ transform: 'scale(1.2)', transformOrigin: 'top left' }}>
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => date && setSelectedDate(date)}
+                  month={currentMonth}
+                  onMonthChange={setCurrentMonth}
+                  className="rounded-lg border-0 shadow-none"
+                  classNames={{
+                    months: "flex flex-col space-y-4",
+                    month: "space-y-4 w-full",
+                    caption: "flex justify-center pt-1 relative items-center hidden",
+                    caption_label: "text-lg font-semibold",
+                    nav: "space-x-1 flex items-center",
+                    nav_button: "h-9 w-9 bg-transparent p-0 opacity-50 hover:opacity-100",
+                    nav_button_previous: "absolute left-1",
+                    nav_button_next: "absolute right-1",
+                    table: "w-full border-collapse space-y-1",
+                    head_row: "flex w-full",
+                    head_cell: "text-slate-500 rounded-md w-12 h-12 font-semibold text-sm flex items-center justify-center",
+                    row: "flex w-full mt-2",
+                    cell: "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-blue-50 [&:has([aria-selected].day-outside)]:bg-blue-50/50 [&:has([aria-selected].day-range-end)]:rounded-r-md",
+                    day: "h-12 w-12 p-0 font-normal text-base hover:bg-blue-100 hover:text-blue-900 rounded-lg transition-colors flex items-center justify-center",
+                    day_range_end: "day-range-end",
+                    day_selected: "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:bg-gradient-to-r hover:from-blue-700 hover:to-purple-700 hover:text-white focus:bg-gradient-to-r focus:from-blue-600 focus:to-purple-600 focus:text-white shadow-md",
+                    day_today: "bg-blue-100 text-blue-900 font-semibold",
+                    day_outside: "day-outside text-slate-400 opacity-50 aria-selected:bg-blue-50/50 aria-selected:text-slate-400 aria-selected:opacity-30",
+                    day_disabled: "text-slate-400 opacity-50",
+                    day_range_middle: "aria-selected:bg-blue-50 aria-selected:text-blue-900",
+                    day_hidden: "invisible",
+                  }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Sidebar - Takes up 4 columns */}
+        <div className="col-span-4 space-y-6">
+          {/* Today's Schedule */}
+          <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+                <Clock className="h-5 w-5 text-blue-600" />
+                Today's Schedule
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {todaysAppointments.map((appointment) => (
+                <div key={appointment.id} className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-slate-50 to-blue-50 hover:from-slate-100 hover:to-blue-100 transition-all duration-200 border border-slate-200">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium text-sm">{appointment.time}</span>
+                      <Badge variant="outline" className={getPriorityColor(appointment.priority)}>
+                        {appointment.priority}
+                      </Badge>
+                    </div>
+                    <p className="font-semibold text-gray-800">{appointment.client}</p>
+                    <p className="text-sm text-gray-600">{appointment.type}</p>
+                  </div>
+                  <User className="h-4 w-4 text-gray-400" />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Coming Up */}
+          <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+                <TrendingUp className="h-5 w-5 text-purple-600" />
+                Coming Up
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {upcomingAppointments.map((appointment) => (
+                <div key={appointment.id} className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 transition-all duration-200 border border-purple-200">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-medium text-purple-700">{appointment.date}</span>
+                      <span className="text-sm text-gray-600">{appointment.time}</span>
+                    </div>
+                    <p className="font-semibold text-gray-800">{appointment.client}</p>
+                    <p className="text-sm text-gray-600">{appointment.type}</p>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Quick Notes */}
+          <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+                <AlertCircle className="h-5 w-5 text-amber-600" />
+                Quick Notes
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <textarea 
+                placeholder="Add your notes here..."
+                className="w-full h-24 p-3 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gradient-to-br from-amber-50 to-orange-50"
+              />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Team Status & Caseload - Bottom Section */}
+      <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-xl font-semibold">
+            <Users className="h-6 w-6 text-green-600" />
+            Team Status & Caseload
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {teamStatus.map((member, index) => (
+              <div key={index} className="p-4 rounded-lg bg-gradient-to-br from-slate-50 to-blue-50 border border-slate-200 hover:shadow-md transition-all duration-200">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={`w-3 h-3 rounded-full ${member.color} shadow-sm`}></div>
+                  <span className="font-semibold text-gray-800">{member.name}</span>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Status:</span>
+                    <Badge variant="outline" className="text-xs">
+                      {member.status}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Caseload:</span>
+                    <span className="font-semibold text-blue-600">{member.caseload}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
