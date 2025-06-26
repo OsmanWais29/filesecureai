@@ -36,15 +36,63 @@ const getMeetingIcon = (type: string) => {
     case 'in_person':
       return <MapPin className="h-4 w-4" />;
     default:
-      return <Calendar className="h-4 w-4" />;
+      return <Video className="h-4 w-4" />;
   }
 };
+
+// Mock data for demonstration
+const mockMeetings: MeetingData[] = [
+  {
+    id: '1',
+    title: 'Initial Consultation - John Smith',
+    description: 'Discuss bankruptcy options and financial assessment',
+    start_time: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours from now
+    end_time: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(),
+    duration: 60,
+    client_id: 'client-001',
+    client_name: 'John Smith',
+    status: 'scheduled',
+    meeting_type: 'video',
+    meeting_url: 'https://zoom.us/j/123456789',
+    location: 'Virtual Meeting'
+  },
+  {
+    id: '2',
+    title: 'Follow-up Meeting - Sarah Johnson',
+    description: 'Review submitted documents and next steps',
+    start_time: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // tomorrow
+    end_time: new Date(Date.now() + 25 * 60 * 60 * 1000).toISOString(),
+    duration: 60,
+    client_id: 'client-002',
+    client_name: 'Sarah Johnson',
+    status: 'scheduled',
+    meeting_type: 'phone',
+    meeting_url: 'tel:+1234567890',
+    location: 'Phone Call'
+  },
+  {
+    id: '3',
+    title: 'Document Signing - Mike Davis',
+    description: 'Sign bankruptcy papers and finalize process',
+    start_time: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(), // 2 days from now
+    end_time: new Date(Date.now() + 49 * 60 * 60 * 1000).toISOString(),
+    duration: 60,
+    client_id: 'client-003',
+    client_name: 'Mike Davis',
+    status: 'scheduled',
+    meeting_type: 'in_person',
+    location: '123 Main St, Toronto, ON'
+  }
+];
 
 export const MeetingsList: React.FC<MeetingsListProps> = ({
   meetings,
   isLoading
 }) => {
   const { toast } = useToast();
+  
+  // Use mock data if no meetings are provided
+  const displayMeetings = meetings.length > 0 ? meetings : mockMeetings;
 
   const handleJoinMeeting = (meeting: MeetingData) => {
     if (meeting.meeting_url) {
@@ -127,100 +175,86 @@ Your Trustee
         </div>
       </div>
 
-      {meetings.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Calendar className="h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No meetings available</h3>
-            <p className="text-gray-500 text-center mb-4">
-              Schedule meetings from the main Meetings page to see them here.
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4">
-          {meetings.map((meeting) => (
-            <Card key={meeting.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      {getMeetingIcon(meeting.meeting_type || 'video')}
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg">{meeting.title}</CardTitle>
-                      <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
-                        <div className="flex items-center gap-1">
-                          <User className="h-4 w-4" />
-                          {meeting.client_name || 'Client'}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-4 w-4" />
-                          {new Date(meeting.start_time).toLocaleString()}
-                        </div>
+      <div className="grid gap-4">
+        {displayMeetings.map((meeting) => (
+          <Card key={meeting.id} className="hover:shadow-md transition-shadow">
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                    {getMeetingIcon(meeting.meeting_type || 'video')}
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">{meeting.title}</CardTitle>
+                    <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                      <div className="flex items-center gap-1">
+                        <User className="h-4 w-4" />
+                        {meeting.client_name || 'Client'}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-4 w-4" />
+                        {new Date(meeting.start_time).toLocaleString()}
                       </div>
                     </div>
                   </div>
-                  <Badge className={getStatusColor(meeting.status)}>
-                    {meeting.status.replace('_', ' ')}
-                  </Badge>
                 </div>
-              </CardHeader>
+                <Badge className={getStatusColor(meeting.status)}>
+                  {meeting.status.replace('_', ' ')}
+                </Badge>
+              </div>
+            </CardHeader>
+            
+            <CardContent>
+              {meeting.description && (
+                <p className="text-gray-600 mb-4">{meeting.description}</p>
+              )}
               
-              <CardContent>
-                {meeting.description && (
-                  <p className="text-gray-600 mb-4">{meeting.description}</p>
-                )}
-                
-                {meeting.location && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-                    <MapPin className="h-4 w-4" />
-                    {meeting.location}
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between">
-                  <div className="flex gap-2">
-                    {meeting.status === 'scheduled' && (
-                      <Button
-                        onClick={() => handleJoinMeeting(meeting)}
-                        className="bg-green-600 hover:bg-green-700"
-                        size="sm"
-                      >
-                        <ExternalLink className="h-4 w-4 mr-1" />
-                        Join Meeting
-                      </Button>
-                    )}
-                    
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleShareMeeting(meeting)}
-                    >
-                      <Copy className="h-4 w-4 mr-1" />
-                      Copy Details
-                    </Button>
-                    
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleSendToClient(meeting)}
-                      className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                    >
-                      <Share2 className="h-4 w-4 mr-1" />
-                      Send to Client
-                    </Button>
-                  </div>
-                  
-                  <div className="text-xs text-gray-500">
-                    Duration: {meeting.duration || 60} minutes
-                  </div>
+              {meeting.location && (
+                <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
+                  <MapPin className="h-4 w-4" />
+                  {meeting.location}
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+              )}
+
+              <div className="flex items-center justify-between">
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => handleJoinMeeting(meeting)}
+                    className="bg-green-600 hover:bg-green-700"
+                    size="sm"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    Join Meeting
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleShareMeeting(meeting)}
+                  >
+                    <Copy className="h-4 w-4 mr-1" />
+                    Copy Details
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSendToClient(meeting)}
+                    className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                  >
+                    <Share2 className="h-4 w-4 mr-1" />
+                    Send to Client
+                  </Button>
+                </div>
+                
+                <div className="text-xs text-gray-500">
+                  Duration: {meeting.duration || 60} minutes
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 };
