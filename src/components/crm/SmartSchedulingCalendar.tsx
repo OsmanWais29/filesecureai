@@ -15,7 +15,11 @@ import {
   MessageSquare,
   CheckCircle,
   AlertCircle,
-  XCircle
+  XCircle,
+  MapPin,
+  Briefcase,
+  Star,
+  Activity
 } from "lucide-react";
 
 // Mock appointments data
@@ -55,7 +59,7 @@ const mockAppointments = [
   }
 ];
 
-// Mock team status data
+// Enhanced team members data with more information
 const teamMembers = [
   {
     id: "1",
@@ -65,7 +69,14 @@ const teamMembers = [
     avatar: "/lovable-uploads/01eb992b-a293-4ef9-a5ff-fa81da6a95ed.png",
     phone: "(555) 123-4567",
     email: "sarah.mitchell@trustee.com",
-    nextAvailable: "Now"
+    nextAvailable: "Now",
+    location: "Toronto Office",
+    experience: "12 years",
+    specialization: "Corporate Restructuring",
+    currentCaseload: 8,
+    rating: 4.9,
+    todaysMeetings: 3,
+    thisWeekCompleted: 12
   },
   {
     id: "2", 
@@ -75,7 +86,14 @@ const teamMembers = [
     avatar: "/lovable-uploads/7111ec34-de13-4b7d-b821-5f804822ebc5.png",
     phone: "(555) 234-5678",
     email: "david.chen@trustee.com",
-    nextAvailable: "3:00 PM"
+    nextAvailable: "3:00 PM",
+    location: "Vancouver Office",
+    experience: "8 years",
+    specialization: "Consumer Proposals",
+    currentCaseload: 15,
+    rating: 4.7,
+    todaysMeetings: 5,
+    thisWeekCompleted: 18
   },
   {
     id: "3",
@@ -85,7 +103,14 @@ const teamMembers = [
     avatar: "/lovable-uploads/b8620d24-fab6-4068-9af7-3e91ace7b559.png",
     phone: "(555) 345-6789",
     email: "emily.rodriguez@trustee.com",
-    nextAvailable: "Tomorrow 9:00 AM"
+    nextAvailable: "Tomorrow 9:00 AM",
+    location: "Calgary Office",
+    experience: "3 years",
+    specialization: "Personal Bankruptcy",
+    currentCaseload: 12,
+    rating: 4.5,
+    todaysMeetings: 0,
+    thisWeekCompleted: 8
   },
   {
     id: "4",
@@ -95,7 +120,14 @@ const teamMembers = [
     avatar: "/lovable-uploads/01eb992b-a293-4ef9-a5ff-fa81da6a95ed.png",
     phone: "(555) 456-7890",
     email: "michael.thompson@trustee.com",
-    nextAvailable: "Now"
+    nextAvailable: "Now",
+    location: "Montreal Office",
+    experience: "6 years",
+    specialization: "Case Administration",
+    currentCaseload: 25,
+    rating: 4.8,
+    todaysMeetings: 2,
+    thisWeekCompleted: 22
   }
 ];
 
@@ -230,40 +262,108 @@ export const SmartSchedulingCalendar = () => {
         </div>
       </div>
 
-      {/* Team Status - Horizontal Layout */}
+      {/* Team Status - Enhanced Horizontal Layout */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Team Status
+            Team Status & Performance
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-4">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             {teamMembers.map((member) => (
-              <div key={member.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg min-w-[280px]">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={member.avatar} alt={member.name} />
-                  <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium text-sm truncate">{member.name}</p>
-                    {getStatusIcon(member.status)}
+              <div key={member.id} className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4 border border-gray-200">
+                <div className="flex items-start gap-4">
+                  <Avatar className="h-16 w-16 border-2 border-white shadow-md">
+                    <AvatarImage src={member.avatar} alt={member.name} />
+                    <AvatarFallback className="bg-blue-500 text-white font-semibold text-lg">
+                      {member.name.split(' ').map(n => n[0]).join('')}
+                    </AvatarFallback>
+                  </Avatar>
+                  
+                  <div className="flex-1 space-y-3">
+                    {/* Header with name and status */}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-semibold text-lg">{member.name}</h3>
+                        <p className="text-sm text-muted-foreground flex items-center gap-1">
+                          <Briefcase className="h-3 w-3" />
+                          {member.role}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {getStatusIcon(member.status)}
+                        <Badge className={`${getStatusColor(member.status)} font-medium`}>
+                          {member.status}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Contact and Location Info */}
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-muted-foreground">{member.phone}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-muted-foreground">{member.location}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-muted-foreground truncate">{member.email}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Star className="h-3 w-3 text-yellow-500" />
+                        <span className="text-muted-foreground">{member.rating}/5.0</span>
+                      </div>
+                    </div>
+
+                    {/* Professional Info */}
+                    <div className="bg-white rounded-md p-3 space-y-2">
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Experience:</span>
+                        <span className="font-medium">{member.experience}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Specialization:</span>
+                        <span className="font-medium">{member.specialization}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Current Caseload:</span>
+                        <Badge variant="outline">{member.currentCaseload} cases</Badge>
+                      </div>
+                    </div>
+
+                    {/* Performance Metrics */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-blue-50 rounded-md p-2 text-center">
+                        <div className="text-lg font-bold text-blue-600">{member.todaysMeetings}</div>
+                        <div className="text-xs text-blue-600">Today</div>
+                      </div>
+                      <div className="bg-green-50 rounded-md p-2 text-center">
+                        <div className="text-lg font-bold text-green-600">{member.thisWeekCompleted}</div>
+                        <div className="text-xs text-green-600">This Week</div>
+                      </div>
+                      <div className="bg-purple-50 rounded-md p-2 text-center">
+                        <div className="text-sm font-medium text-purple-600">{member.nextAvailable}</div>
+                        <div className="text-xs text-purple-600">Next Available</div>
+                      </div>
+                    </div>
+
+                    {/* Quick Actions */}
+                    <div className="flex gap-2 pt-2">
+                      <Button size="sm" variant="outline" className="flex-1">
+                        <MessageSquare className="h-3 w-3 mr-1" />
+                        Message
+                      </Button>
+                      <Button size="sm" variant="outline" className="flex-1">
+                        <Activity className="h-3 w-3 mr-1" />
+                        Schedule
+                      </Button>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">{member.role}</p>
-                  <Badge className={`text-xs ${getStatusColor(member.status)}`}>
-                    {member.status}
-                  </Badge>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Phone className="h-3 w-3 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">{member.phone}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-3 w-3 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground truncate">{member.email}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Next: {member.nextAvailable}</p>
                 </div>
               </div>
             ))}
