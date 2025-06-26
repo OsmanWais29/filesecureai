@@ -227,49 +227,49 @@ export const SmartSchedulingCalendar = () => {
               )}
             </CardContent>
           </Card>
-
-          {/* Team Status - Horizontal Layout */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Team Status
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {teamMembers.map((member) => (
-                  <div key={member.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={member.avatar} alt={member.name} />
-                      <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-sm truncate">{member.name}</p>
-                        {getStatusIcon(member.status)}
-                      </div>
-                      <p className="text-xs text-muted-foreground">{member.role}</p>
-                      <Badge className={`text-xs ${getStatusColor(member.status)}`}>
-                        {member.status}
-                      </Badge>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Phone className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">{member.phone}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Mail className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground truncate">{member.email}</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">Next: {member.nextAvailable}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
+
+      {/* Team Status - Horizontal Layout */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Team Status
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-4">
+            {teamMembers.map((member) => (
+              <div key={member.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg min-w-[280px]">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={member.avatar} alt={member.name} />
+                  <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-sm truncate">{member.name}</p>
+                    {getStatusIcon(member.status)}
+                  </div>
+                  <p className="text-xs text-muted-foreground">{member.role}</p>
+                  <Badge className={`text-xs ${getStatusColor(member.status)}`}>
+                    {member.status}
+                  </Badge>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Phone className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">{member.phone}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground truncate">{member.email}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Next: {member.nextAvailable}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
