@@ -2,11 +2,17 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { IntelligentScheduling } from "../IntelligentScheduling";
 import { ClientProfileView } from "../components/profile/ClientProfileView";
-import { DocumentManagement } from "@/components/DocumentList/DocumentManagement";
+import { ClientDocumentsManager } from "../components/documents/ClientDocumentsManager";
 import { AnalyticsDashboard } from "@/components/analytics/AnalyticsDashboard";
 import { ClientActivityTimeline } from "../components/activity/ClientActivityTimeline";
 
 export const CRMTabs = () => {
+  // Mock client data - in real implementation, this would come from props or context
+  const mockClient = {
+    id: "client-001",
+    name: "John Smith"
+  };
+
   return (
     <Tabs defaultValue="activity-timeline" className="space-y-4">
       <TabsList>
@@ -30,7 +36,10 @@ export const CRMTabs = () => {
       </TabsContent>
       
       <TabsContent value="documents">
-        <DocumentManagement />
+        <ClientDocumentsManager 
+          clientId={mockClient.id}
+          clientName={mockClient.name}
+        />
       </TabsContent>
       
       <TabsContent value="analytics">
