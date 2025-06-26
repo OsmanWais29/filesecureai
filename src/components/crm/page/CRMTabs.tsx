@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { IntelligentScheduling } from "../IntelligentScheduling";
 import { ClientProfileView } from "../components/profile/ClientProfileView";
 import { DocumentManagement } from "@/components/DocumentList/DocumentManagement";
-import { AnalyticsDashboard } from "../analytics/AnalyticsDashboard";
+import { AnalyticsDashboard } from "@/components/analytics/AnalyticsDashboard";
 
 export const CRMTabs = () => {
   return (
