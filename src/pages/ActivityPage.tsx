@@ -26,32 +26,39 @@ const ActivityPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-blue-900 mb-2">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 mb-1">
           Smart Income & Expense Management
         </h1>
+        <p className="text-gray-600 text-sm">
+          Manage and track client financial data with AI-powered insights
+        </p>
       </div>
 
       {/* Client Information Card */}
-      <Card className="mb-6 max-w-6xl mx-auto">
-        <CardHeader className="text-center pb-4">
-          <CardTitle className="text-xl font-semibold text-gray-800">
+      <Card className="mb-6 shadow-sm border-gray-200">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg font-semibold text-gray-800">
             Client Information
           </CardTitle>
-          <p className="text-gray-600 text-sm">
+          <p className="text-gray-500 text-sm mt-1">
             Select a client or create a new form
           </p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           <div className="flex items-center gap-4">
             <div className="flex-1">
               <Select value={selectedClient} onValueChange={setSelectedClient}>
-                <SelectTrigger className="h-12">
+                <SelectTrigger className="h-11 bg-white border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
                   <SelectValue placeholder="Select a client" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white border-gray-200 shadow-lg">
                   {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
+                    <SelectItem 
+                      key={client.id} 
+                      value={client.id}
+                      className="hover:bg-gray-50 cursor-pointer"
+                    >
                       {client.name}
                     </SelectItem>
                   ))}
@@ -60,7 +67,7 @@ const ActivityPage = () => {
             </div>
             <Button
               onClick={() => setIsModalOpen(true)}
-              className="h-12 px-6 bg-teal-700 hover:bg-teal-800 text-white flex items-center gap-2"
+              className="h-11 px-6 bg-teal-600 hover:bg-teal-700 text-white flex items-center gap-2 font-medium shadow-sm"
             >
               <Plus className="h-4 w-4" />
               <FileText className="h-4 w-4" />
@@ -71,16 +78,16 @@ const ActivityPage = () => {
       </Card>
 
       {/* Navigation Tabs */}
-      <div className="max-w-6xl mx-auto mb-6">
-        <div className="flex gap-4">
+      <div className="mb-6">
+        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-6 py-3 rounded-lg border transition-colors ${
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
                 activeTab === tab.id
-                  ? "bg-white border-gray-300 shadow-sm font-medium"
-                  : "bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-50"
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               }`}
             >
               {tab.label}
@@ -90,17 +97,17 @@ const ActivityPage = () => {
       </div>
 
       {/* Main Content Area */}
-      <Card className="max-w-6xl mx-auto min-h-[500px]">
-        <CardContent className="flex flex-col items-center justify-center py-20">
+      <Card className="shadow-sm border-gray-200 min-h-[400px]">
+        <CardContent className="flex flex-col items-center justify-center py-16">
           <div className="text-center space-y-4">
-            <div className="w-16 h-16 mx-auto text-gray-400">
+            <div className="w-16 h-16 mx-auto text-gray-300 mb-2">
               <User className="w-full h-full" />
             </div>
             <h3 className="text-xl font-semibold text-gray-800">
               No Client Selected
             </h3>
-            <p className="text-gray-600 max-w-md">
-              Please select a client above to begin entering financial data.
+            <p className="text-gray-500 max-w-md leading-relaxed">
+              Please select a client above to begin entering financial data and accessing their dashboard.
             </p>
           </div>
         </CardContent>
