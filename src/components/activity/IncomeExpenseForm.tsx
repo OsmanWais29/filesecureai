@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { ClientProfileSection } from "./form/ClientProfileSection";
 import { IncomeTable } from "./form/IncomeTable";

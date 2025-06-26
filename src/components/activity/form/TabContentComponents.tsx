@@ -2,12 +2,12 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Save } from "lucide-react";
-import { ClientProfileSection } from "../ClientProfileSection";
+import { ClientProfileSection } from "./ClientProfileSection";
 import { IncomeTable } from "./IncomeTable";
 import { ExpenseTable } from "./ExpenseTable";
 import { SavingsInsuranceTable } from "./SavingsInsuranceTable";
-import { SurplusIncomeSection } from "../SurplusIncomeSection";
-import { SignatureConsentSection } from "../SignatureConsentSection";
+import { SurplusIncomeSection } from "./SurplusIncomeSection";
+import { SignatureConsentSection } from "./SignatureConsentSection";
 
 // Create the TabContentComponents object with all components
 export const TabContentComponents = {
