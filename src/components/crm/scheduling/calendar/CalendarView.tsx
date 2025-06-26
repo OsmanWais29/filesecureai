@@ -11,7 +11,7 @@ import { DayView } from './DayView';
 import { CalendarHeader } from './CalendarHeader';
 import { useCalendarNavigation } from './useCalendarNavigation';
 import { useAppointmentUtils } from './useAppointmentUtils';
-import { Clock, Calendar as CalendarIcon, Users, Plus, FileText, Bell } from 'lucide-react';
+import { Clock, Calendar as CalendarIcon, Users, Plus, FileText, Bell, Sparkles } from 'lucide-react';
 import { format, isToday, isTomorrow, addDays } from 'date-fns';
 
 interface CalendarViewProps {
@@ -64,82 +64,88 @@ export const CalendarView = ({
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
       {/* Main Calendar Section */}
       <div className="lg:col-span-2 space-y-4">
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-lg p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <CalendarIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border-0 overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-6 text-white">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/20 backdrop-blur-sm rounded-lg">
+                  <CalendarIcon className="h-6 w-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">Calendar View</h2>
+                  <p className="text-blue-100 text-sm">Manage your schedule and appointments</p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Calendar View</h2>
-                <p className="text-gray-600 dark:text-gray-300">Manage your schedule and appointments</p>
-              </div>
+              <Button className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border-white/30 text-white">
+                <Plus className="h-4 w-4 mr-2" />
+                New Appointment
+              </Button>
             </div>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-              <Plus className="h-4 w-4 mr-2" />
-              New Appointment
-            </Button>
+
+            <CalendarHeader
+              selectedDate={selectedDate}
+              calendarView={calendarView}
+              onPrevious={handlePrevious}
+              onNext={handleNext}
+            />
           </div>
-
-          <CalendarHeader
-            selectedDate={selectedDate}
-            calendarView={calendarView}
-            onPrevious={handlePrevious}
-            onNext={handleNext}
-          />
           
-          <Tabs value={calendarView} onValueChange={(value) => setCalendarView(value as 'month' | 'week' | 'day')}>
-            <TabsList className="grid w-full grid-cols-3 mb-4">
-              <TabsTrigger value="month">Month</TabsTrigger>
-              <TabsTrigger value="week">Week</TabsTrigger>
-              <TabsTrigger value="day">Day</TabsTrigger>
-            </TabsList>
+          <div className="p-6">
+            <Tabs value={calendarView} onValueChange={(value) => setCalendarView(value as 'month' | 'week' | 'day')}>
+              <TabsList className="grid w-full grid-cols-3 mb-6 bg-gray-100 dark:bg-gray-800">
+                <TabsTrigger value="month" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">Month</TabsTrigger>
+                <TabsTrigger value="week" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">Week</TabsTrigger>
+                <TabsTrigger value="day" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">Day</TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="month" className="mt-0">
-              <MonthView
-                selectedDate={selectedDate}
-                setSelectedDate={setSelectedDate}
-                appointments={appointments}
-                calendarView={calendarView}
-              />
-            </TabsContent>
+              <TabsContent value="month" className="mt-0">
+                <MonthView
+                  selectedDate={selectedDate}
+                  setSelectedDate={setSelectedDate}
+                  appointments={appointments}
+                  calendarView={calendarView}
+                />
+              </TabsContent>
 
-            <TabsContent value="week" className="mt-0">
-              <WeekView
-                selectedDate={selectedDate}
-                setSelectedDate={setSelectedDate}
-                appointments={appointments}
-                getAppointmentColorClass={getAppointmentColorClass}
-              />
-            </TabsContent>
+              <TabsContent value="week" className="mt-0">
+                <WeekView
+                  selectedDate={selectedDate}
+                  setSelectedDate={setSelectedDate}
+                  appointments={appointments}
+                  getAppointmentColorClass={getAppointmentColorClass}
+                />
+              </TabsContent>
 
-            <TabsContent value="day" className="mt-0">
-              <DayView
-                selectedDate={selectedDate}
-                appointments={appointments}
-                getAppointmentColorClass={getAppointmentColorClass}
-              />
-            </TabsContent>
-          </Tabs>
+              <TabsContent value="day" className="mt-0">
+                <DayView
+                  selectedDate={selectedDate}
+                  appointments={appointments}
+                  getAppointmentColorClass={getAppointmentColorClass}
+                />
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
       </div>
 
       {/* Right Sidebar - Schedule & Notes */}
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Today's Schedule */}
-        <Card className="border-0 shadow-md">
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
-              <Clock className="h-5 w-5 text-blue-600" />
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
               Today's Schedule
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {todaysAppointments.map((appointment) => (
-              <div key={appointment.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+              <div key={appointment.id} className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg hover:shadow-md transition-all duration-200 border border-gray-100 dark:border-gray-700">
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-semibold text-sm">{appointment.time}</span>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="font-semibold text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">{appointment.time}</span>
                     <Badge className={`text-xs ${getPriorityColor(appointment.priority)}`}>
                       {appointment.priority}
                     </Badge>
@@ -147,7 +153,7 @@ export const CalendarView = ({
                   <p className="font-medium text-gray-900 dark:text-white">{appointment.client}</p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">{appointment.type}</p>
                 </div>
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" className="hover:bg-blue-100 dark:hover:bg-blue-900/30">
                   <Users className="h-4 w-4" />
                 </Button>
               </div>
@@ -156,19 +162,21 @@ export const CalendarView = ({
         </Card>
 
         {/* Coming Up */}
-        <Card className="border-0 shadow-md">
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
-              <Bell className="h-5 w-5 text-orange-600" />
+              <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                <Bell className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+              </div>
               Coming Up
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {upcomingAppointments.map((appointment) => (
-              <div key={appointment.id} className="flex items-center justify-between p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-950/30 transition-colors">
+              <div key={appointment.id} className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg hover:shadow-md transition-all duration-200 border border-gray-100 dark:border-gray-700">
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-medium text-orange-600 dark:text-orange-400">{appointment.date}</span>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-medium text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 px-2 py-1 rounded">{appointment.date}</span>
                     <span className="text-sm font-semibold">{appointment.time}</span>
                   </div>
                   <p className="font-medium text-gray-900 dark:text-white">{appointment.client}</p>
@@ -180,10 +188,12 @@ export const CalendarView = ({
         </Card>
 
         {/* Quick Notes */}
-        <Card className="border-0 shadow-md">
+        <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
-              <FileText className="h-5 w-5 text-green-600" />
+              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                <FileText className="h-5 w-5 text-green-600 dark:text-green-400" />
+              </div>
               Quick Notes
             </CardTitle>
           </CardHeader>
@@ -192,9 +202,10 @@ export const CalendarView = ({
               placeholder="Add your notes here..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="min-h-[120px] resize-none border-gray-200 dark:border-gray-700"
+              className="min-h-[120px] resize-none border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
             />
-            <Button className="w-full mt-3 bg-green-600 hover:bg-green-700 text-white">
+            <Button className="w-full mt-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg">
+              <Sparkles className="h-4 w-4 mr-2" />
               Save Notes
             </Button>
           </CardContent>
