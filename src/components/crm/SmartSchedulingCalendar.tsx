@@ -1,337 +1,350 @@
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
+import { CalendarView } from "./scheduling/CalendarView";
+import { FilterDialog } from "./scheduling/FilterDialog";
+import { QuickBookDialog } from "./scheduling/QuickBookDialog";
+import { appointments, aiSuggestions, staffAvailability } from "./scheduling/mockData";
 import { 
-  Calendar, 
-  Clock, 
-  Users, 
-  Plus, 
-  ChevronLeft, 
-  ChevronRight,
+  Calendar,
+  Filter,
+  Plus,
+  Clock,
+  Users,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  User,
   Phone,
-  Mail
-} from 'lucide-react';
-import { CalendarView } from './scheduling/CalendarView';
-
-// Mock data for demonstration
-const mockUpcomingAppointments = [
-  { 
-    id: 1, 
-    title: 'Client Consultation - Sarah Johnson', 
-    time: '10:00 AM', 
-    duration: '1 hour',
-    type: 'consultation',
-    priority: 'high' 
-  },
-  { 
-    id: 2, 
-    title: 'Document Review - Mike Chen', 
-    time: '2:00 PM', 
-    duration: '30 mins',
-    type: 'review',
-    priority: 'medium' 
-  },
-  { 
-    id: 3, 
-    title: 'Court Filing - Estate #12345', 
-    time: '4:30 PM', 
-    duration: '45 mins',
-    type: 'filing',
-    priority: 'high' 
-  }
-];
-
-const mockTodaysSchedule = [
-  { 
-    id: 1, 
-    title: 'Morning Briefing', 
-    time: '9:00 AM', 
-    attendees: 4,
-    status: 'confirmed' 
-  },
-  { 
-    id: 2, 
-    title: 'Client Meeting - ABC Corp', 
-    time: '11:30 AM', 
-    attendees: 2,
-    status: 'pending' 
-  },
-  { 
-    id: 3, 
-    title: 'Legal Review Session', 
-    time: '3:00 PM', 
-    attendees: 3,
-    status: 'confirmed' 
-  }
-];
-
-const mockTeamMembers = [
-  { 
-    id: 1, 
-    name: 'Sarah Wilson', 
-    role: 'Senior Trustee', 
-    status: 'available', 
-    avatar: '/placeholder.svg',
-    phone: '(555) 123-4567',
-    email: 'sarah.wilson@firm.com',
-    currentTask: 'Client consultation',
-    nextAvailable: 'Now'
-  },
-  { 
-    id: 2, 
-    name: 'Michael Chen', 
-    role: 'Associate Trustee', 
-    status: 'busy', 
-    avatar: '/placeholder.svg',
-    phone: '(555) 234-5678',
-    email: 'michael.chen@firm.com',
-    currentTask: 'Document preparation',
-    nextAvailable: '2:00 PM'
-  },
-  { 
-    id: 3, 
-    name: 'Emily Rodriguez', 
-    role: 'Legal Assistant', 
-    status: 'available', 
-    avatar: '/placeholder.svg',
-    phone: '(555) 345-6789',
-    email: 'emily.rodriguez@firm.com',
-    currentTask: 'Available for tasks',
-    nextAvailable: 'Now'
-  },
-  { 
-    id: 4, 
-    name: 'David Park', 
-    role: 'Administrator', 
-    status: 'meeting', 
-    avatar: '/placeholder.svg',
-    phone: '(555) 456-7890',
-    email: 'david.park@firm.com',
-    currentTask: 'Team meeting',
-    nextAvailable: '1:30 PM'
-  }
-];
+  Mail,
+  MapPin,
+  Activity
+} from "lucide-react";
+import { format, isToday, isTomorrow, addDays, isSameDay } from "date-fns";
 
 export const SmartSchedulingCalendar = () => {
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [calendarView, setCalendarView] = useState<'day' | 'week' | 'month'>('week');
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [calendarView, setCalendarView] = useState<"day" | "week" | "month">("month");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isQuickBookOpen, setIsQuickBookOpen] = useState(false);
+  const [filters, setFilters] = useState({
+    showHighPriority: true,
+    showMediumPriority: true,
+    showRegularMeetings: true,
+    showSelfBooked: true
+  });
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'available': return 'bg-green-500';
-      case 'busy': return 'bg-red-500';
-      case 'meeting': return 'bg-yellow-500';
-      default: return 'bg-gray-500';
+  // Get today's appointments
+  const todaysAppointments = appointments.filter(apt => 
+    isSameDay(apt.date, new Date())
+  ).sort((a, b) => a.time.localeCompare(b.time));
+
+  // Get upcoming appointments (next 7 days, excluding today)
+  const upcomingAppointments = appointments.filter(apt => {
+    const today = new Date();
+    const nextWeek = addDays(today, 7);
+    return apt.date > today && apt.date <= nextWeek;
+  }).sort((a, b) => {
+    if (a.date.getTime() !== b.date.getTime()) {
+      return a.date.getTime() - b.date.getTime();
     }
+    return a.time.localeCompare(b.time);
+  }).slice(0, 5);
+
+  const getDateDisplay = (date: Date) => {
+    if (isToday(date)) return "Today";
+    if (isTomorrow(date)) return "Tomorrow";
+    return format(date, 'EEE, MMM d');
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'high': return 'border-red-500 bg-red-50';
-      case 'medium': return 'border-yellow-500 bg-yellow-50';
-      case 'low': return 'border-green-500 bg-green-50';
-      default: return 'border-gray-300 bg-gray-50';
+      case 'high': return 'bg-red-100 text-red-800 border-red-200';
+      case 'medium': return 'bg-amber-100 text-amber-800 border-amber-200';
+      default: return 'bg-green-100 text-green-800 border-green-200';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'confirmed': return 'text-green-600';
+      case 'pending': return 'text-amber-600';
+      case 'cancelled': return 'text-red-600';
+      case 'self-booked': return 'text-blue-600';
+      default: return 'text-gray-600';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'confirmed': return <CheckCircle className="h-3 w-3" />;
+      case 'pending': return <Clock className="h-3 w-3" />;
+      case 'cancelled': return <XCircle className="h-3 w-3" />;
+      case 'self-booked': return <User className="h-3 w-3" />;
+      default: return <Clock className="h-3 w-3" />;
     }
   };
 
   return (
-    <div className="space-y-6">
-      {/* AI-Powered Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold mb-2">AI-Powered Calendar</h1>
-            <p className="text-blue-100">Intelligent scheduling with predictive insights</p>
-          </div>
-          <div className="text-right">
-            <div className="text-3xl font-bold">{currentDate.getDate()}</div>
-            <div className="text-sm text-blue-200">
-              {currentDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-            </div>
-          </div>
+    <div className="space-y-6 p-6 bg-gradient-to-br from-blue-50 via-white to-purple-50 min-h-screen">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            AI-Powered Calendar
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Intelligent scheduling with predictive insights
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsFilterOpen(true)}
+            className="hover:bg-blue-50 transition-colors"
+          >
+            <Filter className="h-4 w-4 mr-2" />
+            Filter
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => setIsQuickBookOpen(true)}
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Quick Book
+          </Button>
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-blue-600">Today's Meetings</p>
-                <p className="text-2xl font-bold text-blue-900">8</p>
-              </div>
-              <Calendar className="h-8 w-8 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-green-600">Completed</p>
-                <p className="text-2xl font-bold text-green-900">5</p>
-              </div>
-              <Clock className="h-8 w-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-purple-600">Team Available</p>
-                <p className="text-2xl font-bold text-purple-900">3/5</p>
-              </div>
-              <Users className="h-8 w-8 text-purple-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-orange-600">Efficiency</p>
-                <p className="text-2xl font-bold text-orange-900">94%</p>
-              </div>
-              <div className="h-8 w-8 bg-orange-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-xs font-bold">AI</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Calendar Layout */}
+      {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Calendar View - Takes up 3 columns */}
+        {/* Calendar View - Left Side */}
         <div className="lg:col-span-3">
-          <CalendarView />
+          <CalendarView
+            selectedDate={selectedDate}
+            setSelectedDate={setSelectedDate}
+            calendarView={calendarView}
+            setCalendarView={setCalendarView}
+            appointments={appointments}
+          />
         </div>
 
-        {/* Right Sidebar - Takes up 1 column */}
-        <div className="space-y-6">
+        {/* Right Sidebar */}
+        <div className="space-y-4">
           {/* Today's Schedule */}
-          <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-gray-50">
+          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-semibold text-gray-800 flex items-center">
-                <Clock className="h-5 w-5 mr-2 text-blue-500" />
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-blue-600" />
                 Today's Schedule
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {mockTodaysSchedule.map((appointment) => (
-                <div key={appointment.id} className="flex items-center justify-between p-3 bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex-1">
-                    <h4 className="font-medium text-gray-900">{appointment.title}</h4>
-                    <p className="text-sm text-gray-600">{appointment.time}</p>
-                    <div className="flex items-center mt-1">
-                      <Users className="h-3 w-3 text-gray-400 mr-1" />
-                      <span className="text-xs text-gray-500">{appointment.attendees} attendees</span>
-                    </div>
-                  </div>
-                  <Badge variant={appointment.status === 'confirmed' ? 'default' : 'secondary'}>
-                    {appointment.status}
-                  </Badge>
+              {todaysAppointments.length === 0 ? (
+                <div className="text-center py-4 text-muted-foreground text-sm">
+                  <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  No appointments today
                 </div>
-              ))}
+              ) : (
+                todaysAppointments.map((appointment) => (
+                  <div key={appointment.id} className="p-3 rounded-lg border bg-card/50 hover:bg-card/80 transition-colors">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm">{appointment.time}</span>
+                        <Badge className={`text-xs ${getPriorityColor(appointment.priority)}`}>
+                          {appointment.priority}
+                        </Badge>
+                      </div>
+                      <div className={`flex items-center gap-1 text-xs ${getStatusColor(appointment.status)}`}>
+                        {getStatusIcon(appointment.status)}
+                        {appointment.status}
+                      </div>
+                    </div>
+                    <div className="text-sm font-medium">{appointment.title}</div>
+                    <div className="text-xs text-muted-foreground">{appointment.clientName}</div>
+                    {appointment.alert && (
+                      <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-800">
+                        <AlertTriangle className="h-3 w-3 inline mr-1" />
+                        {appointment.alert}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
 
           {/* Coming Up */}
-          <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-gray-50">
+          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-semibold text-gray-800 flex items-center">
-                <Calendar className="h-5 w-5 mr-2 text-green-500" />
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Clock className="h-5 w-5 text-purple-600" />
                 Coming Up
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {mockUpcomingAppointments.map((appointment) => (
-                <div key={appointment.id} className={`p-3 rounded-lg border-l-4 ${getPriorityColor(appointment.priority)} hover:shadow-md transition-shadow`}>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">{appointment.title}</h4>
-                      <p className="text-sm text-gray-600">{appointment.time} • {appointment.duration}</p>
-                      <Badge variant="outline" className="mt-1 text-xs">
-                        {appointment.type}
+              {upcomingAppointments.length === 0 ? (
+                <div className="text-center py-4 text-muted-foreground text-sm">
+                  <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  No upcoming appointments
+                </div>
+              ) : (
+                upcomingAppointments.map((appointment) => (
+                  <div key={appointment.id} className="p-3 rounded-lg border bg-card/50 hover:bg-card/80 transition-colors">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="text-xs text-muted-foreground font-medium">
+                        {getDateDisplay(appointment.date)}
+                      </div>
+                      <Badge className={`text-xs ${getPriorityColor(appointment.priority)}`}>
+                        {appointment.priority}
                       </Badge>
                     </div>
-                    <Badge variant={appointment.priority === 'high' ? 'destructive' : 'secondary'}>
-                      {appointment.priority}
-                    </Badge>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium text-sm">{appointment.time}</span>
+                      <div className={`flex items-center gap-1 text-xs ${getStatusColor(appointment.status)}`}>
+                        {getStatusIcon(appointment.status)}
+                      </div>
+                    </div>
+                    <div className="text-sm font-medium">{appointment.title}</div>
+                    <div className="text-xs text-muted-foreground">{appointment.clientName}</div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </CardContent>
           </Card>
 
-          {/* Team Status - Horizontal Layout */}
-          <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-gray-50">
+          {/* Detailed Team Status */}
+          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-semibold text-gray-800 flex items-center">
-                <Users className="h-5 w-5 mr-2 text-purple-500" />
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Users className="h-5 w-5 text-green-600" />
                 Team Status
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {mockTeamMembers.map((member) => (
-                <div key={member.id} className="bg-white rounded-lg border p-4 hover:shadow-md transition-shadow">
-                  {/* Top Row: Avatar, Name, Role, Status */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-3">
-                      <div className="relative">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={member.avatar} alt={member.name} />
-                          <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${getStatusColor(member.status)}`}></div>
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-gray-900">{member.name}</h4>
-                        <p className="text-sm text-gray-600">{member.role}</p>
+              {staffAvailability.map((staff) => {
+                const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+                const todaySchedule = staff.schedule.find((s) => s.day === today) || {
+                  day: today,
+                  busy: [],
+                };
+
+                return (
+                  <div key={staff.id} className="p-3 rounded-lg border bg-card/50">
+                    <div className="flex items-start gap-3 mb-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={staff.avatar} alt={staff.name} />
+                        <AvatarFallback className={staff.color}>
+                          {staff.name.split(' ').map(n => n[0]).join('')}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-medium text-sm truncate">{staff.name}</h4>
+                          <div className="flex items-center gap-1">
+                            <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                            <span className="text-xs text-green-600 font-medium">Online</span>
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-2">{staff.role}</p>
+                        
+                        {/* Contact Info */}
+                        <div className="flex flex-col gap-1 mb-3">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Mail className="h-3 w-3" />
+                            <span>{staff.name.toLowerCase().replace(' ', '.')}@company.com</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Phone className="h-3 w-3" />
+                            <span>+1 (555) 123-4567</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <MapPin className="h-3 w-3" />
+                            <span>Office 2A</span>
+                          </div>
+                        </div>
+
+                        {/* Today's Schedule */}
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Activity className="h-3 w-3 text-blue-600" />
+                            <span className="text-xs font-medium">Today's Schedule</span>
+                          </div>
+                          {todaySchedule.busy.length > 0 ? (
+                            <div className="space-y-1">
+                              {todaySchedule.busy.map((time, i) => (
+                                <div key={i} className="flex items-center justify-between p-2 bg-red-50 border border-red-200 rounded text-xs">
+                                  <span className="font-medium">Busy: {time}</span>
+                                  <Badge variant="secondary" className="text-xs bg-red-100 text-red-700">
+                                    Occupied
+                                  </Badge>
+                                </div>
+                              ))}
+                              <div className="text-xs text-muted-foreground mt-2">
+                                Available for meetings outside busy hours
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="p-2 bg-green-50 border border-green-200 rounded text-xs">
+                              <div className="flex items-center justify-between">
+                                <span className="text-green-700 font-medium">Available all day</span>
+                                <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
+                                  Free
+                                </Badge>
+                              </div>
+                              <div className="text-green-600 text-xs mt-1">
+                                Ready for new appointments
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Weekly Capacity */}
+                        <Separator className="my-3" />
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-muted-foreground">Weekly Capacity</span>
+                            <span className="font-medium">
+                              {staff.schedule.reduce((acc, day) => acc + day.busy.length, 0)}/40 hours
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-1.5">
+                            <div 
+                              className="bg-gradient-to-r from-blue-500 to-purple-500 h-1.5 rounded-full transition-all duration-300" 
+                              style={{ 
+                                width: `${(staff.schedule.reduce((acc, day) => acc + day.busy.length, 0) / 40) * 100}%` 
+                              }}
+                            ></div>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <Badge variant={member.status === 'available' ? 'default' : 'secondary'}>
-                      {member.status}
-                    </Badge>
                   </div>
-                  
-                  {/* Bottom Row: Contact Info and Availability */}
-                  <div className="grid grid-cols-2 gap-4 text-xs text-gray-600">
-                    <div className="space-y-1">
-                      <div className="flex items-center">
-                        <Phone className="h-3 w-3 mr-1" />
-                        <span>{member.phone}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Mail className="h-3 w-3 mr-1" />
-                        <span className="truncate">{member.email}</span>
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <div>
-                        <span className="font-medium">Current:</span>
-                        <div className="text-gray-700">{member.currentTask}</div>
-                      </div>
-                      <div>
-                        <span className="font-medium">Next available:</span>
-                        <div className="text-gray-700">{member.nextAvailable}</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </CardContent>
           </Card>
         </div>
       </div>
+
+      {/* Dialogs */}
+      <FilterDialog
+        open={isFilterOpen}
+        onOpenChange={setIsFilterOpen}
+        filters={filters}
+        setFilters={setFilters}
+      />
+
+      <QuickBookDialog
+        open={isQuickBookOpen}
+        onOpenChange={setIsQuickBookOpen}
+      />
     </div>
   );
 };
