@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -84,31 +85,29 @@ export const ActivityPage = () => {
 
   return (
     <MainLayout>
-      <div className="max-w-7xl mx-auto space-y-6 p-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Smart Income & Expense Management</h1>
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <div className="bg-white border-b px-6 py-8">
+          <div className="max-w-7xl mx-auto">
+            <h1 className="text-3xl font-bold text-gray-900">Smart Income & Expense Management</h1>
+          </div>
         </div>
         
-        {/* Centered Client Information Card */}
-        <div className="flex justify-center">
-          <Card className="border-none shadow-lg overflow-hidden max-w-3xl w-full">
-            <div className="bg-gradient-to-r from-primary/20 to-primary/5 border-b">
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <UserRound className="h-5 w-5 text-primary" />
-                  <CardTitle>Client Information</CardTitle>
-                </div>
-                <CardDescription>Select a client to manage their financial data</CardDescription>
-              </CardHeader>
-            </div>
-
-            <CardContent className="p-6 pt-6">
-              <div className="space-y-6">
-                {/* Large Client Selector */}
-                <div className="bg-card border rounded-lg p-4 shadow-sm">
-                  <label className="text-sm font-medium mb-2 block text-muted-foreground">
-                    Select Client
-                  </label>
+        {/* Main Content */}
+        <div className="max-w-4xl mx-auto px-6 py-8">
+          {/* Client Information Card */}
+          <Card className="shadow-sm border-0 bg-white mb-8">
+            <CardHeader className="text-center pb-4">
+              <CardTitle className="text-2xl text-gray-800">Client Information</CardTitle>
+              <CardDescription className="text-gray-600">
+                Select a client or create a new form
+              </CardDescription>
+            </CardHeader>
+            
+            <CardContent className="px-8 pb-8">
+              <div className="flex items-center gap-4">
+                {/* Client Selector - Takes up most of the space */}
+                <div className="flex-1">
                   <ClientSelector 
                     selectedClient={selectedClient}
                     onClientSelect={handleClientSelect}
@@ -116,59 +115,63 @@ export const ActivityPage = () => {
                   />
                 </div>
                 
-                {/* Actions Buttons in Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium mb-2 text-muted-foreground">
-                      Create Financial Form
-                    </span>
-                    <IncomeExpenseButton 
-                      onClientCreated={handleClientCreated}
-                      size="default"
-                      className="w-full"
-                    />
-                  </div>
-                  
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium mb-2 text-muted-foreground">
-                      AI Assistance
-                    </span>
-                    <TrusteeCoPliotButton 
-                      clientId={selectedClient?.id}
-                      size="default"
-                      className="w-full"
-                    />
-                  </div>
+                {/* Create Button */}
+                <div className="flex-shrink-0">
+                  <IncomeExpenseButton 
+                    onClientCreated={handleClientCreated}
+                    size="default"
+                    className="bg-teal-600 hover:bg-teal-700"
+                  />
                 </div>
               </div>
             </CardContent>
           </Card>
+          
+          {/* Tabs */}
+          <div className="bg-white rounded-lg shadow-sm border-0">
+            <Tabs 
+              defaultValue="form" 
+              className="w-full"
+              value={activeTab}
+              onValueChange={setActiveTab}
+            >
+              <TabsList className="grid grid-cols-3 w-full rounded-none bg-gray-100 p-1">
+                <TabsTrigger 
+                  value="form" 
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                >
+                  Income & Expense Form
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="dashboard"
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                >
+                  Dashboard
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="predictive"
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                >
+                  Predictive Analysis
+                </TabsTrigger>
+              </TabsList>
+
+              <div className="p-6">
+                <TabsContent value="form" className="mt-0">
+                  <IncomeExpenseForm selectedClient={selectedClient} />
+                </TabsContent>
+
+                <TabsContent value="dashboard" className="mt-0">
+                  <ActivityDashboard selectedClient={selectedClient} />
+                </TabsContent>
+
+                <TabsContent value="predictive" className="mt-0">
+                  <PredictiveAnalysis selectedClient={selectedClient} />
+                </TabsContent>
+              </div>
+            </Tabs>
+          </div>
         </div>
-        
-        <Tabs 
-          defaultValue="form" 
-          className="space-y-4"
-          value={activeTab}
-          onValueChange={setActiveTab}
-        >
-          <TabsList className="grid grid-cols-3">
-            <TabsTrigger value="form">Income & Expense Form</TabsTrigger>
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="predictive">Predictive Analysis</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="form" className="space-y-4">
-            <IncomeExpenseForm selectedClient={selectedClient} />
-          </TabsContent>
-
-          <TabsContent value="dashboard">
-            <ActivityDashboard selectedClient={selectedClient} />
-          </TabsContent>
-
-          <TabsContent value="predictive">
-            <PredictiveAnalysis selectedClient={selectedClient} />
-          </TabsContent>
-        </Tabs>
       </div>
     </MainLayout>
   );
