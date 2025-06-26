@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { FormData } from "../types";
 import { toast } from "sonner";
@@ -28,7 +27,15 @@ export const useClientIntake = () => {
     leadDescription: "",
     accountStatus: "lead",
     preferredContactMethod: "email",
-    preferredLanguage: "english"
+    preferredLanguage: "english",
+    employmentType: "",
+    employer: "",
+    occupation: "",
+    employerAddress: "",
+    employerCity: "",
+    employerProvince: "",
+    employerPostalCode: "",
+    monthlyIncome: ""
   });
 
   const openClientDialog = () => {
@@ -54,7 +61,15 @@ export const useClientIntake = () => {
       leadDescription: "",
       accountStatus: "lead",
       preferredContactMethod: "email",
-      preferredLanguage: "english"
+      preferredLanguage: "english",
+      employmentType: "",
+      employer: "",
+      occupation: "",
+      employerAddress: "",
+      employerCity: "",
+      employerProvince: "",
+      employerPostalCode: "",
+      monthlyIncome: ""
     });
     setIsClientDialogOpen(true);
   };
@@ -206,6 +221,9 @@ export const useClientIntake = () => {
           - Email: ${formData.email}
           - Phone: ${formData.phone}
           - Marital Status: ${formData.maritalStatus}
+          - Employment Type: ${formData.employmentType}
+          - Employer: ${formData.employer}
+          - Monthly Income: ${formData.monthlyIncome}
           - Lead Source: ${formData.leadSource}
           - Preferred Contact: ${formData.preferredContactMethod}
           - Account Status: ${formData.accountStatus}
@@ -266,7 +284,15 @@ export const useClientIntake = () => {
         leadDescription: "",
         accountStatus: "lead",
         preferredContactMethod: "email",
-        preferredLanguage: "english"
+        preferredLanguage: "english",
+        employmentType: "",
+        employer: "",
+        occupation: "",
+        employerAddress: "",
+        employerCity: "",
+        employerProvince: "",
+        employerPostalCode: "",
+        monthlyIncome: ""
       });
       setCurrentStep(1);
       setFormProgress(0);

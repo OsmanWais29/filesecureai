@@ -1,4 +1,3 @@
-
 export interface ClientInsightData {
   id?: string;
   clientProfile?: {
@@ -109,6 +108,10 @@ export interface FormData {
   employmentType?: string;
   employer?: string;
   occupation?: string;
+  employerAddress?: string;
+  employerCity?: string;
+  employerProvince?: string;
+  employerPostalCode?: string;
   monthlyIncome?: string;
   incomeFrequency?: string;
   businessName?: string;
