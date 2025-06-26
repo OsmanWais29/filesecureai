@@ -4,14 +4,15 @@ import { IntelligentScheduling } from "../IntelligentScheduling";
 import { ClientProfileView } from "../components/profile/ClientProfileView";
 import { DocumentManagement } from "@/components/DocumentList/DocumentManagement";
 import { AnalyticsDashboard } from "@/components/analytics/AnalyticsDashboard";
+import { ClientActivityTimeline } from "../components/activity/ClientActivityTimeline";
 
 export const CRMTabs = () => {
   return (
-    <Tabs defaultValue="scheduling" className="space-y-4">
+    <Tabs defaultValue="activity-timeline" className="space-y-4">
       <TabsList>
         <TabsTrigger value="client-profile">Client Profile</TabsTrigger>
         <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-        <TabsTrigger value="scheduling">Scheduling</TabsTrigger>
+        <TabsTrigger value="activity-timeline">Activity Timeline</TabsTrigger>
         <TabsTrigger value="documents">Documents</TabsTrigger>
         <TabsTrigger value="analytics">Analytics</TabsTrigger>
       </TabsList>
@@ -24,8 +25,8 @@ export const CRMTabs = () => {
         <IntelligentScheduling />
       </TabsContent>
       
-      <TabsContent value="scheduling">
-        <IntelligentScheduling />
+      <TabsContent value="activity-timeline">
+        <ClientActivityTimeline />
       </TabsContent>
       
       <TabsContent value="documents">
