@@ -3,12 +3,11 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, FileText, FolderOpen, Bot, CheckCircle } from "lucide-react";
+import { Upload, Bot, CheckCircle, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { uploadDocumentToStorage } from "@/utils/documentUpload";
 import { Progress } from "@/components/ui/progress";
+import { DeepSeekAnalysisOrchestrator } from "@/services/DeepSeekAnalysisOrchestrator";
 
 interface ClientDocumentUploadProps {
   clientId: string;
@@ -20,24 +19,8 @@ export const ClientDocumentUpload = ({ clientId, clientName, onUploadComplete }:
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [documentType, setDocumentType] = useState<string>("");
   const [aiProcessing, setAiProcessing] = useState(false);
   const { toast } = useToast();
-
-  const documentTypes = [
-    { value: "form-47", label: "Form 47 - Consumer Proposal" },
-    { value: "form-65", label: "Form 65 - Assignment in Bankruptcy" },
-    { value: "form-76", label: "Form 76 - Statement of Affairs" },
-    { value: "financial-statements", label: "Financial Statements" },
-    { value: "bank-statements", label: "Bank Statements" },
-    { value: "tax-returns", label: "Tax Returns" },
-    { value: "employment-records", label: "Employment Records" },
-    { value: "asset-documents", label: "Asset Documents" },
-    { value: "debt-documents", label: "Debt Documents" },
-    { value: "correspondence", label: "Correspondence" },
-    { value: "court-documents", label: "Court Documents" },
-    { value: "other", label: "Other Documents" }
-  ];
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -62,6 +45,7 @@ export const ClientDocumentUpload = ({ clientId, clientName, onUploadComplete }:
       let completedFiles = 0;
 
       for (const file of selectedFiles) {
+        // Upload document to storage
         const result = await uploadDocumentToStorage(file, {
           clientName,
           onProgress: (progress) => {
@@ -71,8 +55,22 @@ export const ClientDocumentUpload = ({ clientId, clientName, onUploadComplete }:
         });
 
         if (result.success && result.documentId) {
-          // Trigger AI organization
-          await organizeDocumentWithAI(result.documentId, file.name, documentType);
+          // Start DeepSeek AI processing for document organization
+          setAiProcessing(true);
+          
+          try {
+            await DeepSeekAnalysisOrchestrator.processDocumentPipeline(
+              file,
+              'current-user-id', // This would come from auth context
+              {
+                clientHint: clientName,
+                forceAnalysis: true
+              }
+            );
+          } catch (aiError) {
+            console.error('AI processing error:', aiError);
+            // Don't fail the upload if AI processing fails
+          }
         }
 
         completedFiles++;
@@ -80,17 +78,14 @@ export const ClientDocumentUpload = ({ clientId, clientName, onUploadComplete }:
 
       setUploadProgress(100);
       
-      // Simulate AI processing
-      setAiProcessing(true);
       setTimeout(() => {
         setAiProcessing(false);
         toast({
           title: "Upload Complete",
-          description: `${selectedFiles.length} documents uploaded and organized successfully.`,
+          description: `${selectedFiles.length} documents uploaded. DeepSeek AI is organizing them in the Documents page.`,
         });
         
         setSelectedFiles([]);
-        setDocumentType("");
         onUploadComplete?.();
       }, 2000);
 
@@ -106,12 +101,6 @@ export const ClientDocumentUpload = ({ clientId, clientName, onUploadComplete }:
     }
   };
 
-  const organizeDocumentWithAI = async (documentId: string, fileName: string, type: string) => {
-    // This would call an AI service to analyze and organize the document
-    // For now, we'll simulate the organization process
-    console.log(`Organizing document ${documentId} (${fileName}) of type ${type} for client ${clientName}`);
-  };
-
   return (
     <div className="space-y-6">
       <Card>
@@ -123,23 +112,6 @@ export const ClientDocumentUpload = ({ clientId, clientName, onUploadComplete }:
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Document Type</Label>
-            <Select value={documentType} onValueChange={setDocumentType}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select document type" />
-              </SelectTrigger>
-              <SelectContent>
-                {documentTypes.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
-                    {type.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Select Files</Label>
             <Input
               type="file"
               multiple
@@ -148,7 +120,8 @@ export const ClientDocumentUpload = ({ clientId, clientName, onUploadComplete }:
               disabled={uploading}
             />
             {selectedFiles.length > 0 && (
-              <div className="text-sm text-muted-foreground">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <FileText className="h-4 w-4" />
                 {selectedFiles.length} file(s) selected
               </div>
             )}
@@ -167,16 +140,16 @@ export const ClientDocumentUpload = ({ clientId, clientName, onUploadComplete }:
           {aiProcessing && (
             <div className="flex items-center gap-2 text-sm text-blue-600">
               <Bot className="h-4 w-4 animate-pulse" />
-              AI is organizing documents into proper folders...
+              DeepSeek AI is analyzing and organizing documents...
             </div>
           )}
 
           <Button 
             onClick={handleUpload} 
-            disabled={uploading || selectedFiles.length === 0 || !documentType}
+            disabled={uploading || selectedFiles.length === 0}
             className="w-full"
           >
-            {uploading ? 'Uploading...' : 'Upload & Organize Documents'}
+            {uploading ? 'Uploading...' : 'Upload Documents'}
           </Button>
         </CardContent>
       </Card>
@@ -184,27 +157,27 @@ export const ClientDocumentUpload = ({ clientId, clientName, onUploadComplete }:
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <FolderOpen className="h-5 w-5" />
-            AI Document Organization
+            <Bot className="h-5 w-5" />
+            DeepSeek AI Document Processing
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3 text-sm">
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-600" />
-              <span>Automatically creates client-specific folder structure</span>
+              <span>Automatically extracts client names from documents</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-600" />
-              <span>Categorizes documents by type (Forms, Financial, Legal, etc.)</span>
+              <span>Identifies document types (Forms, Financial, Legal, etc.)</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-600" />
-              <span>Extracts key information and metadata</span>
+              <span>Organizes documents into proper client folders</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-600" />
-              <span>Links related documents together</span>
+              <span>Updates the main Documents page automatically</span>
             </div>
           </div>
         </CardContent>

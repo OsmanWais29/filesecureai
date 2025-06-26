@@ -1,9 +1,10 @@
 
 import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientDocumentUpload } from "./ClientDocumentUpload";
-import { ClientDocumentTree } from "./ClientDocumentTree";
-import { ClientDocumentsTab } from "./ClientDocumentsTab";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { FolderOpen, ExternalLink } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface ClientDocumentsManagerProps {
   clientId: string;
@@ -12,43 +13,45 @@ interface ClientDocumentsManagerProps {
 
 export const ClientDocumentsManager = ({ clientId, clientName }: ClientDocumentsManagerProps) => {
   const [refreshKey, setRefreshKey] = useState(0);
+  const navigate = useNavigate();
 
   const handleUploadComplete = () => {
-    // Refresh the document tree when upload completes
     setRefreshKey(prev => prev + 1);
+  };
+
+  const handleViewDocuments = () => {
+    navigate('/documents');
   };
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="upload" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="upload">Upload Documents</TabsTrigger>
-          <TabsTrigger value="structure">Document Tree</TabsTrigger>
-          <TabsTrigger value="manage">Manage</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="upload" className="mt-6">
-          <ClientDocumentUpload 
-            clientId={clientId}
-            clientName={clientName}
-            onUploadComplete={handleUploadComplete}
-          />
-        </TabsContent>
-        
-        <TabsContent value="structure" className="mt-6">
-          <ClientDocumentTree 
-            key={refreshKey}
-            clientId={clientId}
-            clientName={clientName}
-          />
-        </TabsContent>
-        
-        <TabsContent value="manage" className="mt-6">
-          <ClientDocumentsTab 
-            client={{ id: clientId, name: clientName, email: '' }}
-          />
-        </TabsContent>
-      </Tabs>
+      <ClientDocumentUpload 
+        clientId={clientId}
+        clientName={clientName}
+        onUploadComplete={handleUploadComplete}
+      />
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FolderOpen className="h-5 w-5" />
+            View Organized Documents
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">
+            After uploading, documents are automatically organized by DeepSeek AI in the main Documents page.
+          </p>
+          <Button 
+            onClick={handleViewDocuments}
+            variant="outline"
+            className="w-full gap-2"
+          >
+            <ExternalLink className="h-4 w-4" />
+            Go to Documents Page
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 };
