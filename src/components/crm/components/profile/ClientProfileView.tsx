@@ -1,8 +1,9 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { ClientProfilePanel } from './ClientProfilePanel';
 import { ClientActivityPanel } from './ClientActivityPanel';
 import { ClientIntelligencePanel } from './ClientIntelligencePanel';
+import { AllClientsView } from './AllClientsView';
 import { useClientInsights } from './hooks/useClientInsights';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ import { toast } from 'sonner';
 
 export const ClientProfileView = () => {
   const { insights, isLoading, selectedClient, setSelectedClient, refreshInsights, availableClients } = useClientInsights();
+  const [showAllClients, setShowAllClients] = useState(false);
 
   const handleRefresh = async () => {
     await refreshInsights();
@@ -28,9 +30,39 @@ export const ClientProfileView = () => {
   };
 
   const handleViewAllClients = () => {
-    toast.info('Navigating to all clients view...');
-    // In a real app, this would navigate to a clients list page
+    setShowAllClients(true);
+    toast.info('Loading all clients view...');
   };
+
+  const handleBackToProfile = () => {
+    setShowAllClients(false);
+  };
+
+  const handleSelectClientFromAll = (clientId: string) => {
+    // Map client ID to client name (in a real app, you'd have proper mapping)
+    const clientNameMap: { [key: string]: string } = {
+      'client1': 'John Smith',
+      'client2': 'Sarah Johnson', 
+      'client3': 'Michael Brown',
+      'client4': 'Emily Davis',
+      'client5': 'David Wilson',
+      'client6': 'Lisa Anderson'
+    };
+    
+    const clientName = clientNameMap[clientId] || clientId;
+    setSelectedClient(clientName);
+    toast.success(`Switched to ${clientName}'s profile`);
+  };
+
+  // Show All Clients View if requested
+  if (showAllClients) {
+    return (
+      <AllClientsView 
+        onBackToProfile={handleBackToProfile}
+        onSelectClient={handleSelectClientFromAll}
+      />
+    );
+  }
 
   return (
     <div className="h-full flex flex-col space-y-4">
