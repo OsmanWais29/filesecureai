@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Upload, Bot, FileText, CheckCircle } from "lucide-react";
+import { Upload, Bot, FileText, CheckCircle, CloudUpload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { uploadDocumentToStorage } from "@/utils/documentUpload";
 import { Progress } from "@/components/ui/progress";
@@ -102,90 +102,119 @@ export const ClientDocumentUpload = ({ clientId, clientName, onUploadComplete }:
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <Card className="border-2 border-dashed border-gray-200 hover:border-gray-300 transition-colors">
-        <CardHeader className="text-center pb-4">
-          <div className="mx-auto w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mb-4">
-            <Upload className="h-6 w-6 text-blue-600" />
+    <div className="space-y-6">
+      {/* Main Upload Card */}
+      <Card className="border-2 border-dashed border-blue-200 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 hover:border-blue-300 transition-all duration-300">
+        <CardHeader className="text-center pb-6">
+          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mb-4 shadow-lg">
+            <CloudUpload className="h-8 w-8 text-white" />
           </div>
-          <CardTitle className="text-xl text-gray-900">
+          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
             Upload Client Documents
           </CardTitle>
-          <p className="text-sm text-gray-500 mt-2">
-            Select documents to upload. Our AI will automatically organize them in the Documents page.
+          <p className="text-gray-600 mt-2 max-w-md mx-auto leading-relaxed">
+            Upload documents and our AI will automatically organize them by client and document type in the main Documents section.
           </p>
         </CardHeader>
+        
         <CardContent className="space-y-6">
-          <div className="space-y-4">
-            <div className="relative">
-              <Input
-                type="file"
-                multiple
-                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx"
-                onChange={handleFileSelect}
-                disabled={uploading}
-                className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-              />
-            </div>
-
-            {selectedFiles.length > 0 && (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <FileText className="h-4 w-4" />
-                  <span className="font-medium">{selectedFiles.length} file(s) selected</span>
-                </div>
-                <div className="mt-2 space-y-1">
-                  {selectedFiles.map((file, index) => (
-                    <div key={index} className="text-xs text-gray-500 truncate">
-                      {file.name}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {uploading && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Uploading documents...</span>
-                  <span className="font-medium text-gray-900">{Math.round(uploadProgress)}%</span>
-                </div>
-                <Progress value={uploadProgress} className="h-2" />
-              </div>
-            )}
-
-            {aiProcessing && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-center gap-3">
-                  <Bot className="h-5 w-5 text-blue-600 animate-pulse" />
-                  <div>
-                    <p className="text-sm font-medium text-blue-900">AI Processing</p>
-                    <p className="text-xs text-blue-700">Analyzing and organizing documents...</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <Button 
-              onClick={handleUpload} 
-              disabled={uploading || selectedFiles.length === 0}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-base font-medium"
-            >
-              {uploading ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Uploading...
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Upload className="h-4 w-4" />
-                  Upload Documents
-                </div>
-              )}
-            </Button>
+          {/* File Input Section */}
+          <div className="relative">
+            <Input
+              type="file"
+              multiple
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx"
+              onChange={handleFileSelect}
+              disabled={uploading}
+              className="h-14 file:mr-4 file:py-3 file:px-6 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-gradient-to-r file:from-blue-500 file:to-indigo-600 file:text-white hover:file:from-blue-600 hover:file:to-indigo-700 file:transition-all file:duration-200 file:shadow-md hover:file:shadow-lg cursor-pointer border-2 border-gray-200 hover:border-blue-300 transition-colors"
+            />
           </div>
+
+          {/* Selected Files Display */}
+          {selectedFiles.length > 0 && (
+            <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                  <FileText className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900">{selectedFiles.length} file(s) selected</p>
+                  <p className="text-sm text-gray-500">Ready for upload and AI processing</p>
+                </div>
+              </div>
+              <div className="space-y-2 max-h-32 overflow-y-auto">
+                {selectedFiles.map((file, index) => (
+                  <div key={index} className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 rounded-lg p-2">
+                    <FileText className="h-4 w-4 text-gray-400" />
+                    <span className="truncate flex-1">{file.name}</span>
+                    <span className="text-xs text-gray-400">
+                      {(file.size / 1024 / 1024).toFixed(1)}MB
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Upload Progress */}
+          {uploading && (
+            <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Upload className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <span className="font-medium text-gray-900">Uploading documents...</span>
+                </div>
+                <span className="font-bold text-blue-600">{Math.round(uploadProgress)}%</span>
+              </div>
+              <Progress value={uploadProgress} className="h-3 bg-gray-100" />
+            </div>
+          )}
+
+          {/* AI Processing Indicator */}
+          {aiProcessing && (
+            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full flex items-center justify-center">
+                  <Bot className="h-5 w-5 text-white animate-pulse" />
+                </div>
+                <div>
+                  <p className="font-semibold text-purple-900">AI Processing Documents</p>
+                  <p className="text-sm text-purple-700">Analyzing content and organizing by client...</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Upload Button */}
+          <Button 
+            onClick={handleUpload} 
+            disabled={uploading || selectedFiles.length === 0}
+            className="w-full h-14 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50"
+          >
+            {uploading ? (
+              <div className="flex items-center gap-3">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Processing...</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <Upload className="h-5 w-5" />
+                <span>Upload & Organize Documents</span>
+              </div>
+            )}
+          </Button>
         </CardContent>
       </Card>
+
+      {/* Success State (when completed) */}
+      {!uploading && !aiProcessing && selectedFiles.length === 0 && (
+        <div className="text-center py-4">
+          <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2" />
+          <p className="text-gray-600">Documents ready for upload</p>
+        </div>
+      )}
     </div>
   );
 };
