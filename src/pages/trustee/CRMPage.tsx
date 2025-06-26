@@ -1,15 +1,25 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { CRMTabs } from '@/components/crm/page/CRMTabs';
 import { CRMHeader } from '@/components/crm/page/CRMHeader';
-import { ClientDialog } from '@/components/crm/ClientDialog';
+import { ClientIntakeDialog } from '@/components/crm/intake-dialog/ClientIntakeDialog';
+import { useClientIntake } from '@/components/crm/hooks/useClientIntake';
 
 const TrusteeCRMPage = () => {
-  const [isClientDialogOpen, setIsClientDialogOpen] = useState(false);
-
-  const openClientDialog = () => setIsClientDialogOpen(true);
-  const closeClientDialog = () => setIsClientDialogOpen(false);
+  const { 
+    isClientDialogOpen, 
+    setIsClientDialogOpen, 
+    openClientDialog,
+    currentStep,
+    setCurrentStep,
+    formProgress,
+    formData,
+    handleInputChange,
+    handleSelectChange,
+    handleEmploymentTypeChange,
+    handleSubmitForm
+  } = useClientIntake();
 
   return (
     <MainLayout>
@@ -17,9 +27,17 @@ const TrusteeCRMPage = () => {
         <CRMHeader openClientDialog={openClientDialog} />
         <CRMTabs />
         
-        <ClientDialog 
+        <ClientIntakeDialog 
           isOpen={isClientDialogOpen}
-          onClose={closeClientDialog}
+          onClose={() => setIsClientDialogOpen(false)}
+          currentStep={currentStep}
+          setCurrentStep={setCurrentStep}
+          formProgress={formProgress}
+          formData={formData}
+          handleInputChange={handleInputChange}
+          handleSelectChange={handleSelectChange}
+          handleEmploymentTypeChange={handleEmploymentTypeChange}
+          handleSubmitForm={handleSubmitForm}
         />
       </div>
     </MainLayout>
