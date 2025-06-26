@@ -1,303 +1,353 @@
 
 import React, { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { MonthView } from './MonthView';
-import { WeekView } from './WeekView';
-import { DayView } from './DayView';
-import { CalendarHeader } from './CalendarHeader';
-import { useCalendarNavigation } from './useCalendarNavigation';
-import { useAppointmentUtils } from './useAppointmentUtils';
-import { Clock, Calendar as CalendarIcon, Users, Plus, FileText, Bell, Sparkles, Save } from 'lucide-react';
-import { format, isToday, isTomorrow, addDays } from 'date-fns';
-import { toast } from 'sonner';
+import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import { Badge } from "@/components/ui/badge";
+import { CalendarHeader } from "./CalendarHeader";
+import { AppointmentsList } from "../AppointmentsList";
+import { useCalendarNavigation } from "./useCalendarNavigation";
+import { useAppointmentUtils } from "./useAppointmentUtils";
+import { toast } from "@/components/ui/use-toast";
+import { 
+  Clock, 
+  Calendar as CalendarIcon, 
+  Users, 
+  FileText,
+  Plus,
+  Save
+} from "lucide-react";
+import { format, isToday, isTomorrow, addDays } from "date-fns";
 
-interface CalendarViewProps {
-  selectedDate: Date;
-  setSelectedDate: (date: Date) => void;
-  calendarView: 'month' | 'week' | 'day';
-  setCalendarView: (view: 'month' | 'week' | 'day') => void;
-  appointments: any[];
-}
+// Mock data for appointments
+const mockAppointments = [
+  {
+    id: "1",
+    clientName: "Sarah Johnson",
+    title: "Initial Consultation",
+    type: "consultation",
+    time: "10:00 AM",
+    date: new Date(),
+    priority: "high" as const,
+    status: "confirmed" as const,
+    documents: "complete" as const
+  },
+  {
+    id: "2",
+    clientName: "Michael Chen",
+    title: "Document Review",
+    type: "review",
+    time: "2:30 PM",
+    date: new Date(),
+    priority: "medium" as const,
+    status: "pending" as const,
+    documents: "incomplete" as const
+  },
+  {
+    id: "3",
+    clientName: "Emma Wilson",
+    title: "Follow-up Meeting",
+    type: "follow-up",
+    time: "11:00 AM",
+    date: addDays(new Date(), 1),
+    priority: "normal" as const,
+    status: "confirmed" as const,
+    documents: "complete" as const
+  },
+  {
+    id: "4",
+    clientName: "Robert Davis",
+    title: "Case Discussion",
+    type: "discussion",
+    time: "3:00 PM",
+    date: addDays(new Date(), 2),
+    priority: "high" as const,
+    status: "self-booked" as const,
+    documents: "pending" as const
+  }
+];
 
-export const CalendarView = ({
-  selectedDate,
-  setSelectedDate,
-  calendarView,
-  setCalendarView,
-  appointments
-}: CalendarViewProps) => {
-  const [notes, setNotes] = useState('');
-  const [noteTitle, setNoteTitle] = useState('');
-  const [selectedClient, setSelectedClient] = useState('');
-  const { handlePrevious, handleNext } = useCalendarNavigation(
-    selectedDate,
-    calendarView,
-    setSelectedDate
-  );
+export const CalendarView = () => {
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [calendarView, setCalendarView] = useState<"day" | "week" | "month">("month");
+  const [quickNote, setQuickNote] = useState("");
+  const [noteTitle, setNoteTitle] = useState("");
   
+  const { handlePrevious, handleNext } = useCalendarNavigation(selectedDate, calendarView, setSelectedDate);
   const { getAppointmentColorClass } = useAppointmentUtils();
 
-  // Mock data for clients
-  const clients = [
-    'John Smith',
-    'Sarah Johnson',
-    'Mike Chen',
-    'Emily Davis',
-    'Robert Wilson',
-    'Lisa Anderson'
-  ];
+  // Get today's appointments
+  const todayAppointments = mockAppointments.filter(apt => isToday(apt.date));
+  
+  // Get upcoming appointments (next 7 days, excluding today)
+  const upcomingAppointments = mockAppointments.filter(apt => {
+    const appointmentDate = apt.date;
+    const today = new Date();
+    const nextWeek = addDays(today, 7);
+    return appointmentDate > today && appointmentDate <= nextWeek;
+  });
 
-  // Mock data for today's appointments and upcoming
-  const todaysAppointments = [
-    { id: 1, time: '9:00 AM', client: 'John Smith', type: 'Initial Consultation', priority: 'high' },
-    { id: 2, time: '11:30 AM', client: 'Sarah Johnson', type: 'Document Review', priority: 'medium' },
-    { id: 3, time: '2:00 PM', client: 'Mike Chen', type: 'Status Update', priority: 'normal' },
-    { id: 4, time: '4:00 PM', client: 'Emily Davis', type: 'Final Meeting', priority: 'high' }
-  ];
+  const handleSaveNote = () => {
+    if (!noteTitle.trim() || !quickNote.trim()) {
+      toast({
+        title: "Note Required",
+        description: "Please add both a title and note content.",
+        variant: "destructive"
+      });
+      return;
+    }
 
-  const upcomingAppointments = [
-    { id: 5, date: 'Tomorrow', time: '10:00 AM', client: 'Robert Wilson', type: 'Asset Review' },
-    { id: 6, date: 'Thu, Dec 28', time: '1:00 PM', client: 'Lisa Anderson', type: 'Court Hearing' },
-    { id: 7, date: 'Fri, Dec 29', time: '3:30 PM', client: 'David Brown', type: 'Consultation' }
-  ];
+    // In a real app, this would save to the current client's profile
+    toast({
+      title: "Note Saved",
+      description: "Your note has been saved to the client profile.",
+    });
+    
+    // Clear the form
+    setNoteTitle("");
+    setQuickNote("");
+  };
+
+  const getDateDisplay = (date: Date) => {
+    if (isToday(date)) return "Today";
+    if (isTomorrow(date)) return "Tomorrow";
+    return format(date, 'MMM d');
+  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'high': return 'bg-red-100 text-red-800 border-red-200';
-      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      default: return 'bg-green-100 text-green-800 border-green-200';
+      case 'high': return 'bg-red-100 text-red-800';
+      case 'medium': return 'bg-amber-100 text-amber-800';
+      default: return 'bg-green-100 text-green-800';
     }
-  };
-
-  const handleSaveNote = () => {
-    if (!noteTitle.trim() || !notes.trim()) {
-      toast.error('Please fill in both title and note content');
-      return;
-    }
-
-    if (!selectedClient) {
-      toast.error('Please select a client for this note');
-      return;
-    }
-
-    // Simulate saving to CRM client profile
-    const noteData = {
-      id: Date.now().toString(),
-      title: noteTitle,
-      content: notes,
-      client: selectedClient,
-      timestamp: new Date().toISOString(),
-      createdBy: 'Current User', // In real app, get from auth context
-      type: 'calendar_note'
-    };
-
-    // In a real application, this would save to Supabase or your backend
-    // For now, we'll simulate the save and show success
-    console.log('Saving note to client profile:', noteData);
-    
-    toast.success(`Note saved to ${selectedClient}'s profile`, {
-      description: `"${noteTitle}" has been added to the client files`
-    });
-
-    // Clear the form
-    setNoteTitle('');
-    setNotes('');
-    setSelectedClient('');
   };
 
   return (
-    <div className="space-y-6 h-full">
-      {/* Main Calendar Section */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg border-0 overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-6 text-white">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/20 backdrop-blur-sm rounded-lg">
-                <CalendarIcon className="h-6 w-6" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold">Calendar View</h2>
-                <p className="text-blue-100 text-sm">Manage your schedule and appointments</p>
-              </div>
-            </div>
-            <Button className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border-white/30 text-white">
-              <Plus className="h-4 w-4 mr-2" />
-              New Appointment
-            </Button>
-          </div>
-
-          <CalendarHeader
-            selectedDate={selectedDate}
-            calendarView={calendarView}
-            onPrevious={handlePrevious}
-            onNext={handleNext}
-          />
-        </div>
-        
-        <div className="p-6">
-          <Tabs value={calendarView} onValueChange={(value) => setCalendarView(value as 'month' | 'week' | 'day')}>
-            <TabsList className="grid w-full grid-cols-3 mb-6 bg-gray-100 dark:bg-gray-800">
-              <TabsTrigger value="month" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">Month</TabsTrigger>
-              <TabsTrigger value="week" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">Week</TabsTrigger>
-              <TabsTrigger value="day" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">Day</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="month" className="mt-0">
-              <MonthView
-                selectedDate={selectedDate}
-                setSelectedDate={setSelectedDate}
-                appointments={appointments}
-                calendarView={calendarView}
-              />
-            </TabsContent>
-
-            <TabsContent value="week" className="mt-0">
-              <WeekView
-                selectedDate={selectedDate}
-                setSelectedDate={setSelectedDate}
-                appointments={appointments}
-                getAppointmentColorClass={getAppointmentColorClass}
-              />
-            </TabsContent>
-
-            <TabsContent value="day" className="mt-0">
-              <DayView
-                selectedDate={selectedDate}
-                appointments={appointments}
-                getAppointmentColorClass={getAppointmentColorClass}
-              />
-            </TabsContent>
-          </Tabs>
-        </div>
+    <div className="p-6 bg-gray-50 min-h-screen">
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold text-gray-900 mb-2">Smart Calendar</h1>
+        <p className="text-gray-600">Manage your appointments and schedule efficiently</p>
       </div>
 
-      {/* Schedule and Notes Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Today's Schedule */}
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-              </div>
-              Today's Schedule
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 max-h-80 overflow-y-auto">
-            {todaysAppointments.map((appointment) => (
-              <div key={appointment.id} className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg hover:shadow-md transition-all duration-200 border border-gray-100 dark:border-gray-700">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="font-semibold text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">{appointment.time}</span>
-                    <Badge className={`text-xs ${getPriorityColor(appointment.priority)}`}>
-                      {appointment.priority}
-                    </Badge>
-                  </div>
-                  <p className="font-medium text-gray-900 dark:text-white">{appointment.client}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{appointment.type}</p>
+      {/* Main Grid Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Calendar Section - Takes up 3 columns */}
+        <div className="lg:col-span-3 space-y-6">
+          {/* Calendar Widget */}
+          <Card className="shadow-sm border-0">
+            <CardHeader className="bg-white border-b">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg font-medium text-gray-900">
+                    {format(selectedDate, 'MMMM yyyy')}
+                  </CardTitle>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {format(selectedDate, 'EEEE, MMMM d, yyyy')}
+                  </p>
                 </div>
-                <Button variant="ghost" size="sm" className="hover:bg-blue-100 dark:hover:bg-blue-900/30">
-                  <Users className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePrevious}
+                    className="h-8 w-8 p-0"
+                  >
+                    ←
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleNext}
+                    className="h-8 w-8 p-0"
+                  >
+                    →
+                  </Button>
+                </div>
               </div>
-            ))}
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="flex justify-center">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => date && setSelectedDate(date)}
+                  className="w-full max-w-none scale-110 p-4"
+                  classNames={{
+                    months: "flex w-full",
+                    month: "space-y-4 w-full",
+                    caption: "flex justify-center pt-1 relative items-center",
+                    caption_label: "text-lg font-medium",
+                    table: "w-full border-collapse",
+                    head_row: "flex w-full",
+                    head_cell: "text-gray-500 rounded-md w-full font-medium text-sm p-2",
+                    row: "flex w-full mt-2",
+                    cell: "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 w-full",
+                    day: "h-12 w-full p-0 font-normal hover:bg-blue-50 rounded-md transition-colors",
+                    day_selected: "bg-blue-600 text-white hover:bg-blue-700",
+                    day_today: "bg-blue-100 text-blue-900 font-semibold",
+                    day_outside: "text-gray-400"
+                  }}
+                />
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Coming Up */}
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                <Bell className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-              </div>
-              Coming Up
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 max-h-80 overflow-y-auto">
-            {upcomingAppointments.map((appointment) => (
-              <div key={appointment.id} className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-lg hover:shadow-md transition-all duration-200 border border-gray-100 dark:border-gray-700">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs font-medium text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 px-2 py-1 rounded">{appointment.date}</span>
-                    <span className="text-sm font-semibold">{appointment.time}</span>
-                  </div>
-                  <p className="font-medium text-gray-900 dark:text-white">{appointment.client}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{appointment.type}</p>
+          {/* Quick Notes Section */}
+          <Card className="shadow-sm border-0">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-medium flex items-center gap-2">
+                <FileText className="h-5 w-5 text-blue-600" />
+                Quick Notes
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                <div className="md:col-span-3">
+                  <Input
+                    placeholder="Note title..."
+                    value={noteTitle}
+                    onChange={(e) => setNoteTitle(e.target.value)}
+                    className="h-10"
+                  />
+                </div>
+                <div className="md:col-span-7">
+                  <Textarea
+                    placeholder="Add a quick note to the current client profile..."
+                    value={quickNote}
+                    onChange={(e) => setQuickNote(e.target.value)}
+                    className="min-h-[40px] resize-none"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <Button 
+                    onClick={handleSaveNote}
+                    className="w-full h-10"
+                    disabled={!noteTitle.trim() || !quickNote.trim()}
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Note
+                  </Button>
                 </div>
               </div>
-            ))}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Sidebar - Schedule Sections */}
+        <div className="lg:col-span-1 space-y-6">
+          {/* Today's Schedule */}
+          <Card className="shadow-sm border-0">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-medium flex items-center gap-2">
+                <Clock className="h-5 w-5 text-green-600" />
+                Today's Schedule
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {todayAppointments.length === 0 ? (
+                <div className="text-center py-4 text-gray-500">
+                  <CalendarIcon className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p className="text-sm">No appointments today</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {todayAppointments.map((appointment) => (
+                    <div
+                      key={appointment.id}
+                      className="p-3 bg-gray-50 rounded-lg border"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="font-medium text-sm">{appointment.time}</div>
+                        <Badge className={`text-xs ${getPriorityColor(appointment.priority)}`}>
+                          {appointment.priority}
+                        </Badge>
+                      </div>
+                      <div className="text-sm text-gray-700 mb-1">{appointment.title}</div>
+                      <div className="text-xs text-gray-500">{appointment.clientName}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Coming Up */}
+          <Card className="shadow-sm border-0">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-medium flex items-center gap-2">
+                <Users className="h-5 w-5 text-blue-600" />
+                Coming Up
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {upcomingAppointments.length === 0 ? (
+                <div className="text-center py-4 text-gray-500">
+                  <CalendarIcon className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p className="text-sm">No upcoming appointments</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {upcomingAppointments.map((appointment) => (
+                    <div
+                      key={appointment.id}
+                      className="p-3 bg-gray-50 rounded-lg border"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="font-medium text-sm">
+                          {getDateDisplay(appointment.date)} at {appointment.time}
+                        </div>
+                        <Badge className={`text-xs ${getPriorityColor(appointment.priority)}`}>
+                          {appointment.priority}
+                        </Badge>
+                      </div>
+                      <div className="text-sm text-gray-700 mb-1">{appointment.title}</div>
+                      <div className="text-xs text-gray-500">{appointment.clientName}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Team Status */}
+          <Card className="shadow-sm border-0">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-medium flex items-center gap-2">
+                <Users className="h-5 w-5 text-purple-600" />
+                Team Status
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm">Available</span>
+                  </div>
+                  <span className="text-sm font-medium">3</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                    <span className="text-sm">In Meeting</span>
+                  </div>
+                  <span className="text-sm font-medium">2</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                    <span className="text-sm">Busy</span>
+                  </div>
+                  <span className="text-sm font-medium">1</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-
-      {/* Horizontal Quick Notes Section */}
-      <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-              <FileText className="h-5 w-5 text-green-600 dark:text-green-400" />
-            </div>
-            Quick Notes - Add to Client Profile
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-            {/* Client Selection */}
-            <div className="lg:col-span-2">
-              <label className="text-sm font-medium mb-2 block">Client</label>
-              <select
-                value={selectedClient}
-                onChange={(e) => setSelectedClient(e.target.value)}
-                className="w-full p-2 border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-sm"
-              >
-                <option value="">Select Client</option>
-                {clients.map(client => (
-                  <option key={client} value={client}>{client}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Note Title */}
-            <div className="lg:col-span-3">
-              <label className="text-sm font-medium mb-2 block">Note Title</label>
-              <Input
-                placeholder="Enter note title..."
-                value={noteTitle}
-                onChange={(e) => setNoteTitle(e.target.value)}
-                className="border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
-              />
-            </div>
-
-            {/* Note Content */}
-            <div className="lg:col-span-5">
-              <label className="text-sm font-medium mb-2 block">Note Content</label>
-              <Textarea
-                placeholder="Add your notes here..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="resize-none border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 h-20"
-              />
-            </div>
-
-            {/* Save Button */}
-            <div className="lg:col-span-2 flex items-end">
-              <Button 
-                onClick={handleSaveNote}
-                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg h-10"
-              >
-                <Save className="h-4 w-4 mr-2" />
-                Save to Profile
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };
