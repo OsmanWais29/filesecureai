@@ -12,6 +12,10 @@ interface RightPanelProps {
 }
 
 export const RightPanel: React.FC<RightPanelProps> = ({ document, onClose }) => {
+  // Extract risks from document analysis
+  const risks = document.analysis?.[0]?.content?.risks || [];
+  const isLoading = document.ai_processing_status === 'processing' || document.ai_processing_status === 'pending';
+
   return (
     <div className="h-full flex flex-col bg-card">
       {/* Header */}
@@ -34,8 +38,9 @@ export const RightPanel: React.FC<RightPanelProps> = ({ document, onClose }) => 
         <ScrollArea className="h-full">
           <div className="p-4">
             <RiskAssessment 
-              document={document}
-              onRiskUpdate={() => console.log('Risk updated')}
+              risks={risks}
+              documentId={document.id}
+              isLoading={isLoading}
             />
           </div>
         </ScrollArea>
