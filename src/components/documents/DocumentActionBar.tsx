@@ -8,8 +8,7 @@ import {
   RotateCcw, 
   ArrowUpDown,
   MoreHorizontal,
-  FileX,
-  FolderMerge
+  FileX
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -130,7 +129,7 @@ export const DocumentActionBar = ({
               disabled={!hasMultipleSelection}
               onClick={() => onMerge(selectedDocuments)}
             >
-              <FolderMerge className="h-4 w-4 mr-2" />
+              <Merge className="h-4 w-4 mr-2" />
               Merge Documents
             </DropdownMenuItem>
             <DropdownMenuSeparator />
