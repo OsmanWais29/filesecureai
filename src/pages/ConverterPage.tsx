@@ -10,11 +10,9 @@ import {
   Download, 
   RefreshCw, 
   CheckCircle,
-  AlertCircle,
   Code,
   FileCode,
-  Zap,
-  ArrowRight
+  Zap
 } from 'lucide-react';
 
 const ConverterPage = () => {
@@ -80,6 +78,41 @@ const ConverterPage = () => {
           </div>
         </div>
 
+        {/* Document Upload Section - Moved to top */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Document Upload
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <FileUpload 
+                onUploadComplete={handleFileUpload}
+              />
+              
+              {isConverting && (
+                <div className="text-center py-8">
+                  <RefreshCw className="h-8 w-8 animate-spin text-blue-500 mx-auto mb-4" />
+                  <h3 className="font-medium">Converting Document...</h3>
+                  <p className="text-sm text-gray-600">Processing with AI-powered OCR</p>
+                </div>
+              )}
+              
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-medium text-blue-900 mb-2">Supported Formats</h4>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="secondary">PDF</Badge>
+                  <Badge variant="secondary">PNG</Badge>
+                  <Badge variant="secondary">JPG</Badge>
+                  <Badge variant="secondary">TIFF</Badge>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Features */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {features.map((feature, index) => (
@@ -93,96 +126,6 @@ const ConverterPage = () => {
               </CardContent>
             </Card>
           ))}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Upload Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Document Upload
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <FileUpload 
-                  onUploadComplete={handleFileUpload}
-                />
-                
-                {isConverting && (
-                  <div className="text-center py-8">
-                    <RefreshCw className="h-8 w-8 animate-spin text-blue-500 mx-auto mb-4" />
-                    <h3 className="font-medium">Converting Document...</h3>
-                    <p className="text-sm text-gray-600">Processing with AI-powered OCR</p>
-                  </div>
-                )}
-                
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h4 className="font-medium text-blue-900 mb-2">Supported Formats</h4>
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant="secondary">PDF</Badge>
-                    <Badge variant="secondary">PNG</Badge>
-                    <Badge variant="secondary">JPG</Badge>
-                    <Badge variant="secondary">TIFF</Badge>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Conversion Process */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ArrowRight className="h-5 w-5" />
-                Conversion Process
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
-                    1
-                  </div>
-                  <div>
-                    <p className="font-medium">Document Analysis</p>
-                    <p className="text-sm text-gray-600">OCR processing and layout detection</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
-                    2
-                  </div>
-                  <div>
-                    <p className="font-medium">Data Extraction</p>
-                    <p className="text-sm text-gray-600">AI-powered field identification</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <div className="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
-                    3
-                  </div>
-                  <div>
-                    <p className="font-medium">XML Generation</p>
-                    <p className="text-sm text-gray-600">Structured data output creation</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <div className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
-                    4
-                  </div>
-                  <div>
-                    <p className="font-medium">Quality Validation</p>
-                    <p className="text-sm text-gray-600">Accuracy verification and output</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Conversion Results */}
