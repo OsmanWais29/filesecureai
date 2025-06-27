@@ -30,8 +30,8 @@ export const TrusteeCoPliotModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="p-4 border-b bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
+      <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogHeader className="p-4 border-b bg-gradient-to-r from-primary to-primary/80 text-primary-foreground flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <div className="bg-white/20 p-1.5 rounded-full">
               <Bot className="h-5 w-5" />
@@ -44,15 +44,15 @@ export const TrusteeCoPliotModal = ({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col sm:flex-row flex-1 overflow-hidden">
+        <div className="flex flex-col sm:flex-row flex-1 overflow-hidden min-h-0">
           {/* Left Panel - Chat & Verification */}
-          <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden min-h-0">
             <Tabs 
               value={activeTab} 
               onValueChange={setActiveTab} 
-              className="flex-1 flex flex-col overflow-hidden"
+              className="flex-1 flex flex-col overflow-hidden min-h-0"
             >
-              <div className="px-4 pt-4 border-b">
+              <div className="px-4 pt-4 pb-2 border-b flex-shrink-0">
                 <TabsList className="grid grid-cols-2 w-full">
                   <TabsTrigger 
                     value="conversation" 
@@ -73,16 +73,16 @@ export const TrusteeCoPliotModal = ({
 
               <TabsContent 
                 value="conversation" 
-                className="flex-1 flex flex-col overflow-hidden mt-0 p-0"
+                className="flex-1 flex flex-col overflow-hidden mt-0 p-0 min-h-0"
               >
-                <div className="flex-1 flex flex-col overflow-hidden pt-4 px-4 pb-4">
+                <div className="flex-1 flex flex-col overflow-hidden pt-4 px-4 pb-4 min-h-0">
                   <ChatPanel />
                 </div>
               </TabsContent>
 
               <TabsContent 
                 value="verification" 
-                className="flex-1 overflow-y-auto m-0 p-0"
+                className="flex-1 overflow-hidden m-0 p-0 min-h-0"
               >
                 <VerificationPanel verificationData={verificationData} />
               </TabsContent>

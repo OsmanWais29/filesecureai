@@ -57,9 +57,9 @@ export const VerificationPanel = ({ verificationData }: VerificationPanelProps) 
   };
 
   return (
-    <div className="h-full overflow-hidden">
-      <Tabs defaultValue="upload" className="h-full flex flex-col">
-        <div className="px-4 pt-4 border-b">
+    <div className="flex flex-col h-full">
+      <Tabs defaultValue="upload" className="flex flex-col h-full">
+        <div className="px-4 pt-4 pb-2 border-b flex-shrink-0">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="upload" className="flex items-center gap-1.5 text-xs">
               <Upload className="h-3 w-3" />
@@ -76,19 +76,19 @@ export const VerificationPanel = ({ verificationData }: VerificationPanelProps) 
           </TabsList>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
-          <TabsContent value="upload" className="mt-0 p-4 h-full">
+        <div className="flex-1 overflow-hidden">
+          <TabsContent value="upload" className="h-full m-0 p-4">
             <DocumentUploadSection onDocumentUpload={handleDocumentUpload} />
           </TabsContent>
 
-          <TabsContent value="results" className="mt-0 p-4 h-full">
+          <TabsContent value="results" className="h-full m-0 p-4 overflow-y-auto">
             <VerificationResults results={verificationResults} />
           </TabsContent>
 
-          <TabsContent value="summary" className="mt-0 p-4 h-full">
+          <TabsContent value="summary" className="h-full m-0 p-4 overflow-y-auto">
             <div className="space-y-4">
               <Card>
-                <CardHeader>
+                <CardHeader className="pb-4">
                   <CardTitle className="text-sm">Verification Summary</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
