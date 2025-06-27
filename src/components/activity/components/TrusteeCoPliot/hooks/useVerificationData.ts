@@ -20,7 +20,18 @@ export function useVerificationData() {
     }
   });
 
+  // Transform the data to match the StatsSidebar expected format
+  const transformedStats = {
+    verified: verificationData.stats.totalVerified,
+    flagged: verificationData.stats.flaggedItems,
+    missing: 0, // Add missing count
+    overallScore: verificationData.stats.confidenceScore
+  };
+
   return {
-    verificationData
+    verificationData: {
+      ...verificationData,
+      stats: transformedStats
+    }
   };
 }
