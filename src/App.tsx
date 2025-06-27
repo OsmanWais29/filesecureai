@@ -23,6 +23,8 @@ import MessagesPage from './pages/MessagesPage';
 import ProfilePage from './pages/ProfilePage';
 import CRMPage from './pages/CRMPage';
 import ClientViewerPage from './pages/ClientViewerPage';
+import SupportPage from './pages/SupportPage';
+import Support from './pages/Support';
 
 // Trustee Portal Pages
 import TrusteeDashboardPage from './pages/trustee/DashboardPage';
@@ -89,6 +91,8 @@ function App() {
         <Route path="/analytics" element={<AuthCheck><AnalyticsPage /></AuthCheck>} />
         <Route path="/notifications" element={<AuthCheck><NotificationsPage /></AuthCheck>} />
         <Route path="/messages" element={<AuthCheck><MessagesPage /></AuthCheck>} />
+        <Route path="/messages/support" element={<AuthCheck><SupportPage /></AuthCheck>} />
+        <Route path="/support" element={<AuthCheck><Support /></AuthCheck>} />
         <Route path="/settings" element={<AuthCheck><SettingsPage /></AuthCheck>} />
         <Route path="/profile" element={<AuthCheck><ProfilePage /></AuthCheck>} />
         <Route path="/client-viewer/:clientId" element={<AuthCheck><ClientViewerPage /></AuthCheck>} />

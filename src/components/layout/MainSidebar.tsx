@@ -18,7 +18,8 @@ import {
   Activity,
   FileCode,
   User,
-  MessageSquare
+  MessageSquare,
+  LifeBuoy
 } from "lucide-react";
 
 export const MainSidebar = () => {
@@ -36,6 +37,7 @@ export const MainSidebar = () => {
     { name: "Analytics", href: "/analytics", icon: BarChart3 },
     { name: "Notifications", href: "/notifications", icon: Bell },
     { name: "Messages", href: "/messages", icon: MessageSquare },
+    { name: "Support", href: "/messages/support", icon: LifeBuoy },
     { name: "Settings", href: "/settings", icon: Settings },
     { name: "Profile", href: "/profile", icon: User },
   ];
