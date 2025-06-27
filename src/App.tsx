@@ -26,7 +26,6 @@ import ClientViewerPage from './pages/ClientViewerPage';
 
 // Trustee Portal Pages
 import TrusteeDashboardPage from './pages/trustee/DashboardPage';
-import TrusteeDocumentsPage from './pages/trustee/DocumentsPage';
 import TrusteeCRMPage from './pages/trustee/CRMPage';
 import TrusteeAnalyticsPage from './pages/trustee/AnalyticsPage';
 import TrusteeClientViewerPage from './pages/trustee/ClientViewerPage';
@@ -54,7 +53,7 @@ function App() {
         {/* Trustee Portal Routes */}
         <Route path="/trustee" element={<AuthCheck><HomePage /></AuthCheck>} />
         <Route path="/trustee/dashboard" element={<AuthCheck><TrusteeDashboardPage /></AuthCheck>} />
-        <Route path="/trustee/documents" element={<AuthCheck><TrusteeDocumentsPage /></AuthCheck>} />
+        <Route path="/trustee/documents" element={<AuthCheck><DocumentsPage /></AuthCheck>} />
         <Route path="/trustee/crm" element={<AuthCheck><TrusteeCRMPage /></AuthCheck>} />
         <Route path="/trustee/analytics" element={<AuthCheck><TrusteeAnalyticsPage /></AuthCheck>} />
         <Route path="/trustee/client/:clientId" element={<AuthCheck><TrusteeClientViewerPage /></AuthCheck>} />

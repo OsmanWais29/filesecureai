@@ -4,7 +4,6 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { useDocumentsPage } from "./hooks/useDocumentsPage";
 import { ClientList } from "@/components/documents/ClientList";
 import { DocumentTree } from "@/components/documents/DocumentTree";
-import { DocumentActionBar } from "@/components/documents/DocumentActionBar";
 import { EditDocumentDialog } from "@/components/documents/EditDocumentDialog";
 import { DocumentReorderDialog } from "@/components/documents/DocumentReorderDialog";
 import { useDocumentActions } from "@/hooks/useDocumentActions";
@@ -19,8 +18,6 @@ const DocumentsPage = () => {
 
   const {
     isLoading,
-    selectedDocuments,
-    setSelectedDocuments,
     handleEdit,
     handleMerge,
     handleDelete,
@@ -47,19 +44,20 @@ const DocumentsPage = () => {
     return docs;
   });
 
-  const handleEditDocument = (documentId: string) => {
-    const doc = allDocuments.find(d => d.id === documentId);
-    if (doc) {
-      setEditingDocument({ id: documentId, name: doc.title });
-      setEditDialogOpen(true);
-    }
+  const handleEditDocument = async (documentId: string, newName: string) => {
+    await handleEdit(documentId, newName);
   };
 
-  const handleSaveEdit = async (newName: string) => {
-    if (editingDocument) {
-      await handleEdit(editingDocument.id, newName);
-      setEditingDocument(null);
-    }
+  const handleMergeDocuments = async (documentIds: string[]) => {
+    await handleMerge(documentIds);
+  };
+
+  const handleDeleteDocuments = async (documentIds: string[]) => {
+    await handleDelete(documentIds);
+  };
+
+  const handleRecoverDocuments = async (documentIds: string[]) => {
+    await handleRecover(documentIds);
   };
 
   const handleOpenReorder = () => {
@@ -78,7 +76,7 @@ const DocumentsPage = () => {
           />
         </div>
         
-        {/* Right Panel: Document Tree with Actions */}
+        {/* Right Panel: Document Tree */}
         <div className="flex-1 flex flex-col bg-background">
           <div className="p-4 border-b">
             <h1 className="text-2xl font-bold text-foreground">Documents</h1>
@@ -88,17 +86,6 @@ const DocumentsPage = () => {
                 : "Select a client to view their documents and folders"}
             </p>
           </div>
-
-          {/* Document Action Bar */}
-          <DocumentActionBar
-            selectedDocuments={selectedDocuments}
-            onEdit={handleEditDocument}
-            onMerge={handleMerge}
-            onDelete={handleDelete}
-            onRecover={handleRecover}
-            onReorder={handleOpenReorder}
-            disabled={isLoading}
-          />
           
           {/* Document Tree */}
           <div className="flex-1 p-4 overflow-hidden">
@@ -106,29 +93,18 @@ const DocumentsPage = () => {
               <DocumentTree 
                 rootNodes={filteredDocuments}
                 onNodeSelect={(node) => {
-                  if (node.type === 'file') {
-                    const isSelected = selectedDocuments.includes(node.id);
-                    if (isSelected) {
-                      setSelectedDocuments(prev => prev.filter(id => id !== node.id));
-                    } else {
-                      setSelectedDocuments(prev => [...prev, node.id]);
-                    }
-                  }
+                  console.log("Selected node:", node);
                 }}
                 onFileOpen={(node) => console.log('Opening file:', node)}
+                onEdit={handleEditDocument}
+                onMerge={handleMergeDocuments}
+                onDelete={handleDeleteDocuments}
+                onRecover={handleRecoverDocuments}
               />
             </div>
           </div>
         </div>
       </div>
-
-      {/* Edit Document Dialog */}
-      <EditDocumentDialog
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
-        documentName={editingDocument?.name || ''}
-        onSave={handleSaveEdit}
-      />
 
       {/* Reorder Documents Dialog */}
       <DocumentReorderDialog

@@ -1,10 +1,18 @@
 
 import React, { useState } from "react";
-import { ChevronRight, ChevronDown } from "lucide-react";
+import { ChevronRight, ChevronDown, Edit, Merge, Trash2, RotateCcw, MoreHorizontal } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { FolderIcon } from "./FolderIcon";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type DocumentStatus = "needs-review" | "complete" | "needs-signature" | undefined;
 type FolderType = 'client' | 'estate' | 'form' | 'financials' | 'default';
@@ -23,6 +31,10 @@ interface DocumentTreeProps {
   rootNodes: TreeNode[];
   onNodeSelect: (node: TreeNode) => void;
   onFileOpen: (node: TreeNode) => void;
+  onEdit?: (nodeId: string, newName: string) => void;
+  onMerge?: (nodeIds: string[]) => void;
+  onDelete?: (nodeIds: string[]) => void;
+  onRecover?: (nodeIds: string[]) => void;
 }
 
 interface TreeNodeItemProps {
@@ -32,6 +44,10 @@ interface TreeNodeItemProps {
   onFileOpen: (node: TreeNode) => void;
   expandedNodes: Set<string>;
   toggleNode: (nodeId: string) => void;
+  onEdit?: (nodeId: string, newName: string) => void;
+  onMerge?: (nodeIds: string[]) => void;
+  onDelete?: (nodeIds: string[]) => void;
+  onRecover?: (nodeIds: string[]) => void;
 }
 
 const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
@@ -40,8 +56,16 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
   onNodeSelect,
   onFileOpen,
   expandedNodes,
-  toggleNode
+  toggleNode,
+  onEdit,
+  onMerge,
+  onDelete,
+  onRecover
 }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(node.name);
+  const [isHovered, setIsHovered] = useState(false);
+
   const hasChildren = node.children && node.children.length > 0;
   const isExpanded = expandedNodes.has(node.id);
 
@@ -52,6 +76,30 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
       onFileOpen(node);
     }
     onNodeSelect(node);
+  };
+
+  const handleEdit = () => {
+    setIsEditing(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (onEdit && editName.trim() !== node.name) {
+      onEdit(node.id, editName.trim());
+    }
+    setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditName(node.name);
+    setIsEditing(false);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSaveEdit();
+    } else if (e.key === 'Escape') {
+      handleCancelEdit();
+    }
   };
 
   const getStatusColor = (status?: DocumentStatus) => {
@@ -71,11 +119,13 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
     <div>
       <div 
         className={cn(
-          "flex items-center gap-2 py-2 px-3 cursor-pointer hover:bg-accent rounded-md transition-colors",
+          "flex items-center gap-2 py-2 px-3 cursor-pointer hover:bg-accent rounded-md transition-colors group",
           "select-none"
         )}
         style={{ paddingLeft: `${level * 16 + 12}px` }}
         onClick={handleClick}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       >
         {hasChildren && (
           <button className="flex items-center justify-center w-4 h-4">
@@ -93,14 +143,115 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
           fileName={node.type === 'file' ? node.name : undefined}
         />
         
-        <span className="flex-1 text-sm font-medium truncate">
-          {node.name}
-        </span>
+        {isEditing ? (
+          <input
+            type="text"
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            onBlur={handleSaveEdit}
+            onKeyDown={handleKeyPress}
+            className="flex-1 text-sm font-medium px-2 py-1 border rounded"
+            autoFocus
+          />
+        ) : (
+          <span className="flex-1 text-sm font-medium truncate">
+            {node.name}
+          </span>
+        )}
         
         {node.status && (
           <Badge className={cn("text-xs", getStatusColor(node.status))}>
             {node.status.replace('-', ' ')}
           </Badge>
+        )}
+
+        {/* Action buttons - visible on hover */}
+        {(isHovered || isEditing) && !isEditing && (
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEdit();
+              }}
+              className="h-6 w-6 p-0"
+              title="Edit name"
+            >
+              <Edit className="h-3 w-3" />
+            </Button>
+            
+            {onDelete && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete([node.id]);
+                }}
+                className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                title="Delete"
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            )}
+            
+            {onRecover && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRecover([node.id]);
+                }}
+                className="h-6 w-6 p-0"
+                title="Recover"
+              >
+                <RotateCcw className="h-3 w-3" />
+              </Button>
+            )}
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={(e) => e.stopPropagation()}
+                  className="h-6 w-6 p-0"
+                >
+                  <MoreHorizontal className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleEdit}>
+                  <Edit className="h-3 w-3 mr-2" />
+                  Rename
+                </DropdownMenuItem>
+                {onMerge && node.type === 'file' && (
+                  <DropdownMenuItem onClick={() => onMerge([node.id])}>
+                    <Merge className="h-3 w-3 mr-2" />
+                    Merge
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                {onDelete && (
+                  <DropdownMenuItem 
+                    onClick={() => onDelete([node.id])}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="h-3 w-3 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                )}
+                {onRecover && (
+                  <DropdownMenuItem onClick={() => onRecover([node.id])}>
+                    <RotateCcw className="h-3 w-3 mr-2" />
+                    Recover
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         )}
       </div>
       
@@ -115,6 +266,10 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
               onFileOpen={onFileOpen}
               expandedNodes={expandedNodes}
               toggleNode={toggleNode}
+              onEdit={onEdit}
+              onMerge={onMerge}
+              onDelete={onDelete}
+              onRecover={onRecover}
             />
           ))}
         </div>
@@ -126,7 +281,11 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
 export const DocumentTree: React.FC<DocumentTreeProps> = ({
   rootNodes,
   onNodeSelect,
-  onFileOpen
+  onFileOpen,
+  onEdit,
+  onMerge,
+  onDelete,
+  onRecover
 }) => {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
 
@@ -163,6 +322,10 @@ export const DocumentTree: React.FC<DocumentTreeProps> = ({
             onFileOpen={onFileOpen}
             expandedNodes={expandedNodes}
             toggleNode={toggleNode}
+            onEdit={onEdit}
+            onMerge={onMerge}
+            onDelete={onDelete}
+            onRecover={onRecover}
           />
         ))}
       </div>
