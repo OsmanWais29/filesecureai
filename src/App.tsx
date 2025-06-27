@@ -19,6 +19,7 @@ import IncomeExpensePage from './pages/income-expense/IncomeExpensePage';
 import AuditTrailPage from './pages/audit/AuditTrailPage';
 import ProductionAudit from './pages/audit/ProductionAudit';
 import NotificationsPage from './pages/NotificationsPage';
+import MessagesPage from './pages/MessagesPage';
 import ProfilePage from './pages/ProfilePage';
 import CRMPage from './pages/CRMPage';
 import ClientViewerPage from './pages/ClientViewerPage';
@@ -51,6 +52,7 @@ function App() {
         <Route path="/audit/production" element={<AuthCheck><ProductionAudit /></AuthCheck>} />
         <Route path="/analytics" element={<AuthCheck><AnalyticsPage /></AuthCheck>} />
         <Route path="/notifications" element={<AuthCheck><NotificationsPage /></AuthCheck>} />
+        <Route path="/messages" element={<AuthCheck><MessagesPage /></AuthCheck>} />
         <Route path="/settings" element={<AuthCheck><SettingsPage /></AuthCheck>} />
         <Route path="/profile" element={<AuthCheck><ProfilePage /></AuthCheck>} />
         

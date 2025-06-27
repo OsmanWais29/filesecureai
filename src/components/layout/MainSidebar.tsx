@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ export const MainSidebar = () => {
     { name: "Audit Trail", href: "/audit", icon: Activity },
     { name: "Analytics", href: "/analytics", icon: BarChart3 },
     { name: "Notifications", href: "/notifications", icon: Bell },
+    { name: "Messages", href: "/messages", icon: MessageSquare },
     { name: "Settings", href: "/settings", icon: Settings },
     { name: "Profile", href: "/profile", icon: User },
   ];
