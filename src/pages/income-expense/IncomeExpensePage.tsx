@@ -3,11 +3,11 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { FileText, Plus, User, TrendingUp, Calculator, Database } from "lucide-react";
+import { FileText, Plus, User, TrendingUp, Calculator, Database, Bot } from "lucide-react";
 import { IncomeExpenseModal } from "@/components/activity/form/IncomeExpenseModal";
 import { IncomeExpenseForm } from "@/components/activity/IncomeExpenseForm";
 import { PredictiveAnalysis } from "@/components/activity/PredictiveAnalysis";
-import { DocumentUploadSection } from "@/components/activity/DocumentUploadSection";
+import { TrusteeCoPliotButton } from "@/components/activity/components/TrusteeCoPliot/TrusteeCoPliotButton";
 import { Client } from "@/components/activity/types";
 import { MainLayout } from "@/components/layout/MainLayout";
 
@@ -27,7 +27,7 @@ const IncomeExpensePage = () => {
 
   const tabs = [
     { id: "form", label: "Income & Expense Form", icon: FileText },
-    { id: "dashboard", label: "Dashboard", icon: Database },
+    { id: "verification", label: "TrusteeCo-Pilot Verification", icon: Bot },
     { id: "analysis", label: "Predictive Analysis", icon: TrendingUp },
   ];
 
@@ -46,7 +46,7 @@ const IncomeExpensePage = () => {
                 No Client Selected
               </h3>
               <p className="text-gray-500 max-w-md leading-relaxed">
-                Please select a client above to begin entering financial data and accessing their dashboard.
+                Please select a client above to begin entering financial data and accessing their verification tools.
               </p>
             </div>
           </CardContent>
@@ -73,50 +73,109 @@ const IncomeExpensePage = () => {
           </Card>
         );
       
-      case "dashboard":
+      case "verification":
         return (
           <div className="space-y-6">
-            {/* Client Overview Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="shadow-sm border-gray-200">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Total Monthly Income</p>
-                      <p className="text-2xl font-bold text-green-600">$4,250</p>
-                    </div>
-                    <TrendingUp className="h-8 w-8 text-green-600" />
+            {/* TrusteeCo-Pilot AI Verification Section */}
+            <Card className="shadow-sm border-gray-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bot className="h-5 w-5 text-blue-600" />
+                  TrusteeCo-Pilot Document Verification - {selectedClientData?.name}
+                </CardTitle>
+                <p className="text-gray-600 text-sm">
+                  AI-powered verification of supporting documents to ensure compliance with OSB rules and regulations
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="font-medium text-blue-900 mb-2">OSB Compliance Verification</h4>
+                  <p className="text-blue-700 text-sm mb-4">
+                    Our AI assistant verifies that all submitted documents comply with Office of the Superintendent of Bankruptcy rules, 
+                    ensuring accuracy and truthfulness in financial reporting.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <TrusteeCoPliotButton 
+                      variant="default" 
+                      size="lg"
+                      className="flex-1"
+                      clientId={selectedClient}
+                    />
                   </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="shadow-sm border-gray-200">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Total Monthly Expenses</p>
-                      <p className="text-2xl font-bold text-red-600">$3,890</p>
-                    </div>
-                    <Calculator className="h-8 w-8 text-red-600" />
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="shadow-sm border-gray-200">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Net Surplus</p>
-                      <p className="text-2xl font-bold text-blue-600">$360</p>
-                    </div>
-                    <Database className="h-8 w-8 text-blue-600" />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
 
-            {/* Document Upload Section */}
-            <DocumentUploadSection />
+                {/* Verification Status Overview */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Card className="shadow-sm border-gray-200">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">Documents Verified</p>
+                          <p className="text-2xl font-bold text-green-600">12</p>
+                        </div>
+                        <FileText className="h-8 w-8 text-green-600" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="shadow-sm border-gray-200">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">Compliance Score</p>
+                          <p className="text-2xl font-bold text-blue-600">94%</p>
+                        </div>
+                        <Calculator className="h-8 w-8 text-blue-600" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="shadow-sm border-gray-200">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-gray-600">OSB Rules Check</p>
+                          <p className="text-2xl font-bold text-orange-600">2 Issues</p>
+                        </div>
+                        <Database className="h-8 w-8 text-orange-600" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Recent Verification Activity */}
+                <Card className="shadow-sm border-gray-200">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Recent Verification Activity</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span className="text-sm">Form 31 - Proof of Claim verified</span>
+                        </div>
+                        <span className="text-xs text-gray-500">2 hours ago</span>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                          <span className="text-sm">Income Statement - Minor discrepancy found</span>
+                        </div>
+                        <span className="text-xs text-gray-500">4 hours ago</span>
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span className="text-sm">Bank Statement - Successfully verified</span>
+                        </div>
+                        <span className="text-xs text-gray-500">1 day ago</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </CardContent>
+            </Card>
           </div>
         );
         
@@ -137,7 +196,7 @@ const IncomeExpensePage = () => {
             Smart Income & Expense Management
           </h1>
           <p className="text-gray-600 text-sm">
-            Manage and track client financial data with AI-powered insights
+            Manage and track client financial data with AI-powered insights and OSB compliance verification
           </p>
         </div>
 
