@@ -49,12 +49,12 @@ export const DocumentUploadSection = ({ onDocumentUpload }: DocumentUploadSectio
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Simulate verification results
-      const mockVerification: UploadedDocument = {
+      const mockVerification = {
         id: Date.now().toString(),
         name: file.name,
         type: file.type.includes('spreadsheet') || file.name.includes('.xlsx') ? 'spreadsheet' : 'document',
         size: file.size,
-        verificationStatus: Math.random() > 0.3 ? 'verified' : 'flagged',
+        verificationStatus: Math.random() > 0.3 ? 'verified' : 'flagged' as const,
         confidence: Math.round(Math.random() * 30 + 70)
       };
 
@@ -107,16 +107,16 @@ export const DocumentUploadSection = ({ onDocumentUpload }: DocumentUploadSectio
   };
 
   return (
-    <div className="h-full flex flex-col space-y-3">
-      <Card className="flex-1">
-        <CardHeader className="pb-3">
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
           <CardTitle className="text-sm">Upload Supporting Documents</CardTitle>
         </CardHeader>
-        <CardContent className="flex-1 flex flex-col">
+        <CardContent>
           <div
             {...getRootProps()}
             className={`
-              border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors flex-1 flex flex-col justify-center min-h-[200px]
+              border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors
               ${isDragActive ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary/50'}
               ${uploading ? 'pointer-events-none opacity-50' : ''}
             `}
@@ -154,32 +154,28 @@ export const DocumentUploadSection = ({ onDocumentUpload }: DocumentUploadSectio
               </div>
             )}
           </div>
+
+          {uploadedDocs.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <h4 className="text-sm font-medium">Uploaded Documents</h4>
+              {uploadedDocs.map((doc) => (
+                <div key={doc.id} className="flex items-center justify-between p-2 border rounded-md">
+                  <div className="flex items-center gap-2">
+                    {getStatusIcon(doc.verificationStatus)}
+                    <div>
+                      <p className="text-xs font-medium truncate max-w-32">{doc.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {(doc.size / 1024 / 1024).toFixed(1)} MB
+                      </p>
+                    </div>
+                  </div>
+                  {getStatusBadge(doc.verificationStatus, doc.confidence)}
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
-
-      {uploadedDocs.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Uploaded Documents</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 p-3">
-            {uploadedDocs.map((doc) => (
-              <div key={doc.id} className="flex items-center justify-between p-2 border rounded-md">
-                <div className="flex items-center gap-2">
-                  {getStatusIcon(doc.verificationStatus)}
-                  <div>
-                    <p className="text-xs font-medium truncate max-w-32">{doc.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {(doc.size / 1024 / 1024).toFixed(1)} MB
-                    </p>
-                  </div>
-                </div>
-                {getStatusBadge(doc.verificationStatus, doc.confidence)}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };

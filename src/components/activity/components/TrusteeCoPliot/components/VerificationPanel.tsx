@@ -57,9 +57,9 @@ export const VerificationPanel = ({ verificationData }: VerificationPanelProps) 
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <Tabs defaultValue="upload" className="flex flex-col h-full">
-        <div className="px-3 pt-3 pb-1 border-b flex-shrink-0">
+    <div className="h-full overflow-hidden">
+      <Tabs defaultValue="upload" className="h-full flex flex-col">
+        <div className="px-4 pt-4 border-b">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="upload" className="flex items-center gap-1.5 text-xs">
               <Upload className="h-3 w-3" />
@@ -76,23 +76,23 @@ export const VerificationPanel = ({ verificationData }: VerificationPanelProps) 
           </TabsList>
         </div>
 
-        <div className="flex-1 overflow-hidden">
-          <TabsContent value="upload" className="h-full m-0 p-2">
+        <div className="flex-1 overflow-y-auto">
+          <TabsContent value="upload" className="mt-0 p-4 h-full">
             <DocumentUploadSection onDocumentUpload={handleDocumentUpload} />
           </TabsContent>
 
-          <TabsContent value="results" className="h-full m-0 p-2 overflow-y-auto">
+          <TabsContent value="results" className="mt-0 p-4 h-full">
             <VerificationResults results={verificationResults} />
           </TabsContent>
 
-          <TabsContent value="summary" className="h-full m-0 p-2 overflow-y-auto">
-            <div className="space-y-3">
+          <TabsContent value="summary" className="mt-0 p-4 h-full">
+            <div className="space-y-4">
               <Card>
-                <CardHeader className="pb-3">
+                <CardHeader>
                   <CardTitle className="text-sm">Verification Summary</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="text-center p-3 border rounded-md">
                       <p className="text-2xl font-bold text-green-600">
                         {verificationResults.filter(r => r.status === 'match').length}
