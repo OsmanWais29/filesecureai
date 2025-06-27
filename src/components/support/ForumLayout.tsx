@@ -22,7 +22,7 @@ export const ForumLayout = ({
       <SupportHeader 
         searchQuery={searchQuery} 
         setSearchQuery={setSearchQuery} 
-        setShowChatbot={setShowChatbot}
+        setShowChatbot={() => {}} // Remove chatbot functionality
       />
       
       <div className="flex flex-1 overflow-y-auto">
