@@ -25,10 +25,8 @@ export const TrusteeCoPliotModal = ({
   const { completionPercentage, chatMessages } = useChatMessages();
   const { verificationData } = useVerificationData();
   
-  // Set the default tab directly based on chat messages
-  const [activeTab, setActiveTab] = useState<string>(
-    chatMessages.length > 0 ? "conversation" : "verification"
-  );
+  // Default to conversation tab for better user experience
+  const [activeTab, setActiveTab] = useState<string>("conversation");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -59,7 +57,6 @@ export const TrusteeCoPliotModal = ({
                   <TabsTrigger 
                     value="conversation" 
                     className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground flex items-center gap-1.5"
-                    disabled={chatMessages.length === 0}
                   >
                     <MessageSquare className="h-4 w-4" />
                     Conversation
@@ -74,17 +71,14 @@ export const TrusteeCoPliotModal = ({
                 </TabsList>
               </div>
 
-              {/* Only render the conversation tab content if there are messages */}
-              {chatMessages.length > 0 && (
-                <TabsContent 
-                  value="conversation" 
-                  className="flex-1 flex flex-col overflow-hidden mt-0 p-0"
-                >
-                  <div className="flex-1 flex flex-col overflow-hidden pt-4 px-4 pb-4">
-                    <ChatPanel />
-                  </div>
-                </TabsContent>
-              )}
+              <TabsContent 
+                value="conversation" 
+                className="flex-1 flex flex-col overflow-hidden mt-0 p-0"
+              >
+                <div className="flex-1 flex flex-col overflow-hidden pt-4 px-4 pb-4">
+                  <ChatPanel />
+                </div>
+              </TabsContent>
 
               <TabsContent 
                 value="verification" 
