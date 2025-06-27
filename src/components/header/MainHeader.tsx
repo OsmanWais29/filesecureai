@@ -21,7 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { NotificationBell } from "../notifications/NotificationBell";
 import { NotificationsList } from "../notifications/NotificationsList";
-import { supabase } from "@/lib/supabase";
+import { useAuthState } from "@/hooks/useAuthState";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useIsTablet } from "@/hooks/use-tablet";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -31,20 +31,36 @@ export const MainHeader = () => {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user, signOut } = useAuthState();
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
   const { theme, toggleTheme } = useTheme();
 
   const handleSignOut = async () => {
+    if (signingOut) return;
+    
     try {
-      await supabase.auth.signOut();
+      setSigningOut(true);
+      console.log("Signing out user from MainHeader");
+      
+      await signOut();
+      
       toast({
         title: "Signed out successfully",
         description: "You have been signed out of your account."
       });
-      navigate('/');
+      
+      // Redirect based on user type or default to trustee login
+      const userType = user?.user_metadata?.user_type;
+      if (userType === 'client') {
+        navigate('/client-login', { replace: true });
+      } else {
+        navigate('/trustee-login', { replace: true });
+      }
     } catch (error) {
       console.error("Error signing out:", error);
       toast({
@@ -52,8 +68,13 @@ export const MainHeader = () => {
         title: "Sign out failed",
         description: "There was a problem signing you out. Please try again."
       });
+    } finally {
+      setSigningOut(false);
     }
   };
+
+  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || "User";
+  const userInitials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-white dark:bg-background px-4 sm:px-6 shadow-sm">
@@ -112,11 +133,20 @@ export const MainHeader = () => {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Avatar className="cursor-pointer h-9 w-9 bg-primary/10 hover:border-primary/30 transition-colors">
-                <AvatarFallback className="bg-primary/10 text-primary font-medium">JD</AvatarFallback>
+                <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                  {userInitials}
+                </AvatarFallback>
               </Avatar>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuLabel>
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">{userName}</p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {user?.email}
+                  </p>
+                </div>
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer">
                 <User className="mr-2 h-4 w-4" />
@@ -127,9 +157,13 @@ export const MainHeader = () => {
                 Notification Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut} className="text-destructive cursor-pointer">
+              <DropdownMenuItem 
+                onClick={handleSignOut} 
+                disabled={signingOut}
+                className="text-destructive cursor-pointer"
+              >
                 <LogOut className="mr-2 h-4 w-4" />
-                Sign out
+                {signingOut ? 'Signing out...' : 'Sign out'}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
