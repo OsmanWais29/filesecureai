@@ -8,19 +8,20 @@ import { IncomeExpenseModal } from "@/components/activity/form/IncomeExpenseModa
 import { IncomeExpenseForm } from "@/components/activity/IncomeExpenseForm";
 import { PredictiveAnalysis } from "@/components/activity/PredictiveAnalysis";
 import { DocumentUploadSection } from "@/components/activity/DocumentUploadSection";
+import { Client } from "@/components/activity/types";
 
 const ActivityPage = () => {
   const [selectedClient, setSelectedClient] = useState<string>("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("form");
 
-  // Mock clients - in real app this would come from your CRM/database
-  const clients = [
-    { id: "1", name: "John Doe", status: "active", last_activity: "2024-03-15" },
-    { id: "2", name: "Jane Smith", status: "active", last_activity: "2024-03-14" },
-    { id: "3", name: "Robert Johnson", status: "pending", last_activity: "2024-03-13" },
-    { id: "4", name: "Sarah Williams", status: "active", last_activity: "2024-03-12" },
-    { id: "5", name: "Michael Brown", status: "active", last_activity: "2024-03-11" },
+  // Mock clients - properly typed with Client interface
+  const clients: Client[] = [
+    { id: "1", name: "John Doe", status: "active" as const, last_activity: "2024-03-15" },
+    { id: "2", name: "Jane Smith", status: "active" as const, last_activity: "2024-03-14" },
+    { id: "3", name: "Robert Johnson", status: "pending" as const, last_activity: "2024-03-13" },
+    { id: "4", name: "Sarah Williams", status: "active" as const, last_activity: "2024-03-12" },
+    { id: "5", name: "Michael Brown", status: "active" as const, last_activity: "2024-03-11" },
   ];
 
   const tabs = [
