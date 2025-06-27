@@ -1,9 +1,8 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { SupportDashboard } from '@/components/support/SupportDashboard';
 import { ForumLayout } from '@/components/support/ForumLayout';
-import { useState } from 'react';
 
 const SupportPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -19,7 +18,8 @@ const SupportPage = () => {
         >
           <SupportDashboard 
             selectedCategory={selectedCategory} 
-            searchQuery={searchQuery} 
+            searchQuery={searchQuery}
+            setSelectedCategory={setSelectedCategory}
           />
         </ForumLayout>
       </div>

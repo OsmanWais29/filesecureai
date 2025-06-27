@@ -22,20 +22,20 @@ export const ForumLayout = ({
       <SupportHeader 
         searchQuery={searchQuery} 
         setSearchQuery={setSearchQuery} 
-        setShowChatbot={() => {}} // Remove chatbot functionality
+        setShowChatbot={setShowChatbot}
       />
       
-      <div className="flex flex-1 overflow-y-auto">
-        <div className="flex flex-1 gap-4 p-4 md:p-6">
+      <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 gap-4 p-4 md:p-6 overflow-hidden">
           {/* Main Content */}
-          <div className="flex-1 max-w-3xl">
-            <Card className="shadow-sm overflow-hidden">
+          <div className="flex-1 max-w-3xl overflow-auto">
+            <Card className="shadow-sm h-full">
               {children}
             </Card>
           </div>
           
           {/* Right Sidebar */}
-          <div className="hidden lg:block w-80">
+          <div className="hidden lg:block w-80 overflow-auto">
             <SupportSidebar />
           </div>
         </div>

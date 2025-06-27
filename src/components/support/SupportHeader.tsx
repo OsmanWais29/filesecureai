@@ -16,7 +16,7 @@ export const SupportHeader = ({
   setShowChatbot 
 }: SupportHeaderProps) => {
   return (
-    <div className="border-b bg-background p-4">
+    <div className="border-b bg-background p-4 flex-shrink-0">
       <div className="max-w-6xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-4 flex-1">
           <div className="relative flex-1 max-w-md">

@@ -3,7 +3,6 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { 
   Search, 
   MessageSquare, 
@@ -18,6 +17,7 @@ import {
 interface SupportDashboardProps {
   selectedCategory: string;
   searchQuery: string;
+  setSelectedCategory: (category: string) => void;
 }
 
 const supportTopics = [
@@ -81,7 +81,7 @@ const categories = [
   { name: "General", count: 10, icon: Star },
 ];
 
-export const SupportDashboard = ({ selectedCategory, searchQuery }: SupportDashboardProps) => {
+export const SupportDashboard = ({ selectedCategory, searchQuery, setSelectedCategory }: SupportDashboardProps) => {
   const filteredTopics = supportTopics.filter(topic => {
     const matchesSearch = !searchQuery || 
       topic.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -112,6 +112,7 @@ export const SupportDashboard = ({ selectedCategory, searchQuery }: SupportDashb
               key={category.name}
               variant={selectedCategory === category.name.toLowerCase() ? "default" : "outline"}
               className="cursor-pointer hover:bg-primary/10 px-3 py-1"
+              onClick={() => setSelectedCategory(category.name.toLowerCase())}
             >
               <category.icon className="h-3 w-3 mr-1" />
               {category.name} ({category.count})
