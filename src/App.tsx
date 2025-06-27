@@ -50,6 +50,10 @@ function App() {
         <Route path="/client-login" element={<ClientLogin />} />
         <Route path="/signup" element={<SignupPage />} />
         
+        {/* Document Routes - Added missing route */}
+        <Route path="/document/:documentId" element={<AuthCheck><DocumentViewerPage /></AuthCheck>} />
+        <Route path="/document-viewer/:documentId" element={<AuthCheck><DocumentViewerPage /></AuthCheck>} />
+        
         {/* Trustee Portal Routes */}
         <Route path="/trustee" element={<AuthCheck><HomePage /></AuthCheck>} />
         <Route path="/trustee/dashboard" element={<AuthCheck><TrusteeDashboardPage /></AuthCheck>} />
@@ -70,8 +74,6 @@ function App() {
         <Route path="/trustee/settings" element={<AuthCheck><SettingsPage /></AuthCheck>} />
         <Route path="/trustee/profile" element={<AuthCheck><ProfilePage /></AuthCheck>} />
         <Route path="/trustee/messages" element={<AuthCheck><MessagesPage /></AuthCheck>} />
-        <Route path="/trustee/document-viewer/:documentId" element={<AuthCheck><DocumentViewerPage /></AuthCheck>} />
-        <Route path="/trustee/client-viewer/:clientId" element={<AuthCheck><ClientViewerPage /></AuthCheck>} />
 
         {/* Client Portal Routes */}
         <Route path="/client-portal/*" element={<AuthCheck><ClientPortal /></AuthCheck>} />
@@ -92,7 +94,6 @@ function App() {
         <Route path="/client-viewer/:clientId" element={<AuthCheck><ClientViewerPage /></AuthCheck>} />
         <Route path="/safa" element={<AuthCheck><SAFAPage /></AuthCheck>} />
         <Route path="/tasks" element={<AuthCheck><TaskManagementPage /></AuthCheck>} />
-        <Route path="/document-viewer/:documentId" element={<AuthCheck><DocumentViewerPage /></AuthCheck>} />
         <Route path="/clients" element={<AuthCheck><ClientPage /></AuthCheck>} />
         <Route path="/workflows" element={<AuthCheck><WorkflowPage /></AuthCheck>} />
       </Routes>

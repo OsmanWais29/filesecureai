@@ -2,20 +2,33 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { DocumentViewer } from '@/components/DocumentViewer';
 
 const DocumentViewerPage = () => {
-  const { documentId } = useParams();
+  const { documentId } = useParams<{ documentId: string }>();
+
+  if (!documentId) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold mb-2">Document Not Found</h2>
+            <p className="text-muted-foreground">No document ID provided in the URL.</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
-      <div className="p-6">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Document Viewer</h1>
-          <p className="text-gray-600 mt-1">Viewing document: {documentId}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-gray-600">Document viewer for document ID: {documentId}</p>
-        </div>
+      <div className="h-[calc(100vh-4rem)] p-4">
+        <DocumentViewer 
+          documentId={documentId}
+          onLoadFailure={() => {
+            console.log("Document failed to load:", documentId);
+          }}
+        />
       </div>
     </MainLayout>
   );
