@@ -13,7 +13,7 @@ const ClientLogin = () => {
   const [confirmationSent, setConfirmationSent] = useState(false);
   const [confirmationEmail, setConfirmationEmail] = useState('');
   const navigate = useNavigate();
-  const { user, loading, initialized, isClient } = useAuthState();
+  const { user, loading, initialized } = useAuthState();
   const [redirecting, setRedirecting] = useState(false);
 
   // Redirect if already authenticated as client
@@ -29,7 +29,7 @@ const ClientLogin = () => {
         console.log('Trustee account trying to access client login');
         toast.error("Please use the trustee portal for trustee accounts");
         setRedirecting(true);
-        navigate('/login', { replace: true });
+        navigate('/trustee-login', { replace: true });
       }
     }
   }, [user, loading, navigate, initialized, redirecting]);
@@ -45,7 +45,7 @@ const ClientLogin = () => {
 
   const handleSwitchToTrusteePortal = () => {
     setRedirecting(true);
-    navigate('/login');
+    navigate('/trustee-login');
   };
 
   if (loading || redirecting) {

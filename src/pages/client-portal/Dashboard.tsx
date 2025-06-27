@@ -1,263 +1,189 @@
 
-import { useState, useEffect } from "react";
-import { useAuthState } from "@/hooks/useAuthState";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { StatusBadge } from "@/components/client-portal/StatusBadge";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { 
   FileText, 
-  CheckSquare, 
   Calendar, 
-  Clock, 
-  AlertCircle, 
+  CheckSquare, 
+  MessageSquare, 
+  Clock,
+  AlertCircle,
   TrendingUp,
-  User,
-  Phone,
-  Mail
+  User
 } from "lucide-react";
 
-interface DashboardStats {
-  totalDocuments: number;
-  pendingTasks: number;
-  upcomingAppointments: number;
-  recentActivity: string;
-}
-
-interface RecentActivity {
-  id: string;
-  type: 'document' | 'task' | 'appointment';
-  title: string;
-  date: string;
-  status: string;
-}
-
 export const ClientDashboard = () => {
-  const { user } = useAuthState();
-  const [stats, setStats] = useState<DashboardStats>({
-    totalDocuments: 0,
-    pendingTasks: 0,
-    upcomingAppointments: 0,
-    recentActivity: ''
-  });
-  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Mock data for demonstration
-    setTimeout(() => {
-      setStats({
-        totalDocuments: 8,
-        pendingTasks: 3,
-        upcomingAppointments: 2,
-        recentActivity: 'Form 47 reviewed'
-      });
-      setRecentActivities([
-        {
-          id: "1",
-          type: "document",
-          title: "Income Statement uploaded",
-          date: "2024-01-15",
-          status: "completed"
-        },
-        {
-          id: "2",
-          type: "task",
-          title: "Review consumer proposal",
-          date: "2024-01-14",
-          status: "pending"
-        },
-        {
-          id: "3",
-          type: "appointment",
-          title: "Initial consultation scheduled",
-          date: "2024-01-13",
-          status: "scheduled"
-        }
-      ]);
-      setLoading(false);
-    }, 1000);
-  }, []);
-
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case 'document': return FileText;
-      case 'task': return CheckSquare;
-      case 'appointment': return Calendar;
-      default: return FileText;
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="p-6 bg-gray-50 min-h-screen">
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className="h-32 bg-gray-200 rounded"></div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Welcome Header */}
-        <div className="bg-white rounded-lg shadow-sm border p-6">
+    <div className="p-6 space-y-6">
+      {/* Welcome Section */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Welcome Back</h1>
+          <p className="text-gray-600 mt-1">Here's what's happening with your case</p>
+        </div>
+        <Button>
+          <MessageSquare className="h-4 w-4 mr-2" />
+          Contact Trustee
+        </Button>
+      </div>
+
+      {/* Case Status Card */}
+      <Card className="border-l-4 border-l-blue-500">
+        <CardHeader>
           <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Case Status
+            </CardTitle>
+            <Badge variant="secondary">Active</Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Case Progress</span>
+              <span className="text-sm text-gray-500">65%</span>
+            </div>
+            <Progress value={65} className="h-2" />
+          </div>
+          <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Welcome back, {user?.user_metadata?.full_name || 'Client'}
-              </h1>
-              <p className="text-gray-600 mt-1">
-                Here's an overview of your case progress and upcoming items.
-              </p>
+              <span className="text-gray-500">Case Number:</span>
+              <p className="font-medium">#2024-001234</p>
             </div>
-            <div className="text-right text-sm text-gray-500">
-              Last updated: {new Date().toLocaleDateString()}
+            <div>
+              <span className="text-gray-500">Trustee:</span>
+              <p className="font-medium">Sarah Johnson, LIT</p>
             </div>
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="bg-white border shadow-sm hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-700">Total Documents</CardTitle>
-              <FileText className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-gray-900">{stats.totalDocuments}</div>
-              <p className="text-xs text-gray-600">Documents in your case</p>
-            </CardContent>
-          </Card>
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Documents</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">12</div>
+            <p className="text-xs text-muted-foreground">
+              +2 from last week
+            </p>
+          </CardContent>
+        </Card>
 
-          <Card className="bg-white border shadow-sm hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-700">Pending Tasks</CardTitle>
-              <CheckSquare className="h-4 w-4 text-orange-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-gray-900">{stats.pendingTasks}</div>
-              <p className="text-xs text-gray-600">Items requiring attention</p>
-            </CardContent>
-          </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pending Tasks</CardTitle>
+            <CheckSquare className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">3</div>
+            <p className="text-xs text-muted-foreground">
+              2 due this week
+            </p>
+          </CardContent>
+        </Card>
 
-          <Card className="bg-white border shadow-sm hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-700">Upcoming Appointments</CardTitle>
-              <Calendar className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-gray-900">{stats.upcomingAppointments}</div>
-              <p className="text-xs text-gray-600">Scheduled meetings</p>
-            </CardContent>
-          </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Next Appointment</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">2</div>
+            <p className="text-xs text-muted-foreground">
+              days away
+            </p>
+          </CardContent>
+        </Card>
 
-          <Card className="bg-white border shadow-sm hover:shadow-md transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-700">Case Status</CardTitle>
-              <TrendingUp className="h-4 w-4 text-purple-600" />
-            </CardHeader>
-            <CardContent>
-              <StatusBadge status="Active" size="sm" />
-              <p className="text-xs text-gray-600 mt-1">Consumer proposal</p>
-            </CardContent>
-          </Card>
-        </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Messages</CardTitle>
+            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">1</div>
+            <p className="text-xs text-muted-foreground">
+              unread message
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Recent Activity */}
-          <div className="lg:col-span-2">
-            <Card className="bg-white border shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-gray-900">Recent Activity</CardTitle>
-                <CardDescription className="text-gray-600">
-                  Latest updates on your case
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {recentActivities.map((activity) => {
-                  const Icon = getActivityIcon(activity.type);
-                  return (
-                    <div key={activity.id} className="flex items-center space-x-4 p-3 rounded-lg bg-gray-50 border">
-                      <div className="p-2 bg-blue-100 rounded-lg">
-                        <Icon className="h-4 w-4 text-blue-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900">{activity.title}</p>
-                        <p className="text-xs text-gray-600">
-                          {new Date(activity.date).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <StatusBadge status={activity.status} size="sm" />
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
-          </div>
+      {/* Recent Activity and Upcoming Tasks */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Activity */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Recent Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">Document uploaded</p>
+                <p className="text-xs text-gray-500">Monthly budget worksheet - 2 hours ago</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">Meeting scheduled</p>
+                <p className="text-xs text-gray-500">Review meeting for next week - 1 day ago</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-2 h-2 bg-orange-500 rounded-full mt-2"></div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">Task completed</p>
+                <p className="text-xs text-gray-500">Submitted income verification - 3 days ago</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Quick Actions & Info */}
-          <div className="space-y-6">
-            {/* Quick Actions */}
-            <Card className="bg-white border shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-gray-900">Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" size="sm">
-                  <FileText className="h-4 w-4 mr-2" />
-                  View Documents
-                </Button>
-                <Button variant="outline" className="w-full border-gray-300 text-gray-700 hover:bg-gray-50" size="sm">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Schedule Meeting
-                </Button>
-                <Button variant="outline" className="w-full border-gray-300 text-gray-700 hover:bg-gray-50" size="sm">
-                  <CheckSquare className="h-4 w-4 mr-2" />
-                  View Tasks
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Contact Info */}
-            <Card className="bg-white border shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-gray-900">Your Trustee</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                    <User className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Sarah Johnson, LIT</p>
-                    <p className="text-xs text-gray-600">Licensed Insolvency Trustee</p>
-                  </div>
-                </div>
-                <div className="space-y-2 pt-2 border-t">
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Phone className="h-4 w-4 mr-2" />
-                    (416) 555-0123
-                  </div>
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Mail className="h-4 w-4 mr-2" />
-                    sarah.johnson@trustee.com
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+        {/* Upcoming Tasks */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5" />
+              Upcoming Tasks
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
+              <div>
+                <p className="text-sm font-medium text-red-800">Submit Monthly Report</p>
+                <p className="text-xs text-red-600">Due in 2 days</p>
+              </div>
+              <Badge variant="destructive">Urgent</Badge>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+              <div>
+                <p className="text-sm font-medium text-yellow-800">Update Contact Information</p>
+                <p className="text-xs text-yellow-600">Due next week</p>
+              </div>
+              <Badge variant="secondary">Medium</Badge>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+              <div>
+                <p className="text-sm font-medium text-green-800">Review Financial Summary</p>
+                <p className="text-xs text-green-600">Due in 2 weeks</p>
+              </div>
+              <Badge variant="outline">Low</Badge>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
 };
-
-export default ClientDashboard;
