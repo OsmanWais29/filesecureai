@@ -3,6 +3,7 @@
  * Production-grade performance optimization utilities
  */
 
+import React from 'react';
 import { startTiming, endTiming } from './performanceMonitor';
 
 interface CacheConfig {
@@ -186,7 +187,7 @@ export const optimizeImageLoad = (src: string, options: {
 // Bundle optimization utilities
 export const lazyLoadComponent = <T extends React.ComponentType<any>>(
   importFn: () => Promise<{ default: T }>,
-  fallback?: React.ComponentNode
+  fallback?: React.ReactNode
 ) => {
   return React.lazy(() => {
     startTiming('component-lazy-load');

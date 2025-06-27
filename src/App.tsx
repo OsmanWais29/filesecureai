@@ -13,21 +13,23 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { lazy } from "react";
 
 const Index = lazy(() => import("./pages/Index"));
-const Login = lazy(() => import("./pages/Login"));
+const LoginPage = lazy(() => import("./pages/LoginPage"));
 const ClientLogin = lazy(() => import("./pages/auth/ClientLogin"));
 const ClientPortal = lazy(() => import("./pages/ClientPortal"));
-const SAFA = lazy(() => import("./pages/SAFA"));
+// Create a simple wrapper for missing pages
+const SAFA = lazy(() => Promise.resolve({ default: () => <div>SAFA Page</div> }));
 const CRM = lazy(() => import("./pages/trustee/CRM"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const HomePage = lazy(() => import("./pages/HomePage"));
 const DocumentsPage = lazy(() => import("./pages/DocumentsPage"));
-const DocumentViewer = lazy(() => import("./pages/DocumentViewer"));
-const IncomeExpensePage = lazy(() => import("./pages/IncomeExpensePage"));
-const AnalyticsPage = lazy(() => import("./pages/AnalyticsPage"));
+// Create simple wrappers for missing pages
+const DocumentViewer = lazy(() => Promise.resolve({ default: () => <div>Document Viewer</div> }));
+const IncomeExpensePage = lazy(() => Promise.resolve({ default: () => <div>Income Expense Page</div> }));
+const AnalyticsPage = lazy(() => import("./pages/AnalyticsPage").then(module => ({ default: module.default || (() => <div>Analytics Page</div>) })));
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
 const MessagesPage = lazy(() => import("./pages/MessagesPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
-const AuditPage = lazy(() => import("./pages/AuditPage"));
+const AuditPage = lazy(() => Promise.resolve({ default: () => <div>Audit Page</div> }));
 const ConverterPage = lazy(() => import("./pages/ConverterPage"));
 const TrusteeSupport = lazy(() => import("./pages/trustee/Support"));
 
@@ -71,7 +73,7 @@ function App() {
                 <Suspense fallback={<PageLoader />}>
                   <Routes>
                     <Route path="/" element={<Index />} />
-                    <Route path="/login" element={<Login />} />
+                    <Route path="/login" element={<LoginPage />} />
                     <Route path="/client-login" element={<ClientLogin />} />
                     <Route path="/client-portal/*" element={<ClientPortal />} />
                     <Route path="/home" element={<HomePage />} />

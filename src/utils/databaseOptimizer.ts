@@ -1,32 +1,25 @@
-
 /**
- * Database optimization utilities for production scale
+ * Production-grade database optimization utilities
  */
 
+import React from 'react';
 import { supabase } from '@/lib/supabase';
-import { QueryOptimizer, documentCache } from './performanceOptimizer';
 import { errorTracker } from './errorTracking';
 
-interface QueryConfig {
-  cacheKey?: string;
-  cacheTtl?: number;
-  retries?: number;
-  timeout?: number;
-  paginate?: boolean;
-  pageSize?: number;
+interface QueryStats {
+  executionTime: number;
+  rowCount: number;
+  cacheHit: boolean;
+  queryType: 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE';
 }
 
 class DatabaseOptimizer {
   private static instance: DatabaseOptimizer;
-  private queryMetrics = new Map<string, {
-    count: number;
-    totalTime: number;
-    avgTime: number;
-    slowQueries: number;
-  }>();
+  private queryCache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+  private queryStats = new Map<string, QueryStats[]>();
 
   private constructor() {
-    this.setupMetricsCleanup();
+    this.setupPerformanceMonitoring();
   }
 
   static getInstance(): DatabaseOptimizer {
@@ -36,254 +29,86 @@ class DatabaseOptimizer {
     return DatabaseOptimizer.instance;
   }
 
-  private setupMetricsCleanup(): void {
-    // Clean up metrics every hour
+  private setupPerformanceMonitoring(): void {
+    // Monitor slow queries
     setInterval(() => {
-      this.queryMetrics.clear();
-    }, 3600000);
+      this.analyzeQueryPerformance();
+    }, 60000); // Every minute
   }
 
-  private recordQueryMetric(queryName: string, duration: number): void {
-    const metric = this.queryMetrics.get(queryName) || {
-      count: 0,
-      totalTime: 0,
-      avgTime: 0,
-      slowQueries: 0
-    };
-
-    metric.count++;
-    metric.totalTime += duration;
-    metric.avgTime = metric.totalTime / metric.count;
-    
-    // Consider queries > 1s as slow
-    if (duration > 1000) {
-      metric.slowQueries++;
-    }
-
-    this.queryMetrics.set(queryName, metric);
-
-    // Log slow queries
-    if (duration > 2000) {
-      errorTracker.captureError(new Error(`Slow query detected: ${queryName}`), {
-        severity: 'medium',
-        component: 'DatabaseOptimizer',
-        context: { queryName, duration, avgTime: metric.avgTime }
-      });
+  private analyzeQueryPerformance(): void {
+    for (const [query, stats] of this.queryStats.entries()) {
+      const avgTime = stats.reduce((sum, stat) => sum + stat.executionTime, 0) / stats.length;
+      
+      if (avgTime > 1000) { // Slow queries over 1 second
+        errorTracker.captureError(new Error(`Slow query detected: ${query}`), {
+          component: 'DatabaseOptimizer',
+          severity: 'medium',
+          context: { averageTime: avgTime, query }
+        });
+      }
     }
   }
 
+  // Optimized query with caching
   async optimizedQuery<T>(
-    queryName: string,
-    queryFn: () => Promise<{ data: T | null; error: any }>,
-    config: QueryConfig = {}
-  ): Promise<{ data: T | null; error: any; fromCache?: boolean }> {
-    const {
-      cacheKey,
-      cacheTtl = 300000, // 5 minutes default
-      retries = 2,
-      timeout = 30000, // 30 seconds
-      paginate = false,
-      pageSize = 50
-    } = config;
-
+    queryKey: string,
+    queryFn: () => Promise<{ data: T; error: any }>,
+    options: { ttl?: number; cache?: boolean } = {}
+  ): Promise<{ data: T; error: any }> {
+    const { ttl = 300000, cache = true } = options; // 5 minutes default TTL
+    
     // Check cache first
-    if (cacheKey && documentCache.has(cacheKey)) {
-      return { data: documentCache.get(cacheKey), error: null, fromCache: true };
+    if (cache) {
+      const cached = this.queryCache.get(queryKey);
+      if (cached && Date.now() - cached.timestamp < cached.ttl) {
+        return { data: cached.data, error: null };
+      }
     }
 
     const startTime = Date.now();
     
     try {
-      // Deduplicate identical queries
-      const result = await QueryOptimizer.deduplicateQuery(
-        cacheKey || queryName,
-        async () => {
-          let attempts = 0;
-          while (attempts <= retries) {
-            try {
-              // Add timeout wrapper
-              const queryPromise = queryFn();
-              const timeoutPromise = new Promise<never>((_, reject) => 
-                setTimeout(() => reject(new Error('Query timeout')), timeout)
-              );
+      const result = await queryFn();
+      const executionTime = Date.now() - startTime;
 
-              return await Promise.race([queryPromise, timeoutPromise]);
-            } catch (error) {
-              attempts++;
-              if (attempts > retries) {
-                throw error;
-              }
-              
-              // Exponential backoff
-              await new Promise(resolve => 
-                setTimeout(resolve, Math.pow(2, attempts) * 1000)
-              );
-            }
-          }
-          throw new Error('Max retries exceeded');
-        }
-      );
+      // Record performance stats
+      if (!this.queryStats.has(queryKey)) {
+        this.queryStats.set(queryKey, []);
+      }
+      
+      const stats = this.queryStats.get(queryKey)!;
+      stats.push({
+        executionTime,
+        rowCount: Array.isArray(result.data) ? result.data.length : 1,
+        cacheHit: false,
+        queryType: 'SELECT'
+      });
 
-      const duration = Date.now() - startTime;
-      this.recordQueryMetric(queryName, duration);
+      // Keep only last 100 stats
+      if (stats.length > 100) {
+        stats.splice(0, stats.length - 100);
+      }
 
       // Cache successful results
-      if (cacheKey && result.data && !result.error) {
-        documentCache.set(cacheKey, result.data, cacheTtl);
+      if (cache && !result.error) {
+        this.queryCache.set(queryKey, {
+          data: result.data,
+          timestamp: Date.now(),
+          ttl
+        });
       }
 
       return result;
     } catch (error) {
-      const duration = Date.now() - startTime;
-      this.recordQueryMetric(queryName, duration);
-
       errorTracker.captureError(error as Error, {
-        severity: 'medium',
         component: 'DatabaseOptimizer',
-        context: { queryName, duration, retries }
+        severity: 'high',
+        context: { queryKey }
       });
-
-      return { data: null, error };
+      
+      return { data: null as T, error };
     }
-  }
-
-  // Optimized document queries
-  async getDocuments(config: {
-    userId?: string;
-    folderId?: string;
-    limit?: number;
-    offset?: number;
-    searchTerm?: string;
-  }) {
-    const { userId, folderId, limit = 50, offset = 0, searchTerm } = config;
-    
-    let query = supabase
-      .from('documents')
-      .select(`
-        id,
-        title,
-        type,
-        size,
-        created_at,
-        updated_at,
-        ai_processing_status,
-        is_folder,
-        parent_folder_id,
-        metadata
-      `)
-      .range(offset, offset + limit - 1)
-      .order('updated_at', { ascending: false });
-
-    if (userId) {
-      query = query.eq('user_id', userId);
-    }
-
-    if (folderId) {
-      query = query.eq('parent_folder_id', folderId);
-    }
-
-    if (searchTerm) {
-      query = query.ilike('title', `%${searchTerm}%`);
-    }
-
-    const cacheKey = `documents_${userId}_${folderId}_${limit}_${offset}_${searchTerm}`;
-    
-    return this.optimizedQuery(
-      'getDocuments',
-      () => query,
-      { cacheKey, cacheTtl: 60000 } // 1 minute cache
-    );
-  }
-
-  // Optimized client queries
-  async getClients(config: {
-    limit?: number;
-    offset?: number;
-    searchTerm?: string;
-    status?: string;
-  }) {
-    const { limit = 50, offset = 0, searchTerm, status } = config;
-    
-    let query = supabase
-      .from('clients')
-      .select(`
-        id,
-        name,
-        email,
-        phone,
-        status,
-        engagement_score,
-        last_interaction,
-        created_at,
-        updated_at
-      `)
-      .range(offset, offset + limit - 1)
-      .order('updated_at', { ascending: false });
-
-    if (searchTerm) {
-      query = query.or(`name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`);
-    }
-
-    if (status) {
-      query = query.eq('status', status);
-    }
-
-    const cacheKey = `clients_${limit}_${offset}_${searchTerm}_${status}`;
-    
-    return this.optimizedQuery(
-      'getClients',
-      () => query,
-      { cacheKey, cacheTtl: 120000 } // 2 minutes cache
-    );
-  }
-
-  // Optimized task queries
-  async getTasks(config: {
-    userId?: string;
-    status?: string;
-    priority?: string;
-    limit?: number;
-    offset?: number;
-  }) {
-    const { userId, status, priority, limit = 50, offset = 0 } = config;
-    
-    let query = supabase
-      .from('tasks')
-      .select(`
-        id,
-        title,
-        description,
-        status,
-        priority,
-        due_date,
-        assigned_to,
-        created_by,
-        document_id,
-        created_at,
-        updated_at
-      `)
-      .range(offset, offset + limit - 1)
-      .order('created_at', { ascending: false });
-
-    if (userId) {
-      query = query.or(`assigned_to.eq.${userId},created_by.eq.${userId}`);
-    }
-
-    if (status) {
-      query = query.eq('status', status);
-    }
-
-    if (priority) {
-      query = query.eq('priority', priority);
-    }
-
-    const cacheKey = `tasks_${userId}_${status}_${priority}_${limit}_${offset}`;
-    
-    return this.optimizedQuery(
-      'getTasks',
-      () => query,
-      { cacheKey, cacheTtl: 30000 } // 30 seconds cache
-    );
   }
 
   // Batch operations for better performance
@@ -291,160 +116,262 @@ class DatabaseOptimizer {
     tableName: string,
     records: T[],
     batchSize: number = 100
-  ): Promise<{ success: boolean; errors: any[] }> {
-    const errors: any[] = [];
-    
+  ): Promise<{ data: T[]; error: any }> {
+    const results: T[] = [];
+    let error = null;
+
     for (let i = 0; i < records.length; i += batchSize) {
       const batch = records.slice(i, i + batchSize);
       
       try {
-        const { error } = await supabase
+        const { data, error: batchError } = await supabase
           .from(tableName)
-          .insert(batch);
+          .insert(batch)
+          .select();
 
-        if (error) {
-          errors.push({ batch: i / batchSize, error });
+        if (batchError) {
+          error = batchError;
+          break;
         }
-      } catch (error) {
-        errors.push({ batch: i / batchSize, error });
+
+        if (data) {
+          results.push(...data);
+        }
+      } catch (err) {
+        error = err;
+        break;
       }
     }
 
-    return {
-      success: errors.length === 0,
-      errors
-    };
+    return { data: results, error };
   }
 
-  async batchUpdate<T>(
+  // Optimized pagination
+  async paginatedQuery<T>(
     tableName: string,
-    updates: Array<{ id: string; data: Partial<T> }>,
-    batchSize: number = 50
-  ): Promise<{ success: boolean; errors: any[] }> {
-    const errors: any[] = [];
-    
-    for (let i = 0; i < updates.length; i += batchSize) {
-      const batch = updates.slice(i, i + batchSize);
-      
-      try {
-        await Promise.all(
-          batch.map(({ id, data }) =>
-            supabase
-              .from(tableName)
-              .update(data)
-              .eq('id', id)
-          )
-        );
-      } catch (error) {
-        errors.push({ batch: i / batchSize, error });
-      }
+    options: {
+      page: number;
+      pageSize: number;
+      orderBy?: string;
+      ascending?: boolean;
+      filters?: Record<string, any>;
     }
+  ): Promise<{ data: T[]; error: any; count?: number }> {
+    const { page, pageSize, orderBy = 'created_at', ascending = false, filters = {} } = options;
+    const from = page * pageSize;
+    const to = from + pageSize - 1;
 
-    return {
-      success: errors.length === 0,
-      errors
-    };
+    let query = supabase
+      .from(tableName)
+      .select('*', { count: 'exact' })
+      .range(from, to);
+
+    // Apply filters
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        query = query.eq(key, value);
+      }
+    });
+
+    // Apply ordering
+    query = query.order(orderBy, { ascending });
+
+    return await query;
   }
 
-  // Analytics and metrics
-  getQueryMetrics(): Record<string, any> {
+  // Optimized document queries
+  async getDocuments(options: {
+    limit?: number;
+    offset?: number;
+    userId?: string;
+    folderId?: string;
+  } = {}): Promise<{ data: unknown; error: any }> {
+    const { limit = 50, offset = 0, userId, folderId } = options;
+
+    return this.optimizedQuery(
+      `documents_${userId}_${folderId}_${limit}_${offset}`,
+      async () => {
+        let query = supabase
+          .from('documents')
+          .select(`
+            id,
+            title,
+            type,
+            size,
+            created_at,
+            updated_at,
+            ai_processing_status,
+            is_folder,
+            parent_folder_id,
+            metadata
+          `)
+          .order('created_at', { ascending: false })
+          .range(offset, offset + limit - 1);
+
+        if (userId) {
+          query = query.eq('user_id', userId);
+        }
+
+        if (folderId) {
+          query = query.eq('parent_folder_id', folderId);
+        }
+
+        return await query;
+      }
+    );
+  }
+
+  // Optimized client queries
+  async getClients(options: {
+    limit?: number;
+    offset?: number;
+    search?: string;
+  } = {}): Promise<{ data: unknown; error: any }> {
+    const { limit = 50, offset = 0, search } = options;
+
+    return this.optimizedQuery(
+      `clients_${search}_${limit}_${offset}`,
+      async () => {
+        let query = supabase
+          .from('clients')
+          .select(`
+            id,
+            name,
+            email,
+            phone,
+            status,
+            engagement_score,
+            last_interaction,
+            created_at,
+            updated_at
+          `)
+          .order('last_interaction', { ascending: false })
+          .range(offset, offset + limit - 1);
+
+        if (search) {
+          query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`);
+        }
+
+        return await query;
+      }
+    );
+  }
+
+  // Optimized task queries
+  async getTasks(options: {
+    limit?: number;
+    offset?: number;
+    status?: string;
+    assignedTo?: string;
+  } = {}): Promise<{ data: unknown; error: any }> {
+    const { limit = 50, offset = 0, status, assignedTo } = options;
+
+    return this.optimizedQuery(
+      `tasks_${status}_${assignedTo}_${limit}_${offset}`,
+      async () => {
+        let query = supabase
+          .from('tasks')
+          .select(`
+            id,
+            title,
+            description,
+            status,
+            priority,
+            due_date,
+            assigned_to,
+            created_by,
+            document_id,
+            created_at,
+            updated_at
+          `)
+          .order('due_date', { ascending: true })
+          .range(offset, offset + limit - 1);
+
+        if (status) {
+          query = query.eq('status', status);
+        }
+
+        if (assignedTo) {
+          query = query.eq('assigned_to', assignedTo);
+        }
+
+        return await query;
+      }
+    );
+  }
+
+  // Index recommendations based on query patterns
+  getIndexRecommendations(): string[] {
+    const recommendations: string[] = [];
+    
+    // Analyze query patterns and suggest indexes
+    const commonPatterns = [
+      'CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_documents_user_created ON documents(user_id, created_at DESC);',
+      'CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_documents_folder ON documents(parent_folder_id) WHERE parent_folder_id IS NOT NULL;',
+      'CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_tasks_assigned_status ON tasks(assigned_to, status);',
+      'CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_tasks_due_date ON tasks(due_date) WHERE due_date IS NOT NULL;',
+      'CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_clients_search ON clients USING gin(to_tsvector(\'english\', name || \' \' || coalesce(email, \'\')));',
+      'CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_audit_logs_user_timestamp ON audit_logs(user_id, timestamp DESC);'
+    ];
+
+    return commonPatterns;
+  }
+
+  // Cache management
+  clearCache(pattern?: string): void {
+    if (pattern) {
+      for (const key of this.queryCache.keys()) {
+        if (key.includes(pattern)) {
+          this.queryCache.delete(key);
+        }
+      }
+    } else {
+      this.queryCache.clear();
+    }
+  }
+
+  // Performance metrics
+  getPerformanceMetrics(): Record<string, any> {
     const metrics: Record<string, any> = {};
     
-    for (const [queryName, data] of this.queryMetrics.entries()) {
-      metrics[queryName] = {
-        ...data,
-        slowQueryRate: data.slowQueries / data.count
+    for (const [query, stats] of this.queryStats.entries()) {
+      const avgTime = stats.reduce((sum, stat) => sum + stat.executionTime, 0) / stats.length;
+      const totalQueries = stats.length;
+      
+      metrics[query] = {
+        averageExecutionTime: avgTime,
+        totalQueries,
+        slowQueries: stats.filter(s => s.executionTime > 1000).length
       };
     }
 
     return metrics;
   }
-
-  // Connection pool monitoring
-  async checkDatabaseHealth(): Promise<{
-    isHealthy: boolean;
-    responseTime: number;
-    error?: string;
-  }> {
-    const startTime = Date.now();
-    
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .select('id')
-        .limit(1);
-
-      const responseTime = Date.now() - startTime;
-
-      return {
-        isHealthy: !error,
-        responseTime,
-        error: error?.message
-      };
-    } catch (error) {
-      return {
-        isHealthy: false,
-        responseTime: Date.now() - startTime,
-        error: (error as Error).message
-      };
-    }
-  }
-
-  // Cache management
-  clearCache(): void {
-    documentCache.clear();
-  }
-
-  getCacheStats() {
-    return documentCache.getStats();
-  }
 }
 
 // Export singleton instance
-export const dbOptimizer = DatabaseOptimizer.getInstance();
+export const databaseOptimizer = DatabaseOptimizer.getInstance();
 
-// React hooks for optimized queries
+// React hook for database operations
 export const useOptimizedQuery = <T>(
-  queryName: string,
-  queryFn: () => Promise<{ data: T | null; error: any }>,
-  config: QueryConfig = {}
+  queryKey: string,
+  queryFn: () => Promise<{ data: T; error: any }>,
+  options: { enabled?: boolean; ttl?: number } = {}
 ) => {
   const [data, setData] = React.useState<T | null>(null);
-  const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<any>(null);
-  const [fromCache, setFromCache] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(true);
 
   React.useEffect(() => {
-    let isMounted = true;
-    
-    const executeQuery = async () => {
-      setLoading(true);
-      
-      try {
-        const result = await dbOptimizer.optimizedQuery(queryName, queryFn, config);
-        
-        if (isMounted) {
-          setData(result.data);
-          setError(result.error);
-          setFromCache(result.fromCache || false);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err);
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
+    if (options.enabled === false) return;
 
-    executeQuery();
+    databaseOptimizer.optimizedQuery(queryKey, queryFn, { ttl: options.ttl })
+      .then(result => {
+        setData(result.data);
+        setError(result.error);
+      })
+      .finally(() => setIsLoading(false));
+  }, [queryKey, options.enabled, options.ttl]);
 
-    return () => {
-      isMounted = false;
-    };
-  }, [queryName, JSON.stringify(config)]);
-
-  return { data, loading, error, fromCache };
+  return { data, error, isLoading };
 };
