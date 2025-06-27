@@ -13,37 +13,24 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Bell, LogOut, Settings, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 
 interface ClientHeaderProps {
   onSignOut?: () => Promise<void>;
 }
 
 export const ClientHeader = ({ onSignOut }: ClientHeaderProps) => {
-  const { user, signOut } = useAuthState();
+  const { user } = useAuthState();
   const navigate = useNavigate();
   const [signingOut, setSigningOut] = useState(false);
 
   const handleSignOut = async () => {
-    if (signingOut) return;
-    
-    try {
+    if (onSignOut) {
       setSigningOut(true);
-      console.log("Signing out client user");
-      
-      if (onSignOut) {
+      try {
         await onSignOut();
-      } else {
-        await signOut();
-        navigate('/client-login', { replace: true });
+      } finally {
+        setSigningOut(false);
       }
-      
-      toast.success('Signed out successfully');
-    } catch (error) {
-      console.error('Sign out error:', error);
-      toast.error('Failed to sign out');
-    } finally {
-      setSigningOut(false);
     }
   };
 
@@ -92,11 +79,11 @@ export const ClientHeader = ({ onSignOut }: ClientHeaderProps) => {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate('/client-portal/settings')}>
+            <DropdownMenuItem onClick={() => navigate('/portal/settings')}>
               <User className="mr-2 h-4 w-4" />
               <span>Profile</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate('/client-portal/settings')}>
+            <DropdownMenuItem onClick={() => navigate('/portal/settings')}>
               <Settings className="mr-2 h-4 w-4" />
               <span>Settings</span>
             </DropdownMenuItem>

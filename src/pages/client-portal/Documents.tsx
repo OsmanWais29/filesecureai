@@ -1,211 +1,168 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuthState } from "@/hooks/useAuthState";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  FileText, 
-  Download, 
-  Search, 
-  Filter,
-  Calendar,
-  File,
-  Folder
-} from "lucide-react";
+import { FileText, Download, Eye, Calendar, AlertCircle } from "lucide-react";
 
-const documents = [
-  {
-    id: 1,
-    title: "Initial Assessment Form",
-    type: "Form",
-    category: "Assessment",
-    date: "2024-01-15",
-    status: "Completed",
-    size: "2.3 MB"
-  },
-  {
-    id: 2,
-    title: "Monthly Budget Worksheet",
-    type: "Spreadsheet",
-    category: "Financial",
-    date: "2024-01-10",
-    status: "In Progress",
-    size: "1.8 MB"
-  },
-  {
-    id: 3,
-    title: "Debt Summary Report",
-    type: "PDF",
-    category: "Financial",
-    date: "2024-01-08",
-    status: "Completed",
-    size: "3.1 MB"
-  },
-  {
-    id: 4,
-    title: "Trustee Meeting Notes",
-    type: "Document",
-    category: "Communications",
-    date: "2024-01-05",
-    status: "Completed",
-    size: "956 KB"
-  }
-];
+interface ClientDocument {
+  id: string;
+  name: string;
+  type: string;
+  status: 'pending' | 'completed' | 'requires_signature' | 'reviewed';
+  uploadDate: string;
+  size: string;
+  description?: string;
+}
 
 export const ClientDocuments = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  const { user } = useAuthState();
+  const [documents, setDocuments] = useState<ClientDocument[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredDocuments = documents.filter(doc => {
-    const matchesSearch = doc.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === "all" || doc.category.toLowerCase() === selectedCategory.toLowerCase();
-    return matchesSearch && matchesCategory;
-  });
+  useEffect(() => {
+    // Mock data for demonstration
+    setTimeout(() => {
+      setDocuments([
+        {
+          id: "1",
+          name: "Form 47 - Consumer Proposal",
+          type: "PDF",
+          status: "completed",
+          uploadDate: "2024-01-15",
+          size: "2.4 MB",
+          description: "Your consumer proposal form has been completed and submitted."
+        },
+        {
+          id: "2",
+          name: "Income Statement",
+          type: "PDF",
+          status: "requires_signature",
+          uploadDate: "2024-01-12",
+          size: "1.8 MB",
+          description: "Please review and sign your income statement."
+        },
+        {
+          id: "3",
+          name: "Asset Listing",
+          type: "PDF",
+          status: "pending",
+          uploadDate: "2024-01-10",
+          size: "1.2 MB",
+          description: "Asset documentation is being processed."
+        }
+      ]);
+      setLoading(false);
+    }, 1000);
+  }, []);
 
-  const categories = ["all", "assessment", "financial", "communications"];
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return 'bg-green-100 text-green-800 border-green-200';
+      case 'requires_signature': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'pending': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'reviewed': return 'bg-purple-100 text-purple-800 border-purple-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="animate-pulse space-y-4">
+          {[1, 2, 3].map(i => (
+            <Card key={i} className="bg-white">
+              <CardHeader className="h-20 bg-gray-100 rounded"></CardHeader>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Documents</h1>
-          <p className="text-gray-600 mt-1">Access and manage your case documents</p>
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="max-w-6xl mx-auto space-y-6">
+        <div className="bg-white rounded-lg shadow-sm border p-6">
+          <h1 className="text-2xl font-bold text-gray-900">My Documents</h1>
+          <p className="text-gray-600 mt-2">
+            View and manage your case documents and forms
+          </p>
         </div>
-        <Button>
-          <FileText className="h-4 w-4 mr-2" />
-          Request Document
-        </Button>
-      </div>
 
-      {/* Search and Filter */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search documents..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <div className="flex gap-2">
-              {categories.map((category) => (
-                <Button
-                  key={category}
-                  variant={selectedCategory === category ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedCategory(category)}
-                  className="capitalize"
-                >
-                  {category}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Document Categories */}
-      <Tabs defaultValue="list" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="list">List View</TabsTrigger>
-          <TabsTrigger value="grid">Grid View</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="list" className="space-y-4">
-          {filteredDocuments.map((doc) => (
-            <Card key={doc.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <FileText className="h-6 w-6 text-blue-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{doc.title}</h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="outline">{doc.type}</Badge>
-                        <Badge variant="secondary">{doc.category}</Badge>
-                        <span className="text-sm text-gray-500 flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {doc.date}
-                        </span>
-                        <span className="text-sm text-gray-500">{doc.size}</span>
+        {documents.length === 0 ? (
+          <Card className="bg-white border shadow-sm">
+            <CardContent className="pt-6">
+              <div className="text-center py-8">
+                <FileText className="h-12 w-12 mx-auto text-blue-500 mb-4" />
+                <h3 className="text-lg font-medium mb-2 text-gray-900">No documents available</h3>
+                <p className="text-gray-600">
+                  Your documents will appear here once they are uploaded by your trustee.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {documents.map((doc) => (
+              <Card key={doc.id} className="bg-white border shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <FileText className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg text-gray-900">{doc.name}</CardTitle>
+                        <CardDescription className="text-gray-600">
+                          {doc.type} • {doc.size} • Uploaded {formatDate(doc.uploadDate)}
+                        </CardDescription>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge 
-                      variant={doc.status === "Completed" ? "default" : "secondary"}
-                    >
-                      {doc.status}
+                    <Badge className={`${getStatusColor(doc.status)} font-medium`}>
+                      {doc.status.replace('_', ' ')}
                     </Badge>
-                    <Button variant="outline" size="sm">
-                      <Download className="h-4 w-4 mr-1" />
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {doc.description && (
+                    <p className="text-gray-700">{doc.description}</p>
+                  )}
+                  
+                  {doc.status === 'requires_signature' && (
+                    <div className="flex items-center gap-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                      <AlertCircle className="h-4 w-4 text-orange-600" />
+                      <span className="text-sm text-orange-800 font-medium">Action Required: Signature needed</span>
+                    </div>
+                  )}
+                  
+                  <div className="flex gap-3">
+                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
+                      <Eye className="h-4 w-4 mr-2" />
+                      View
+                    </Button>
+                    <Button size="sm" variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50">
+                      <Download className="h-4 w-4 mr-2" />
                       Download
                     </Button>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </TabsContent>
-
-        <TabsContent value="grid">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredDocuments.map((doc) => (
-              <Card key={doc.id} className="hover:shadow-md transition-shadow cursor-pointer">
-                <CardHeader className="text-center">
-                  <div className="mx-auto p-4 bg-blue-100 rounded-lg w-fit">
-                    <FileText className="h-12 w-12 text-blue-600" />
-                  </div>
-                  <CardTitle className="text-lg">{doc.title}</CardTitle>
-                  <CardDescription>
-                    <div className="flex flex-wrap justify-center gap-1 mt-2">
-                      <Badge variant="outline">{doc.type}</Badge>
-                      <Badge variant="secondary">{doc.category}</Badge>
-                    </div>
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="text-center space-y-2">
-                  <div className="text-sm text-gray-500 flex items-center justify-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    {doc.date}
-                  </div>
-                  <div className="text-sm text-gray-500">{doc.size}</div>
-                  <Badge 
-                    variant={doc.status === "Completed" ? "default" : "secondary"}
-                    className="mb-2"
-                  >
-                    {doc.status}
-                  </Badge>
-                  <Button className="w-full" size="sm">
-                    <Download className="h-4 w-4 mr-1" />
-                    Download
-                  </Button>
                 </CardContent>
               </Card>
             ))}
           </div>
-        </TabsContent>
-      </Tabs>
-
-      {filteredDocuments.length === 0 && (
-        <Card>
-          <CardContent className="text-center py-12">
-            <Folder className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No documents found</h3>
-            <p className="text-gray-600">
-              {searchQuery ? 'Try adjusting your search terms' : 'No documents available yet'}
-            </p>
-          </CardContent>
-        </Card>
-      )}
+        )}
+      </div>
     </div>
   );
 };
+
+export default ClientDocuments;

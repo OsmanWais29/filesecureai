@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate, Routes, Route } from "react-router-dom";
+import { useLocation, useNavigate, Routes, Route } from "react-router-dom";
 import { useAuthState } from "@/hooks/useAuthState";
 import { useUserRole } from "@/hooks/useUserRole";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -19,6 +19,7 @@ import { ClientSettings } from "@/pages/client-portal/Settings";
 const ClientPortal = () => {
   const [error, setError] = useState<Error | null>(null);
   
+  const location = useLocation();
   const navigate = useNavigate();
   
   const { user, session, loading: authLoading, signOut } = useAuthState();
@@ -31,7 +32,8 @@ const ClientPortal = () => {
     userType: user?.user_metadata?.user_type,
     role,
     isUserClient,
-    loading: isLoading
+    loading: isLoading,
+    pathname: location.pathname
   });
 
   // Strict authentication and role checking
@@ -58,14 +60,14 @@ const ClientPortal = () => {
       if (userType === 'trustee') {
         console.log("ClientPortal: Trustee account detected, denying access");
         toast.error("Access denied. Trustee accounts cannot access the client portal.");
-        navigate('/trustee-login', { replace: true });
+        navigate('/login', { replace: true });
         return;
       }
 
       if (role && !isUserClient) {
         console.log("ClientPortal: User doesn't have client role:", role);
         toast.error("Access denied. This portal is for clients only.");
-        navigate('/client-login', { replace: true });
+        navigate('/login', { replace: true });
         return;
       }
 
@@ -111,7 +113,7 @@ const ClientPortal = () => {
   // Check if user has client role (strict enforcement)
   const userType = user.user_metadata?.user_type;
   if (userType === 'trustee' || (role && !isUserClient)) {
-    navigate('/client-login', { replace: true });
+    navigate('/login', { replace: true });
     return null;
   }
 
