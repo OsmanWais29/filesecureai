@@ -102,14 +102,14 @@ export const TrusteeCoPliot: React.FC<TrusteeCoPliotProps> = ({ onClose }) => {
 
   if (currentStep === 'complete') {
     return (
-      <div className="p-4">
-        <Card className="border-green-200 bg-green-50">
-          <CardContent className="p-4 text-center">
-            <CheckSquare className="h-8 w-8 text-green-600 mx-auto mb-3" />
-            <h3 className="font-semibold text-green-900 mb-2">
+      <div className="h-full flex items-center justify-center p-6">
+        <Card className="w-full border-green-200 bg-green-50">
+          <CardContent className="p-6 text-center">
+            <CheckSquare className="h-12 w-12 text-green-600 mx-auto mb-4" />
+            <h3 className="font-semibold text-green-900 mb-3 text-lg">
               Thank you for your feedback!
             </h3>
-            <p className="text-sm text-green-700">
+            <p className="text-green-700">
               Your input helps improve our AI analysis for all trustees.
             </p>
           </CardContent>
@@ -120,143 +120,131 @@ export const TrusteeCoPliot: React.FC<TrusteeCoPliotProps> = ({ onClose }) => {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="p-4 border-b">
-        <div className="flex items-center gap-2 mb-2">
-          <Brain className="h-4 w-4 text-blue-600" />
-          <h3 className="font-semibold text-sm">Trustee Co-Pilot™</h3>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Help us improve AI analysis with your expert insight
-        </p>
-      </div>
-
-      {/* Chat Area */}
-      <div className="flex-1 flex flex-col min-h-0">
-        {currentStep === 'initial' ? (
-          <div className="p-4 space-y-4">
-            <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                <Bot className="h-3 w-3 text-blue-600" />
-              </div>
-              <div className="bg-gray-100 rounded-lg p-3 text-sm">
-                <p>Hi! I'm here to help improve our AI analysis.</p>
-                <p className="mt-1">Before we discuss the risk assessment, could you tell me what specific aspect of this document you were focusing on or any concerns you had while reviewing it?</p>
-              </div>
+      {currentStep === 'initial' ? (
+        <div className="h-full flex flex-col p-6">
+          {/* AI Message */}
+          <div className="flex items-start gap-3 mb-6">
+            <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+              <Bot className="h-4 w-4 text-blue-600" />
             </div>
-            
-            <div className="space-y-3">
-              <Textarea
-                value={userInput}
-                onChange={(e) => setUserInput(e.target.value)}
-                placeholder="e.g., I was looking for signature compliance issues, or I noticed some missing client information..."
-                rows={3}
-                className="text-sm resize-none"
-              />
-              <Button 
-                onClick={handleInitialSubmit}
-                disabled={!userInput.trim()}
-                size="sm"
-                className="w-full"
-              >
-                <Send className="h-3 w-3 mr-2" />
-                Continue
-              </Button>
+            <div className="bg-gray-100 rounded-lg p-4 flex-1">
+              <p className="text-sm leading-relaxed">Hi! I'm here to help improve our AI analysis.</p>
+              <p className="text-sm mt-2 leading-relaxed">Before we discuss the risk assessment, could you tell me what specific aspect of this document you were focusing on or any concerns you had while reviewing it?</p>
             </div>
           </div>
-        ) : (
-          <>
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex items-start gap-3 ${
-                    message.type === 'user' ? 'flex-row-reverse' : ''
-                  }`}
-                >
-                  <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
-                    message.type === 'user' 
-                      ? 'bg-blue-600' 
-                      : 'bg-gray-100'
-                  }`}>
-                    {message.type === 'user' ? (
-                      <User className="h-3 w-3 text-white" />
-                    ) : (
-                      <Bot className="h-3 w-3 text-gray-600" />
-                    )}
-                  </div>
-                  <div
-                    className={`rounded-lg p-3 max-w-[85%] text-sm ${
-                      message.type === 'user'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-900'
-                    }`}
-                  >
-                    {message.content}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Rating Section */}
-            {currentStep === 'feedback' && (
-              <div className="p-4 border-t bg-gray-50">
-                <div className="space-y-4">
-                  <p className="text-sm font-medium text-center">Rate our AI analysis:</p>
-                  <div className="flex justify-center gap-3">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleRating('up')}
-                      disabled={isSubmitting}
-                      className="flex flex-col items-center gap-1 h-auto py-3 px-4"
-                    >
-                      <ThumbsUp className="h-4 w-4 text-green-600" />
-                      <span className="text-xs">Helpful</span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleRating('down')}
-                      disabled={isSubmitting}
-                      className="flex flex-col items-center gap-1 h-auto py-3 px-4"
-                    >
-                      <ThumbsDown className="h-4 w-4 text-red-600" />
-                      <span className="text-xs">Not Helpful</span>
-                    </Button>
-                  </div>
-
-                  {/* Feedback Form for Thumbs Down */}
-                  {feedback.rating === 'down' && (
-                    <div className="space-y-3 border-t pt-4">
-                      <label className="text-xs font-medium">
-                        Help us improve - What went wrong?
-                      </label>
-                      <Textarea
-                        value={feedback.reason}
-                        onChange={(e) => setFeedback(prev => ({ ...prev, reason: e.target.value }))}
-                        placeholder="Please be specific about what the AI missed or got wrong..."
-                        rows={3}
-                        className="text-sm resize-none"
-                      />
-                      <Button 
-                        onClick={() => handleSubmitFeedback('down')}
-                        disabled={!feedback.reason.trim() || isSubmitting}
-                        size="sm"
-                        className="w-full"
-                      >
-                        <Send className="h-3 w-3 mr-2" />
-                        {isSubmitting ? 'Submitting...' : 'Submit Feedback'}
-                      </Button>
-                    </div>
+          
+          {/* Input Section - Takes remaining space */}
+          <div className="flex-1 flex flex-col justify-end space-y-4">
+            <Textarea
+              value={userInput}
+              onChange={(e) => setUserInput(e.target.value)}
+              placeholder="e.g., I was looking for signature compliance issues, or I noticed some missing client information..."
+              rows={4}
+              className="text-sm resize-none"
+            />
+            <Button 
+              onClick={handleInitialSubmit}
+              disabled={!userInput.trim()}
+              size="lg"
+              className="w-full"
+            >
+              <Send className="h-4 w-4 mr-2" />
+              Continue
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Messages - Scrollable area */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex items-start gap-3 ${
+                  message.type === 'user' ? 'flex-row-reverse' : ''
+                }`}
+              >
+                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                  message.type === 'user' 
+                    ? 'bg-blue-600' 
+                    : 'bg-gray-100'
+                }`}>
+                  {message.type === 'user' ? (
+                    <User className="h-4 w-4 text-white" />
+                  ) : (
+                    <Bot className="h-4 w-4 text-gray-600" />
                   )}
                 </div>
+                <div
+                  className={`rounded-lg p-4 max-w-[85%] text-sm leading-relaxed ${
+                    message.type === 'user'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-900'
+                  }`}
+                >
+                  {message.content}
+                </div>
               </div>
-            )}
-          </>
-        )}
-      </div>
+            ))}
+          </div>
+
+          {/* Rating Section - Fixed at bottom */}
+          {currentStep === 'feedback' && (
+            <div className="border-t bg-gray-50 p-6">
+              <div className="space-y-6">
+                <p className="text-sm font-medium text-center text-gray-700">Rate our AI analysis:</p>
+                <div className="flex justify-center gap-4">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => handleRating('up')}
+                    disabled={isSubmitting}
+                    className="flex flex-col items-center gap-2 h-auto py-4 px-6 hover:bg-green-50 hover:border-green-200"
+                  >
+                    <ThumbsUp className="h-5 w-5 text-green-600" />
+                    <span className="text-sm font-medium">Helpful</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => handleRating('down')}
+                    disabled={isSubmitting}
+                    className="flex flex-col items-center gap-2 h-auto py-4 px-6 hover:bg-red-50 hover:border-red-200"
+                  >
+                    <ThumbsDown className="h-5 w-5 text-red-600" />
+                    <span className="text-sm font-medium">Not Helpful</span>
+                  </Button>
+                </div>
+
+                {/* Feedback Form for Thumbs Down */}
+                {feedback.rating === 'down' && (
+                  <div className="space-y-4 border-t pt-6">
+                    <label className="text-sm font-medium text-gray-700">
+                      Help us improve - What went wrong?
+                    </label>
+                    <Textarea
+                      value={feedback.reason}
+                      onChange={(e) => setFeedback(prev => ({ ...prev, reason: e.target.value }))}
+                      placeholder="Please be specific about what the AI missed or got wrong..."
+                      rows={3}
+                      className="text-sm resize-none"
+                    />
+                    <Button 
+                      onClick={() => handleSubmitFeedback('down')}
+                      disabled={!feedback.reason.trim() || isSubmitting}
+                      size="lg"
+                      className="w-full"
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      {isSubmitting ? 'Submitting...' : 'Submit Feedback'}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 };
