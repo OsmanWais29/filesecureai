@@ -15,9 +15,23 @@ import {
 } from "recharts";
 import { getPerformanceMeasurements, getAnomalyThresholds } from '@/utils/performanceMonitor';
 
+interface AnomalyDataItem {
+  name: string;
+  value: number;
+  threshold: number;
+  isAnomaly: boolean;
+}
+
+interface ThresholdDataItem {
+  name: string;
+  mean: number;
+  upperBound: number;
+  lowerBound: number;
+}
+
 export const AnomalyDetectionDashboard = () => {
-  const [anomalyData, setAnomalyData] = useState<any[]>([]);
-  const [thresholdData, setThresholdData] = useState<any[]>([]);
+  const [anomalyData, setAnomalyData] = useState<AnomalyDataItem[]>([]);
+  const [thresholdData, setThresholdData] = useState<ThresholdDataItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Format performance data for charts - memoized to prevent recalculation on each render
@@ -26,12 +40,18 @@ export const AnomalyDetectionDashboard = () => {
     const thresholds = getAnomalyThresholds();
     
     return {
-      anomalyData: Object.entries(measurements).map(([key, value]) => ({
-        name: key.replace(/-/g, ' ').replace(/^./, str => str.toUpperCase()),
-        value: Math.round(value),
-        threshold: thresholds[key]?.mean + (2 * thresholds[key]?.stdDev) || 0,
-        isAnomaly: thresholds[key] ? value > (thresholds[key].mean + (2 * thresholds[key].stdDev)) : false
-      })),
+      anomalyData: Object.entries(measurements).map(([key, value]) => {
+        const numValue = typeof value === 'number' ? value : 0;
+        const threshold = thresholds[key] || { mean: 0, stdDev: 0 };
+        const thresholdValue = threshold.mean + (2 * threshold.stdDev);
+        
+        return {
+          name: key.replace(/-/g, ' ').replace(/^./, str => str.toUpperCase()),
+          value: Math.round(numValue),
+          threshold: Math.round(thresholdValue),
+          isAnomaly: numValue > thresholdValue
+        };
+      }),
       thresholdData: Object.entries(thresholds).map(([key, { mean, stdDev }]) => ({
         name: key.replace(/-/g, ' ').replace(/^./, str => str.toUpperCase()),
         mean: Math.round(mean),
