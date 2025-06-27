@@ -16,8 +16,7 @@ const Index = lazy(() => import("./pages/Index"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const ClientLogin = lazy(() => import("./pages/auth/ClientLogin"));
 const ClientPortal = lazy(() => import("./pages/ClientPortal"));
-// Create a simple wrapper for missing pages
-const SAFA = lazy(() => Promise.resolve({ default: () => <div>SAFA Page</div> }));
+const SAFAPage = lazy(() => import("./pages/SAFA/SAFAPage"));
 const CRM = lazy(() => import("./pages/trustee/CRMPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const HomePage = lazy(() => import("./pages/HomePage"));
@@ -79,7 +78,7 @@ function App() {
                     <Route path="/home" element={<HomePage />} />
                     <Route path="/documents" element={<DocumentsPage />} />
                     <Route path="/document/:id" element={<DocumentViewer />} />
-                    <Route path="/safa" element={<SAFA />} />
+                    <Route path="/safa" element={<SAFAPage />} />
                     <Route path="/trustee/crm" element={<CRM />} />
                     <Route path="/income-expense" element={<IncomeExpensePage />} />
                     <Route path="/analytics" element={<AnalyticsPage />} />

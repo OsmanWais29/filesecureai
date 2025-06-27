@@ -1,16 +1,10 @@
 
-export interface ChatMessage {
+export type TabType = 'document' | 'legal' | 'help' | 'client';
+
+export interface Message {
   id: string;
   content: string;
-  role: 'user' | 'assistant';
-  timestamp: string;
-  category: string;
+  type: 'user' | 'assistant';
+  timestamp: Date;
+  category?: string;
 }
-
-export interface ConversationState {
-  messages: ChatMessage[];
-  isLoading: boolean;
-  error?: string;
-}
-
-export type TabType = 'document' | 'legal' | 'help' | 'client';
