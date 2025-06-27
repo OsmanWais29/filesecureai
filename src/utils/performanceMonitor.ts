@@ -1,3 +1,4 @@
+
 /**
  * Performance monitoring utilities
  */
@@ -88,10 +89,13 @@ export const initPerformanceMonitoring = (): void => {
     const observer = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
         if (entry.entryType === 'navigation') {
+          // Type assertion to access navigation timing properties
+          const navigationEntry = entry as PerformanceNavigationTiming;
+          
           const measurements: Record<string, number> = {
-            'dom-content-loaded': entry.domContentLoadedEventEnd - entry.domContentLoadedEventStart,
-            'load-complete': entry.loadEventEnd - entry.loadEventStart,
-            'first-paint': entry.responseEnd - entry.requestStart
+            'dom-content-loaded': navigationEntry.domContentLoadedEventEnd - navigationEntry.domContentLoadedEventStart,
+            'load-complete': navigationEntry.loadEventEnd - navigationEntry.loadEventStart,
+            'first-paint': navigationEntry.responseEnd - navigationEntry.requestStart
           };
           
           performanceHistory.push({
