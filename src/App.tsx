@@ -76,6 +76,7 @@ function App() {
         <Route path="/trustee/settings" element={<AuthCheck><SettingsPage /></AuthCheck>} />
         <Route path="/trustee/profile" element={<AuthCheck><ProfilePage /></AuthCheck>} />
         <Route path="/trustee/messages" element={<AuthCheck><MessagesPage /></AuthCheck>} />
+        <Route path="/trustee/support" element={<AuthCheck><SupportPage /></AuthCheck>} />
 
         {/* Client Portal Routes */}
         <Route path="/client-portal/*" element={<AuthCheck><ClientPortal /></AuthCheck>} />
@@ -91,7 +92,6 @@ function App() {
         <Route path="/analytics" element={<AuthCheck><AnalyticsPage /></AuthCheck>} />
         <Route path="/notifications" element={<AuthCheck><NotificationsPage /></AuthCheck>} />
         <Route path="/messages" element={<AuthCheck><MessagesPage /></AuthCheck>} />
-        <Route path="/messages/support" element={<AuthCheck><SupportPage /></AuthCheck>} />
         <Route path="/support" element={<AuthCheck><Support /></AuthCheck>} />
         <Route path="/settings" element={<AuthCheck><SettingsPage /></AuthCheck>} />
         <Route path="/profile" element={<AuthCheck><ProfilePage /></AuthCheck>} />
