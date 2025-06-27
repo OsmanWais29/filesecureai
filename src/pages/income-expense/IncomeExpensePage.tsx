@@ -9,6 +9,7 @@ import { IncomeExpenseForm } from "@/components/activity/IncomeExpenseForm";
 import { PredictiveAnalysis } from "@/components/activity/PredictiveAnalysis";
 import { DocumentUploadSection } from "@/components/activity/DocumentUploadSection";
 import { Client } from "@/components/activity/types";
+import { MainLayout } from "@/components/layout/MainLayout";
 
 const IncomeExpensePage = () => {
   const [selectedClient, setSelectedClient] = useState<string>("");
@@ -128,104 +129,106 @@ const IncomeExpensePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">
-          Smart Income & Expense Management
-        </h1>
-        <p className="text-gray-600 text-sm">
-          Manage and track client financial data with AI-powered insights
-        </p>
-      </div>
-
-      {/* Client Information Card */}
-      <Card className="mb-6 shadow-sm border-gray-200">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg font-semibold text-gray-800">
-            Client Information
-          </CardTitle>
-          <p className="text-gray-500 text-sm mt-1">
-            Select a client or create a new form
+    <MainLayout>
+      <div className="min-h-screen bg-gray-50 p-6">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">
+            Smart Income & Expense Management
+          </h1>
+          <p className="text-gray-600 text-sm">
+            Manage and track client financial data with AI-powered insights
           </p>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <Select value={selectedClient} onValueChange={setSelectedClient}>
-                <SelectTrigger className="h-11 bg-white border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
-                  <SelectValue placeholder="Select a client" />
-                </SelectTrigger>
-                <SelectContent className="bg-white border-gray-200 shadow-lg">
-                  {clients.map((client) => (
-                    <SelectItem 
-                      key={client.id} 
-                      value={client.id}
-                      className="hover:bg-gray-50 cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span>{client.name}</span>
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          client.status === 'active' 
-                            ? 'bg-green-100 text-green-700' 
-                            : 'bg-yellow-100 text-yellow-700'
-                        }`}>
-                          {client.status}
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button
-              onClick={() => setIsModalOpen(true)}
-              className="h-11 px-6 bg-teal-600 hover:bg-teal-700 text-white flex items-center gap-2 font-medium shadow-sm"
-            >
-              <Plus className="h-4 w-4" />
-              <FileText className="h-4 w-4" />
-              Create Income & Expense Form
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Navigation Tabs */}
-      <div className="mb-6">
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
-                  activeTab === tab.id
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                {tab.label}
-              </button>
-            );
-          })}
         </div>
+
+        {/* Client Information Card */}
+        <Card className="mb-6 shadow-sm border-gray-200">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-semibold text-gray-800">
+              Client Information
+            </CardTitle>
+            <p className="text-gray-500 text-sm mt-1">
+              Select a client or create a new form
+            </p>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <Select value={selectedClient} onValueChange={setSelectedClient}>
+                  <SelectTrigger className="h-11 bg-white border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                    <SelectValue placeholder="Select a client" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border-gray-200 shadow-lg">
+                    {clients.map((client) => (
+                      <SelectItem 
+                        key={client.id} 
+                        value={client.id}
+                        className="hover:bg-gray-50 cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span>{client.name}</span>
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            client.status === 'active' 
+                              ? 'bg-green-100 text-green-700' 
+                              : 'bg-yellow-100 text-yellow-700'
+                          }`}>
+                            {client.status}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                onClick={() => setIsModalOpen(true)}
+                className="h-11 px-6 bg-teal-600 hover:bg-teal-700 text-white flex items-center gap-2 font-medium shadow-sm"
+              >
+                <Plus className="h-4 w-4" />
+                <FileText className="h-4 w-4" />
+                Create Income & Expense Form
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Navigation Tabs */}
+        <div className="mb-6">
+          <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                    activeTab === tab.id
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Main Content Area */}
+        {renderTabContent()}
+
+        {/* Income & Expense Modal */}
+        <IncomeExpenseModal 
+          open={isModalOpen}
+          onOpenChange={setIsModalOpen}
+          onClientCreated={(clientId, clientName) => {
+            setSelectedClient(clientId);
+            setActiveTab("form");
+          }}
+        />
       </div>
-
-      {/* Main Content Area */}
-      {renderTabContent()}
-
-      {/* Income & Expense Modal */}
-      <IncomeExpenseModal 
-        open={isModalOpen}
-        onOpenChange={setIsModalOpen}
-        onClientCreated={(clientId, clientName) => {
-          setSelectedClient(clientId);
-          setActiveTab("form");
-        }}
-      />
-    </div>
+    </MainLayout>
   );
 };
 
