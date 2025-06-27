@@ -29,9 +29,7 @@ export function useVerificationData() {
   };
 
   return {
-    verificationData: {
-      ...verificationData,
-      stats: transformedStats
-    }
+    verificationData, // Original format for VerificationPanel
+    transformedStats  // Transformed format for StatsSidebar
   };
 }

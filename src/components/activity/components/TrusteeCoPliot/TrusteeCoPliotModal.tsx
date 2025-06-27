@@ -23,7 +23,7 @@ export const TrusteeCoPliotModal = ({
   clientId
 }: TrusteeCoPliotModalProps) => {
   const { completionPercentage, chatMessages } = useChatMessages();
-  const { verificationData } = useVerificationData();
+  const { verificationData, transformedStats } = useVerificationData();
   
   // Default to conversation tab for better user experience
   const [activeTab, setActiveTab] = useState<string>("conversation");
@@ -92,7 +92,7 @@ export const TrusteeCoPliotModal = ({
           {/* Right Panel - Stats & Info */}
           <StatsSidebar 
             completionPercentage={completionPercentage}
-            stats={verificationData.stats}
+            stats={transformedStats}
           />
         </div>
       </DialogContent>
