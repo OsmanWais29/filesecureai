@@ -71,7 +71,10 @@ export const triggerDocumentAnalysis = async (
   if (!isSpecialForm) return;
   
   try {
-    const { error } = await supabase.functions.invoke('analyze-document', {
+    logger.info(`Triggering DeepSeek analysis for document ${documentId}`);
+    
+    // Call the correct DeepSeek edge function
+    const { error } = await supabase.functions.invoke('deepseek-document-analysis', {
       body: {
         documentId,
         fileName,
@@ -81,10 +84,14 @@ export const triggerDocumentAnalysis = async (
     });
     
     if (error) {
-      logger.error('Document analysis failed:', error);
+      logger.error('DeepSeek document analysis failed:', error);
+      throw error;
     }
+    
+    logger.info(`DeepSeek analysis triggered successfully for document ${documentId}`);
   } catch (err) {
-    logger.error('Failed to trigger document analysis:', err);
+    logger.error('Failed to trigger DeepSeek document analysis:', err);
+    throw err;
   }
 };
 

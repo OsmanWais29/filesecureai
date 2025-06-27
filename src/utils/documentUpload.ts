@@ -25,7 +25,7 @@ export const uploadDocumentToStorage = async (
 
     options.onProgress?.(10);
 
-    // Upload file to storage
+    // Upload file to documents storage bucket
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('documents')
       .upload(filePath, file);
@@ -47,7 +47,7 @@ export const uploadDocumentToStorage = async (
         size: file.size,
         user_id: user.id,
         ai_processing_status: 'pending',
-        is_folder: false, // Ensure this is set for proper filtering
+        is_folder: false,
         metadata: {
           originalName: file.name,
           clientName: options.clientName,
@@ -68,6 +68,25 @@ export const uploadDocumentToStorage = async (
       throw new Error('Failed to create document record');
     }
 
+    options.onProgress?.(75);
+
+    // Trigger DeepSeek analysis for the document
+    try {
+      await supabase.functions.invoke('deepseek-document-analysis', {
+        body: {
+          documentId: documentData.id,
+          fileName: file.name,
+          filePath: filePath,
+          extractionMode: 'comprehensive',
+          includeRegulatory: true
+        }
+      });
+      console.log('DeepSeek analysis triggered successfully');
+    } catch (analysisError) {
+      console.warn('DeepSeek analysis failed to trigger:', analysisError);
+      // Don't fail the upload if analysis fails
+    }
+
     options.onProgress?.(100);
 
     // Create notification for successful upload
@@ -78,7 +97,7 @@ export const uploadDocumentToStorage = async (
           userId: user.id,
           notification: {
             title: 'Document Uploaded',
-            message: `"${file.name}" has been uploaded successfully`,
+            message: `"${file.name}" has been uploaded and is being analyzed`,
             type: 'success',
             category: 'file_activity',
             priority: 'normal',
@@ -118,4 +137,22 @@ export const getDocumentUrl = (storagePath: string): string => {
     .getPublicUrl(storagePath);
     
   return data.publicUrl;
+};
+
+export const getSignedDocumentUrl = async (storagePath: string): Promise<string | null> => {
+  try {
+    const { data, error } = await supabase.storage
+      .from('documents')
+      .createSignedUrl(storagePath, 3600); // 1 hour expiry
+
+    if (error) {
+      console.error('Error creating signed URL:', error);
+      return null;
+    }
+
+    return data.signedUrl;
+  } catch (error) {
+    console.error('Failed to create signed URL:', error);
+    return null;
+  }
 };

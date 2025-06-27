@@ -25,14 +25,27 @@ export const standardUploader = async (
       };
     }
 
-    // Get public URL
-    const { data: urlData } = supabase.storage
+    // Get signed URL for secure access
+    const { data: urlData, error: urlError } = await supabase.storage
       .from('documents')
-      .getPublicUrl(storagePath);
+      .createSignedUrl(storagePath, 3600);
+
+    if (urlError) {
+      console.warn('Failed to create signed URL, using public URL:', urlError);
+      const { data: publicUrlData } = supabase.storage
+        .from('documents')
+        .getPublicUrl(storagePath);
+      
+      return {
+        success: true,
+        url: publicUrlData.publicUrl,
+        details: data
+      };
+    }
 
     return {
       success: true,
-      url: urlData.publicUrl,
+      url: urlData.signedUrl,
       details: data
     };
   } catch (error) {
