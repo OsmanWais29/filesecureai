@@ -1,70 +1,166 @@
 
 import { useState, useCallback } from 'react';
+import { ChatMessage } from '../types';
+import { supabase } from '@/lib/supabase';
+import { safeStringCast } from '@/utils/typeGuards';
 
-interface Message {
-  id: string;
-  content: string;
-  type: 'user' | 'assistant';
-  timestamp: Date;
-  category?: string;
+interface UseConversationsResult {
+  categoryMessages: Record<string, ChatMessage[]>;
+  isLoading: boolean;
+  error: string | null;
+  sendMessage: (content: string, category: string) => Promise<void>;
+  loadConversation: (category: string) => Promise<void>;
+  clearConversation: (category: string) => void;
+  handleSendMessage: (content: string) => Promise<void>;
+  isProcessing: boolean;
+  loadConversationHistory: (category: string) => Promise<void>;
 }
 
-type TabType = 'document' | 'legal' | 'help' | 'client';
-
-export const useConversations = (activeTab: TabType) => {
-  const [categoryMessages, setCategoryMessages] = useState<Record<TabType, Message[]>>({
-    document: [],
-    legal: [],
-    help: [],
-    client: []
-  });
+export const useConversations = (activeTab?: string): UseConversationsResult => {
+  const [categoryMessages, setCategoryMessages] = useState<Record<string, ChatMessage[]>>({});
+  const [isLoading, setIsLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSendMessage = useCallback(async (content: string) => {
-    if (!content.trim()) return;
+  const loadConversation = useCallback(async (category: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
 
-    const userMessage: Message = {
-      id: `user-${Date.now()}`,
-      content,
-      type: 'user',
-      timestamp: new Date(),
-      category: activeTab
-    };
+      const { data, error: fetchError } = await supabase
+        .from('conversations')
+        .select('messages')
+        .eq('type', category)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-    // Add user message
-    setCategoryMessages(prev => ({
-      ...prev,
-      [activeTab]: [...prev[activeTab], userMessage]
-    }));
+      if (fetchError) {
+        throw fetchError;
+      }
 
-    setIsProcessing(true);
+      const messages = data?.messages || [];
+      const safeMessages = Array.isArray(messages) ? messages.map((msg: any) => ({
+        id: safeStringCast(msg.id),
+        content: safeStringCast(msg.content),
+        role: (msg.role === 'assistant' ? 'assistant' : 'user') as 'user' | 'assistant',
+        timestamp: safeStringCast(msg.timestamp),
+        category: safeStringCast(msg.category || category)
+      } as ChatMessage)) : [];
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiMessage: Message = {
-        id: `ai-${Date.now()}`,
-        content: `This is a response for the ${activeTab} category. I understand you said: "${content}"`,
-        type: 'assistant',
-        timestamp: new Date(),
-        category: activeTab
+      setCategoryMessages(prev => ({
+        ...prev,
+        [category]: safeMessages
+      }));
+    } catch (err) {
+      console.error('Error loading conversation:', err);
+      setError('Failed to load conversation');
+      setCategoryMessages(prev => ({
+        ...prev,
+        [category]: []
+      }));
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const sendMessage = useCallback(async (content: string, category: string) => {
+    try {
+      setIsProcessing(true);
+      setError(null);
+
+      const userMessage: ChatMessage = {
+        id: `user-${Date.now()}`,
+        content,
+        role: 'user',
+        timestamp: new Date().toISOString(),
+        category
       };
 
       setCategoryMessages(prev => ({
         ...prev,
-        [activeTab]: [...prev[activeTab], aiMessage]
+        [category]: [...(prev[category] || []), userMessage]
       }));
 
-      setIsProcessing(false);
-    }, 1000);
-  }, [activeTab]);
+      // Call DeepSeek API
+      const { data: aiData, error: aiError } = await supabase.functions.invoke('deepseek-chat', {
+        body: { message: content, category }
+      });
 
-  const loadConversationHistory = useCallback((category: TabType) => {
-    // This would typically load from a database or API
-    console.log(`Loading conversation history for ${category}`);
+      if (aiError) {
+        throw new Error(`AI API error: ${aiError.message}`);
+      }
+
+      const aiMessage: ChatMessage = {
+        id: `ai-${Date.now()}`,
+        content: aiData?.response || 'I apologize, but I encountered an error processing your request.',
+        role: 'assistant',
+        timestamp: new Date().toISOString(),
+        category
+      };
+
+      setCategoryMessages(prev => ({
+        ...prev,
+        [category]: [...(prev[category] || []), aiMessage]
+      }));
+
+      // Save conversation to database
+      const updatedMessages = [...(categoryMessages[category] || []), userMessage, aiMessage];
+      
+      await supabase
+        .from('conversations')
+        .upsert({
+          type: category,
+          messages: updatedMessages,
+          updated_at: new Date().toISOString()
+        });
+
+    } catch (err) {
+      console.error('Error sending message:', err);
+      setError('Failed to send message');
+      
+      // Add error message
+      const errorMessage: ChatMessage = {
+        id: `error-${Date.now()}`,
+        content: 'I apologize, but I encountered an error. Please check that the DeepSeek API is configured properly.',
+        role: 'assistant',
+        timestamp: new Date().toISOString(),
+        category
+      };
+
+      setCategoryMessages(prev => ({
+        ...prev,
+        [category]: [...(prev[category] || []), errorMessage]
+      }));
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [categoryMessages]);
+
+  const handleSendMessage = useCallback(async (content: string) => {
+    if (activeTab) {
+      await sendMessage(content, activeTab);
+    }
+  }, [activeTab, sendMessage]);
+
+  const loadConversationHistory = useCallback(async (category: string) => {
+    await loadConversation(category);
+  }, [loadConversation]);
+
+  const clearConversation = useCallback((category: string) => {
+    setCategoryMessages(prev => ({
+      ...prev,
+      [category]: []
+    }));
   }, []);
 
   return {
     categoryMessages,
+    isLoading,
+    error,
+    sendMessage,
+    loadConversation,
+    clearConversation,
     handleSendMessage,
     isProcessing,
     loadConversationHistory

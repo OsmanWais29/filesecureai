@@ -1,22 +1,15 @@
 
 import React from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Bot, User } from "lucide-react";
-
-interface Message {
-  id: string;
-  content: string;
-  type: 'user' | 'assistant';
-  timestamp: Date;
-  category?: string;
-}
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Send, Loader2 } from "lucide-react";
+import { ChatMessage } from "../types";
 
 interface ConversationViewProps {
-  messages: Message[];
+  messages: ChatMessage[];
   inputMessage: string;
-  setInputMessage: (message: string) => void;
+  setInputMessage: (value: string) => void;
   handleSendMessage: () => void;
   handleKeyPress: (e: React.KeyboardEvent) => void;
   isProcessing: boolean;
@@ -32,74 +25,70 @@ export const ConversationView: React.FC<ConversationViewProps> = ({
 }) => {
   return (
     <div className="flex flex-col h-full">
-      <ScrollArea className="flex-1 p-4">
-        <div className="space-y-4">
+      {/* Messages Area */}
+      <ScrollArea className="flex-1 p-6">
+        <div className="max-w-4xl mx-auto space-y-6">
           {messages.length === 0 ? (
-            <div className="text-center text-muted-foreground py-8">
-              <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Start a conversation with the AI assistant</p>
+            <div className="text-center text-muted-foreground py-12">
+              <p className="text-lg mb-2">Welcome to SecureFiles AI Assistant</p>
+              <p className="text-sm">How can I help you analyze your documents today?</p>
             </div>
           ) : (
             messages.map((message) => (
               <div
                 key={message.id}
-                className={`flex items-start gap-3 ${
-                  message.type === 'user' ? 'justify-end' : 'justify-start'
-                }`}
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                {message.type === 'assistant' && (
-                  <div className="flex-shrink-0">
-                    <Bot className="h-6 w-6 text-primary" />
-                  </div>
-                )}
                 <div
-                  className={`max-w-[80%] rounded-lg p-3 ${
-                    message.type === 'user'
-                      ? 'bg-primary text-primary-foreground ml-auto'
-                      : 'bg-muted'
+                  className={`max-w-[80%] p-4 rounded-lg ${
+                    message.role === 'user'
+                      ? 'bg-primary text-primary-foreground ml-12'
+                      : 'bg-muted mr-12'
                   }`}
                 >
-                  <p className="text-sm">{message.content}</p>
-                  <span className="text-xs opacity-70 mt-1 block">
-                    {message.timestamp.toLocaleTimeString()}
-                  </span>
-                </div>
-                {message.type === 'user' && (
-                  <div className="flex-shrink-0">
-                    <User className="h-6 w-6 text-muted-foreground" />
+                  <div className="text-sm whitespace-pre-wrap">{message.content}</div>
+                  <div className="text-xs opacity-70 mt-2">
+                    {new Date(message.timestamp).toLocaleTimeString()}
                   </div>
-                )}
+                </div>
               </div>
             ))
           )}
           {isProcessing && (
-            <div className="flex items-start gap-3">
-              <Bot className="h-6 w-6 text-primary animate-pulse" />
-              <div className="bg-muted rounded-lg p-3">
-                <p className="text-sm text-muted-foreground">AI is thinking...</p>
+            <div className="flex justify-start">
+              <div className="bg-muted p-4 rounded-lg mr-12 flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm">AI is thinking...</span>
               </div>
             </div>
           )}
         </div>
       </ScrollArea>
-      
-      <div className="border-t p-4">
-        <div className="flex gap-2">
-          <Input
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Type your message..."
-            disabled={isProcessing}
-            className="flex-1"
-          />
-          <Button
-            onClick={handleSendMessage}
-            disabled={!inputMessage.trim() || isProcessing}
-            size="icon"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+
+      {/* Input Area */}
+      <div className="border-t bg-background p-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center space-x-2">
+            <Input
+              placeholder="Ask SAFA something..."
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="flex-1"
+              disabled={isProcessing}
+            />
+            <Button 
+              onClick={handleSendMessage} 
+              size="icon"
+              disabled={!inputMessage.trim() || isProcessing}
+            >
+              {isProcessing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

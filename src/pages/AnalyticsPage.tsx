@@ -16,5 +16,3 @@ export const AnalyticsPage = () => {
     </MainLayout>
   );
 };
-
-export default AnalyticsPage;
