@@ -9,6 +9,18 @@ export const standardUploader = async (
   try {
     console.log('Using standard uploader for:', storagePath);
     
+    // Verify authentication before attempting upload
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      console.error('Authentication error in standardUploader:', authError);
+      return {
+        success: false,
+        error: 'Authentication required. Please log in to upload documents.',
+        details: authError
+      };
+    }
+    
     const { data, error } = await supabase.storage
       .from('documents')
       .upload(storagePath, file, {

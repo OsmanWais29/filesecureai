@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
@@ -12,18 +11,26 @@ export const uploadDocumentToStorage = async (
   options: UploadDocumentOptions = {}
 ): Promise<{ success: boolean; documentId?: string; error?: string }> => {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    // Ensure user is authenticated before starting upload
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError) {
+      console.error('Authentication error:', authError);
+      throw new Error('Authentication failed. Please log in and try again.');
+    }
     
     if (!user) {
-      throw new Error('User not authenticated');
+      throw new Error('You must be logged in to upload documents');
     }
+
+    options.onProgress?.(10);
 
     // Generate unique filename
     const fileExt = file.name.split('.').pop();
     const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
     const filePath = `${user.id}/${fileName}`;
 
-    options.onProgress?.(10);
+    options.onProgress?.(25);
 
     // Upload file to documents storage bucket
     const { data: uploadData, error: uploadError } = await supabase.storage
@@ -32,7 +39,7 @@ export const uploadDocumentToStorage = async (
 
     if (uploadError) {
       console.error('Upload error:', uploadError);
-      throw uploadError;
+      throw new Error(`Upload failed: ${uploadError.message}`);
     }
 
     options.onProgress?.(50);
@@ -61,7 +68,7 @@ export const uploadDocumentToStorage = async (
       console.error('Document record error:', docError);
       // Clean up uploaded file if database insert fails
       await supabase.storage.from('documents').remove([filePath]);
-      throw docError;
+      throw new Error(`Database error: ${docError.message}`);
     }
 
     if (!documentData?.id) {
@@ -72,48 +79,61 @@ export const uploadDocumentToStorage = async (
 
     // Trigger DeepSeek analysis for the document
     try {
-      await supabase.functions.invoke('deepseek-document-analysis', {
-        body: {
-          documentId: documentData.id,
-          fileName: file.name,
-          filePath: filePath,
-          extractionMode: 'comprehensive',
-          includeRegulatory: true
-        }
-      });
-      console.log('DeepSeek analysis triggered successfully');
+      // Verify we still have a valid session before analysis
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        await supabase.functions.invoke('deepseek-document-analysis', {
+          body: {
+            documentId: documentData.id,
+            fileName: file.name,
+            filePath: filePath,
+            extractionMode: 'comprehensive',
+            includeRegulatory: true
+          }
+        });
+        console.log('DeepSeek analysis triggered successfully');
+      } else {
+        console.warn('No valid session for DeepSeek analysis - skipping');
+      }
     } catch (analysisError) {
       console.warn('DeepSeek analysis failed to trigger:', analysisError);
       // Don't fail the upload if analysis fails
     }
 
-    options.onProgress?.(100);
+    options.onProgress?.(90);
 
     // Create notification for successful upload
     try {
-      await supabase.functions.invoke('handle-notifications', {
-        body: {
-          action: 'create',
-          userId: user.id,
-          notification: {
-            title: 'Document Uploaded',
-            message: `"${file.name}" has been uploaded and is being analyzed`,
-            type: 'success',
-            category: 'file_activity',
-            priority: 'normal',
-            action_url: `/document/${documentData.id}`,
-            metadata: {
-              documentId: documentData.id,
-              fileName: file.name,
-              uploadedAt: new Date().toISOString()
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        await supabase.functions.invoke('handle-notifications', {
+          body: {
+            action: 'create',
+            userId: user.id,
+            notification: {
+              title: 'Document Uploaded',
+              message: `"${file.name}" has been uploaded and is being analyzed`,
+              type: 'success',
+              category: 'file_activity',
+              priority: 'normal',
+              action_url: `/document/${documentData.id}`,
+              metadata: {
+                documentId: documentData.id,
+                fileName: file.name,
+                uploadedAt: new Date().toISOString()
+              }
             }
           }
-        }
-      });
+        });
+      }
     } catch (notificationError) {
       console.warn('Failed to create notification:', notificationError);
       // Don't fail the upload if notification fails
     }
+
+    options.onProgress?.(100);
 
     return {
       success: true,

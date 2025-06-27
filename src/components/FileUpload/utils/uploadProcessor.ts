@@ -30,6 +30,13 @@ export const createDocumentRecord = async (
   isSpecialForm?: boolean,
   metadata?: Record<string, any>
 ) => {
+  // Verify user is authenticated before creating record
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  
+  if (authError || !user || user.id !== userId) {
+    throw new Error('Authentication required to create document record');
+  }
+
   return await supabase
     .from('documents')
     .insert({
@@ -55,6 +62,13 @@ export const uploadToStorage = async (
   userId: string,
   filePath: string
 ) => {
+  // Verify user is authenticated before uploading
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  
+  if (authError || !user || user.id !== userId) {
+    throw new Error('Authentication required to upload to storage');
+  }
+
   return await supabase.storage
     .from('documents')
     .upload(filePath, file, {
@@ -71,9 +85,24 @@ export const triggerDocumentAnalysis = async (
   if (!isSpecialForm) return;
   
   try {
+    // Verify user is authenticated before triggering analysis
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      logger.error('Authentication required for document analysis:', authError);
+      throw new Error('Authentication required to trigger document analysis');
+    }
+    
     logger.info(`Triggering DeepSeek analysis for document ${documentId}`);
     
-    // Call the correct DeepSeek edge function
+    // Get a fresh session for the edge function call
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      throw new Error('No valid session for analysis trigger');
+    }
+    
+    // Call the correct DeepSeek edge function with proper auth context
     const { error } = await supabase.functions.invoke('deepseek-document-analysis', {
       body: {
         documentId,
@@ -105,6 +134,14 @@ export const createNotification = async (
   status: string
 ) => {
   try {
+    // Verify user is authenticated before creating notification
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user || user.id !== userId) {
+      logger.error('Authentication required for notification creation:', authError);
+      return; // Don't throw error for notifications, just log and return
+    }
+
     await supabase.functions.invoke('handle-notifications', {
       body: {
         action: 'create',
@@ -127,5 +164,6 @@ export const createNotification = async (
     });
   } catch (error) {
     logger.error('Failed to create notification:', error);
+    // Don't rethrow for notifications as they're not critical to the upload process
   }
 };
