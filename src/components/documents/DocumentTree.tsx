@@ -102,6 +102,49 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
     }
   };
 
+  const handleMerge = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onMerge) {
+      onMerge([node.id]);
+    }
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onDelete) {
+      onDelete([node.id]);
+    }
+  };
+
+  const handleRecover = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onRecover) {
+      onRecover([node.id]);
+    }
+  };
+
+  const handleDropdownEdit = () => {
+    setIsEditing(true);
+  };
+
+  const handleDropdownMerge = () => {
+    if (onMerge) {
+      onMerge([node.id]);
+    }
+  };
+
+  const handleDropdownDelete = () => {
+    if (onDelete) {
+      onDelete([node.id]);
+    }
+  };
+
+  const handleDropdownRecover = () => {
+    if (onRecover) {
+      onRecover([node.id]);
+    }
+  };
+
   const getStatusColor = (status?: DocumentStatus) => {
     switch (status) {
       case "needs-review":
@@ -185,10 +228,7 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete([node.id]);
-                }}
+                onClick={handleDelete}
                 className="h-6 w-6 p-0 text-destructive hover:text-destructive"
                 title="Delete"
               >
@@ -200,10 +240,7 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRecover([node.id]);
-                }}
+                onClick={handleRecover}
                 className="h-6 w-6 p-0"
                 title="Recover"
               >
@@ -223,12 +260,12 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleEdit}>
+                <DropdownMenuItem onClick={handleDropdownEdit}>
                   <Edit className="h-3 w-3 mr-2" />
                   Rename
                 </DropdownMenuItem>
                 {onMerge && node.type === 'file' && (
-                  <DropdownMenuItem onClick={() => onMerge([node.id])}>
+                  <DropdownMenuItem onClick={handleDropdownMerge}>
                     <Merge className="h-3 w-3 mr-2" />
                     Merge
                   </DropdownMenuItem>
@@ -236,7 +273,7 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
                 <DropdownMenuSeparator />
                 {onDelete && (
                   <DropdownMenuItem 
-                    onClick={() => onDelete([node.id])}
+                    onClick={handleDropdownDelete}
                     className="text-destructive focus:text-destructive"
                   >
                     <Trash2 className="h-3 w-3 mr-2" />
@@ -244,7 +281,7 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
                   </DropdownMenuItem>
                 )}
                 {onRecover && (
-                  <DropdownMenuItem onClick={() => onRecover([node.id])}>
+                  <DropdownMenuItem onClick={handleDropdownRecover}>
                     <RotateCcw className="h-3 w-3 mr-2" />
                     Recover
                   </DropdownMenuItem>
