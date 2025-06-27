@@ -49,12 +49,12 @@ export const DocumentUploadSection = ({ onDocumentUpload }: DocumentUploadSectio
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Simulate verification results
-      const mockVerification = {
+      const mockVerification: UploadedDocument = {
         id: Date.now().toString(),
         name: file.name,
         type: file.type.includes('spreadsheet') || file.name.includes('.xlsx') ? 'spreadsheet' : 'document',
         size: file.size,
-        verificationStatus: Math.random() > 0.3 ? 'verified' : 'flagged' as const,
+        verificationStatus: Math.random() > 0.3 ? 'verified' : 'flagged',
         confidence: Math.round(Math.random() * 30 + 70)
       };
 

@@ -12,10 +12,10 @@ export const detectPortalFromPath = (): PortalInfo => {
   
   if (pathname.startsWith('/client-portal') || pathname.startsWith('/client-login')) {
     portal = 'client';
-  } else if (pathname.startsWith('/trustee-portal') || pathname.startsWith('/trustee-login') || pathname === '/login') {
+  } else if (pathname.startsWith('/trustee') || pathname.startsWith('/trustee-login') || pathname === '/login') {
     portal = 'trustee';
   } else {
-    // Default to trustee for main routes
+    // Default to trustee for main routes (legacy support)
     portal = 'trustee';
   }
 
@@ -28,8 +28,24 @@ export const detectPortalFromPath = (): PortalInfo => {
 
 export const redirectToPortal = (targetPortal: 'client' | 'trustee', path: string = '/') => {
   if (targetPortal === 'client') {
-    window.location.href = `/client-portal${path}`;
+    window.location.href = `/client-portal${path === '/' ? '' : path}`;
   } else {
-    window.location.href = path === '/' ? '/crm' : path;
+    window.location.href = `/trustee${path === '/' ? '' : path}`;
   }
+};
+
+export const getTrusteeRoute = (path: string): string => {
+  return `/trustee${path}`;
+};
+
+export const getClientRoute = (path: string): string => {
+  return `/client-portal${path}`;
+};
+
+export const isClientPortalRoute = (pathname: string): boolean => {
+  return pathname.startsWith('/client-portal') || pathname.startsWith('/client-login');
+};
+
+export const isTrusteePortalRoute = (pathname: string): boolean => {
+  return pathname.startsWith('/trustee') || pathname.startsWith('/trustee-login') || pathname === '/login';
 };

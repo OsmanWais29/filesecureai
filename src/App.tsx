@@ -34,17 +34,52 @@ import TrusteeNotificationsPage from './pages/trustee/NotificationsPage';
 import TrusteeReportsPage from './pages/trustee/ReportsPage';
 import TrusteeCalendarPage from './pages/trustee/CalendarPage';
 
+// Client Portal Pages
+import ClientPortal from './pages/ClientPortal';
+
+// Authentication Pages
+import TrusteeLogin from './pages/auth/TrusteeLogin';
+import ClientLogin from './pages/auth/ClientLogin';
+
 function App() {
   return (
     <div className="min-h-screen bg-background">
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
+        {/* Authentication Routes */}
+        <Route path="/login" element={<TrusteeLogin />} />
+        <Route path="/trustee-login" element={<TrusteeLogin />} />
+        <Route path="/client-login" element={<ClientLogin />} />
         <Route path="/signup" element={<SignupPage />} />
         
-        {/* Main Dashboard */}
-        <Route path="/" element={<AuthCheck><HomePage /></AuthCheck>} />
+        {/* Trustee Portal Routes */}
+        <Route path="/trustee" element={<AuthCheck><HomePage /></AuthCheck>} />
+        <Route path="/trustee/dashboard" element={<AuthCheck><TrusteeDashboardPage /></AuthCheck>} />
+        <Route path="/trustee/documents" element={<AuthCheck><TrusteeDocumentsPage /></AuthCheck>} />
+        <Route path="/trustee/crm" element={<AuthCheck><TrusteeCRMPage /></AuthCheck>} />
+        <Route path="/trustee/analytics" element={<AuthCheck><TrusteeAnalyticsPage /></AuthCheck>} />
+        <Route path="/trustee/client/:clientId" element={<AuthCheck><TrusteeClientViewerPage /></AuthCheck>} />
+        <Route path="/trustee/notifications" element={<AuthCheck><TrusteeNotificationsPage /></AuthCheck>} />
+        <Route path="/trustee/reports" element={<AuthCheck><TrusteeReportsPage /></AuthCheck>} />
+        <Route path="/trustee/calendar" element={<AuthCheck><TrusteeCalendarPage /></AuthCheck>} />
+        <Route path="/trustee/income-expense" element={<AuthCheck><IncomeExpensePage /></AuthCheck>} />
+        <Route path="/trustee/audit" element={<AuthCheck><AuditTrailPage /></AuthCheck>} />
+        <Route path="/trustee/audit/production" element={<AuthCheck><ProductionAudit /></AuthCheck>} />
+        <Route path="/trustee/converter" element={<AuthCheck><ConverterPage /></AuthCheck>} />
+        <Route path="/trustee/safa" element={<AuthCheck><SAFAPage /></AuthCheck>} />
+        <Route path="/trustee/tasks" element={<AuthCheck><TaskManagementPage /></AuthCheck>} />
+        <Route path="/trustee/workflows" element={<AuthCheck><WorkflowPage /></AuthCheck>} />
+        <Route path="/trustee/settings" element={<AuthCheck><SettingsPage /></AuthCheck>} />
+        <Route path="/trustee/profile" element={<AuthCheck><ProfilePage /></AuthCheck>} />
+        <Route path="/trustee/messages" element={<AuthCheck><MessagesPage /></AuthCheck>} />
+        <Route path="/trustee/document-viewer/:documentId" element={<AuthCheck><DocumentViewerPage /></AuthCheck>} />
+        <Route path="/trustee/client-viewer/:clientId" element={<AuthCheck><ClientViewerPage /></AuthCheck>} />
+
+        {/* Client Portal Routes */}
+        <Route path="/client-portal/*" element={<AuthCheck><ClientPortal /></AuthCheck>} />
         
-        {/* Core Application Routes */}
+        {/* Legacy Routes (redirect to appropriate portal) */}
+        <Route path="/" element={<AuthCheck><HomePage /></AuthCheck>} />
+        <Route path="/crm" element={<AuthCheck><CRMPage /></AuthCheck>} />
         <Route path="/documents" element={<AuthCheck><DocumentsPage /></AuthCheck>} />
         <Route path="/converter" element={<AuthCheck><ConverterPage /></AuthCheck>} />
         <Route path="/income-expense" element={<AuthCheck><IncomeExpensePage /></AuthCheck>} />
@@ -55,21 +90,7 @@ function App() {
         <Route path="/messages" element={<AuthCheck><MessagesPage /></AuthCheck>} />
         <Route path="/settings" element={<AuthCheck><SettingsPage /></AuthCheck>} />
         <Route path="/profile" element={<AuthCheck><ProfilePage /></AuthCheck>} />
-        
-        {/* Client Viewer Route */}
         <Route path="/client-viewer/:clientId" element={<AuthCheck><ClientViewerPage /></AuthCheck>} />
-        
-        {/* Trustee Portal Routes */}
-        <Route path="/trustee/dashboard" element={<AuthCheck><TrusteeDashboardPage /></AuthCheck>} />
-        <Route path="/trustee/documents" element={<AuthCheck><TrusteeDocumentsPage /></AuthCheck>} />
-        <Route path="/trustee/crm" element={<AuthCheck><TrusteeCRMPage /></AuthCheck>} />
-        <Route path="/trustee/analytics" element={<AuthCheck><TrusteeAnalyticsPage /></AuthCheck>} />
-        <Route path="/trustee/client/:clientId" element={<AuthCheck><TrusteeClientViewerPage /></AuthCheck>} />
-        <Route path="/trustee/notifications" element={<AuthCheck><TrusteeNotificationsPage /></AuthCheck>} />
-        <Route path="/trustee/reports" element={<AuthCheck><TrusteeReportsPage /></AuthCheck>} />
-        <Route path="/trustee/calendar" element={<AuthCheck><TrusteeCalendarPage /></AuthCheck>} />
-        
-        {/* Additional Routes */}
         <Route path="/safa" element={<AuthCheck><SAFAPage /></AuthCheck>} />
         <Route path="/tasks" element={<AuthCheck><TaskManagementPage /></AuthCheck>} />
         <Route path="/document-viewer/:documentId" element={<AuthCheck><DocumentViewerPage /></AuthCheck>} />

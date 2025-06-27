@@ -10,7 +10,7 @@ export function useAuthState() {
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
 
-  // Use the routing detection instead of subdomain
+  // Use the routing detection for portal information
   const portalInfo = useMemo(() => detectPortalFromPath(), []);
   
   const { portal, isClient, isTrustee } = portalInfo;
@@ -79,13 +79,13 @@ export function useAuthState() {
       
       toast.success('Signed out successfully');
       
-      // Redirect to appropriate login
+      // Redirect to appropriate login based on current portal
       setTimeout(() => {
         const currentPortal = detectPortalFromPath();
         if (currentPortal.isClient) {
           window.location.href = '/client-login';
         } else {
-          window.location.href = '/login';
+          window.location.href = '/trustee-login';
         }
       }, 100);
     } catch (error) {

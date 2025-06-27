@@ -10,9 +10,10 @@ import { FileCheck, Upload, BarChart3 } from "lucide-react";
 interface VerificationPanelProps {
   verificationData: {
     stats: {
-      totalVerified: number;
-      flaggedItems: number;
-      confidenceScore: number;
+      verified: number;
+      flagged: number;
+      missing: number;
+      overallScore: number;
     };
   };
 }
@@ -52,7 +53,6 @@ export const VerificationPanel = ({ verificationData }: VerificationPanelProps) 
   ]);
 
   const handleDocumentUpload = (document: any) => {
-    // In a real implementation, this would trigger analysis
     console.log('Document uploaded for verification:', document);
   };
 
