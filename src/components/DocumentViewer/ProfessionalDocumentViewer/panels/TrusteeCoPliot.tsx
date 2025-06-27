@@ -8,8 +8,9 @@ import {
   CheckSquare, 
   ThumbsUp,
   ThumbsDown,
-  MessageSquare,
-  Send
+  Send,
+  User,
+  Bot
 } from 'lucide-react';
 
 interface TrusteeCoPliotProps {
@@ -29,47 +30,35 @@ interface FeedbackState {
 }
 
 export const TrusteeCoPliot: React.FC<TrusteeCoPliotProps> = ({ onClose }) => {
-  const [currentStep, setCurrentStep] = useState<'chat' | 'feedback' | 'complete'>('chat');
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: '1',
-      type: 'ai',
-      content: "Hi! I'm your Trustee Co-Pilot. I noticed you're reviewing this document. How did our AI analysis perform?",
-      timestamp: new Date()
-    },
-    {
-      id: '2', 
-      type: 'ai',
-      content: "Did the risk assessment accurately identify all compliance issues in this document?",
-      timestamp: new Date()
-    }
-  ]);
-  const [userResponse, setUserResponse] = useState('');
+  const [currentStep, setCurrentStep] = useState<'initial' | 'chat' | 'feedback' | 'complete'>('initial');
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [userInput, setUserInput] = useState('');
   const [feedback, setFeedback] = useState<FeedbackState>({ rating: null, reason: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSendMessage = () => {
-    if (!userResponse.trim()) return;
+  const handleInitialSubmit = () => {
+    if (!userInput.trim()) return;
 
-    const newUserMessage: ChatMessage = {
+    const userMessage: ChatMessage = {
       id: Date.now().toString(),
       type: 'user',
-      content: userResponse,
+      content: userInput,
       timestamp: new Date()
     };
 
-    setMessages(prev => [...prev, newUserMessage]);
-    setUserResponse('');
+    setMessages([userMessage]);
+    setUserInput('');
+    setCurrentStep('chat');
 
-    // AI follow-up based on response
+    // AI responds after user's initial message
     setTimeout(() => {
-      const followUpMessage: ChatMessage = {
+      const aiResponse: ChatMessage = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: "Thank you for that feedback. Based on your response, would you rate the overall AI analysis as helpful?",
+        content: "Thanks for sharing that context! Now I can provide more targeted feedback. Based on what you've described, how would you rate the accuracy of our AI risk assessment for this document?",
         timestamp: new Date()
       };
-      setMessages(prev => [...prev, followUpMessage]);
+      setMessages(prev => [...prev, aiResponse]);
       setCurrentStep('feedback');
     }, 1000);
   };
@@ -85,14 +74,13 @@ export const TrusteeCoPliot: React.FC<TrusteeCoPliotProps> = ({ onClose }) => {
   const handleSubmitFeedback = async (rating: 'up' | 'down', reason?: string) => {
     setIsSubmitting(true);
     
-    // Here you would submit to Supabase or your backend for reinforcement learning
     const feedbackData = {
       rating,
       reason: reason || feedback.reason,
       messages,
-      documentPage: 1, // Get from current page
+      documentContext: userInput,
       timestamp: new Date(),
-      analysisContext: 'Document AI Analysis Feedback'
+      analysisContext: 'Trustee Co-Pilot Feedback'
     };
     
     console.log('Trustee Co-Pilot Feedback:', feedbackData);
@@ -101,24 +89,12 @@ export const TrusteeCoPliot: React.FC<TrusteeCoPliotProps> = ({ onClose }) => {
       setCurrentStep('complete');
       setIsSubmitting(false);
       
-      // Auto-return after 3 seconds
       setTimeout(() => {
         onClose();
-        setCurrentStep('chat');
-        setMessages([
-          {
-            id: '1',
-            type: 'ai',
-            content: "Hi! I'm your Trustee Co-Pilot. I noticed you're reviewing this document. How did our AI analysis perform?",
-            timestamp: new Date()
-          },
-          {
-            id: '2', 
-            type: 'ai',
-            content: "Did the risk assessment accurately identify all compliance issues in this document?",
-            timestamp: new Date()
-          }
-        ]);
+        // Reset state for next use
+        setCurrentStep('initial');
+        setMessages([]);
+        setUserInput('');
         setFeedback({ rating: null, reason: '' });
       }, 3000);
     }, 1000);
@@ -126,136 +102,161 @@ export const TrusteeCoPliot: React.FC<TrusteeCoPliotProps> = ({ onClose }) => {
 
   if (currentStep === 'complete') {
     return (
-      <Card className="border-green-200 bg-green-50">
-        <CardContent className="p-6 text-center">
-          <CheckSquare className="h-12 w-12 text-green-600 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-green-900 mb-2">
-            Thank you for improving our AI!
-          </h3>
-          <p className="text-green-700">
-            Your feedback helps train our analysis engine to provide better insights for all trustees.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="p-4">
+        <Card className="border-green-200 bg-green-50">
+          <CardContent className="p-4 text-center">
+            <CheckSquare className="h-8 w-8 text-green-600 mx-auto mb-3" />
+            <h3 className="font-semibold text-green-900 mb-2">
+              Thank you for your feedback!
+            </h3>
+            <p className="text-sm text-green-700">
+              Your input helps improve our AI analysis for all trustees.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center">
-            <Brain className="h-4 w-4 mr-2 text-blue-600" />
-            Trustee Co-Pilot™
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Help us improve our AI analysis with your expert feedback
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Chat Messages */}
-          <div className="space-y-3 max-h-64 overflow-y-auto">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-[80%] p-3 rounded-lg ${
-                    message.type === 'user'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-900'
-                  }`}
-                >
-                  <p className="text-sm">{message.content}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+    <div className="h-full flex flex-col">
+      {/* Header */}
+      <div className="p-4 border-b">
+        <div className="flex items-center gap-2 mb-2">
+          <Brain className="h-4 w-4 text-blue-600" />
+          <h3 className="font-semibold text-sm">Trustee Co-Pilot™</h3>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Help us improve AI analysis with your expert insight
+        </p>
+      </div>
 
-          {/* Input Area */}
-          {currentStep === 'chat' && (
-            <div className="flex gap-2">
+      {/* Chat Area */}
+      <div className="flex-1 flex flex-col min-h-0">
+        {currentStep === 'initial' ? (
+          <div className="p-4 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                <Bot className="h-3 w-3 text-blue-600" />
+              </div>
+              <div className="bg-gray-100 rounded-lg p-3 text-sm">
+                <p>Hi! I'm here to help improve our AI analysis.</p>
+                <p className="mt-1">Before we discuss the risk assessment, could you tell me what specific aspect of this document you were focusing on or any concerns you had while reviewing it?</p>
+              </div>
+            </div>
+            
+            <div className="space-y-3">
               <Textarea
-                value={userResponse}
-                onChange={(e) => setUserResponse(e.target.value)}
-                placeholder="Share your thoughts about the AI analysis..."
-                rows={2}
-                className="resize-none"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage();
-                  }
-                }}
+                value={userInput}
+                onChange={(e) => setUserInput(e.target.value)}
+                placeholder="e.g., I was looking for signature compliance issues, or I noticed some missing client information..."
+                rows={3}
+                className="text-sm resize-none"
               />
               <Button 
-                onClick={handleSendMessage}
-                disabled={!userResponse.trim()}
+                onClick={handleInitialSubmit}
+                disabled={!userInput.trim()}
                 size="sm"
-                className="self-end"
+                className="w-full"
               >
-                <Send className="h-4 w-4" />
+                <Send className="h-3 w-3 mr-2" />
+                Continue
               </Button>
             </div>
-          )}
+          </div>
+        ) : (
+          <>
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex items-start gap-3 ${
+                    message.type === 'user' ? 'flex-row-reverse' : ''
+                  }`}
+                >
+                  <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
+                    message.type === 'user' 
+                      ? 'bg-blue-600' 
+                      : 'bg-gray-100'
+                  }`}>
+                    {message.type === 'user' ? (
+                      <User className="h-3 w-3 text-white" />
+                    ) : (
+                      <Bot className="h-3 w-3 text-gray-600" />
+                    )}
+                  </div>
+                  <div
+                    className={`rounded-lg p-3 max-w-[85%] text-sm ${
+                      message.type === 'user'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-900'
+                    }`}
+                  >
+                    {message.content}
+                  </div>
+                </div>
+              ))}
+            </div>
 
-          {/* Rating Section */}
-          {currentStep === 'feedback' && (
-            <div className="space-y-4 border-t pt-4">
-              <div className="text-center">
-                <p className="text-sm font-medium mb-4">Rate the AI analysis:</p>
-                <div className="flex justify-center gap-4">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    onClick={() => handleRating('up')}
-                    className="flex flex-col items-center gap-2 h-auto py-4 px-6"
-                    disabled={isSubmitting}
-                  >
-                    <ThumbsUp className="h-6 w-6 text-green-600" />
-                    <span className="text-sm">Helpful</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    onClick={() => handleRating('down')}
-                    className="flex flex-col items-center gap-2 h-auto py-4 px-6"
-                    disabled={isSubmitting}
-                  >
-                    <ThumbsDown className="h-6 w-6 text-red-600" />
-                    <span className="text-sm">Not Helpful</span>
-                  </Button>
+            {/* Rating Section */}
+            {currentStep === 'feedback' && (
+              <div className="p-4 border-t bg-gray-50">
+                <div className="space-y-4">
+                  <p className="text-sm font-medium text-center">Rate our AI analysis:</p>
+                  <div className="flex justify-center gap-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRating('up')}
+                      disabled={isSubmitting}
+                      className="flex flex-col items-center gap-1 h-auto py-3 px-4"
+                    >
+                      <ThumbsUp className="h-4 w-4 text-green-600" />
+                      <span className="text-xs">Helpful</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRating('down')}
+                      disabled={isSubmitting}
+                      className="flex flex-col items-center gap-1 h-auto py-3 px-4"
+                    >
+                      <ThumbsDown className="h-4 w-4 text-red-600" />
+                      <span className="text-xs">Not Helpful</span>
+                    </Button>
+                  </div>
+
+                  {/* Feedback Form for Thumbs Down */}
+                  {feedback.rating === 'down' && (
+                    <div className="space-y-3 border-t pt-4">
+                      <label className="text-xs font-medium">
+                        Help us improve - What went wrong?
+                      </label>
+                      <Textarea
+                        value={feedback.reason}
+                        onChange={(e) => setFeedback(prev => ({ ...prev, reason: e.target.value }))}
+                        placeholder="Please be specific about what the AI missed or got wrong..."
+                        rows={3}
+                        className="text-sm resize-none"
+                      />
+                      <Button 
+                        onClick={() => handleSubmitFeedback('down')}
+                        disabled={!feedback.reason.trim() || isSubmitting}
+                        size="sm"
+                        className="w-full"
+                      >
+                        <Send className="h-3 w-3 mr-2" />
+                        {isSubmitting ? 'Submitting...' : 'Submit Feedback'}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
-
-              {/* Feedback Form for Thumbs Down */}
-              {feedback.rating === 'down' && (
-                <div className="space-y-3 border-t pt-4">
-                  <label className="text-sm font-medium">
-                    Help us improve - What went wrong?
-                  </label>
-                  <Textarea
-                    value={feedback.reason}
-                    onChange={(e) => setFeedback(prev => ({ ...prev, reason: e.target.value }))}
-                    placeholder="Please describe what the AI got wrong or missed. Be as specific as possible..."
-                    rows={3}
-                    className="resize-none"
-                  />
-                  <Button 
-                    onClick={() => handleSubmitFeedback('down')}
-                    disabled={!feedback.reason.trim() || isSubmitting}
-                    className="w-full"
-                  >
-                    <Send className="h-4 w-4 mr-2" />
-                    {isSubmitting ? 'Submitting...' : 'Submit Feedback'}
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 };
