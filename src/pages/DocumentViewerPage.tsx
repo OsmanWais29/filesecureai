@@ -2,7 +2,7 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { ComprehensiveDocumentViewer } from '@/components/DocumentViewer/ComprehensiveDocumentViewer';
+import { DocumentViewer } from '@/components/DocumentViewer';
 
 const DocumentViewerPage = () => {
   const { documentId } = useParams<{ documentId: string }>();
@@ -22,8 +22,8 @@ const DocumentViewerPage = () => {
 
   return (
     <MainLayout>
-      <div className="h-[calc(100vh-4rem)]">
-        <ComprehensiveDocumentViewer 
+      <div className="h-[calc(100vh-4rem)] p-4">
+        <DocumentViewer 
           documentId={documentId}
           onLoadFailure={() => {
             console.log("Document failed to load:", documentId);
