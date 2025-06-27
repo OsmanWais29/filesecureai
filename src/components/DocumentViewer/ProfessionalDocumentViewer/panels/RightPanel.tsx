@@ -14,6 +14,9 @@ export const RightPanel: React.FC<RightPanelProps> = ({
   document, 
   onClose 
 }) => {
+  // Extract risks from document analysis
+  const risks = document.analysis?.[0]?.content?.risks || [];
+
   return (
     <div className="h-full flex flex-col bg-background">
       {/* Fixed Header */}
@@ -32,7 +35,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({
         <div className="p-4">
           <RiskAssessment 
             documentId={document.id}
-            risks={document.risks || []}
+            risks={risks}
             isLoading={false}
           />
         </div>
