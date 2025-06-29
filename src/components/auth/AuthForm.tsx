@@ -10,6 +10,7 @@ import { validateAuthForm } from './authValidation';
 import { authService } from './authService';
 import { useRateLimiting } from './hooks/useRateLimiting';
 import { Button } from "@/components/ui/button";
+import { detectPortalFromPath } from '@/utils/routing';
 
 interface AuthFormProps {
   onConfirmationSent: (email: string) => void;
@@ -30,6 +31,8 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
   const [authInProgress, setAuthInProgress] = useState(false);
   const { toast } = useToast();
   const { attempts, isRateLimited, timeLeft, recordAttempt, resetAttempts } = useRateLimiting();
+
+  const { isClient, isTrustee } = detectPortalFromPath();
 
   // Clear errors when switching between sign in and sign up
   useEffect(() => {
@@ -72,13 +75,14 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
       console.log(`AuthForm: Starting ${isSignUp ? 'sign up' : 'sign in'} process for ${email}`);
       
       if (isSignUp) {
+        const userType = isClient ? 'client' : 'trustee';
         const { user } = await authService.signUp({
           email,
           password,
           fullName,
           userId,
           avatarUrl,
-          userType: 'trustee',
+          userType,
         });
 
         if (user?.identities?.length === 0) {
@@ -92,8 +96,9 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
         }
       } else {
         try {
-          console.log(`AuthForm: Attempting to sign in as trustee with email: ${email}`);
-          const { user } = await authService.signIn(email, password, 'trustee');
+          const userType = isClient ? 'client' : 'trustee';
+          console.log(`AuthForm: Attempting to sign in as ${userType} with email: ${email}`);
+          const { user } = await authService.signIn(email, password, userType);
           
           console.log("AuthForm: Sign in successful, user data:", user);
           
@@ -102,9 +107,13 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
             description: "Successfully signed in!",
           });
           
-          // Redirect to home page after successful login
+          // Redirect based on user type
           setTimeout(() => {
-            navigate('/', { replace: true });
+            if (isClient) {
+              navigate('/client-portal', { replace: true });
+            } else {
+              navigate('/trustee/dashboard', { replace: true });
+            }
           }, 300);
         } catch (signInError: any) {
           console.error("AuthForm: Sign in error:", signInError);
@@ -128,14 +137,22 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
         setError('This email is already registered. Try signing in instead.');
       } else if (error.message.includes('Password should be')) {
         setError('Password should be at least 6 characters long');
-      } else if (error.message.includes('Invalid account type')) {
-        setError('This account cannot access the Trustee Portal. Please use a trustee account.');
-      } else {
+      } else if (error.message.includes('Access denied') || error.message.includes('not authorized')) {
         setError(error.message);
+      } else {
+        setError(error.message || 'An error occurred during authentication');
       }
     } finally {
       setLoading(false);
       setAuthInProgress(false);
+    }
+  };
+
+  const handleSwitchPortal = () => {
+    if (isClient) {
+      navigate('/login');
+    } else {
+      navigate('/client-login');
     }
   };
 
@@ -146,7 +163,10 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
           {isSignUp ? 'Create Your Account' : 'Welcome Back'}
         </h1>
         <p className="text-sm text-muted-foreground">
-          {isSignUp ? 'Sign up to access SecureFiles AI' : 'Sign in to continue to SecureFiles AI'}
+          {isSignUp 
+            ? `Sign up for the ${isClient ? 'Client' : 'Trustee'} Portal` 
+            : `Sign in to the ${isClient ? 'Client' : 'Trustee'} Portal`
+          }
         </p>
       </div>
 
@@ -218,7 +238,7 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
         </div>
       </div>
 
-      <div className="text-center">
+      <div className="text-center space-y-2">
         <Button
           onClick={() => {
             setIsSignUp(!isSignUp);
@@ -228,6 +248,14 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
           className="text-sm text-primary hover:text-primary/90 hover:underline transition-colors"
         >
           {isSignUp ? 'Sign in instead' : "Create an account"}
+        </Button>
+        
+        <Button
+          onClick={handleSwitchPortal}
+          variant="ghost"
+          className="text-xs text-muted-foreground hover:text-primary transition-colors"
+        >
+          Switch to {isClient ? 'Trustee' : 'Client'} Portal
         </Button>
       </div>
     </div>
