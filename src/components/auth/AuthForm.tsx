@@ -112,7 +112,7 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
             if (isClient) {
               navigate('/client-portal', { replace: true });
             } else {
-              navigate('/trustee/dashboard', { replace: true });
+              navigate('/', { replace: true });
             }
           }, 300);
         } catch (signInError: any) {

@@ -66,9 +66,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete }) => {
         .from('documents')
         .insert({
           title: file.name,
-          file_path: filePath,
-          status: 'uploaded',
-          user_id: user.id
+          storage_path: filePath,
+          type: file.type,
+          size: file.size,
+          user_id: user.id,
+          ai_processing_status: 'pending'
         })
         .select()
         .single();
@@ -83,22 +85,27 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete }) => {
 
       toast({
         title: "Upload successful",
-        description: `${file.name} has been uploaded successfully`
+        description: `${file.name} uploaded successfully`
       });
 
-      if (onUploadComplete && documentData) {
-        onUploadComplete(documentData.id);
-      }
+      onUploadComplete?.(documentData.id);
 
-    } catch (error) {
+      // Reset after delay
+      setTimeout(() => {
+        setIsUploading(false);
+        setUploadedFile(null);
+        setUploadComplete(false);
+        setUploadProgress(0);
+      }, 2000);
+
+    } catch (error: any) {
       console.error('Upload error:', error);
+      setIsUploading(false);
       toast({
         variant: "destructive",
         title: "Upload failed",
-        description: "There was an error uploading your file. Please try again."
+        description: error.message || "Failed to upload document"
       });
-    } finally {
-      setIsUploading(false);
     }
   };
 
@@ -120,82 +127,42 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete }) => {
     multiple: false
   });
 
-  const removeFile = () => {
-    setUploadedFile(null);
-    setUploadProgress(0);
-    setUploadComplete(false);
-  };
-
-  if (uploadedFile) {
-    return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <FileText className="h-8 w-8 text-blue-500" />
-              <div>
-                <p className="font-medium">{uploadedFile.name}</p>
-                <p className="text-sm text-gray-500">
-                  {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {uploadComplete ? (
-                <CheckCircle className="h-5 w-5 text-green-500" />
-              ) : isUploading ? (
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
-              ) : (
-                <Button variant="outline" size="sm" onClick={removeFile}>
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          </div>
-          
-          {isUploading && (
-            <div className="space-y-2">
-              <Progress value={uploadProgress} className="h-2" />
-              <p className="text-sm text-gray-500 text-center">
-                {uploadProgress < 100 ? `Uploading... ${uploadProgress}%` : 'Processing...'}
-              </p>
-            </div>
-          )}
-
-          {uploadComplete && (
-            <div className="text-center text-sm text-green-600 font-medium">
-              Upload completed successfully!
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <Card>
+    <Card className="w-full">
       <CardContent className="p-6">
-        <div
-          {...getRootProps()}
-          className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-            isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
-          }`}
-        >
-          <input {...getInputProps()} />
-          <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-lg font-medium text-gray-900 mb-2">
-            {isDragActive ? 'Drop the file here' : 'Upload Document'}
-          </p>
-          <p className="text-gray-500 mb-4">
-            Drag and drop your file or click to browse
-          </p>
-          <p className="text-sm text-gray-400 mb-4">
-            Supported formats: PDF, DOC, DOCX, XLS, XLSX
-          </p>
-          <Button variant="outline">
-            Select File
-          </Button>
-        </div>
+        {!isUploading && !uploadComplete ? (
+          <div
+            {...getRootProps()}
+            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+              isDragActive ? 'border-primary bg-primary/5' : 'border-gray-300 hover:border-primary'
+            }`}
+          >
+            <input {...getInputProps()} />
+            <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+            <p className="text-lg font-medium mb-2">
+              {isDragActive ? 'Drop the file here' : 'Drag & drop a document'}
+            </p>
+            <p className="text-sm text-gray-500 mb-4">
+              or click to select a file
+            </p>
+            <p className="text-xs text-gray-400">
+              Supports PDF, DOC, DOCX, XLS, XLSX files
+            </p>
+          </div>
+        ) : isUploading ? (
+          <div className="text-center py-8">
+            <FileText className="mx-auto h-12 w-12 text-blue-500 mb-4" />
+            <p className="text-lg font-medium mb-2">Uploading {uploadedFile?.name}</p>
+            <Progress value={uploadProgress} className="w-full mb-2" />
+            <p className="text-sm text-gray-500">{uploadProgress}% complete</p>
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <CheckCircle className="mx-auto h-12 w-12 text-green-500 mb-4" />
+            <p className="text-lg font-medium mb-2">Upload Complete!</p>
+            <p className="text-sm text-gray-500">{uploadedFile?.name} uploaded successfully</p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

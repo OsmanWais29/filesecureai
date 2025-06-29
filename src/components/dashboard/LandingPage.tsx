@@ -3,7 +3,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Shield, Users, FileText, TrendingUp, ArrowRight } from 'lucide-react';
+import { Shield, Users, FileText, TrendingUp, ArrowRight, LogIn } from 'lucide-react';
 
 export const LandingPage = () => {
   const navigate = useNavigate();
@@ -39,8 +39,8 @@ export const LandingPage = () => {
                 className="w-full mb-4 group-hover:bg-blue-700 transition-colors"
                 size="lg"
               >
+                <LogIn className="mr-2 h-4 w-4" />
                 Access Trustee Portal
-                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
               <p className="text-sm text-gray-500">
                 Manage cases, analyze documents, and collaborate with your team
@@ -64,8 +64,8 @@ export const LandingPage = () => {
                 className="w-full mb-4 bg-green-600 hover:bg-green-700 transition-colors"
                 size="lg"
               >
+                <LogIn className="mr-2 h-4 w-4" />
                 Access Client Portal
-                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
               <p className="text-sm text-gray-500">
                 Track your case progress and communicate with your trustee
