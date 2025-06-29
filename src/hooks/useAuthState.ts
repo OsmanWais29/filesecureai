@@ -85,7 +85,7 @@ export function useAuthState() {
         if (currentPortal.isClient) {
           window.location.href = '/client-login';
         } else {
-          window.location.href = '/trustee-login';
+          window.location.href = '/login';
         }
       }, 100);
     } catch (error) {
