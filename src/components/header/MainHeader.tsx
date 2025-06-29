@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { Search, LogOut, Menu, User, Bell, Sun, Moon } from "lucide-react";
+import { Search, LogOut, Menu, User, Bell, Sun, Moon, Settings } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -25,6 +25,7 @@ import { supabase } from "@/lib/supabase";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useIsTablet } from "@/hooks/use-tablet";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useAuthState } from "@/hooks/useAuthState";
 
 export const MainHeader = () => {
   const [showNotifications, setShowNotifications] = useState(false);
@@ -36,15 +37,16 @@ export const MainHeader = () => {
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
   const { theme, toggleTheme } = useTheme();
+  const { user, signOut } = useAuthState();
 
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut();
+      await signOut();
       toast({
         title: "Signed out successfully",
         description: "You have been signed out of your account."
       });
-      navigate('/');
+      navigate('/login', { replace: true });
     } catch (error) {
       console.error("Error signing out:", error);
       toast({
@@ -53,6 +55,27 @@ export const MainHeader = () => {
         description: "There was a problem signing you out. Please try again."
       });
     }
+  };
+
+  const getUserInitials = () => {
+    if (user?.user_metadata?.full_name) {
+      const names = user.user_metadata.full_name.split(' ');
+      return names.map(name => name[0]).join('').toUpperCase().slice(0, 2);
+    }
+    if (user?.email) {
+      return user.email.substring(0, 2).toUpperCase();
+    }
+    return 'U';
+  };
+
+  const getUserName = () => {
+    if (user?.user_metadata?.full_name) {
+      return user.user_metadata.full_name;
+    }
+    if (user?.email) {
+      return user.email.split('@')[0];
+    }
+    return 'User';
   };
 
   return (
@@ -112,19 +135,28 @@ export const MainHeader = () => {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Avatar className="cursor-pointer h-9 w-9 bg-primary/10 hover:border-primary/30 transition-colors">
-                <AvatarFallback className="bg-primary/10 text-primary font-medium">JD</AvatarFallback>
+                <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                  {getUserInitials()}
+                </AvatarFallback>
               </Avatar>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuLabel>
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">{getUserName()}</p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {user?.email}
+                  </p>
+                </div>
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer">
                 <User className="mr-2 h-4 w-4" />
                 Profile
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate('/settings')} className="cursor-pointer">
-                <Bell className="mr-2 h-4 w-4" />
-                Notification Settings
+                <Settings className="mr-2 h-4 w-4" />
+                Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut} className="text-destructive cursor-pointer">

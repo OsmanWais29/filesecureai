@@ -78,11 +78,10 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
           fullName,
           userId,
           avatarUrl,
-          userType: 'trustee', // Add user type for role-based access
+          userType: 'trustee',
         });
 
         if (user?.identities?.length === 0) {
-          // User already exists but hasn't confirmed their email
           setError("This email is already registered but not confirmed. Please check your email for the confirmation link.");
         } else {
           onConfirmationSent(email);
@@ -96,34 +95,20 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
           console.log(`AuthForm: Attempting to sign in as trustee with email: ${email}`);
           const { user } = await authService.signIn(email, password, 'trustee');
           
-          // Debug logging
           console.log("AuthForm: Sign in successful, user data:", user);
-          console.log("AuthForm: User metadata:", user?.user_metadata);
-          console.log("AuthForm: User type:", user?.user_metadata?.user_type);
           
           toast({
             title: "Success",
             description: "Successfully signed in!",
           });
           
-          // Redirect based on user role
-          if (user?.user_metadata?.user_type === 'trustee') {
-            console.log("AuthForm: Trustee authentication successful, redirecting to CRM dashboard");
-            
-            // Add slight delay to ensure state updates
-            setTimeout(() => {
-              navigate('/crm', { replace: true });
-            }, 300);
-          } else {
-            // If not trustee, sign out and show error
-            console.error("AuthForm: User is not a trustee:", user?.user_metadata?.user_type);
-            await authService.signOut();
-            setError("This account doesn't have trustee access.");
-          }
+          // Redirect to home page after successful login
+          setTimeout(() => {
+            navigate('/', { replace: true });
+          }, 300);
         } catch (signInError: any) {
           console.error("AuthForm: Sign in error:", signInError);
           if (signInError.message.includes('Email not confirmed')) {
-            // Handle the email confirmation error specifically
             setError("Please check your email and confirm your account before signing in.");
           } else {
             throw signInError;
@@ -158,7 +143,7 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
     <div className="w-full max-w-md mx-auto space-y-8 rounded-xl border bg-card/95 p-8 shadow-lg backdrop-blur-sm">
       <div className="text-center space-y-2">
         <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary/80 bg-clip-text text-transparent">
-          {isSignUp ? 'Create Your Trustee Account' : 'Trustee Login'}
+          {isSignUp ? 'Create Your Account' : 'Welcome Back'}
         </h1>
         <p className="text-sm text-muted-foreground">
           {isSignUp ? 'Sign up to access SecureFiles AI' : 'Sign in to continue to SecureFiles AI'}
@@ -233,7 +218,7 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
         </div>
       </div>
 
-      <div className="text-center space-y-3">
+      <div className="text-center">
         <Button
           onClick={() => {
             setIsSignUp(!isSignUp);
@@ -244,16 +229,6 @@ export const AuthForm = ({ onConfirmationSent, onSwitchToClientPortal }: AuthFor
         >
           {isSignUp ? 'Sign in instead' : "Create an account"}
         </Button>
-        
-        <div className="pt-2">
-          <Button
-            onClick={onSwitchToClientPortal}
-            variant="outline"
-            className="w-full text-sm"
-          >
-            Switch to Client Portal
-          </Button>
-        </div>
       </div>
     </div>
   );

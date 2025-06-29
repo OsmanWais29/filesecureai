@@ -1,37 +1,94 @@
 
 import { useState, useEffect } from 'react';
 
+interface RateLimitState {
+  attempts: number;
+  lastAttempt: number;
+  isLocked: boolean;
+}
+
+const RATE_LIMIT_KEY = 'auth_rate_limit';
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes
+
 export const useRateLimiting = () => {
-  const [lastAttemptTime, setLastAttemptTime] = useState(0);
-  const [attempts, setAttempts] = useState(0);
+  const [state, setState] = useState<RateLimitState>({
+    attempts: 0,
+    lastAttempt: 0,
+    isLocked: false
+  });
+  const [timeLeft, setTimeLeft] = useState(0);
 
-  // Reset attempts after 15 minutes
   useEffect(() => {
-    const timer = setInterval(() => {
-      if (attempts > 0 && Date.now() - lastAttemptTime > 900000) {
-        setAttempts(0);
+    const savedState = localStorage.getItem(RATE_LIMIT_KEY);
+    if (savedState) {
+      const parsed = JSON.parse(savedState);
+      const now = Date.now();
+      
+      if (parsed.isLocked && (now - parsed.lastAttempt) < LOCKOUT_DURATION) {
+        setState(parsed);
+        setTimeLeft(Math.ceil((LOCKOUT_DURATION - (now - parsed.lastAttempt)) / 1000));
+      } else if (parsed.attempts >= MAX_ATTEMPTS) {
+        // Reset if lockout period has passed
+        const resetState = { attempts: 0, lastAttempt: 0, isLocked: false };
+        setState(resetState);
+        localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(resetState));
+      } else {
+        setState(parsed);
       }
-    }, 60000);
+    }
+  }, []);
 
-    return () => clearInterval(timer);
-  }, [attempts, lastAttemptTime]);
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (state.isLocked && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            const resetState = { attempts: 0, lastAttempt: 0, isLocked: false };
+            setState(resetState);
+            localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(resetState));
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [state.isLocked, timeLeft]);
 
   const recordAttempt = () => {
-    const currentTime = Date.now();
-    setAttempts(prev => prev + 1);
-    setLastAttemptTime(currentTime);
+    const newAttempts = state.attempts + 1;
+    const now = Date.now();
+    
+    const newState = {
+      attempts: newAttempts,
+      lastAttempt: now,
+      isLocked: newAttempts >= MAX_ATTEMPTS
+    };
+
+    setState(newState);
+    localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(newState));
+
+    if (newState.isLocked) {
+      setTimeLeft(LOCKOUT_DURATION / 1000);
+    }
   };
 
   const resetAttempts = () => {
-    setAttempts(0);
+    const resetState = { attempts: 0, lastAttempt: 0, isLocked: false };
+    setState(resetState);
+    localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(resetState));
+    setTimeLeft(0);
   };
 
-  const isRateLimited = attempts >= 5;
-  const timeLeft = Math.ceil((900000 - (Date.now() - lastAttemptTime)) / 1000);
-
   return {
-    attempts,
-    isRateLimited,
+    attempts: state.attempts,
+    isRateLimited: state.isLocked,
     timeLeft,
     recordAttempt,
     resetAttempts

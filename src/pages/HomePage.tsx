@@ -1,9 +1,14 @@
 
 import React from 'react';
-import { HomePage as DashboardHomePage } from '@/components/dashboard/HomePage';
+import { AuthGuard } from '@/components/auth/AuthGuard';
+import { HomePage as HomePageContent } from '@/components/dashboard/HomePage';
 
 const HomePage = () => {
-  return <DashboardHomePage />;
+  return (
+    <AuthGuard>
+      <HomePageContent />
+    </AuthGuard>
+  );
 };
 
 export default HomePage;
