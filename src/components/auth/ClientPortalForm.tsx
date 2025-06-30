@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Lock, AlertTriangle, Mail, UserPlus, ArrowRight } from 'lucide-react';
-import { SignUpFields } from './SignUpFields';
+import { ClientSignUpFields } from './ClientSignUpFields';
 import { AuthFields } from './AuthFields';
 import { validateAuthForm } from './authValidation';
 import { authService } from './authService';
@@ -23,6 +23,15 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [userId, setUserId] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [occupation, setOccupation] = useState('');
+  const [income, setIncome] = useState('');
+  const [preferredContact, setPreferredContact] = useState('');
+  const [estateNumber, setEstateNumber] = useState('');
+  const [caseNumber, setCaseNumber] = useState('');
+  const [location, setLocation] = useState('');
+  const [administrativeType, setAdministrativeType] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,6 +75,18 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
 
     try {
       if (isSignUp) {
+        const metadata = {
+          phone,
+          address,
+          occupation,
+          income,
+          preferred_contact: preferredContact,
+          estate_number: estateNumber,
+          case_number: caseNumber,
+          location,
+          administrative_type: administrativeType
+        };
+
         const { user } = await authService.signUp({
           email,
           password,
@@ -73,6 +94,7 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
           userId,
           avatarUrl,
           userType: 'client',
+          metadata
         });
 
         if (user?.identities?.length === 0) {
@@ -127,7 +149,7 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
   };
 
   return (
-    <div className="w-full max-w-md mx-auto space-y-8 rounded-2xl border border-blue-200/50 bg-white/95 p-8 shadow-2xl backdrop-blur-sm">
+    <div className="w-full max-w-2xl mx-auto space-y-8 rounded-2xl border border-blue-200/50 bg-white/95 p-8 shadow-2xl backdrop-blur-sm max-h-[80vh] overflow-y-auto">
       <div className="text-center space-y-3">
         <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
           <Lock className="h-8 w-8 text-white" />
@@ -137,7 +159,7 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
         </h1>
         <p className="text-gray-600">
           {isSignUp 
-            ? 'Sign up for secure access to your client portal' 
+            ? 'Complete your profile to access your secure client portal' 
             : 'Sign in to access your secure client portal'
           }
         </p>
@@ -151,17 +173,6 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
       )}
 
       <form onSubmit={handleAuth} className="space-y-6">
-        {isSignUp && (
-          <SignUpFields
-            fullName={fullName}
-            setFullName={setFullName}
-            userId={userId}
-            setUserId={setUserId}
-            avatarUrl={avatarUrl}
-            setAvatarUrl={setAvatarUrl}
-          />
-        )}
-
         <AuthFields
           email={email}
           setEmail={setEmail}
@@ -169,6 +180,35 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
           setPassword={setPassword}
           isDisabled={loading || authInProgress}
         />
+
+        {isSignUp && (
+          <ClientSignUpFields
+            fullName={fullName}
+            setFullName={setFullName}
+            userId={userId}
+            setUserId={setUserId}
+            phone={phone}
+            setPhone={setPhone}
+            address={address}
+            setAddress={setAddress}
+            occupation={occupation}
+            setOccupation={setOccupation}
+            income={income}
+            setIncome={setIncome}
+            preferredContact={preferredContact}
+            setPreferredContact={setPreferredContact}
+            estateNumber={estateNumber}
+            setEstateNumber={setEstateNumber}
+            caseNumber={caseNumber}
+            setCaseNumber={setCaseNumber}
+            location={location}
+            setLocation={setLocation}
+            administrativeType={administrativeType}
+            setAdministrativeType={setAdministrativeType}
+            avatarUrl={avatarUrl}
+            setAvatarUrl={setAvatarUrl}
+          />
+        )}
 
         <Button
           type="submit"

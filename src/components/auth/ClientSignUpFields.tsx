@@ -1,64 +1,43 @@
 
-import { ProfilePicture } from '../ProfilePicture';
-import { useToast } from "@/hooks/use-toast";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, UserSquare, Phone, Home, Briefcase, CreditCard, FileText, MapPin } from "lucide-react";
-import { useState } from 'react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import React from 'react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { User, Hash, Phone, MapPin, Briefcase, DollarSign, Mail, FileText, Building } from 'lucide-react';
 
 interface ClientSignUpFieldsProps {
   fullName: string;
-  setFullName: (value: string) => void;
+  setFullName: (name: string) => void;
   userId: string;
-  setUserId: (value: string) => void;
-  avatarUrl: string | null;
-  setAvatarUrl: (url: string) => void;
+  setUserId: (id: string) => void;
   phone: string;
-  setPhone: (value: string) => void;
+  setPhone: (phone: string) => void;
   address: string;
-  setAddress: (value: string) => void;
+  setAddress: (address: string) => void;
   occupation: string;
-  setOccupation: (value: string) => void;
+  setOccupation: (occupation: string) => void;
   income: string;
-  setIncome: (value: string) => void;
+  setIncome: (income: string) => void;
   preferredContact: string;
-  setPreferredContact: (value: string) => void;
-  // Estate information fields
+  setPreferredContact: (contact: string) => void;
   estateNumber: string;
-  setEstateNumber: (value: string) => void;
-  fileNumber: string;
-  setFileNumber: (value: string) => void;
+  setEstateNumber: (number: string) => void;
+  caseNumber: string;
+  setCaseNumber: (number: string) => void;
   location: string;
-  setLocation: (value: string) => void;
+  setLocation: (location: string) => void;
+  administrativeType: string;
+  setAdministrativeType: (type: string) => void;
+  avatarUrl: string | null;
+  setAvatarUrl: (url: string | null) => void;
 }
 
-// OSB Division offices for the dropdown
-const OSB_DIVISION_OFFICES = [
-  { value: "toronto", label: "Toronto (31)", code: "31" },
-  { value: "vancouver", label: "Vancouver (21)", code: "21" },
-  { value: "winnipeg", label: "Winnipeg (41)", code: "41" },
-  { value: "montreal", label: "Montreal (11)", code: "11" },
-  { value: "halifax", label: "Halifax (51)", code: "51" },
-  { value: "calgary", label: "Calgary (22)", code: "22" },
-  { value: "edmonton", label: "Edmonton (23)", code: "23" },
-  { value: "ottawa", label: "Ottawa (32)", code: "32" },
-  { value: "hamilton", label: "Hamilton (33)", code: "33" },
-  { value: "london", label: "London (34)", code: "34" },
-  { value: "regina", label: "Regina (42)", code: "42" },
-  { value: "saskatoon", label: "Saskatoon (43)", code: "43" },
-  { value: "quebec", label: "Quebec (12)", code: "12" },
-  { value: "other", label: "Other", code: "" },
-];
-
-export const ClientSignUpFields = ({
+export const ClientSignUpFields: React.FC<ClientSignUpFieldsProps> = ({
   fullName,
   setFullName,
   userId,
   setUserId,
-  avatarUrl,
-  setAvatarUrl,
   phone,
   setPhone,
   address,
@@ -71,349 +50,223 @@ export const ClientSignUpFields = ({
   setPreferredContact,
   estateNumber,
   setEstateNumber,
-  fileNumber,
-  setFileNumber,
+  caseNumber,
+  setCaseNumber,
   location,
-  setLocation
-}: ClientSignUpFieldsProps) => {
-  const { toast } = useToast();
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  const validateField = (name: string, value: string) => {
-    let newErrors = {...errors};
-    
-    switch (name) {
-      case 'fullName':
-        if (!value.trim()) {
-          newErrors.fullName = 'Full name is required';
-        } else if (value.trim().length < 3) {
-          newErrors.fullName = 'Full name must be at least 3 characters';
-        } else {
-          delete newErrors.fullName;
-        }
-        break;
-      case 'estateNumber':
-        if (value.trim() && !/^\d{2}-\d{5}$/.test(value.trim())) {
-          newErrors.estateNumber = 'Estate number format should be ##-##### (e.g., 31-12345)';
-        } else {
-          delete newErrors.estateNumber;
-        }
-        break;
-      case 'phone':
-        if (value && !/^[0-9()\-+\s]*$/.test(value)) {
-          newErrors.phone = 'Please enter a valid phone number';
-        } else {
-          delete newErrors.phone;
-        }
-        break;
-      default:
-        break;
-    }
-    
-    setErrors(newErrors);
-  };
-
-  // Format the estate number as user types to enforce ##-##### pattern
-  const handleEstateNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/[^\d-]/g, '');
-    
-    // Ensure we have the hyphen in the right place
-    if (value.length >= 2 && !value.includes('-')) {
-      value = `${value.substring(0, 2)}-${value.substring(2)}`;
-    }
-    
-    // Limit to ##-##### format (max 8 chars including hyphen)
-    if (value.length > 8) {
-      value = value.substring(0, 8);
-    }
-    
-    setEstateNumber(value);
-    validateField('estateNumber', value);
-  };
-
-  // Update estate number prefix based on selected office
-  const handleOfficeChange = (officeValue: string) => {
-    setLocation(officeValue);
-    
-    // Find the selected office
-    const selectedOffice = OSB_DIVISION_OFFICES.find(office => office.value === officeValue);
-    
-    if (selectedOffice && selectedOffice.code) {
-      // Update the estate number prefix while preserving any existing number
-      const currentParts = estateNumber.split('-');
-      const currentNumber = currentParts.length > 1 ? currentParts[1] : '';
-      
-      setEstateNumber(`${selectedOffice.code}-${currentNumber}`);
-    }
-  };
-
+  setLocation,
+  administrativeType,
+  setAdministrativeType,
+  avatarUrl,
+  setAvatarUrl
+}) => {
   return (
-    <div className="space-y-5">
-      {/* Profile Information */}
-      <div className="p-4 border border-blue-100 rounded-md bg-blue-50/50">
-        <h3 className="text-sm font-medium text-blue-700 mb-3">Client Information</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="fullName" className="text-sm font-medium flex items-center gap-1.5 text-blue-700">
-              <User className="h-3.5 w-3.5" />
-              Full Name <span className="text-red-500">*</span>
-            </Label>
+    <div className="space-y-4">
+      {/* Basic Information */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-900">Personal Information</h3>
+        
+        <div className="space-y-2">
+          <Label htmlFor="fullName" className="text-sm font-medium">
+            Full Name *
+          </Label>
+          <div className="relative">
+            <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             <Input
               id="fullName"
               type="text"
+              placeholder="Enter your full legal name"
               value={fullName}
-              onChange={(e) => {
-                setFullName(e.target.value);
-                validateField('fullName', e.target.value);
-              }}
-              placeholder="John Doe"
-              className="w-full rounded-md border border-blue-200 bg-background/50 px-3 py-2 text-sm"
+              onChange={(e) => setFullName(e.target.value)}
+              className="pl-10"
               required
             />
-            {errors.fullName && (
-              <p className="text-xs text-red-500 mt-1">{errors.fullName}</p>
-            )}
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="userId" className="text-sm font-medium flex items-center gap-1.5 text-blue-700">
-              <UserSquare className="h-3.5 w-3.5" />
-              User ID
-            </Label>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="userId" className="text-sm font-medium">
+            Client ID *
+          </Label>
+          <div className="relative">
+            <Hash className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             <Input
               id="userId"
               type="text"
+              placeholder="Enter a unique client identifier"
               value={userId}
               onChange={(e) => setUserId(e.target.value)}
-              placeholder="Unique identifier (optional)"
-              className="w-full rounded-md border border-blue-200 bg-background/50 px-3 py-2 text-sm"
+              className="pl-10"
+              required
             />
           </div>
         </div>
-      </div>
-      
-      {/* Estate Information - highlighted as primary section */}
-      <div className="p-4 border border-blue-200 rounded-md bg-blue-50/70 shadow-sm">
-        <h3 className="text-sm font-medium text-blue-700 mb-3">Estate and Case Details</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <div className="flex items-center gap-1.5">
-              <Label htmlFor="estateNumber" className="text-sm font-medium text-blue-700 flex items-center">
-                <FileText className="h-3.5 w-3.5 mr-1.5" />
-                Estate Number 
-              </Label>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-blue-200 bg-blue-100 text-xs font-semibold text-blue-700">?</span>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs text-xs">
-                    <p>Provided by your trustee; a 7-digit unique number starting with a two-digit Division Office code (e.g., 31 for Toronto).</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-            <Input
-              id="estateNumber"
-              type="text"
-              value={estateNumber}
-              onChange={handleEstateNumberChange}
-              placeholder="e.g., 31-12345"
-              className="w-full rounded-md border border-blue-200 bg-background/50 px-3 py-2 text-sm"
-            />
-            {errors.estateNumber && (
-              <p className="text-xs text-red-500 mt-1">{errors.estateNumber}</p>
-            )}
-            <p className="text-xs text-muted-foreground mt-1">
-              Format: ##-##### (Division code-Estate number)
-            </p>
-          </div>
-          
-          <div className="space-y-2">
-            <div className="flex items-center gap-1.5">
-              <Label htmlFor="fileNumber" className="text-sm font-medium text-blue-700 flex items-center">
-                <FileText className="h-3.5 w-3.5 mr-1.5" />
-                File Number
-              </Label>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-blue-200 bg-blue-100 text-xs font-semibold text-blue-700">?</span>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs text-xs">
-                    <p>The internal file number given by your trustee, used for quick referencing your case.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-            <Input
-              id="fileNumber"
-              type="text"
-              value={fileNumber}
-              onChange={(e) => setFileNumber(e.target.value)}
-              placeholder="e.g., F-10001"
-              className="w-full rounded-md border border-blue-200 bg-background/50 px-3 py-2 text-sm"
-            />
-          </div>
-        </div>
-        
-        <div className="mt-4">
-          <div className="flex items-center gap-1.5">
-            <Label htmlFor="location" className="text-sm font-medium text-blue-700 flex items-center">
-              <MapPin className="h-3.5 w-3.5 mr-1.5" />
-              Trustee Office Location
-            </Label>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-blue-200 bg-blue-100 text-xs font-semibold text-blue-700">?</span>
-                </TooltipTrigger>
-                <TooltipContent className="max-w-xs text-xs">
-                  <p>Select the OSB division office handling your case. This helps validate your Estate Number.</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          <Select 
-            value={location} 
-            onValueChange={handleOfficeChange}
-          >
-            <SelectTrigger className="w-full border-blue-200 mt-2">
-              <SelectValue placeholder="Select trustee office location" />
-            </SelectTrigger>
-            <SelectContent>
-              {OSB_DIVISION_OFFICES.map((office) => (
-                <SelectItem key={office.value} value={office.value}>
-                  {office.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <p className="text-xs text-muted-foreground mt-1">
-            Optional but recommended - helps validate your Estate Number
-          </p>
-        </div>
-      </div>
-      
-      {/* Contact Information */}
-      <div className="p-4 border border-blue-100 rounded-md bg-blue-50/50">
-        <h3 className="text-sm font-medium text-blue-700 mb-3">Contact Information</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="phone" className="text-sm font-medium flex items-center gap-1.5 text-blue-700">
-              <Phone className="h-3.5 w-3.5" />
-              Phone Number
-            </Label>
+
+        <div className="space-y-2">
+          <Label htmlFor="phone" className="text-sm font-medium">
+            Phone Number
+          </Label>
+          <div className="relative">
+            <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             <Input
               id="phone"
               type="tel"
+              placeholder="Enter your phone number"
               value={phone}
-              onChange={(e) => {
-                setPhone(e.target.value);
-                validateField('phone', e.target.value);
-              }}
-              placeholder="(555) 123-4567"
-              className="w-full rounded-md border border-blue-200 bg-background/50 px-3 py-2 text-sm"
-            />
-            {errors.phone && (
-              <p className="text-xs text-red-500 mt-1">{errors.phone}</p>
-            )}
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="address" className="text-sm font-medium flex items-center gap-1.5 text-blue-700">
-              <Home className="h-3.5 w-3.5" />
-              Address
-            </Label>
-            <Input
-              id="address"
-              type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="123 Main St, City, Province"
-              className="w-full rounded-md border border-blue-200 bg-background/50 px-3 py-2 text-sm"
+              onChange={(e) => setPhone(e.target.value)}
+              className="pl-10"
             />
           </div>
         </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="address" className="text-sm font-medium">
+            Address
+          </Label>
+          <div className="relative">
+            <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <Textarea
+              id="address"
+              placeholder="Enter your full address"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              className="pl-10 min-h-[80px]"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Employment & Financial Information */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-900">Employment & Financial Details</h3>
         
-        <div className="mt-4">
-          <Label htmlFor="preferredContact" className="text-sm font-medium flex items-center gap-1.5 text-blue-700">
+        <div className="space-y-2">
+          <Label htmlFor="occupation" className="text-sm font-medium">
+            Occupation
+          </Label>
+          <div className="relative">
+            <Briefcase className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <Input
+              id="occupation"
+              type="text"
+              placeholder="Enter your current occupation"
+              value={occupation}
+              onChange={(e) => setOccupation(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="income" className="text-sm font-medium">
+            Monthly Income
+          </Label>
+          <div className="relative">
+            <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <Input
+              id="income"
+              type="number"
+              placeholder="Enter your monthly income"
+              value={income}
+              onChange={(e) => setIncome(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Case Information */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-900">Case Information</h3>
+        
+        <div className="space-y-2">
+          <Label htmlFor="estateNumber" className="text-sm font-medium">
+            Estate Number
+          </Label>
+          <div className="relative">
+            <FileText className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <Input
+              id="estateNumber"
+              type="text"
+              placeholder="Enter estate number (if available)"
+              value={estateNumber}
+              onChange={(e) => setEstateNumber(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="caseNumber" className="text-sm font-medium">
+            Case Number
+          </Label>
+          <div className="relative">
+            <FileText className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <Input
+              id="caseNumber"
+              type="text"
+              placeholder="Enter case number (if available)"
+              value={caseNumber}
+              onChange={(e) => setCaseNumber(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="location" className="text-sm font-medium">
+            Location/Province
+          </Label>
+          <div className="relative">
+            <Building className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <Input
+              id="location"
+              type="text"
+              placeholder="Enter your province/location"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="administrativeType" className="text-sm font-medium">
+            Administrative Type
+          </Label>
+          <Select value={administrativeType} onValueChange={setAdministrativeType}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select administrative type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="consumer_proposal">Consumer Proposal</SelectItem>
+              <SelectItem value="bankruptcy">Bankruptcy</SelectItem>
+              <SelectItem value="division_1_proposal">Division I Proposal</SelectItem>
+              <SelectItem value="receivership">Receivership</SelectItem>
+              <SelectItem value="other">Other</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Communication Preferences */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-900">Communication Preference</h3>
+        
+        <div className="space-y-2">
+          <Label htmlFor="preferredContact" className="text-sm font-medium">
             Preferred Contact Method
           </Label>
-          <Select 
-            value={preferredContact} 
-            onValueChange={setPreferredContact}
-          >
-            <SelectTrigger className="w-full border-blue-200 mt-2">
+          <Select value={preferredContact} onValueChange={setPreferredContact}>
+            <SelectTrigger>
               <SelectValue placeholder="Select preferred contact method" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="email">Email</SelectItem>
               <SelectItem value="phone">Phone</SelectItem>
-              <SelectItem value="text">Text Message</SelectItem>
+              <SelectItem value="mail">Mail</SelectItem>
+              <SelectItem value="portal">Client Portal</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-      </div>
-      
-      {/* Optional Information */}
-      <div className="p-4 border border-blue-100 rounded-md bg-blue-50/50">
-        <h3 className="text-sm font-medium text-blue-700 mb-3">Additional Information (Optional)</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="occupation" className="text-sm font-medium flex items-center gap-1.5 text-blue-700">
-              <Briefcase className="h-3.5 w-3.5" />
-              Occupation
-            </Label>
-            <Input
-              id="occupation"
-              type="text"
-              value={occupation}
-              onChange={(e) => setOccupation(e.target.value)}
-              placeholder="Your occupation"
-              className="w-full rounded-md border border-blue-200 bg-background/50 px-3 py-2 text-sm"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="income" className="text-sm font-medium flex items-center gap-1.5 text-blue-700">
-              <CreditCard className="h-3.5 w-3.5" />
-              Annual Income
-            </Label>
-            <Input
-              id="income"
-              type="text"
-              value={income}
-              onChange={(e) => setIncome(e.target.value)}
-              placeholder="e.g., $50,000"
-              className="w-full rounded-md border border-blue-200 bg-background/50 px-3 py-2 text-sm"
-            />
-          </div>
-        </div>
-      </div>
-      
-      {/* Profile Picture */}
-      <div className="p-4 border border-blue-100 rounded-md bg-blue-50/50">
-        <Label className="text-sm font-medium mb-2 block text-blue-700">
-          Profile Picture
-        </Label>
-        <div className="flex flex-col items-center">
-          <div className="bg-blue-50 p-2 rounded-full border border-blue-200 mb-2">
-            <ProfilePicture
-              url={avatarUrl}
-              onUpload={(url) => {
-                setAvatarUrl(url);
-                toast({
-                  title: "Success",
-                  description: "Profile picture selected successfully",
-                });
-              }}
-              size={80}
-            />
-          </div>
-          <p className="text-xs text-muted-foreground mt-2 text-center">
-            Optional: Upload an image (JPG, PNG, GIF) up to 5MB
-          </p>
         </div>
       </div>
     </div>
