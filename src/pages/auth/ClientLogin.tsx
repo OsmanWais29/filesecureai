@@ -60,62 +60,80 @@ const ClientLogin = () => {
   }
 
   return (
-    <AuthLayout isClientPortal={true}>
-      <div className="flex flex-col md:flex-row items-center justify-center gap-8 w-full max-w-7xl mx-auto mt-8 md:mt-12">
-        <div className="w-full md:w-1/2 lg:w-1/3 order-2 md:order-1">
-          {confirmationSent ? (
-            <ConfirmationSentScreen 
-              email={confirmationEmail}
-              onBackToSignIn={handleBackToSignIn}
-            />
-          ) : (
-            <ClientPortalForm 
-              onConfirmationSent={handleConfirmationSent}
-              onSwitchToTrusteePortal={handleSwitchToTrusteePortal}
-            />
-          )}
-        </div>
-        
-        <div className="w-full md:w-1/2 lg:w-1/2 text-center md:text-left order-1 md:order-2">
-          <div className="text-white space-y-6">
-            <h1 className="text-4xl md:text-5xl font-bold">
-              Client Portal Access
-            </h1>
-            <p className="text-xl text-white/90">
-              Your secure gateway to tracking your case progress and communicating with your trustee.
-            </p>
-            <div className="hidden md:block">
-              <ul className="space-y-4">
-                <li className="flex items-center gap-3">
-                  <div className="bg-white/20 p-2 rounded-full">
-                    <FileText className="h-5 w-5" />
-                  </div>
-                  <span className="text-lg">View and download important documents</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <div className="bg-white/20 p-2 rounded-full">
-                    <Calendar className="h-5 w-5" />
-                  </div>
-                  <span className="text-lg">Schedule and manage appointments</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <div className="bg-white/20 p-2 rounded-full">
-                    <MessageSquare className="h-5 w-5" />
-                  </div>
-                  <span className="text-lg">Communicate securely with your trustee</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <div className="bg-white/20 p-2 rounded-full">
-                    <ShieldCheck className="h-5 w-5" />
-                  </div>
-                  <span className="text-lg">Access your case details securely anytime</span>
-                </li>
-              </ul>
+    <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center p-4">
+      <div className="w-full max-w-6xl mx-auto">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Left side - Form */}
+          <div className="flex justify-center lg:justify-end">
+            {confirmationSent ? (
+              <ConfirmationSentScreen 
+                email={confirmationEmail}
+                onBackToSignIn={handleBackToSignIn}
+              />
+            ) : (
+              <ClientPortalForm 
+                onConfirmationSent={handleConfirmationSent}
+                onSwitchToTrusteePortal={handleSwitchToTrusteePortal}
+              />
+            )}
+          </div>
+          
+          {/* Right side - Information */}
+          <div className="text-white space-y-8 lg:pl-8">
+            <div className="space-y-4">
+              <h1 className="text-4xl lg:text-5xl font-bold leading-tight">
+                Client Portal Access
+              </h1>
+              <p className="text-xl text-blue-100 leading-relaxed">
+                Your secure gateway to tracking your case progress and communicating with your trustee.
+              </p>
+            </div>
+            
+            <div className="space-y-6">
+              <div className="flex items-start gap-4">
+                <div className="bg-white/20 p-3 rounded-xl">
+                  <FileText className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold mb-1">View and Download Documents</h3>
+                  <p className="text-blue-100">Access all your important documents securely</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4">
+                <div className="bg-white/20 p-3 rounded-xl">
+                  <Calendar className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold mb-1">Schedule and Manage Appointments</h3>
+                  <p className="text-blue-100">Book meetings with your trustee at your convenience</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4">
+                <div className="bg-white/20 p-3 rounded-xl">
+                  <MessageSquare className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold mb-1">Communicate Securely</h3>
+                  <p className="text-blue-100">Send messages and receive updates from your trustee</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4">
+                <div className="bg-white/20 p-3 rounded-xl">
+                  <ShieldCheck className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold mb-1">Access Case Details Securely</h3>
+                  <p className="text-blue-100">Monitor your case progress with bank-level security</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </AuthLayout>
+    </div>
   );
 };
 
