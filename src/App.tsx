@@ -26,6 +26,7 @@ import CRMPage from './pages/CRMPage';
 import ClientViewerPage from './pages/ClientViewerPage';
 import SupportPage from './pages/SupportPage';
 import Support from './pages/Support';
+import CreditorManagementPage from './pages/CreditorManagementPage';
 
 // Trustee Portal Pages
 import TrusteeDashboardPage from './pages/trustee/DashboardPage';
@@ -79,6 +80,8 @@ function App() {
           <Route path="/trustee/profile" element={<AuthCheck><ProfilePage /></AuthCheck>} />
           <Route path="/trustee/messages" element={<AuthCheck><MessagesPage /></AuthCheck>} />
           <Route path="/trustee/support" element={<AuthCheck><SupportPage /></AuthCheck>} />
+          <Route path="/trustee/creditors" element={<AuthCheck><CreditorManagementPage /></AuthCheck>} />
+          <Route path="/creditors" element={<AuthCheck><CreditorManagementPage /></AuthCheck>} />
 
           {/* Client Portal Routes */}
           <Route path="/client-portal/*" element={<AuthCheck><ClientPortal /></AuthCheck>} />
