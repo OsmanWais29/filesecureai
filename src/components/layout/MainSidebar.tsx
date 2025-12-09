@@ -19,7 +19,8 @@ import {
   FileCode,
   User,
   MessageSquare,
-  LifeBuoy
+  LifeBuoy,
+  Landmark
 } from "lucide-react";
 
 export const MainSidebar = () => {
@@ -29,6 +30,7 @@ export const MainSidebar = () => {
   const navigationItems = [
     { name: "Dashboard", href: "/", icon: Home },
     { name: "Documents", href: "/documents", icon: FileText },
+    { name: "Creditors", href: "/creditors", icon: Landmark },
     { name: "PDF to XML Converter", href: "/converter", icon: FileCode },
     { name: "SAFA", href: "/safa", icon: MessageSquare },
     { name: "CRM", href: "/trustee/crm", icon: Users },
