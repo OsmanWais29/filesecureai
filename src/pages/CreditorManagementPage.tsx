@@ -1,16 +1,10 @@
 import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
   Users,
-  FileText,
-  Gavel,
-  Calculator,
   Upload,
   Plus,
-  History,
   Sparkles,
-  FileCode,
   Settings,
 } from "lucide-react";
 import { EstateHeader } from "@/components/creditor/EstateHeader";
@@ -24,6 +18,7 @@ import { DistributionEngine } from "@/components/creditor/DistributionEngine";
 import { OSBFormsTab } from "@/components/creditor/OSBFormsTab";
 import { AuditTab } from "@/components/creditor/AuditTab";
 import { ProofOfClaimForm } from "@/components/creditor/ProofOfClaimForm";
+import { CreditorSidebar } from "@/components/creditor/CreditorSidebar";
 import { Estate } from "@/types/estate";
 import { 
   Creditor, 
@@ -287,49 +282,19 @@ export default function CreditorManagementPage() {
     setViewMode('profile');
   };
 
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6 space-y-6">
-        {/* Estate Header - Always Visible */}
-        <EstateHeader estate={mockEstate} />
-
-        {/* Action Buttons */}
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm">
-            <Upload className="h-4 w-4 mr-2" />
-            Import Creditors
-          </Button>
-          <Button variant="outline" size="sm">
-            <Sparkles className="h-4 w-4 mr-2" />
-            AI Scan Documents
-          </Button>
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Creditor
-          </Button>
-        </div>
-
-        {/* Dashboard Cards */}
-        <CreditorDashboardCards 
-          stats={mockStats} 
-          onFilterClick={(filter) => toast.info(`Filter: ${filter}`)}
-        />
-
-        {/* Main Tabbed Interface */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-4 lg:grid-cols-8 w-full">
-            <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
-            <TabsTrigger value="creditors" className="text-xs">Creditors</TabsTrigger>
-            <TabsTrigger value="claims" className="text-xs">Claims</TabsTrigger>
-            <TabsTrigger value="meetings" className="text-xs">Meetings</TabsTrigger>
-            <TabsTrigger value="distribution" className="text-xs">Distribution</TabsTrigger>
-            <TabsTrigger value="forms" className="text-xs">Forms</TabsTrigger>
-            <TabsTrigger value="audit" className="text-xs">Audit</TabsTrigger>
-            <TabsTrigger value="settings" className="text-xs">Settings</TabsTrigger>
-          </TabsList>
-
-          {/* Creditors Tab with Context Panel */}
-          <TabsContent value="creditors" className="mt-6">
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'overview':
+        return (
+          <div className="text-center py-12 text-muted-foreground">
+            <Users className="h-16 w-16 mx-auto mb-4 opacity-50" />
+            <h3 className="text-lg font-medium">Estate Overview</h3>
+            <p>Summary dashboard coming soon</p>
+          </div>
+        );
+      case 'creditors':
+        return (
+          <>
             {viewMode === 'list' && (
               <div className="flex gap-6">
                 <div className={showContextPanel ? 'flex-1' : 'w-full'}>
@@ -372,80 +337,109 @@ export default function CreditorManagementPage() {
                 onCancel={() => setViewMode('profile')}
               />
             )}
-          </TabsContent>
+          </>
+        );
+      case 'claims':
+        return (
+          <ClaimsTable
+            claims={mockCreditors.filter(c => c.claim).map(c => ({ ...c.claim!, creditor_name: c.name }))}
+            onViewClaim={() => toast.info('View claim')}
+            onValidateClaim={() => toast.info('Validating with AI')}
+            onSplitClaim={() => toast.info('Split claim')}
+            onViewEvidence={() => toast.info('View evidence')}
+          />
+        );
+      case 'meetings':
+        return (
+          <MeetingOfCreditors
+            meeting={mockMeeting}
+            onScheduleMeeting={() => toast.info('Schedule meeting')}
+            onStartMeeting={() => toast.info('Start meeting')}
+            onRecordVote={(id, vote) => toast.info(`Vote: ${vote}`)}
+            onEndMeeting={() => toast.info('End meeting')}
+            onGenerateMinutes={() => toast.info('Generate minutes')}
+          />
+        );
+      case 'distribution':
+        return (
+          <DistributionEngine
+            distribution={mockDistribution}
+            onCalculateDistribution={() => toast.info('Calculate distribution')}
+            onApproveDistribution={() => toast.success('Distribution approved')}
+            onGenerateForm12={() => toast.info('Generate Form 12')}
+            onExportReport={() => toast.info('Export report')}
+          />
+        );
+      case 'forms':
+        return (
+          <OSBFormsTab
+            estateId={mockEstate.id}
+            forms={[]}
+            onGenerateForm={(type) => toast.info(`Generating Form ${type}`)}
+            onExportXML={() => toast.info('Export XML')}
+            onExportPDF={() => toast.info('Export PDF')}
+            onSubmitForm={() => toast.success('Form submitted')}
+          />
+        );
+      case 'audit':
+        return (
+          <AuditTab
+            estateId={mockEstate.id}
+            events={mockAuditEvents}
+            onExportAuditLog={() => toast.info('Exporting audit log')}
+          />
+        );
+      case 'settings':
+        return (
+          <div className="text-center py-12 text-muted-foreground">
+            <Settings className="h-16 w-16 mx-auto mb-4 opacity-50" />
+            <h3 className="text-lg font-medium">Estate Settings</h3>
+            <p>Configuration options coming soon</p>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
 
-          {/* Claims Tab */}
-          <TabsContent value="claims" className="mt-6">
-            <ClaimsTable
-              claims={mockCreditors.filter(c => c.claim).map(c => ({ ...c.claim!, creditor_name: c.name }))}
-              onViewClaim={() => toast.info('View claim')}
-              onValidateClaim={() => toast.info('Validating with AI')}
-              onSplitClaim={() => toast.info('Split claim')}
-              onViewEvidence={() => toast.info('View evidence')}
-            />
-          </TabsContent>
+  return (
+    <div className="min-h-screen bg-background flex">
+      {/* Sidebar Navigation */}
+      <CreditorSidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
-          {/* Meetings Tab */}
-          <TabsContent value="meetings" className="mt-6">
-            <MeetingOfCreditors
-              meeting={mockMeeting}
-              onScheduleMeeting={() => toast.info('Schedule meeting')}
-              onStartMeeting={() => toast.info('Start meeting')}
-              onRecordVote={(id, vote) => toast.info(`Vote: ${vote}`)}
-              onEndMeeting={() => toast.info('End meeting')}
-              onGenerateMinutes={() => toast.info('Generate minutes')}
-            />
-          </TabsContent>
+      {/* Main Content */}
+      <div className="flex-1 overflow-auto">
+        <div className="p-6 space-y-6">
+          {/* Estate Header - Always Visible */}
+          <EstateHeader estate={mockEstate} />
 
-          {/* Distribution Tab */}
-          <TabsContent value="distribution" className="mt-6">
-            <DistributionEngine
-              distribution={mockDistribution}
-              onCalculateDistribution={() => toast.info('Calculate distribution')}
-              onApproveDistribution={() => toast.success('Distribution approved')}
-              onGenerateForm12={() => toast.info('Generate Form 12')}
-              onExportReport={() => toast.info('Export report')}
-            />
-          </TabsContent>
+          {/* Action Buttons */}
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm">
+              <Upload className="h-4 w-4 mr-2" />
+              Import Creditors
+            </Button>
+            <Button variant="outline" size="sm">
+              <Sparkles className="h-4 w-4 mr-2" />
+              AI Scan Documents
+            </Button>
+            <Button size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Creditor
+            </Button>
+          </div>
 
-          {/* Forms Tab */}
-          <TabsContent value="forms" className="mt-6">
-            <OSBFormsTab
-              estateId={mockEstate.id}
-              forms={[]}
-              onGenerateForm={(type) => toast.info(`Generating Form ${type}`)}
-              onExportXML={() => toast.info('Export XML')}
-              onExportPDF={() => toast.info('Export PDF')}
-              onSubmitForm={() => toast.success('Form submitted')}
-            />
-          </TabsContent>
+          {/* Dashboard Cards */}
+          <CreditorDashboardCards 
+            stats={mockStats} 
+            onFilterClick={(filter) => toast.info(`Filter: ${filter}`)}
+          />
 
-          {/* Audit Tab */}
-          <TabsContent value="audit" className="mt-6">
-            <AuditTab
-              estateId={mockEstate.id}
-              events={mockAuditEvents}
-              onExportAuditLog={() => toast.info('Exporting audit log')}
-            />
-          </TabsContent>
-
-          {/* Overview & Settings - Placeholder */}
-          <TabsContent value="overview" className="mt-6">
-            <div className="text-center py-12 text-muted-foreground">
-              <Users className="h-16 w-16 mx-auto mb-4 opacity-50" />
-              <h3 className="text-lg font-medium">Estate Overview</h3>
-              <p>Summary dashboard coming soon</p>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="settings" className="mt-6">
-            <div className="text-center py-12 text-muted-foreground">
-              <Settings className="h-16 w-16 mx-auto mb-4 opacity-50" />
-              <h3 className="text-lg font-medium">Estate Settings</h3>
-              <p>Configuration options coming soon</p>
-            </div>
-          </TabsContent>
-        </Tabs>
+          {/* Content Area */}
+          <div className="mt-6">
+            {renderContent()}
+          </div>
+        </div>
       </div>
     </div>
   );
