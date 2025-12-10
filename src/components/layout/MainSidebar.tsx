@@ -29,16 +29,19 @@ export const MainSidebar = () => {
 
   const navigationItems = [
     { name: "Dashboard", href: "/", icon: Home },
-    { name: "Clients", href: "/clients", icon: Users },
     { name: "Documents", href: "/documents", icon: FileText },
     { name: "Creditors", href: "/creditors", icon: Landmark },
-    { name: "Claims", href: "/claims", icon: FileText },
-    { name: "Meetings", href: "/meetings", icon: BarChart3 },
-    { name: "Distribution", href: "/distribution", icon: DollarSign },
-    { name: "OSB Forms", href: "/osb-forms", icon: FileCode },
+    { name: "PDF to XML Converter", href: "/converter", icon: FileCode },
     { name: "SAFA", href: "/safa", icon: MessageSquare },
+    { name: "CRM", href: "/trustee/crm", icon: Users },
+    { name: "Smart Income Expense", href: "/income-expense", icon: DollarSign },
     { name: "Audit Trail", href: "/audit", icon: Activity },
+    { name: "Analytics", href: "/analytics", icon: BarChart3 },
+    { name: "Notifications", href: "/notifications", icon: Bell },
+    { name: "Messages", href: "/messages", icon: MessageSquare },
+    { name: "Support", href: "/trustee/support", icon: LifeBuoy },
     { name: "Settings", href: "/settings", icon: Settings },
+    { name: "Profile", href: "/profile", icon: User },
   ];
 
   const toggleSidebar = () => {
