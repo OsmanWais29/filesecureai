@@ -7,11 +7,9 @@ import {
   Calendar,
   Wallet,
   FileText,
-  Bot,
-  Shield
 } from "lucide-react";
 
-export type ModuleTab = 
+export type ModuleTab =
   | "overview" 
   | "creditors" 
   | "claims" 
@@ -33,8 +31,6 @@ const tabs: { id: ModuleTab; label: string; icon: React.ComponentType<{ classNam
   { id: "meetings", label: "Meetings", icon: Calendar },
   { id: "distribution", label: "Distribution", icon: Wallet },
   { id: "osb-forms", label: "OSB Forms", icon: FileText },
-  { id: "safa", label: "SAFA", icon: Bot },
-  { id: "audit", label: "Audit Trail", icon: Shield },
 ];
 
 export const ModuleTabs = ({ activeTab, onTabChange }: ModuleTabsProps) => {
