@@ -279,6 +279,86 @@ export type Database = {
         }
         Relationships: []
       }
+      claims: {
+        Row: {
+          ai_flags: Json | null
+          claim_amount: number
+          collateral_description: string | null
+          collateral_value: number | null
+          created_at: string
+          creditor_id: string | null
+          estate_id: string | null
+          filing_date: string | null
+          id: string
+          is_late_filing: boolean | null
+          osb_compliant: boolean | null
+          preferred_amount: number | null
+          priority: string
+          proof_of_claim_doc_id: string | null
+          secured_amount: number | null
+          status: string
+          supporting_documents: Json | null
+          unsecured_amount: number | null
+          updated_at: string
+          user_id: string | null
+          validation_notes: string | null
+        }
+        Insert: {
+          ai_flags?: Json | null
+          claim_amount?: number
+          collateral_description?: string | null
+          collateral_value?: number | null
+          created_at?: string
+          creditor_id?: string | null
+          estate_id?: string | null
+          filing_date?: string | null
+          id?: string
+          is_late_filing?: boolean | null
+          osb_compliant?: boolean | null
+          preferred_amount?: number | null
+          priority?: string
+          proof_of_claim_doc_id?: string | null
+          secured_amount?: number | null
+          status?: string
+          supporting_documents?: Json | null
+          unsecured_amount?: number | null
+          updated_at?: string
+          user_id?: string | null
+          validation_notes?: string | null
+        }
+        Update: {
+          ai_flags?: Json | null
+          claim_amount?: number
+          collateral_description?: string | null
+          collateral_value?: number | null
+          created_at?: string
+          creditor_id?: string | null
+          estate_id?: string | null
+          filing_date?: string | null
+          id?: string
+          is_late_filing?: boolean | null
+          osb_compliant?: boolean | null
+          preferred_amount?: number | null
+          priority?: string
+          proof_of_claim_doc_id?: string | null
+          secured_amount?: number | null
+          status?: string
+          supporting_documents?: Json | null
+          unsecured_amount?: number | null
+          updated_at?: string
+          user_id?: string | null
+          validation_notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claims_creditor_id_fkey"
+            columns: ["creditor_id"]
+            isOneToOne: false
+            referencedRelation: "creditors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_interactions: {
         Row: {
           client_id: string | null
@@ -463,6 +543,242 @@ export type Database = {
           messages?: Json | null
           type?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      creditor_meetings: {
+        Row: {
+          agenda: string | null
+          created_at: string
+          estate_id: string | null
+          id: string
+          location: string | null
+          meeting_date: string
+          meeting_time: string
+          meeting_type: string
+          minutes: string | null
+          quorum_met: boolean | null
+          status: string
+          total_claim_amount_voting: number | null
+          total_eligible_voters: number | null
+          total_votes_cast: number | null
+          updated_at: string
+          user_id: string | null
+          votes: Json | null
+        }
+        Insert: {
+          agenda?: string | null
+          created_at?: string
+          estate_id?: string | null
+          id?: string
+          location?: string | null
+          meeting_date: string
+          meeting_time: string
+          meeting_type?: string
+          minutes?: string | null
+          quorum_met?: boolean | null
+          status?: string
+          total_claim_amount_voting?: number | null
+          total_eligible_voters?: number | null
+          total_votes_cast?: number | null
+          updated_at?: string
+          user_id?: string | null
+          votes?: Json | null
+        }
+        Update: {
+          agenda?: string | null
+          created_at?: string
+          estate_id?: string | null
+          id?: string
+          location?: string | null
+          meeting_date?: string
+          meeting_time?: string
+          meeting_type?: string
+          minutes?: string | null
+          quorum_met?: boolean | null
+          status?: string
+          total_claim_amount_voting?: number | null
+          total_eligible_voters?: number | null
+          total_votes_cast?: number | null
+          updated_at?: string
+          user_id?: string | null
+          votes?: Json | null
+        }
+        Relationships: []
+      }
+      creditor_notices: {
+        Row: {
+          content: string | null
+          created_at: string
+          creditor_id: string | null
+          delivery_status: string | null
+          document_id: string | null
+          id: string
+          notice_type: string
+          read_at: string | null
+          sent_at: string | null
+          sent_via: string | null
+          subject: string
+          user_id: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          creditor_id?: string | null
+          delivery_status?: string | null
+          document_id?: string | null
+          id?: string
+          notice_type: string
+          read_at?: string | null
+          sent_at?: string | null
+          sent_via?: string | null
+          subject: string
+          user_id?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          creditor_id?: string | null
+          delivery_status?: string | null
+          document_id?: string | null
+          id?: string
+          notice_type?: string
+          read_at?: string | null
+          sent_at?: string | null
+          sent_via?: string | null
+          subject?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creditor_notices_creditor_id_fkey"
+            columns: ["creditor_id"]
+            isOneToOne: false
+            referencedRelation: "creditors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      creditors: {
+        Row: {
+          account_number: string | null
+          address: string | null
+          city: string | null
+          contact_person: string | null
+          country: string | null
+          created_at: string
+          creditor_type: string
+          email: string | null
+          estate_id: string | null
+          fax: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          postal_code: string | null
+          province: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          account_number?: string | null
+          address?: string | null
+          city?: string | null
+          contact_person?: string | null
+          country?: string | null
+          created_at?: string
+          creditor_type?: string
+          email?: string | null
+          estate_id?: string | null
+          fax?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          province?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          account_number?: string | null
+          address?: string | null
+          city?: string | null
+          contact_person?: string | null
+          country?: string | null
+          created_at?: string
+          creditor_type?: string
+          email?: string | null
+          estate_id?: string | null
+          fax?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          province?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      distributions: {
+        Row: {
+          created_at: string
+          distribution_date: string | null
+          distributions: Json | null
+          dividend_rate: number | null
+          estate_id: string | null
+          id: string
+          levy_amount: number | null
+          preferred_distribution: number | null
+          sales_tax: number | null
+          secured_distribution: number | null
+          status: string
+          total_disbursements: number | null
+          total_receipts: number | null
+          trustee_fees: number | null
+          unsecured_distribution: number | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          distribution_date?: string | null
+          distributions?: Json | null
+          dividend_rate?: number | null
+          estate_id?: string | null
+          id?: string
+          levy_amount?: number | null
+          preferred_distribution?: number | null
+          sales_tax?: number | null
+          secured_distribution?: number | null
+          status?: string
+          total_disbursements?: number | null
+          total_receipts?: number | null
+          trustee_fees?: number | null
+          unsecured_distribution?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          distribution_date?: string | null
+          distributions?: Json | null
+          dividend_rate?: number | null
+          estate_id?: string | null
+          id?: string
+          levy_amount?: number | null
+          preferred_distribution?: number | null
+          sales_tax?: number | null
+          secured_distribution?: number | null
+          status?: string
+          total_disbursements?: number | null
+          total_receipts?: number | null
+          trustee_fees?: number | null
+          unsecured_distribution?: number | null
+          updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -911,6 +1227,66 @@ export type Database = {
           last_updated?: string
           table_name?: string
           table_schema?: Json
+        }
+        Relationships: []
+      }
+      estates: {
+        Row: {
+          assigned_date: string | null
+          client_id: string | null
+          created_at: string
+          debtor_name: string
+          estate_type: string
+          file_number: string | null
+          id: string
+          next_deadline: string | null
+          next_deadline_description: string | null
+          status: string
+          total_claims: number | null
+          total_creditors: number | null
+          trust_balance: number | null
+          trustee_id: string | null
+          trustee_name: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          assigned_date?: string | null
+          client_id?: string | null
+          created_at?: string
+          debtor_name: string
+          estate_type?: string
+          file_number?: string | null
+          id?: string
+          next_deadline?: string | null
+          next_deadline_description?: string | null
+          status?: string
+          total_claims?: number | null
+          total_creditors?: number | null
+          trust_balance?: number | null
+          trustee_id?: string | null
+          trustee_name?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          assigned_date?: string | null
+          client_id?: string | null
+          created_at?: string
+          debtor_name?: string
+          estate_type?: string
+          file_number?: string | null
+          id?: string
+          next_deadline?: string | null
+          next_deadline_description?: string | null
+          status?: string
+          total_claims?: number | null
+          total_creditors?: number | null
+          trust_balance?: number | null
+          trustee_id?: string | null
+          trustee_name?: string | null
+          updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
