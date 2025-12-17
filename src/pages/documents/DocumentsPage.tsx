@@ -7,6 +7,10 @@ import { DocumentTree } from "@/components/documents/DocumentTree";
 import { EditDocumentDialog } from "@/components/documents/EditDocumentDialog";
 import { DocumentReorderDialog } from "@/components/documents/DocumentReorderDialog";
 import { useDocumentActions } from "@/hooks/useDocumentActions";
+import { Button } from "@/components/ui/button";
+import { FolderPlus, Upload } from "lucide-react";
+import { CreateFolderDialog } from "@/components/documents/CreateFolderDialog";
+import { UploadDocumentDialog } from "@/components/documents/UploadDocumentDialog";
 
 const DocumentsPage = () => {
   const {
@@ -27,6 +31,8 @@ const DocumentsPage = () => {
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [reorderDialogOpen, setReorderDialogOpen] = useState(false);
+  const [createFolderOpen, setCreateFolderOpen] = useState(false);
+  const [uploadDocumentOpen, setUploadDocumentOpen] = useState(false);
   const [editingDocument, setEditingDocument] = useState<{id: string, name: string} | null>(null);
 
   // Get all documents for reordering
@@ -64,6 +70,8 @@ const DocumentsPage = () => {
     setReorderDialogOpen(true);
   };
 
+  const selectedClientData = clients.find(c => c.id === selectedClient);
+
   return (
     <MainLayout>
       <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-background">
@@ -79,12 +87,35 @@ const DocumentsPage = () => {
         {/* Right Panel: Document Tree */}
         <div className="flex-1 flex flex-col bg-background">
           <div className="p-4 border-b">
-            <h1 className="text-2xl font-bold text-foreground">Documents</h1>
-            <p className="text-sm text-muted-foreground">
-              {selectedClient 
-                ? `Viewing documents for ${clients.find(c => c.id === selectedClient)?.name}` 
-                : "Select a client to view their documents and folders"}
-            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">Documents</h1>
+                <p className="text-sm text-muted-foreground">
+                  {selectedClient 
+                    ? `Viewing documents for ${selectedClientData?.name}` 
+                    : "Select a client to view their documents and folders"}
+                </p>
+              </div>
+              {selectedClient && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCreateFolderOpen(true)}
+                  >
+                    <FolderPlus className="h-4 w-4 mr-2" />
+                    New Folder
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => setUploadDocumentOpen(true)}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Document
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
           
           {/* Document Tree */}
@@ -92,6 +123,8 @@ const DocumentsPage = () => {
             <div className="border border-border rounded-lg shadow-sm overflow-hidden bg-card h-full">
               <DocumentTree 
                 rootNodes={filteredDocuments}
+                selectedClientId={selectedClient}
+                selectedClientName={selectedClientData?.name}
                 onNodeSelect={(node) => {
                   console.log("Selected node:", node);
                 }}
@@ -100,6 +133,8 @@ const DocumentsPage = () => {
                 onMerge={handleMergeDocuments}
                 onDelete={handleDeleteDocuments}
                 onRecover={handleRecoverDocuments}
+                onCreateFolder={() => setCreateFolderOpen(true)}
+                onUploadDocument={() => setUploadDocumentOpen(true)}
               />
             </div>
           </div>
@@ -112,6 +147,22 @@ const DocumentsPage = () => {
         onOpenChange={setReorderDialogOpen}
         documents={allDocuments}
         onReorder={handleReorder}
+      />
+
+      {/* Create Folder Dialog */}
+      <CreateFolderDialog
+        open={createFolderOpen}
+        onOpenChange={setCreateFolderOpen}
+        clientId={selectedClient}
+        clientName={selectedClientData?.name}
+      />
+
+      {/* Upload Document Dialog */}
+      <UploadDocumentDialog
+        open={uploadDocumentOpen}
+        onOpenChange={setUploadDocumentOpen}
+        clientId={selectedClient}
+        clientName={selectedClientData?.name}
       />
     </MainLayout>
   );
