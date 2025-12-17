@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { ChevronRight, ChevronDown, Edit, Merge, Trash2, RotateCcw, MoreHorizontal } from "lucide-react";
+import { ChevronRight, ChevronDown, Edit, Merge, Trash2, RotateCcw, MoreHorizontal, FolderPlus, Upload } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { FolderIcon } from "./FolderIcon";
 import { cn } from "@/lib/utils";
@@ -29,12 +29,16 @@ interface TreeNode {
 
 interface DocumentTreeProps {
   rootNodes: TreeNode[];
+  selectedClientId?: string | null;
+  selectedClientName?: string;
   onNodeSelect: (node: TreeNode) => void;
   onFileOpen: (node: TreeNode) => void;
   onEdit?: (nodeId: string, newName: string) => void;
   onMerge?: (nodeIds: string[]) => void;
   onDelete?: (nodeIds: string[]) => void;
   onRecover?: (nodeIds: string[]) => void;
+  onCreateFolder?: () => void;
+  onUploadDocument?: () => void;
 }
 
 interface TreeNodeItemProps {
@@ -317,12 +321,16 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
 
 export const DocumentTree: React.FC<DocumentTreeProps> = ({
   rootNodes,
+  selectedClientId,
+  selectedClientName,
   onNodeSelect,
   onFileOpen,
   onEdit,
   onMerge,
   onDelete,
-  onRecover
+  onRecover,
+  onCreateFolder,
+  onUploadDocument
 }) => {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
 
@@ -340,8 +348,34 @@ export const DocumentTree: React.FC<DocumentTreeProps> = ({
     return (
       <div className="flex items-center justify-center h-full p-8">
         <div className="text-center text-muted-foreground">
-          <p className="text-lg font-medium">No documents found</p>
-          <p className="text-sm">Select a client from the left panel to view their documents</p>
+          {selectedClientId ? (
+            <>
+              <FolderIcon type="client" isExpanded={false} className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="text-lg font-medium">No documents yet</p>
+              <p className="text-sm mb-4">
+                Get started by creating a folder or uploading documents for {selectedClientName || "this client"}
+              </p>
+              <div className="flex items-center justify-center gap-2">
+                {onCreateFolder && (
+                  <Button variant="outline" size="sm" onClick={onCreateFolder}>
+                    <FolderPlus className="h-4 w-4 mr-2" />
+                    Create Folder
+                  </Button>
+                )}
+                {onUploadDocument && (
+                  <Button size="sm" onClick={onUploadDocument}>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Document
+                  </Button>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-lg font-medium">No documents found</p>
+              <p className="text-sm">Select a client from the left panel to view their documents</p>
+            </>
+          )}
         </div>
       </div>
     );
