@@ -1,13 +1,14 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, AlertCircle, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar, AlertCircle, Search, Plus, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import { AddClientModal } from "@/components/client/AddClientModal";
 
 interface Client {
   id: string;
@@ -22,11 +23,13 @@ interface ClientListProps {
   clients: Client[];
   selectedClientId?: string;
   onClientSelect?: (clientId: string) => void;
+  onClientCreated?: (clientId: string) => void;
 }
 
-export const ClientList = ({ clients, selectedClientId, onClientSelect }: ClientListProps) => {
+export const ClientList = ({ clients, selectedClientId, onClientSelect, onClientCreated }: ClientListProps) => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
+  const [showAddModal, setShowAddModal] = useState(false);
   
   // Filter clients based on search query
   const filteredClients = clients.filter(client => 
@@ -44,12 +47,27 @@ export const ClientList = ({ clients, selectedClientId, onClientSelect }: Client
       navigate(`/client-viewer/${clientId}`);
     }
   };
+
+  const handleClientCreated = (clientId: string) => {
+    toast.success("Client created successfully!");
+    onClientCreated?.(clientId);
+  };
   
   return (
     <div className="h-full border-r flex flex-col">
-      <div className="px-4 py-2 border-b bg-muted/30">
-        <h2 className="text-lg font-semibold">Clients</h2>
-        <p className="text-xs text-muted-foreground">Select a client to view their documents</p>
+      <div className="px-4 py-2 border-b bg-muted/30 flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">Clients</h2>
+          <p className="text-xs text-muted-foreground">Select a client to view their documents</p>
+        </div>
+        <Button
+          size="sm"
+          onClick={() => setShowAddModal(true)}
+          className="h-8"
+        >
+          <Plus className="h-4 w-4 mr-1" />
+          Add
+        </Button>
       </div>
       
       {/* Search Input */}
@@ -115,12 +133,28 @@ export const ClientList = ({ clients, selectedClientId, onClientSelect }: Client
               </Card>
             ))
           ) : (
-            <div className="text-center p-8 text-muted-foreground">
-              {searchQuery ? "No matching clients found" : "No clients found"}
+            <div className="text-center p-8 text-muted-foreground space-y-4">
+              <p>{searchQuery ? "No matching clients found" : "No clients found"}</p>
+              {!searchQuery && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAddModal(true)}
+                >
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Add Your First Client
+                </Button>
+              )}
             </div>
           )}
         </div>
       </ScrollArea>
+
+      <AddClientModal
+        open={showAddModal}
+        onOpenChange={setShowAddModal}
+        onClientCreated={handleClientCreated}
+      />
     </div>
   );
 };
