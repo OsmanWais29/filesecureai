@@ -688,12 +688,12 @@ export const AddClientModal = ({ open, onOpenChange, onClientCreated }: AddClien
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="caseReference">Internal Case Reference</Label>
+                  <Label htmlFor="caseReference">Estate Number</Label>
                   <Input
                     id="caseReference"
                     value={formData.caseReference}
                     onChange={(e) => updateField("caseReference", e.target.value)}
-                    placeholder="e.g., 2024-001"
+                    placeholder="e.g., 11-123456 or 21-2024-001234"
                   />
                 </div>
               </div>
