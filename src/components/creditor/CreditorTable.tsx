@@ -92,7 +92,8 @@ export function CreditorTable({
   const getStatusBadge = (status: ClaimStatus) => {
     const config: Record<ClaimStatus, { icon: React.ReactNode; className: string }> = {
       pending: { icon: <Clock className="h-3 w-3" />, className: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20' },
-      accepted: { icon: <CheckCircle2 className="h-3 w-3" />, className: 'bg-green-500/10 text-green-600 border-green-500/20' },
+      filed: { icon: <FileText className="h-3 w-3" />, className: 'bg-blue-500/10 text-blue-600 border-blue-500/20' },
+      admitted: { icon: <CheckCircle2 className="h-3 w-3" />, className: 'bg-green-500/10 text-green-600 border-green-500/20' },
       rejected: { icon: <XCircle className="h-3 w-3" />, className: 'bg-red-500/10 text-red-600 border-red-500/20' },
       disputed: { icon: <AlertTriangle className="h-3 w-3" />, className: 'bg-orange-500/10 text-orange-600 border-orange-500/20' },
       withdrawn: { icon: <XCircle className="h-3 w-3" />, className: 'bg-muted text-muted-foreground border-border' },
