@@ -118,15 +118,15 @@ export function CreditorContextPanel({
                 <Badge 
                   variant="outline" 
                   className={
-                    creditor.claim.status === 'accepted' 
+                    creditor.claim.status === 'admitted' 
                       ? 'bg-green-500/10 text-green-600 border-green-500/20'
-                      : creditor.claim.status === 'pending'
+                      : creditor.claim.status === 'pending' || creditor.claim.status === 'filed'
                       ? 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20'
                       : 'bg-red-500/10 text-red-600 border-red-500/20'
                   }
                 >
-                  {creditor.claim.status === 'accepted' && <CheckCircle2 className="h-3 w-3 mr-1" />}
-                  {creditor.claim.status === 'pending' && <Clock className="h-3 w-3 mr-1" />}
+                  {creditor.claim.status === 'admitted' && <CheckCircle2 className="h-3 w-3 mr-1" />}
+                  {(creditor.claim.status === 'pending' || creditor.claim.status === 'filed') && <Clock className="h-3 w-3 mr-1" />}
                   <span className="capitalize">{creditor.claim.status}</span>
                 </Badge>
               </div>
