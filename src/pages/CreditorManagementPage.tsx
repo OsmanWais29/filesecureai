@@ -21,12 +21,14 @@ import { OSBFormsTab } from "@/components/creditor/OSBFormsTab";
 import { AuditTab } from "@/components/creditor/AuditTab";
 import { ProofOfClaimForm } from "@/components/creditor/ProofOfClaimForm";
 import { AddCreditorWizard } from "@/components/creditor/wizard/AddCreditorWizard";
+import { ImportCreditorWizard } from "@/components/creditor/import/ImportCreditorWizard";
 import { 
   Creditor, 
   Claim, 
   CreditorStats,
   AddCreditorFormData,
 } from "@/types/creditor";
+import { ImportedCreditorRow } from "@/types/creditor-import";
 import { toast } from "sonner";
 import { useCreditors, useCreditorStats, useCreateCreditor, useCreateClaim, CreditorWithClaim } from "@/hooks/useCreditors";
 import { useDistributions, useCreateDistribution, useUpdateDistribution } from "@/hooks/useDistributions";
@@ -64,6 +66,7 @@ export default function CreditorManagementPage() {
   const [showContextPanel, setShowContextPanel] = useState(false);
   const [currentEstateId, setCurrentEstateId] = useState<string | undefined>();
   const [showAddCreditorWizard, setShowAddCreditorWizard] = useState(false);
+  const [showImportCreditorWizard, setShowImportCreditorWizard] = useState(false);
 
   // Hooks
   const { data: creditors = [], isLoading: creditorsLoading } = useCreditors(currentEstateId);
@@ -169,6 +172,30 @@ export default function CreditorManagementPage() {
       notes: formData.notes,
     });
     toast.success(`Creditor "${formData.name}" created successfully`);
+  };
+
+  const handleImportCreditorComplete = async (importedCreditors: ImportedCreditorRow[]) => {
+    const validCreditors = importedCreditors.filter(c => c.validation.isValid && c.mappedData.name);
+    
+    for (const creditor of validCreditors) {
+      await createCreditor.mutateAsync({
+        name: creditor.mappedData.name!,
+        creditor_type: (creditor.mappedData.creditor_type as any) || 'unsecured',
+        estate_id: currentEstateId,
+        email: creditor.mappedData.email,
+        phone: creditor.mappedData.phone,
+        address: creditor.mappedData.address,
+        city: creditor.mappedData.city,
+        province: creditor.mappedData.province,
+        postal_code: creditor.mappedData.postal_code,
+        country: creditor.mappedData.country,
+        contact_person: creditor.mappedData.contact_person,
+        account_number: creditor.mappedData.account_number,
+        notes: creditor.mappedData.notes,
+      });
+    }
+    
+    toast.success(`Successfully imported ${validCreditors.length} creditors`);
   };
 
   const renderContent = () => {
@@ -335,7 +362,7 @@ export default function CreditorManagementPage() {
           <div className="p-6 space-y-6">
             {/* Action Buttons */}
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => setShowImportCreditorWizard(true)}>
                 <Upload className="h-4 w-4 mr-2" />
                 Import Creditors
               </Button>
@@ -521,6 +548,14 @@ export default function CreditorManagementPage() {
         onOpenChange={setShowAddCreditorWizard}
         estateId={currentEstateId}
         onComplete={handleAddCreditorComplete}
+      />
+
+      {/* Import Creditor Wizard */}
+      <ImportCreditorWizard
+        open={showImportCreditorWizard}
+        onOpenChange={setShowImportCreditorWizard}
+        estateId={currentEstateId}
+        onComplete={handleImportCreditorComplete}
       />
     </MainLayout>
   );
