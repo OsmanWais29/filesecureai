@@ -362,20 +362,9 @@ export default function CreditorManagementPage() {
           <div className="p-6 space-y-6">
             {/* Action Buttons */}
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" onClick={() => setShowImportCreditorWizard(true)}>
-                <Upload className="h-4 w-4 mr-2" />
-                Import Creditors
-              </Button>
               <Button variant="outline" size="sm">
                 <Sparkles className="h-4 w-4 mr-2" />
                 AI Scan Documents
-              </Button>
-              <Button 
-                size="sm"
-                onClick={() => setShowAddCreditorWizard(true)}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Creditor
               </Button>
             </div>
 
