@@ -20,10 +20,12 @@ import { DistributionEngine } from "@/components/creditor/DistributionEngine";
 import { OSBFormsTab } from "@/components/creditor/OSBFormsTab";
 import { AuditTab } from "@/components/creditor/AuditTab";
 import { ProofOfClaimForm } from "@/components/creditor/ProofOfClaimForm";
+import { AddCreditorWizard } from "@/components/creditor/wizard/AddCreditorWizard";
 import { 
   Creditor, 
   Claim, 
-  CreditorStats, 
+  CreditorStats,
+  AddCreditorFormData,
 } from "@/types/creditor";
 import { toast } from "sonner";
 import { useCreditors, useCreditorStats, useCreateCreditor, useCreateClaim, CreditorWithClaim } from "@/hooks/useCreditors";
@@ -61,6 +63,7 @@ export default function CreditorManagementPage() {
   const [selectedCreditor, setSelectedCreditor] = useState<CreditorWithClaim | null>(null);
   const [showContextPanel, setShowContextPanel] = useState(false);
   const [currentEstateId, setCurrentEstateId] = useState<string | undefined>();
+  const [showAddCreditorWizard, setShowAddCreditorWizard] = useState(false);
 
   // Hooks
   const { data: creditors = [], isLoading: creditorsLoading } = useCreditors(currentEstateId);
@@ -148,6 +151,25 @@ export default function CreditorManagementPage() {
   const currentMeeting = meetings[0];
 
   const isLoading = creditorsLoading || statsLoading;
+
+  const handleAddCreditorComplete = async (formData: AddCreditorFormData) => {
+    await createCreditor.mutateAsync({
+      name: formData.name,
+      creditor_type: formData.creditor_type,
+      estate_id: currentEstateId,
+      email: formData.email,
+      phone: formData.phone,
+      address: formData.address,
+      city: formData.city,
+      province: formData.province,
+      postal_code: formData.postal_code,
+      country: formData.country,
+      contact_person: formData.contact_person,
+      account_number: formData.account_number,
+      notes: formData.notes,
+    });
+    toast.success(`Creditor "${formData.name}" created successfully`);
+  };
 
   const renderContent = () => {
     if (isLoading) {
@@ -323,13 +345,7 @@ export default function CreditorManagementPage() {
               </Button>
               <Button 
                 size="sm"
-                onClick={() => {
-                  createCreditor.mutate({
-                    name: 'New Creditor',
-                    creditor_type: 'other',
-                    estate_id: currentEstateId,
-                  });
-                }}
+                onClick={() => setShowAddCreditorWizard(true)}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Creditor
@@ -351,15 +367,7 @@ export default function CreditorManagementPage() {
                       <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <h3 className="text-lg font-medium">No Creditors Yet</h3>
                       <p className="mb-4">Add your first creditor to get started</p>
-                      <Button
-                        onClick={() => {
-                          createCreditor.mutate({
-                            name: 'New Creditor',
-                            creditor_type: 'other',
-                            estate_id: currentEstateId,
-                          });
-                        }}
-                      >
+                      <Button onClick={() => setShowAddCreditorWizard(true)}>
                         <Plus className="h-4 w-4 mr-2" />
                         Add Creditor
                       </Button>
@@ -506,6 +514,14 @@ export default function CreditorManagementPage() {
           {renderContent()}
         </div>
       </div>
+
+      {/* Add Creditor Wizard */}
+      <AddCreditorWizard
+        open={showAddCreditorWizard}
+        onOpenChange={setShowAddCreditorWizard}
+        estateId={currentEstateId}
+        onComplete={handleAddCreditorComplete}
+      />
     </MainLayout>
   );
 }
