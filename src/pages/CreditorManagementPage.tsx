@@ -394,6 +394,8 @@ export default function CreditorManagementPage() {
                       onViewCreditor={handleViewCreditor}
                       onSendNotice={(c) => toast.info(`Sending notice to ${c.name}`)}
                       onViewDocuments={(c) => toast.info(`Viewing docs for ${c.name}`)}
+                      onImportCreditors={() => setShowImportCreditorWizard(true)}
+                      onAddCreditor={() => setShowAddCreditorWizard(true)}
                     />
                   )}
                 </div>

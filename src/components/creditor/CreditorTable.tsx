@@ -44,6 +44,8 @@ interface CreditorTableProps {
   onViewCreditor: (creditor: CreditorWithClaim) => void;
   onSendNotice: (creditor: CreditorWithClaim) => void;
   onViewDocuments: (creditor: CreditorWithClaim) => void;
+  onImportCreditors?: () => void;
+  onAddCreditor?: () => void;
 }
 
 export function CreditorTable({
@@ -51,6 +53,8 @@ export function CreditorTable({
   onViewCreditor,
   onSendNotice,
   onViewDocuments,
+  onImportCreditors,
+  onAddCreditor,
 }: CreditorTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<ClaimPriority | "all">("all");
@@ -152,11 +156,11 @@ export function CreditorTable({
           </DropdownMenu>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={onImportCreditors}>
             <Upload className="h-4 w-4 mr-2" />
             Import
           </Button>
-          <Button size="sm">
+          <Button size="sm" onClick={onAddCreditor}>
             <Plus className="h-4 w-4 mr-2" />
             Add Creditor
           </Button>
