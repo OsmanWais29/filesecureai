@@ -100,7 +100,7 @@ export function useUpdateCreditorMeeting() {
 
       const { data, error } = await supabase
         .from("creditor_meetings")
-        .update(updateData)
+        .update(updateData as any)
         .eq("id", id)
         .select()
         .single();

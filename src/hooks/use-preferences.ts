@@ -23,7 +23,7 @@ export const usePreferences = () => {
     try {
       const { error } = await supabase
         .from('user_preferences')
-        .update({ [key]: value })
+        .update({ [key]: value } as any)
         .eq('user_id', preferences?.user_id);
 
       if (error) throw error;
