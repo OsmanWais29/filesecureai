@@ -21,11 +21,11 @@ import { NotesTab } from "@/components/estate/tabs/NotesTab";
 import { AdditionalInfoTab } from "@/components/estate/tabs/AdditionalInfoTab";
 import { DischargeTab } from "@/components/estate/tabs/DischargeTab";
 import { ClosingTab } from "@/components/estate/tabs/ClosingTab";
-import { getEstate } from "@/data/estateWorkspace";
+import { useEstate } from "@/data/estateStore";
 
 const EstateWorkspacePage = () => {
   const { estateId } = useParams();
-  const estate = getEstate(estateId);
+  const estate = useEstate(estateId);
   const [tab, setTab] = useState<EstateTabId>("overview");
 
   const renderTab = () => {
