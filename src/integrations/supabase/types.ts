@@ -121,6 +121,36 @@ export type Database = {
         }
         Relationships: []
       }
+      api_cost_log: {
+        Row: {
+          analysis_id: string | null
+          cost_usd: number | null
+          created_at: string | null
+          id: string
+          service: string | null
+          tokens_in: number | null
+          tokens_out: number | null
+        }
+        Insert: {
+          analysis_id?: string | null
+          cost_usd?: number | null
+          created_at?: string | null
+          id?: string
+          service?: string | null
+          tokens_in?: number | null
+          tokens_out?: number | null
+        }
+        Update: {
+          analysis_id?: string | null
+          cost_usd?: number | null
+          created_at?: string | null
+          id?: string
+          service?: string | null
+          tokens_in?: number | null
+          tokens_out?: number | null
+        }
+        Relationships: []
+      }
       api_integrations: {
         Row: {
           api_key: string
@@ -156,6 +186,36 @@ export type Database = {
           settings?: Json | null
           status?: Database["public"]["Enums"]["integration_status"] | null
           updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      audit_log: {
+        Row: {
+          action: string
+          created_at: string | null
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          resource_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          resource_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          resource_id?: string | null
           user_id?: string | null
         }
         Relationships: []
@@ -1548,6 +1608,45 @@ export type Database = {
         }
         Relationships: []
       }
+      hashtag_cache: {
+        Row: {
+          competition_score: number | null
+          fit_score: number | null
+          hashtag: string | null
+          id: string
+          last_updated: string | null
+          niche: string | null
+          platform: string | null
+          reach_estimate: string | null
+          video_count: number | null
+          view_count: number | null
+        }
+        Insert: {
+          competition_score?: number | null
+          fit_score?: number | null
+          hashtag?: string | null
+          id?: string
+          last_updated?: string | null
+          niche?: string | null
+          platform?: string | null
+          reach_estimate?: string | null
+          video_count?: number | null
+          view_count?: number | null
+        }
+        Update: {
+          competition_score?: number | null
+          fit_score?: number | null
+          hashtag?: string | null
+          id?: string
+          last_updated?: string | null
+          niche?: string | null
+          platform?: string | null
+          reach_estimate?: string | null
+          video_count?: number | null
+          view_count?: number | null
+        }
+        Relationships: []
+      }
       legal_references: {
         Row: {
           category: string
@@ -2072,6 +2171,102 @@ export type Database = {
           },
         ]
       }
+      simulation_comments: {
+        Row: {
+          agent_color: string | null
+          agent_name: string | null
+          analysis_id: string | null
+          comment_text: string | null
+          created_at: string | null
+          id: string
+          simulation_id: string | null
+          timestamp_seconds: number | null
+        }
+        Insert: {
+          agent_color?: string | null
+          agent_name?: string | null
+          analysis_id?: string | null
+          comment_text?: string | null
+          created_at?: string | null
+          id?: string
+          simulation_id?: string | null
+          timestamp_seconds?: number | null
+        }
+        Update: {
+          agent_color?: string | null
+          agent_name?: string | null
+          analysis_id?: string | null
+          comment_text?: string | null
+          created_at?: string | null
+          id?: string
+          simulation_id?: string | null
+          timestamp_seconds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulation_comments_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "video_analyses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "simulation_comments_simulation_id_fkey"
+            columns: ["simulation_id"]
+            isOneToOne: false
+            referencedRelation: "simulations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      simulations: {
+        Row: {
+          analysis_id: string | null
+          audience_focus: number | null
+          created_at: string | null
+          dropout_moments: Json | null
+          id: string
+          predictions: Json | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          analysis_id?: string | null
+          audience_focus?: number | null
+          created_at?: string | null
+          dropout_moments?: Json | null
+          id?: string
+          predictions?: Json | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          analysis_id?: string | null
+          audience_focus?: number | null
+          created_at?: string | null
+          dropout_moments?: Json | null
+          id?: string
+          predictions?: Json | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulations_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "video_analyses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "simulations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_assignments: {
         Row: {
           assigned_at: string | null
@@ -2347,6 +2542,74 @@ export type Database = {
           },
         ]
       }
+      tracked_creators: {
+        Row: {
+          avg_views: number | null
+          created_at: string | null
+          data_source: string | null
+          display_name: string | null
+          engagement_rate: number | null
+          follower_count: number | null
+          following_count: number | null
+          handle: string
+          id: string
+          is_threat: boolean | null
+          is_verified: boolean | null
+          last_updated: string | null
+          latest_score: number | null
+          platform: string | null
+          post_count: number | null
+          posts_this_week: number | null
+          user_id: string | null
+        }
+        Insert: {
+          avg_views?: number | null
+          created_at?: string | null
+          data_source?: string | null
+          display_name?: string | null
+          engagement_rate?: number | null
+          follower_count?: number | null
+          following_count?: number | null
+          handle: string
+          id?: string
+          is_threat?: boolean | null
+          is_verified?: boolean | null
+          last_updated?: string | null
+          latest_score?: number | null
+          platform?: string | null
+          post_count?: number | null
+          posts_this_week?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          avg_views?: number | null
+          created_at?: string | null
+          data_source?: string | null
+          display_name?: string | null
+          engagement_rate?: number | null
+          follower_count?: number | null
+          following_count?: number | null
+          handle?: string
+          id?: string
+          is_threat?: boolean | null
+          is_verified?: boolean | null
+          last_updated?: string | null
+          latest_score?: number | null
+          platform?: string | null
+          post_count?: number | null
+          posts_this_week?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracked_creators_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_data: {
         Row: {
           created_at: string | null
@@ -2377,6 +2640,66 @@ export type Database = {
           metadata?: Json | null
           module?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      translations: {
+        Row: {
+          lang_code: string
+          strings: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          lang_code: string
+          strings?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          lang_code?: string
+          strings?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      trend_alerts: {
+        Row: {
+          created_at: string | null
+          creator_count: number | null
+          expires_at: string | null
+          growth_pct: number | null
+          hours_remaining: number | null
+          id: string
+          niche: string | null
+          platform: string | null
+          source: string | null
+          trend_name: string | null
+          urgency_score: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          creator_count?: number | null
+          expires_at?: string | null
+          growth_pct?: number | null
+          hours_remaining?: number | null
+          id?: string
+          niche?: string | null
+          platform?: string | null
+          source?: string | null
+          trend_name?: string | null
+          urgency_score?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          creator_count?: number | null
+          expires_at?: string | null
+          growth_pct?: number | null
+          hours_remaining?: number | null
+          id?: string
+          niche?: string | null
+          platform?: string | null
+          source?: string | null
+          trend_name?: string | null
+          urgency_score?: number | null
         }
         Relationships: []
       }
@@ -2520,6 +2843,143 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      video_analyses: {
+        Row: {
+          algo_insights: Json | null
+          benchmark_text: string | null
+          best_clips: Json | null
+          biggest_issue_body: string | null
+          biggest_issue_title: string | null
+          caption_score: number | null
+          created_at: string | null
+          current_step: number | null
+          current_step_label: string | null
+          emotion_score: number | null
+          error: string | null
+          fix_suggestions: Json | null
+          hook_score: number | null
+          id: string
+          optimized_storage_path: string | null
+          overall_score: number | null
+          pacing_score: number | null
+          status: string | null
+          user_id: string | null
+          verdict: string | null
+          video_id: string | null
+          visual_clarity_score: number | null
+        }
+        Insert: {
+          algo_insights?: Json | null
+          benchmark_text?: string | null
+          best_clips?: Json | null
+          biggest_issue_body?: string | null
+          biggest_issue_title?: string | null
+          caption_score?: number | null
+          created_at?: string | null
+          current_step?: number | null
+          current_step_label?: string | null
+          emotion_score?: number | null
+          error?: string | null
+          fix_suggestions?: Json | null
+          hook_score?: number | null
+          id?: string
+          optimized_storage_path?: string | null
+          overall_score?: number | null
+          pacing_score?: number | null
+          status?: string | null
+          user_id?: string | null
+          verdict?: string | null
+          video_id?: string | null
+          visual_clarity_score?: number | null
+        }
+        Update: {
+          algo_insights?: Json | null
+          benchmark_text?: string | null
+          best_clips?: Json | null
+          biggest_issue_body?: string | null
+          biggest_issue_title?: string | null
+          caption_score?: number | null
+          created_at?: string | null
+          current_step?: number | null
+          current_step_label?: string | null
+          emotion_score?: number | null
+          error?: string | null
+          fix_suggestions?: Json | null
+          hook_score?: number | null
+          id?: string
+          optimized_storage_path?: string | null
+          overall_score?: number | null
+          pacing_score?: number | null
+          status?: string | null
+          user_id?: string | null
+          verdict?: string | null
+          video_id?: string | null
+          visual_clarity_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_analyses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_analyses_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      videos: {
+        Row: {
+          created_at: string | null
+          duration_seconds: number | null
+          file_size_bytes: number | null
+          filename: string | null
+          id: string
+          niche: string | null
+          platform: string | null
+          status: string | null
+          storage_path: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          duration_seconds?: number | null
+          file_size_bytes?: number | null
+          filename?: string | null
+          id?: string
+          niche?: string | null
+          platform?: string | null
+          status?: string | null
+          storage_path?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          duration_seconds?: number | null
+          file_size_bytes?: number | null
+          filename?: string | null
+          id?: string
+          niche?: string | null
+          platform?: string | null
+          status?: string | null
+          storage_path?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "videos_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
