@@ -107,7 +107,7 @@ export function useUpdateDistribution() {
 
       const { data, error } = await supabase
         .from("distributions")
-        .update(updateData)
+        .update(updateData as any)
         .eq("id", id)
         .select()
         .single();

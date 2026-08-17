@@ -27,6 +27,8 @@ import ClientViewerPage from './pages/ClientViewerPage';
 import SupportPage from './pages/SupportPage';
 import Support from './pages/Support';
 import CreditorManagementPage from './pages/CreditorManagementPage';
+import EstatesListPage from './pages/estates/EstatesListPage';
+import EstateWorkspacePage from './pages/estates/EstateWorkspacePage';
 
 // Trustee Portal Pages
 import TrusteeDashboardPage from './pages/trustee/DashboardPage';
@@ -82,6 +84,10 @@ function App() {
           <Route path="/trustee/support" element={<AuthCheck><SupportPage /></AuthCheck>} />
           <Route path="/trustee/creditors" element={<AuthCheck><CreditorManagementPage /></AuthCheck>} />
           <Route path="/creditors" element={<AuthCheck><CreditorManagementPage /></AuthCheck>} />
+
+          {/* Estate Workspace */}
+          <Route path="/estates" element={<AuthCheck><EstatesListPage /></AuthCheck>} />
+          <Route path="/estates/:estateId" element={<AuthCheck><EstateWorkspacePage /></AuthCheck>} />
 
           {/* Client Portal Routes */}
           <Route path="/client-portal/*" element={<AuthCheck><ClientPortal /></AuthCheck>} />

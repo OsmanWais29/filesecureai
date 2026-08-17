@@ -29,6 +29,7 @@ export const MainSidebar = () => {
 
   const navigationItems = [
     { name: "Dashboard", href: "/", icon: Home },
+    { name: "Estates", href: "/estates", icon: Landmark },
     { name: "Documents", href: "/documents", icon: FileText },
     { name: "Creditors", href: "/creditors", icon: Landmark },
     { name: "PDF to XML Converter", href: "/converter", icon: FileCode },

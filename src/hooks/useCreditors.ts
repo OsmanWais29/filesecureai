@@ -172,7 +172,7 @@ export function useUpdateCreditor() {
     mutationFn: async ({ id, ...updates }: Partial<Creditor> & { id: string }) => {
       const { data, error } = await supabase
         .from("creditors")
-        .update(updates)
+        .update(updates as any)
         .eq("id", id)
         .select()
         .single();
@@ -284,7 +284,7 @@ export function useUpdateClaim() {
 
       const { data, error } = await supabase
         .from("claims")
-        .update(updateData)
+        .update(updateData as any)
         .eq("id", id)
         .select()
         .single();
