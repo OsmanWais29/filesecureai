@@ -11,13 +11,16 @@ import { FinancialsTab } from "@/components/estate/tabs/FinancialsTab";
 import { CreditorsTab } from "@/components/estate/tabs/CreditorsTab";
 import { AssetsTab } from "@/components/estate/tabs/AssetsTab";
 import { DocumentsTab } from "@/components/estate/tabs/DocumentsTab";
-import {
-  ActivityTab,
-  CommunicationsTab,
-  ComplianceTab,
-  FormsTab,
-  IncomeTab,
-} from "@/components/estate/tabs/RegisterTabs";
+import { ActivityTab, ComplianceTab } from "@/components/estate/tabs/RegisterTabs";
+import { EstateRecordTab } from "@/components/estate/tabs/EstateRecordTab";
+import { FormsTab } from "@/components/estate/tabs/FormsTab";
+import { IncomeTab } from "@/components/estate/tabs/IncomeTab";
+import { TaxTab } from "@/components/estate/tabs/TaxTab";
+import { CounsellingTab } from "@/components/estate/tabs/CounsellingTab";
+import { NotesTab } from "@/components/estate/tabs/NotesTab";
+import { AdditionalInfoTab } from "@/components/estate/tabs/AdditionalInfoTab";
+import { DischargeTab } from "@/components/estate/tabs/DischargeTab";
+import { ClosingTab } from "@/components/estate/tabs/ClosingTab";
 import { getEstate } from "@/data/estateWorkspace";
 
 const EstateWorkspacePage = () => {
@@ -28,16 +31,22 @@ const EstateWorkspacePage = () => {
   const renderTab = () => {
     switch (tab) {
       case "overview": return <OverviewTab estate={estate} />;
+      case "record": return <EstateRecordTab />;
       case "timeline": return <TimelineTab />;
       case "workflow": return <WorkflowTab />;
       case "financials": return <FinancialsTab />;
       case "creditors": return <CreditorsTab />;
       case "assets": return <AssetsTab />;
+      case "additional": return <AdditionalInfoTab />;
       case "documents": return <DocumentsTab />;
       case "forms": return <FormsTab />;
       case "income": return <IncomeTab />;
-      case "communications": return <CommunicationsTab />;
+      case "tax": return <TaxTab />;
+      case "counselling": return <CounsellingTab />;
+      case "notes": return <NotesTab />;
       case "compliance": return <ComplianceTab />;
+      case "discharge": return <DischargeTab />;
+      case "closing": return <ClosingTab />;
       case "activity": return <ActivityTab />;
     }
   };

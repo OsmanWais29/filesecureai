@@ -2,16 +2,22 @@ import { cn } from "@/lib/utils";
 
 export const ESTATE_TABS = [
   { id: "overview", label: "Overview" },
+  { id: "record", label: "Estate Record" },
   { id: "timeline", label: "Timeline" },
   { id: "workflow", label: "Workflow" },
   { id: "financials", label: "Financials" },
   { id: "creditors", label: "Creditors" },
   { id: "assets", label: "Assets" },
+  { id: "additional", label: "Additional Info" },
   { id: "documents", label: "Documents" },
   { id: "forms", label: "Forms" },
   { id: "income", label: "Income" },
-  { id: "communications", label: "Communications" },
+  { id: "tax", label: "Tax" },
+  { id: "counselling", label: "Counselling" },
+  { id: "notes", label: "Notes" },
   { id: "compliance", label: "Compliance" },
+  { id: "discharge", label: "Discharge / s.170" },
+  { id: "closing", label: "Closing" },
   { id: "activity", label: "Activity" },
 ] as const;
 
