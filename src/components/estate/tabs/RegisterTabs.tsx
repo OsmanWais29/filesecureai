@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
-import { activity, compliance } from "@/data/estateWorkspace";
+import { activity } from "@/data/estateWorkspace";
+import { useEstateCompliance } from "@/hooks/useEstateCompliance";
 
 export const ComplianceTab = ({ estateId }: { estateId?: string }) => {
   const { rules, summary } = useEstateCompliance(estateId);
