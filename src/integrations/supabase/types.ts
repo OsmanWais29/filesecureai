@@ -1573,6 +1573,83 @@ export type Database = {
           },
         ]
       }
+      estate_counselling_sessions: {
+        Row: {
+          address: string | null
+          appointment_date: string | null
+          appointment_time: string | null
+          certificate_generated: boolean
+          comments: string | null
+          completed: boolean
+          counsellor: string | null
+          created_at: string
+          date_invoiced: string | null
+          details: string | null
+          estate_id: string
+          id: string
+          location: string | null
+          neglected: boolean
+          refused: boolean
+          session_number: string | null
+          source_document: string | null
+          third_party_firm: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          appointment_date?: string | null
+          appointment_time?: string | null
+          certificate_generated?: boolean
+          comments?: string | null
+          completed?: boolean
+          counsellor?: string | null
+          created_at?: string
+          date_invoiced?: string | null
+          details?: string | null
+          estate_id: string
+          id?: string
+          location?: string | null
+          neglected?: boolean
+          refused?: boolean
+          session_number?: string | null
+          source_document?: string | null
+          third_party_firm?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          appointment_date?: string | null
+          appointment_time?: string | null
+          certificate_generated?: boolean
+          comments?: string | null
+          completed?: boolean
+          counsellor?: string | null
+          created_at?: string
+          date_invoiced?: string | null
+          details?: string | null
+          estate_id?: string
+          id?: string
+          location?: string | null
+          neglected?: boolean
+          refused?: boolean
+          session_number?: string | null
+          source_document?: string | null
+          third_party_firm?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_counselling_sessions_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       estate_creditor_meetings: {
         Row: {
           amendment_made_by: string | null
@@ -1964,6 +2041,119 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "estate_events_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estate_income_periods: {
+        Row: {
+          amount_agreed: number
+          amount_required: number
+          available_family_income: number
+          bankrupt_income: number
+          bankrupt_portion: number
+          comments: string | null
+          created_at: string
+          disagreement: boolean
+          discretionary_expenses: number
+          estate_id: string
+          household_members: number
+          id: string
+          income_basis: string | null
+          month: string | null
+          monthly_income: number
+          non_discretionary_expenses: number
+          other_family_income: number
+          outstanding: number
+          payment: number
+          payments_made: number
+          period_label: string | null
+          permitted_non_discretionary: number
+          required_percentage: number
+          spouse_income: number
+          standard_version: string | null
+          statement_number: number | null
+          status: string
+          surplus_amount: number
+          threshold_amount: number
+          updated_at: string
+          user_id: string
+          year: number | null
+        }
+        Insert: {
+          amount_agreed?: number
+          amount_required?: number
+          available_family_income?: number
+          bankrupt_income?: number
+          bankrupt_portion?: number
+          comments?: string | null
+          created_at?: string
+          disagreement?: boolean
+          discretionary_expenses?: number
+          estate_id: string
+          household_members?: number
+          id?: string
+          income_basis?: string | null
+          month?: string | null
+          monthly_income?: number
+          non_discretionary_expenses?: number
+          other_family_income?: number
+          outstanding?: number
+          payment?: number
+          payments_made?: number
+          period_label?: string | null
+          permitted_non_discretionary?: number
+          required_percentage?: number
+          spouse_income?: number
+          standard_version?: string | null
+          statement_number?: number | null
+          status?: string
+          surplus_amount?: number
+          threshold_amount?: number
+          updated_at?: string
+          user_id: string
+          year?: number | null
+        }
+        Update: {
+          amount_agreed?: number
+          amount_required?: number
+          available_family_income?: number
+          bankrupt_income?: number
+          bankrupt_portion?: number
+          comments?: string | null
+          created_at?: string
+          disagreement?: boolean
+          discretionary_expenses?: number
+          estate_id?: string
+          household_members?: number
+          id?: string
+          income_basis?: string | null
+          month?: string | null
+          monthly_income?: number
+          non_discretionary_expenses?: number
+          other_family_income?: number
+          outstanding?: number
+          payment?: number
+          payments_made?: number
+          period_label?: string | null
+          permitted_non_discretionary?: number
+          required_percentage?: number
+          spouse_income?: number
+          standard_version?: string | null
+          statement_number?: number | null
+          status?: string
+          surplus_amount?: number
+          threshold_amount?: number
+          updated_at?: string
+          user_id?: string
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_income_periods_estate_id_fkey"
             columns: ["estate_id"]
             isOneToOne: false
             referencedRelation: "estates"
@@ -2598,6 +2788,154 @@ export type Database = {
             columns: ["reconciliation_id"]
             isOneToOne: false
             referencedRelation: "estate_reconciliations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estate_tax_documents: {
+        Row: {
+          created_at: string
+          doc_type: string | null
+          estate_id: string
+          id: string
+          linked_document: string | null
+          received: boolean
+          received_date: string | null
+          reminder_date: string | null
+          requested_date: string | null
+          required: boolean
+          tax_year: number | null
+          updated_at: string
+          user_id: string
+          verified: boolean
+        }
+        Insert: {
+          created_at?: string
+          doc_type?: string | null
+          estate_id: string
+          id?: string
+          linked_document?: string | null
+          received?: boolean
+          received_date?: string | null
+          reminder_date?: string | null
+          requested_date?: string | null
+          required?: boolean
+          tax_year?: number | null
+          updated_at?: string
+          user_id: string
+          verified?: boolean
+        }
+        Update: {
+          created_at?: string
+          doc_type?: string | null
+          estate_id?: string
+          id?: string
+          linked_document?: string | null
+          received?: boolean
+          received_date?: string | null
+          reminder_date?: string | null
+          requested_date?: string | null
+          required?: boolean
+          tax_year?: number | null
+          updated_at?: string
+          user_id?: string
+          verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_tax_documents_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estate_tax_returns: {
+        Row: {
+          amount_deposited: number
+          assessment_date: string | null
+          completed: boolean
+          created_at: string
+          date_filed: string | null
+          date_forwarded: string | null
+          date_paid: string | null
+          date_prepared: string | null
+          disposition: string | null
+          disposition_date: string | null
+          estate_id: string
+          estimated_amount: number
+          follow_up_months: number | null
+          id: string
+          jurisdiction: string | null
+          preparation_charge: number
+          preparer_name: string | null
+          reminder_date: string | null
+          return_type: string | null
+          source: string | null
+          status: string | null
+          updated_at: string
+          user_id: string
+          year: number | null
+        }
+        Insert: {
+          amount_deposited?: number
+          assessment_date?: string | null
+          completed?: boolean
+          created_at?: string
+          date_filed?: string | null
+          date_forwarded?: string | null
+          date_paid?: string | null
+          date_prepared?: string | null
+          disposition?: string | null
+          disposition_date?: string | null
+          estate_id: string
+          estimated_amount?: number
+          follow_up_months?: number | null
+          id?: string
+          jurisdiction?: string | null
+          preparation_charge?: number
+          preparer_name?: string | null
+          reminder_date?: string | null
+          return_type?: string | null
+          source?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id: string
+          year?: number | null
+        }
+        Update: {
+          amount_deposited?: number
+          assessment_date?: string | null
+          completed?: boolean
+          created_at?: string
+          date_filed?: string | null
+          date_forwarded?: string | null
+          date_paid?: string | null
+          date_prepared?: string | null
+          disposition?: string | null
+          disposition_date?: string | null
+          estate_id?: string
+          estimated_amount?: number
+          follow_up_months?: number | null
+          id?: string
+          jurisdiction?: string | null
+          preparation_charge?: number
+          preparer_name?: string | null
+          reminder_date?: string | null
+          return_type?: string | null
+          source?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_tax_returns_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
             referencedColumns: ["id"]
           },
         ]
