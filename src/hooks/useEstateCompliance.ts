@@ -39,9 +39,9 @@ export const useEstateCompliance = (estateId?: string) => {
     const overdue = milestones.filter((m) => m.state === "overdue");
     const outstandingSurplus = income.reduce((s, p) => s + Number(p.outstanding || 0), 0);
     const completedSessions = sessions.filter((s) => s.completed).length;
-    const unrealized = assets.filter((a) => !Number(a.realized_value ?? 0)).length;
-    const undeposited = receipts.filter((r: any) => !r.deposit_date).length;
-    const uncleared = disbursements.filter((d: any) => !d.cleared_date).length;
+    const unrealized = assets.filter((a) => !a.completed).length;
+    const undeposited = receipts.filter((r) => !r.deposit_date).length;
+    const uncleared = disbursements.filter((d) => !d.cleared).length;
 
     return [
       {
