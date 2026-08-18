@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { RecordDrawer, RecordValues } from "@/components/estate/forms/RecordForm";
 import {
@@ -16,7 +16,8 @@ import {
   estateDatesSection,
   estateResponsibilitySection,
 } from "@/data/estateFormSpecs";
-import { estateStore, useEstateList } from "@/data/estateStore";
+import { useEstateList } from "@/data/estateStore";
+import { useCreateEstateRecord } from "@/hooks/useEstateRecords";
 
 const newEstateSections = [
   estateClassificationSection,
@@ -30,20 +31,16 @@ const newEstateSections = [
 const str = (v: RecordValues[string]) => (v === undefined || v === null ? "" : String(v)).trim();
 
 const EstatesListPage = () => {
-  const estates = useEstateList();
+  const { estates, isLoading, error } = useEstateList();
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const clientId = params.get("clientId") ?? undefined;
+  const createEstate = useCreateEstateRecord();
 
-  const handleCreate = (values: RecordValues) => {
-    const isCorporate = str(values.estateType) === "Corporate";
-    const debtorName = isCorporate
-      ? str(values.corporateName) || "Unnamed corporation"
-      : [str(values.firstName), str(values.middleName), str(values.lastName)]
-          .filter(Boolean)
-          .join(" ") || "Unnamed debtor";
-    const estateNumber = str(values.osbEstateNumber) || `NEW-${Date.now().toString().slice(-6)}`;
-
-    if (estates.some((e) => e.estateNumber === estateNumber)) {
+  const handleCreate = async (values: RecordValues) => {
+    const estateNumber = str(values.osbEstateNumber);
+    if (estateNumber && estates.some((e) => e.estateNumber === estateNumber)) {
       toast({
         title: "Estate number already in use",
         description: "OSB estate numbers must be unique.",
@@ -52,26 +49,14 @@ const EstatesListPage = () => {
       return;
     }
 
-    estateStore.add({
-      id: estateNumber,
-      debtorName,
-      estateNumber,
-      proceeding: str(values.proceedingType) || "Consumer Proposal",
-      division: str(values.division) || "Division II",
-      status: str(values.estateStatus) || "Draft",
-      trustee: str(values.trustee) || "Unassigned",
-      administrator: str(values.estateAdministrator) || "Unassigned",
-      office: str(values.trusteeOffice) || "Unassigned",
-      osbStatus: "attention",
-      openIssues: 0,
-      nextDeadline: "Complete estate record to generate statutory dates",
-      stage: "Intake",
-      stageProgress: 5,
-      osbReadiness: 10,
-    });
-
-    toast({ title: "Estate created", description: `${debtorName} · ${estateNumber}` });
-    navigate(`/estates/${estateNumber}`);
+    try {
+      const created = await createEstate.mutateAsync({ values, clientId });
+      setOpen(false);
+      toast({ title: "Estate created", description: String(created.debtor_name ?? "") });
+      navigate(`/estates/${created.id}`);
+    } catch {
+      // Errors are surfaced by the mutation's onError toast.
+    }
   };
 
   return (
@@ -84,10 +69,36 @@ const EstatesListPage = () => {
               Open an estate to enter its workspace — every record, deadline and SAFA action belongs to the estate.
             </p>
           </div>
-          <Button onClick={() => setOpen(true)}>
-            <Plus className="mr-1.5 h-4 w-4" /> New estate
+          <Button onClick={() => setOpen(true)} disabled={createEstate.isPending}>
+            {createEstate.isPending ? (
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="mr-1.5 h-4 w-4" />
+            )}
+            New estate
           </Button>
         </div>
+
+        {isLoading && (
+          <div className="mt-8 flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Loading estates…
+          </div>
+        )}
+
+        {!isLoading && error && (
+          <div className="mt-8 rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+            Estates could not be loaded. Sign in and try again.
+          </div>
+        )}
+
+        {!isLoading && !error && estates.length === 0 && (
+          <div className="mt-8 rounded-md border border-dashed p-8 text-center">
+            <p className="text-sm font-medium">No estates yet</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Create an estate to open its workspace. Estates are persisted to your account.
+            </p>
+          </div>
+        )}
 
         <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {estates.map((e) => (
@@ -124,7 +135,7 @@ const EstatesListPage = () => {
           title="New estate"
           description="Complete the identity section that matches the estate type. Remaining records are entered inside the workspace."
           sections={newEstateSections}
-          initial={{ estateType: "Consumer", estateStatus: "Draft" }}
+          initial={{ estateType: "Consumer", estateStatus: "Open" }}
           submitLabel="Create estate"
           onSubmit={handleCreate}
         />
