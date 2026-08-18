@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2 } from "lucide-react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { RecordDrawer, RecordForm, Register, useRecordValues } from "@/components/estate/forms/RecordForm";
 import { SubTabs } from "@/components/estate/forms/SubTabs";
@@ -24,7 +24,18 @@ import {
   reconciliationSections,
   scheduleSections,
 } from "@/data/estateFormSpecs";
-import { bankAccount, reconciliation } from "@/data/estateWorkspace";
+import { reconciliation } from "@/data/estateWorkspace";
+import {
+  useBankAccounts,
+  useDisbursements,
+  useLedgerEntries,
+  usePostJournalEntry,
+  usePostReceipt,
+  useReceipts,
+  useSaveBankAccount,
+  useSaveDisbursement,
+  useTrustPosition,
+} from "@/hooks/useEstateAccounting";
 
 const TABS = [
   { id: "accounts", label: "Bank Accounts" },
@@ -35,11 +46,19 @@ const TABS = [
   { id: "gl", label: "General Ledger" },
 ] as const;
 
-const money = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+const money = (n: number) =>
+  `$${Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+const Empty = ({ children }: { children: string }) => (
+  <p className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">{children}</p>
+);
 
 // --------------------------------------------------------------- Bank accounts
-const BankAccounts = () => {
+const BankAccounts = ({ estateId }: { estateId?: string }) => {
   const [open, setOpen] = useState(false);
+  const { data: accounts = [], isLoading } = useBankAccounts(estateId);
+  const saveAccount = useSaveBankAccount(estateId);
+  const trust = useTrustPosition(estateId);
   return (
     <>
       <Register
@@ -51,22 +70,36 @@ const BankAccounts = () => {
           </Button>
         }
       >
-        <div className="rounded-md border p-3 text-sm">
-          <div className="flex items-center gap-2">
-            <span className="font-medium">{bankAccount.name}</span>
-            <Badge variant="outline">{bankAccount.masked}</Badge>
-            <Badge variant="secondary">Default</Badge>
-            <span className="ml-auto text-muted-foreground">
-              Reconciled through {bankAccount.reconciledThrough}
-            </span>
+        {isLoading ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Loading accounts…
           </div>
-          <div className="mt-2 grid gap-2 text-muted-foreground md:grid-cols-4">
-            <span>Statement {bankAccount.statementBalance}</span>
-            <span>Ledger {bankAccount.ledgerBalance}</span>
-            <span>Deposits {bankAccount.outstandingDeposits}</span>
-            <span>Payments {bankAccount.outstandingPayments}</span>
+        ) : accounts.length === 0 ? (
+          <Empty>No estate bank account recorded yet.</Empty>
+        ) : (
+          <div className="space-y-2">
+            {accounts.map((a) => (
+              <div key={a.id} className="rounded-md border p-3 text-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-medium">{a.institution ?? "Institution"}</span>
+                  <Badge variant="outline">
+                    {a.transit_number ?? "—"} · ••••{(a.account_number ?? "").slice(-4)}
+                  </Badge>
+                  {a.is_default && <Badge variant="secondary">Default</Badge>}
+                  {a.pad_enabled && <Badge variant="outline">PAD</Badge>}
+                  {a.eft_enabled && <Badge variant="outline">EFT</Badge>}
+                  <span className="ml-auto text-muted-foreground">{a.currency}</span>
+                </div>
+                <div className="mt-2 grid gap-2 text-muted-foreground md:grid-cols-4">
+                  <span>Opening {money(Number(a.opening_balance))}</span>
+                  <span>Receipts {money(trust.received)}</span>
+                  <span>Disbursements {money(trust.paid)}</span>
+                  <span>Trust balance {money(Number(a.opening_balance) + trust.balance)}</span>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
+        )}
       </Register>
       <RecordDrawer
         open={open}
@@ -74,7 +107,10 @@ const BankAccounts = () => {
         title="Add estate bank account"
         sections={bankAccountSections}
         submitLabel="Save account"
-        onSubmit={() => toast({ title: "Bank account saved" })}
+        onSubmit={async (values) => {
+          await saveAccount.mutateAsync(values);
+          setOpen(false);
+        }}
       />
     </>
   );
@@ -87,11 +123,13 @@ interface Allocation {
   amount: string;
 }
 
-const ReceiptForm = ({ onDone }: { onDone: () => void }) => {
+const ReceiptForm = ({ estateId, onDone }: { estateId?: string; onDone: () => void }) => {
   const { values, onChange } = useRecordValues({ receiptDate: "", amount: "" });
   const [allocations, setAllocations] = useState<Allocation[]>([
     { id: 1, account: "Surplus Income", amount: "" },
   ]);
+  const { data: accounts = [] } = useBankAccounts(estateId);
+  const postReceipt = usePostReceipt(estateId);
 
   const total = Number(values.amount || 0);
   const allocated = allocations.reduce((s, a) => s + Number(a.amount || 0), 0);
@@ -108,7 +146,7 @@ const ReceiptForm = ({ onDone }: { onDone: () => void }) => {
       values={values}
       onChange={onChange}
       submitLabel="Post Receipt"
-      onSubmit={() => {
+      onSubmit={async () => {
         if (!canPost) {
           toast({
             title: "Cannot post receipt",
@@ -117,7 +155,11 @@ const ReceiptForm = ({ onDone }: { onDone: () => void }) => {
           });
           return;
         }
-        toast({ title: "Receipt posted", description: `${money(total)} fully allocated.` });
+        await postReceipt.mutateAsync({
+          values,
+          allocations: allocations.map((a) => ({ account: a.account, amount: Number(a.amount || 0) })),
+          bankAccountId: accounts.find((a) => a.is_default)?.id ?? accounts[0]?.id ?? null,
+        });
         onDone();
       }}
       footerNote={
@@ -196,9 +238,10 @@ const ReceiptForm = ({ onDone }: { onDone: () => void }) => {
   );
 };
 
-const Receipts = () => {
+const Receipts = ({ estateId }: { estateId?: string }) => {
   const [adding, setAdding] = useState(false);
-  if (adding) return <ReceiptForm onDone={() => setAdding(false)} />;
+  const { data: receipts = [], isLoading } = useReceipts(estateId);
+  if (adding) return <ReceiptForm estateId={estateId} onDone={() => setAdding(false)} />;
   return (
     <Register
       title="Receipts"
@@ -209,29 +252,45 @@ const Receipts = () => {
         </Button>
       }
     >
-      <div className="space-y-2 text-sm">
-        {[
-          { id: "R-10282", payer: "John Smith", total: 1000, allocated: 1000, date: "2026-08-11" },
-          { id: "R-10283", payer: "John Smith", total: 900, allocated: 0, date: "2026-08-14" },
-        ].map((r) => (
-          <div key={r.id} className="flex flex-wrap items-center gap-3 rounded-md border p-3">
-            <span className="font-medium">{r.id}</span>
-            <span className="text-muted-foreground">{r.payer}</span>
-            <span className="text-muted-foreground">{r.date}</span>
-            <span className="ml-auto">{money(r.total)}</span>
-            <Badge variant={r.allocated === r.total ? "secondary" : "destructive"}>
-              {r.allocated === r.total ? "Allocated" : `Unallocated ${money(r.total - r.allocated)}`}
-            </Badge>
-          </div>
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading receipts…
+        </div>
+      ) : receipts.length === 0 ? (
+        <Empty>No receipts posted for this estate yet.</Empty>
+      ) : (
+        <div className="space-y-2 text-sm">
+          {receipts.map((r) => {
+            const total = Number(r.amount || 0);
+            const allocated = (r.estate_receipt_allocations ?? []).reduce(
+              (s, a) => s + Number(a.amount || 0),
+              0
+            );
+            return (
+              <div key={r.id} className="flex flex-wrap items-center gap-3 rounded-md border p-3">
+                <span className="font-medium">{r.receipt_number ?? r.id.slice(0, 8)}</span>
+                <span className="text-muted-foreground">{r.received_from ?? "—"}</span>
+                <span className="text-muted-foreground">{r.receipt_date ?? "—"}</span>
+                <span className="ml-auto">{money(total)}</span>
+                <Badge variant={Math.abs(total - allocated) < 0.005 ? "secondary" : "destructive"}>
+                  {Math.abs(total - allocated) < 0.005
+                    ? "Allocated"
+                    : `Unallocated ${money(total - allocated)}`}
+                </Badge>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </Register>
   );
 };
 
 // --------------------------------------------------------------- Disbursements
-const Disbursements = () => {
+const Disbursements = ({ estateId }: { estateId?: string }) => {
   const [open, setOpen] = useState(false);
+  const { data: disbursements = [], isLoading } = useDisbursements(estateId);
+  const saveDisbursement = useSaveDisbursement(estateId);
   return (
     <>
       <Register
@@ -242,20 +301,27 @@ const Disbursements = () => {
           </Button>
         }
       >
-        <div className="space-y-2 text-sm">
-          {[
-            { id: "D-14", type: "Counselling", payee: "Counsellor Inc.", amount: 170, status: "Paid" },
-            { id: "D-15", type: "OSB levy", payee: "Superintendent", amount: 250, status: "Draft" },
-          ].map((d) => (
-            <div key={d.id} className="flex flex-wrap items-center gap-3 rounded-md border p-3">
-              <span className="font-medium">{d.id}</span>
-              <Badge variant="outline">{d.type}</Badge>
-              <span className="text-muted-foreground">{d.payee}</span>
-              <span className="ml-auto">{money(d.amount)}</span>
-              <Badge variant={d.status === "Paid" ? "secondary" : "outline"}>{d.status}</Badge>
-            </div>
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Loading disbursements…
+          </div>
+        ) : disbursements.length === 0 ? (
+          <Empty>No disbursements recorded for this estate yet.</Empty>
+        ) : (
+          <div className="space-y-2 text-sm">
+            {disbursements.map((d) => (
+              <div key={d.id} className="flex flex-wrap items-center gap-3 rounded-md border p-3">
+                <span className="font-medium">{d.payee ?? "Payee"}</span>
+                <Badge variant="outline">{d.disbursement_type ?? "Disbursement"}</Badge>
+                <span className="text-muted-foreground">{d.payment_date ?? d.due_date ?? "—"}</span>
+                <span className="ml-auto">{money(Number(d.amount))}</span>
+                <Badge variant={d.cleared ? "secondary" : "outline"}>
+                  {d.cleared ? "Cleared" : d.payment_date ? "Paid" : "Draft"}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        )}
       </Register>
       <RecordDrawer
         open={open}
@@ -263,7 +329,10 @@ const Disbursements = () => {
         title="Add disbursement"
         sections={disbursementSections}
         submitLabel="Post"
-        onSubmit={() => toast({ title: "Disbursement recorded" })}
+        onSubmit={async (values) => {
+          await saveDisbursement.mutateAsync(values);
+          setOpen(false);
+        }}
       />
     </>
   );
@@ -358,8 +427,10 @@ interface JournalLine {
   credit: string;
 }
 
-const GeneralLedger = () => {
+const GeneralLedger = ({ estateId }: { estateId?: string }) => {
   const { values, onChange } = useRecordValues({});
+  const { data: entries = [] } = useLedgerEntries(estateId);
+  const postEntry = usePostJournalEntry(estateId);
   const [lines, setLines] = useState<JournalLine[]>([
     { id: 1, account: glAccounts[1], asset: "", creditor: "", debit: "", credit: "" },
     { id: 2, account: glAccounts[0], asset: "", creditor: "", debit: "", credit: "" },
@@ -438,29 +509,61 @@ const GeneralLedger = () => {
               Save Draft
             </Button>
             <Button
-              disabled={!balanced}
-              onClick={() => toast({ title: "Journal entry posted", description: "Entry is now immutable." })}
+              disabled={!balanced || postEntry.isPending}
+              onClick={async () => {
+                await postEntry.mutateAsync({
+                  values,
+                  lines: lines.map((l) => ({
+                    account: l.account,
+                    asset: l.asset || undefined,
+                    creditor: l.creditor || undefined,
+                    debit: Number(l.debit || 0),
+                    credit: Number(l.credit || 0),
+                  })),
+                });
+                setLines([
+                  { id: 1, account: glAccounts[1], asset: "", creditor: "", debit: "", credit: "" },
+                  { id: 2, account: glAccounts[0], asset: "", creditor: "", debit: "", credit: "" },
+                ]);
+              }}
             >
               Post Entry
             </Button>
           </div>
         </div>
       </Register>
+
+      <Register title="Posted entries" description="Immutable journal — corrections require a reversing entry.">
+        {entries.length === 0 ? (
+          <Empty>No journal entries posted yet.</Empty>
+        ) : (
+          <div className="space-y-2 text-sm">
+            {entries.map((e) => (
+              <div key={e.id} className="flex flex-wrap items-center gap-3 rounded-md border p-3">
+                <span className="font-medium">{e.gl_date ?? e.created_at.slice(0, 10)}</span>
+                <Badge variant="outline">{e.source_type}</Badge>
+                <span className="text-muted-foreground">{e.memo ?? "—"}</span>
+                <span className="ml-auto">{money(Number(e.total_debit))}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Register>
     </div>
   );
 };
 
-export const FinancialsTab = () => {
+export const FinancialsTab = ({ estateId }: { estateId?: string }) => {
   const [tab, setTab] = useState<string>("accounts");
   return (
     <div className="space-y-4">
       <SubTabs tabs={TABS} active={tab} onChange={setTab} />
-      {tab === "accounts" && <BankAccounts />}
-      {tab === "receipts" && <Receipts />}
-      {tab === "disbursements" && <Disbursements />}
+      {tab === "accounts" && <BankAccounts estateId={estateId} />}
+      {tab === "receipts" && <Receipts estateId={estateId} />}
+      {tab === "disbursements" && <Disbursements estateId={estateId} />}
       {tab === "schedules" && <Schedules />}
       {tab === "reconciliation" && <Reconciliation />}
-      {tab === "gl" && <GeneralLedger />}
+      {tab === "gl" && <GeneralLedger estateId={estateId} />}
     </div>
   );
 };

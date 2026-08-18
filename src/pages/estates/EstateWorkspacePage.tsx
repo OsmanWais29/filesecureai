@@ -35,9 +35,9 @@ const EstateWorkspacePage = () => {
     switch (tab) {
       case "overview": return <OverviewTab estate={estate} />;
       case "record": return <EstateRecordTab estateId={estateId} />;
-      case "timeline": return <TimelineTab />;
-      case "workflow": return <WorkflowTab />;
-      case "financials": return <FinancialsTab />;
+      case "timeline": return <TimelineTab estateId={estateId} />;
+      case "workflow": return <WorkflowTab estateId={estateId} />;
+      case "financials": return <FinancialsTab estateId={estateId} />;
       case "creditors": return <CreditorsTab />;
       case "assets": return <AssetsTab />;
       case "additional": return <AdditionalInfoTab />;
