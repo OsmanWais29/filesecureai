@@ -43,9 +43,9 @@ const EstateWorkspacePage = () => {
       case "additional": return <AdditionalInfoTab />;
       case "documents": return <DocumentsTab />;
       case "forms": return <FormsTab />;
-      case "income": return <IncomeTab />;
-      case "tax": return <TaxTab />;
-      case "counselling": return <CounsellingTab />;
+      case "income": return <IncomeTab estateId={estateId} />;
+      case "tax": return <TaxTab estateId={estateId} />;
+      case "counselling": return <CounsellingTab estateId={estateId} />;
       case "notes": return <NotesTab />;
       case "compliance": return <ComplianceTab />;
       case "discharge": return <DischargeTab />;
