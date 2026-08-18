@@ -44,7 +44,7 @@ const useSaveRow = <T,>(table: string, estateId?: string, toRow?: (v: RecordValu
         : db.from(table).insert({ ...row, estate_id: estateId, user_id: user.id });
       const { data, error } = await query.select().single();
       if (error) throw error;
-      await logEstateEvent(estateId, `${table}.${id ? "updated" : "created"}`, row);
+      await logEstateEvent({ estateId, eventType: `${table}.${id ? "updated" : "created"}`, after: row });
       return data as T;
     },
     onSuccess: () => {

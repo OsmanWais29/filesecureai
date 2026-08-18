@@ -201,10 +201,14 @@ export const useSaveIncomePeriod = (estateId?: string) => {
       const { data, error } = await query.select().single();
       if (error) throw error;
 
-      await logEstateEvent(estateId, id ? "income_period.updated" : "income_period.created", {
-        period: row.period_label,
-        surplus: calc.surplus,
-        amount_required: calc.amountRequired,
+      await logEstateEvent({
+        estateId,
+        eventType: id ? "income_period.updated" : "income_period.created",
+        after: {
+          period: row.period_label,
+          surplus: calc.surplus,
+          amount_required: calc.amountRequired,
+        },
       });
       return data as EstateIncomePeriodRow;
     },
