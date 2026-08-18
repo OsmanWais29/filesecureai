@@ -1766,6 +1766,149 @@ export type Database = {
           },
         ]
       }
+      estate_pad_runs: {
+        Row: {
+          bank_account_id: string | null
+          created_at: string
+          estate_id: string
+          file_format: string | null
+          id: string
+          item_count: number
+          notes: string | null
+          run_date: string
+          state: string
+          submitted_at: string | null
+          total_amount: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bank_account_id?: string | null
+          created_at?: string
+          estate_id: string
+          file_format?: string | null
+          id?: string
+          item_count?: number
+          notes?: string | null
+          run_date: string
+          state?: string
+          submitted_at?: string | null
+          total_amount?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bank_account_id?: string | null
+          created_at?: string
+          estate_id?: string
+          file_format?: string | null
+          id?: string
+          item_count?: number
+          notes?: string | null
+          run_date?: string
+          state?: string
+          submitted_at?: string | null
+          total_amount?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_pad_runs_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "estate_bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estate_pad_runs_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estate_payment_schedules: {
+        Row: {
+          active: boolean
+          amount_per_payment: number
+          asset_ref: string | null
+          comments: string | null
+          created_at: string
+          end_date: string | null
+          estate_id: string
+          first_debit_date: string | null
+          gl_account: string | null
+          grace_period_days: number | null
+          id: string
+          incremental_monthly: number
+          mandate_reference: string | null
+          number_of_periods: number | null
+          pad_enabled: boolean
+          payment_category: string | null
+          period_type: string | null
+          schedule_type: string | null
+          start_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          amount_per_payment?: number
+          asset_ref?: string | null
+          comments?: string | null
+          created_at?: string
+          end_date?: string | null
+          estate_id: string
+          first_debit_date?: string | null
+          gl_account?: string | null
+          grace_period_days?: number | null
+          id?: string
+          incremental_monthly?: number
+          mandate_reference?: string | null
+          number_of_periods?: number | null
+          pad_enabled?: boolean
+          payment_category?: string | null
+          period_type?: string | null
+          schedule_type?: string | null
+          start_date?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          amount_per_payment?: number
+          asset_ref?: string | null
+          comments?: string | null
+          created_at?: string
+          end_date?: string | null
+          estate_id?: string
+          first_debit_date?: string | null
+          gl_account?: string | null
+          grace_period_days?: number | null
+          id?: string
+          incremental_monthly?: number
+          mandate_reference?: string | null
+          number_of_periods?: number | null
+          pad_enabled?: boolean
+          payment_category?: string | null
+          period_type?: string | null
+          schedule_type?: string | null
+          start_date?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_payment_schedules_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       estate_receipt_allocations: {
         Row: {
           amount: number
@@ -1872,6 +2015,246 @@ export type Database = {
             columns: ["estate_id"]
             isOneToOne: false
             referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estate_reconciliations: {
+        Row: {
+          approval_date: string | null
+          bank_account_id: string | null
+          bank_charges: number
+          closing_statement_balance: number
+          created_at: string
+          deposits_in_transit: number
+          difference: number
+          estate_id: string
+          id: string
+          interest: number
+          ledger_balance: number
+          opening_statement_balance: number
+          outstanding_withdrawals: number
+          preparer: string | null
+          reconciled_balance: number
+          reviewer: string | null
+          statement_end: string | null
+          statement_start: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          approval_date?: string | null
+          bank_account_id?: string | null
+          bank_charges?: number
+          closing_statement_balance?: number
+          created_at?: string
+          deposits_in_transit?: number
+          difference?: number
+          estate_id: string
+          id?: string
+          interest?: number
+          ledger_balance?: number
+          opening_statement_balance?: number
+          outstanding_withdrawals?: number
+          preparer?: string | null
+          reconciled_balance?: number
+          reviewer?: string | null
+          statement_end?: string | null
+          statement_start?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          approval_date?: string | null
+          bank_account_id?: string | null
+          bank_charges?: number
+          closing_statement_balance?: number
+          created_at?: string
+          deposits_in_transit?: number
+          difference?: number
+          estate_id?: string
+          id?: string
+          interest?: number
+          ledger_balance?: number
+          opening_statement_balance?: number
+          outstanding_withdrawals?: number
+          preparer?: string | null
+          reconciled_balance?: number
+          reviewer?: string | null
+          statement_end?: string | null
+          statement_start?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_reconciliations_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "estate_bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estate_reconciliations_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estate_schedule_rows: {
+        Row: {
+          amount_deposited: number
+          amount_due: number
+          amount_received: number
+          created_at: string
+          due_date: string
+          estate_id: string
+          id: string
+          notes: string | null
+          pad_run_id: string | null
+          pad_state: string
+          period_index: number
+          receipt_id: string | null
+          schedule_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_deposited?: number
+          amount_due?: number
+          amount_received?: number
+          created_at?: string
+          due_date: string
+          estate_id: string
+          id?: string
+          notes?: string | null
+          pad_run_id?: string | null
+          pad_state?: string
+          period_index: number
+          receipt_id?: string | null
+          schedule_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_deposited?: number
+          amount_due?: number
+          amount_received?: number
+          created_at?: string
+          due_date?: string
+          estate_id?: string
+          id?: string
+          notes?: string | null
+          pad_run_id?: string | null
+          pad_state?: string
+          period_index?: number
+          receipt_id?: string | null
+          schedule_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_schedule_rows_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estate_schedule_rows_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "estate_receipts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estate_schedule_rows_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "estate_payment_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estate_statement_lines: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          direction: string
+          estate_id: string
+          id: string
+          line_date: string | null
+          match_state: string
+          matched_disbursement_id: string | null
+          matched_receipt_id: string | null
+          reconciliation_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          direction?: string
+          estate_id: string
+          id?: string
+          line_date?: string | null
+          match_state?: string
+          matched_disbursement_id?: string | null
+          matched_receipt_id?: string | null
+          reconciliation_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          direction?: string
+          estate_id?: string
+          id?: string
+          line_date?: string | null
+          match_state?: string
+          matched_disbursement_id?: string | null
+          matched_receipt_id?: string | null
+          reconciliation_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_statement_lines_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estate_statement_lines_matched_disbursement_id_fkey"
+            columns: ["matched_disbursement_id"]
+            isOneToOne: false
+            referencedRelation: "estate_disbursements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estate_statement_lines_matched_receipt_id_fkey"
+            columns: ["matched_receipt_id"]
+            isOneToOne: false
+            referencedRelation: "estate_receipts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estate_statement_lines_reconciliation_id_fkey"
+            columns: ["reconciliation_id"]
+            isOneToOne: false
+            referencedRelation: "estate_reconciliations"
             referencedColumns: ["id"]
           },
         ]
