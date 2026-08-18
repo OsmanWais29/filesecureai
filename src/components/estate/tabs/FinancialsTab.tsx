@@ -24,7 +24,17 @@ import {
   reconciliationSections,
   scheduleSections,
 } from "@/data/estateFormSpecs";
-import { reconciliation } from "@/data/estateWorkspace";
+import {
+  deriveReconciliation,
+  useCreatePadRun,
+  usePadRuns,
+  usePaymentSchedules,
+  useGenerateSchedule,
+  useReconciliations,
+  useSaveReconciliation,
+  useScheduleRows,
+  useUpdateScheduleRow,
+} from "@/hooks/useEstateSchedules";
 import {
   useBankAccounts,
   useDisbursements,
@@ -339,8 +349,22 @@ const Disbursements = ({ estateId }: { estateId?: string }) => {
 };
 
 // ------------------------------------------------------------ Payment schedules
-const Schedules = () => {
+const Schedules = ({ estateId }: { estateId?: string }) => {
   const [open, setOpen] = useState(false);
+  const { data: schedules = [], isLoading } = usePaymentSchedules(estateId);
+  const { data: rows = [] } = useScheduleRows(estateId);
+  const { data: padRuns = [] } = usePadRuns(estateId);
+  const { data: accounts = [] } = useBankAccounts(estateId);
+  const generate = useGenerateSchedule(estateId);
+  const updateRow = useUpdateScheduleRow(estateId);
+  const createRun = useCreatePadRun(estateId);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const padSchedules = new Set(schedules.filter((s) => s.pad_enabled).map((s) => s.id));
+  const duePad = rows.filter(
+    (r) => padSchedules.has(r.schedule_id) && r.pad_state === "pending" && r.due_date <= today
+  );
+
   return (
     <>
       <Register
@@ -352,29 +376,124 @@ const Schedules = () => {
           </Button>
         }
       >
-        <div className="space-y-2 text-sm">
-          <div className="grid grid-cols-5 gap-2 text-xs uppercase text-muted-foreground">
-            <span>Period</span>
-            <span>Due</span>
-            <span>Received</span>
-            <span>Deposited</span>
-            <span>Outstanding</span>
+        {isLoading ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Loading schedules…
           </div>
-          {[
-            { p: "2026-06-01", due: 500, rec: 500, dep: 500 },
-            { p: "2026-07-01", due: 500, rec: 500, dep: 500 },
-            { p: "2026-08-01", due: 500, rec: 0, dep: 0 },
-          ].map((r) => (
-            <div key={r.p} className="grid grid-cols-5 gap-2 rounded-md border p-2">
-              <span>{r.p}</span>
-              <span>{money(r.due)}</span>
-              <span>{money(r.rec)}</span>
-              <span>{money(r.dep)}</span>
-              <span className={r.due - r.rec > 0 ? "text-destructive" : ""}>{money(r.due - r.rec)}</span>
-            </div>
-          ))}
-        </div>
+        ) : schedules.length === 0 ? (
+          <Empty>No payment schedule defined. Add one to project the estate's expected inflow.</Empty>
+        ) : (
+          <div className="space-y-4">
+            {schedules.map((s) => {
+              const scheduleRows = rows.filter((r) => r.schedule_id === s.id);
+              const outstanding = scheduleRows.reduce(
+                (t, r) => t + Math.max(0, Number(r.amount_due) - Number(r.amount_received)),
+                0
+              );
+              return (
+                <div key={s.id} className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-2 text-sm">
+                    <span className="font-medium">{s.schedule_type ?? "Schedule"}</span>
+                    <Badge variant="outline">{s.period_type ?? "Monthly"}</Badge>
+                    <span className="text-muted-foreground">{s.payment_category ?? "—"}</span>
+                    {s.pad_enabled && (
+                      <Badge variant="secondary">PAD {s.mandate_reference ?? ""}</Badge>
+                    )}
+                    <span className="ml-auto text-muted-foreground">
+                      Outstanding {money(outstanding)}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-6 gap-2 text-xs uppercase text-muted-foreground">
+                    <span>Period</span>
+                    <span>Due</span>
+                    <span>Received</span>
+                    <span>Deposited</span>
+                    <span>Outstanding</span>
+                    <span>PAD</span>
+                  </div>
+                  {scheduleRows.map((r) => {
+                    const short = Number(r.amount_due) - Number(r.amount_received);
+                    return (
+                      <div key={r.id} className="grid grid-cols-6 items-center gap-2 rounded-md border p-2 text-sm">
+                        <span>{r.due_date}</span>
+                        <span>{money(Number(r.amount_due))}</span>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          className="h-8"
+                          defaultValue={Number(r.amount_received) || ""}
+                          placeholder="0.00"
+                          onBlur={(e) =>
+                            updateRow.mutate({
+                              id: r.id,
+                              patch: { amount_received: Number(e.target.value || 0) },
+                            })
+                          }
+                        />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          className="h-8"
+                          defaultValue={Number(r.amount_deposited) || ""}
+                          placeholder="0.00"
+                          onBlur={(e) =>
+                            updateRow.mutate({
+                              id: r.id,
+                              patch: { amount_deposited: Number(e.target.value || 0) },
+                            })
+                          }
+                        />
+                        <span className={short > 0.005 ? "text-destructive" : ""}>{money(short)}</span>
+                        <Badge variant={r.pad_state === "pending" ? "outline" : "secondary"}>
+                          {r.pad_state}
+                        </Badge>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </Register>
+
+      <Register
+        title="Pre-authorized debit runs"
+        description="A run collects every pending PAD period that is due, and locks those periods to the run."
+        action={
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={duePad.length === 0 || createRun.isPending}
+            onClick={() =>
+              createRun.mutate({
+                runDate: today,
+                rows: duePad,
+                bankAccountId: accounts.find((a) => a.is_default)?.id ?? accounts[0]?.id ?? null,
+              })
+            }
+          >
+            Create run ({duePad.length})
+          </Button>
+        }
+      >
+        {padRuns.length === 0 ? (
+          <Empty>No PAD runs submitted yet.</Empty>
+        ) : (
+          <div className="space-y-2 text-sm">
+            {padRuns.map((run) => (
+              <div key={run.id} className="flex flex-wrap items-center gap-3 rounded-md border p-3">
+                <span className="font-medium">{run.run_date}</span>
+                <Badge variant="outline">{run.file_format ?? "CPA 005"}</Badge>
+                <span className="text-muted-foreground">{run.item_count} items</span>
+                <span className="ml-auto">{money(Number(run.total_amount))}</span>
+                <Badge variant="secondary">{run.state}</Badge>
+              </div>
+            ))}
+          </div>
+        )}
+      </Register>
+
       <RecordDrawer
         open={open}
         onOpenChange={setOpen}
@@ -382,37 +501,123 @@ const Schedules = () => {
         description="Schedule rows are generated automatically from these parameters."
         sections={scheduleSections}
         submitLabel="Generate schedule"
-        onSubmit={() => toast({ title: "Schedule generated" })}
+        onSubmit={async (values) => {
+          await generate.mutateAsync(values);
+          setOpen(false);
+        }}
       />
     </>
   );
 };
 
 // -------------------------------------------------------------- Reconciliation
-const Reconciliation = () => {
+const Reconciliation = ({ estateId }: { estateId?: string }) => {
   const { values, onChange } = useRecordValues({ status: "Draft" });
+  const { data: history = [] } = useReconciliations(estateId);
+  const { data: accounts = [] } = useBankAccounts(estateId);
+  const { data: receipts = [] } = useReceipts(estateId);
+  const { data: disbursements = [] } = useDisbursements(estateId);
+  const save = useSaveReconciliation(estateId);
+
+  const { reconciled, difference } = deriveReconciliation(values);
+  const start = values.statementStart ? String(values.statementStart) : "";
+  const end = values.statementEnd ? String(values.statementEnd) : "";
+  const inPeriod = (d?: string | null) => !d || ((!start || d >= start) && (!end || d <= end));
+  const unmatched = [
+    ...receipts
+      .filter((r) => inPeriod(r.receipt_date) && !r.deposit_date)
+      .map((r) => ({
+        id: r.id,
+        label: `Receipt ${r.receipt_number ?? r.id.slice(0, 8)} · ${r.received_from ?? "—"}`,
+        amount: Number(r.amount),
+        reason: "Not deposited",
+      })),
+    ...disbursements
+      .filter((d) => inPeriod(d.payment_date ?? d.due_date) && !d.cleared)
+      .map((d) => ({
+        id: d.id,
+        label: `Disbursement · ${d.payee ?? "payee"}`,
+        amount: -Number(d.amount),
+        reason: "Not cleared",
+      })),
+  ];
+
   return (
     <div className="space-y-4">
-      <Register title={`Matching — ${reconciliation.period}`} description={`${reconciliation.matched} matched · ${reconciliation.review} to review · ${reconciliation.unmatched} unmatched`}>
-        <div className="space-y-2 text-sm">
-          {reconciliation.rows.map((r) => (
-            <div key={r.bank} className="flex items-center gap-3 rounded-md border p-3">
-              <span>{r.bank}</span>
-              <span className="text-muted-foreground">→ {r.match}</span>
-              <Badge className="ml-auto" variant={r.state === "matched" ? "secondary" : "destructive"}>
-                {r.state}
-              </Badge>
-            </div>
-          ))}
-        </div>
+      <Register
+        title="Outstanding items"
+        description="Receipts awaiting deposit and disbursements not yet cleared by the bank."
+      >
+        {unmatched.length === 0 ? (
+          <Empty>Every posted item in this period has cleared the bank.</Empty>
+        ) : (
+          <div className="space-y-2 text-sm">
+            {unmatched.map((u) => (
+              <div key={u.id} className="flex flex-wrap items-center gap-3 rounded-md border p-3">
+                <span>{u.label}</span>
+                <span className="ml-auto">{money(u.amount)}</span>
+                <Badge variant="destructive">{u.reason}</Badge>
+              </div>
+            ))}
+          </div>
+        )}
       </Register>
+
       <RecordForm
         sections={reconciliationSections}
-        values={values}
+        values={{ ...values, reconciledBalance: reconciled, difference }}
         onChange={onChange}
         submitLabel="Save reconciliation"
-        onSubmit={() => toast({ title: "Reconciliation saved" })}
+        onSubmit={() =>
+          save.mutate({
+            values,
+            bankAccountId: accounts.find((a) => a.is_default)?.id ?? accounts[0]?.id ?? null,
+          })
+        }
+        footerNote={
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Derived position</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Reconciled balance</span>
+                <span>{money(reconciled)}</span>
+              </div>
+              <div className="flex justify-between font-medium">
+                <span>Difference vs ledger</span>
+                <span className={Math.abs(difference) > 0.005 ? "text-destructive" : ""}>
+                  {money(difference)}
+                </span>
+              </div>
+              {Math.abs(difference) > 0.005 && (
+                <p className="text-xs text-destructive">
+                  Approval is blocked until the difference is zero.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        }
       />
+
+      <Register title="Reconciliation history">
+        {history.length === 0 ? (
+          <Empty>No reconciliations saved for this estate yet.</Empty>
+        ) : (
+          <div className="space-y-2 text-sm">
+            {history.map((h) => (
+              <div key={h.id} className="flex flex-wrap items-center gap-3 rounded-md border p-3">
+                <span className="font-medium">
+                  {h.statement_start ?? "—"} → {h.statement_end ?? "—"}
+                </span>
+                <span className="text-muted-foreground">Reconciled {money(Number(h.reconciled_balance))}</span>
+                <span className="ml-auto">Diff {money(Number(h.difference))}</span>
+                <Badge variant={h.status === "Approved" ? "secondary" : "outline"}>{h.status}</Badge>
+              </div>
+            ))}
+          </div>
+        )}
+      </Register>
     </div>
   );
 };
@@ -561,8 +766,8 @@ export const FinancialsTab = ({ estateId }: { estateId?: string }) => {
       {tab === "accounts" && <BankAccounts estateId={estateId} />}
       {tab === "receipts" && <Receipts estateId={estateId} />}
       {tab === "disbursements" && <Disbursements estateId={estateId} />}
-      {tab === "schedules" && <Schedules />}
-      {tab === "reconciliation" && <Reconciliation />}
+      {tab === "schedules" && <Schedules estateId={estateId} />}
+      {tab === "reconciliation" && <Reconciliation estateId={estateId} />}
       {tab === "gl" && <GeneralLedger estateId={estateId} />}
     </div>
   );
