@@ -20,7 +20,7 @@ export const ClosingTab = ({ estateId }: { estateId?: string }) => {
   const { values, setValues, onChange } = useRecordValues({});
 
   useEffect(() => {
-    if (!isLoading) setValues((closing?.checklist as Record<string, unknown>) ?? {});
+    if (!isLoading) setValues((closing?.checklist ?? {}) as never);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, closing?.id]);
 

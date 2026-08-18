@@ -5,15 +5,15 @@ import { activity } from "@/data/estateWorkspace";
 import { useEstateCompliance } from "@/hooks/useEstateCompliance";
 
 export const ComplianceTab = ({ estateId }: { estateId?: string }) => {
-  const { rules, summary } = useEstateCompliance(estateId);
+  const { rules, failing, warning, passing } = useEstateCompliance(estateId);
   return (
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex flex-wrap items-center gap-2 text-base">
           Deterministic compliance rules
-          <Badge variant="outline">{summary.pass} passing</Badge>
-          <Badge variant="outline">{summary.warn} warnings</Badge>
-          <Badge variant={summary.fail ? "destructive" : "outline"}>{summary.fail} failing</Badge>
+          <Badge variant="outline">{passing.length} passing</Badge>
+          <Badge variant="outline">{warning.length} warnings</Badge>
+          <Badge variant={failing.length ? "destructive" : "outline"}>{failing.length} failing</Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2 text-sm">
