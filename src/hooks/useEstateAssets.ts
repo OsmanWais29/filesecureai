@@ -131,7 +131,9 @@ export const useSaveAsset = (estateId?: string) => {
       } as Record<string, unknown>;
 
       // The sworn SOA value only moves when the trustee deliberately unlocks it.
-      if (!id || bool(values.soaUnlocked)) row.soa_value = num(values.soaValue);
+      if (!id || bool(values.soaUnlocked)) {
+        row.soa_value = num(values.soaValue) || num(values.estimated);
+      }
 
       const query = id
         ? db.from("estate_assets").update(row).eq("id", id)
