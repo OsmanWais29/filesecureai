@@ -1340,6 +1340,83 @@ export type Database = {
           },
         ]
       }
+      estate_bank_accounts: {
+        Row: {
+          account_number: string | null
+          account_type: string | null
+          as_of_date: string | null
+          branch: string | null
+          closed_date: string | null
+          created_at: string
+          currency: string
+          eft_enabled: boolean
+          estate_id: string
+          export_format: string | null
+          gl_bank_account: string | null
+          id: string
+          institution: string | null
+          is_default: boolean
+          opened_date: string | null
+          opening_balance: number
+          pad_enabled: boolean
+          transit_number: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_number?: string | null
+          account_type?: string | null
+          as_of_date?: string | null
+          branch?: string | null
+          closed_date?: string | null
+          created_at?: string
+          currency?: string
+          eft_enabled?: boolean
+          estate_id: string
+          export_format?: string | null
+          gl_bank_account?: string | null
+          id?: string
+          institution?: string | null
+          is_default?: boolean
+          opened_date?: string | null
+          opening_balance?: number
+          pad_enabled?: boolean
+          transit_number?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_number?: string | null
+          account_type?: string | null
+          as_of_date?: string | null
+          branch?: string | null
+          closed_date?: string | null
+          created_at?: string
+          currency?: string
+          eft_enabled?: boolean
+          estate_id?: string
+          export_format?: string | null
+          gl_bank_account?: string | null
+          id?: string
+          institution?: string | null
+          is_default?: boolean
+          opened_date?: string | null
+          opening_balance?: number
+          pad_enabled?: boolean
+          transit_number?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_bank_accounts_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       estate_dates: {
         Row: {
           change_reason: string | null
@@ -1417,6 +1494,81 @@ export type Database = {
           },
         ]
       }
+      estate_disbursements: {
+        Row: {
+          amount: number
+          asset_ref: string | null
+          bank_account_id: string | null
+          cleared: boolean
+          created_at: string
+          creditor_ref: string | null
+          disbursement_type: string | null
+          due_date: string | null
+          estate_id: string
+          gl_account: string | null
+          id: string
+          payee: string | null
+          payment_date: string | null
+          payment_method: string | null
+          tax_treatment: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          asset_ref?: string | null
+          bank_account_id?: string | null
+          cleared?: boolean
+          created_at?: string
+          creditor_ref?: string | null
+          disbursement_type?: string | null
+          due_date?: string | null
+          estate_id: string
+          gl_account?: string | null
+          id?: string
+          payee?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          tax_treatment?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          asset_ref?: string | null
+          bank_account_id?: string | null
+          cleared?: boolean
+          created_at?: string
+          creditor_ref?: string | null
+          disbursement_type?: string | null
+          due_date?: string | null
+          estate_id?: string
+          gl_account?: string | null
+          id?: string
+          payee?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          tax_treatment?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_disbursements_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "estate_bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estate_disbursements_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       estate_events: {
         Row: {
           actor: string | null
@@ -1469,6 +1621,254 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "estate_events_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estate_ledger_entries: {
+        Row: {
+          bank_account_id: string | null
+          created_at: string
+          estate_id: string
+          gl_date: string | null
+          id: string
+          lines: Json
+          memo: string | null
+          reversal_of: string | null
+          source_id: string | null
+          source_type: string
+          total_credit: number
+          total_debit: number
+          user_id: string
+        }
+        Insert: {
+          bank_account_id?: string | null
+          created_at?: string
+          estate_id: string
+          gl_date?: string | null
+          id?: string
+          lines?: Json
+          memo?: string | null
+          reversal_of?: string | null
+          source_id?: string | null
+          source_type?: string
+          total_credit?: number
+          total_debit?: number
+          user_id: string
+        }
+        Update: {
+          bank_account_id?: string | null
+          created_at?: string
+          estate_id?: string
+          gl_date?: string | null
+          id?: string
+          lines?: Json
+          memo?: string | null
+          reversal_of?: string | null
+          source_id?: string | null
+          source_type?: string
+          total_credit?: number
+          total_debit?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_ledger_entries_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "estate_bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estate_ledger_entries_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estate_ledger_entries_reversal_of_fkey"
+            columns: ["reversal_of"]
+            isOneToOne: false
+            referencedRelation: "estate_ledger_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estate_milestones: {
+        Row: {
+          anchor_date_type: string | null
+          blocking: boolean
+          code: string
+          completed_date: string | null
+          created_at: string
+          due_date: string | null
+          estate_id: string
+          id: string
+          label: string
+          notes: string | null
+          offset_days: number | null
+          sort_order: number
+          stage: string
+          state: string
+          statutory_reference: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          anchor_date_type?: string | null
+          blocking?: boolean
+          code: string
+          completed_date?: string | null
+          created_at?: string
+          due_date?: string | null
+          estate_id: string
+          id?: string
+          label: string
+          notes?: string | null
+          offset_days?: number | null
+          sort_order?: number
+          stage: string
+          state?: string
+          statutory_reference?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          anchor_date_type?: string | null
+          blocking?: boolean
+          code?: string
+          completed_date?: string | null
+          created_at?: string
+          due_date?: string | null
+          estate_id?: string
+          id?: string
+          label?: string
+          notes?: string | null
+          offset_days?: number | null
+          sort_order?: number
+          stage?: string
+          state?: string
+          statutory_reference?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_milestones_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estate_receipt_allocations: {
+        Row: {
+          amount: number
+          asset_ref: string | null
+          created_at: string
+          creditor_ref: string | null
+          gl_account: string
+          id: string
+          receipt_id: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          asset_ref?: string | null
+          created_at?: string
+          creditor_ref?: string | null
+          gl_account: string
+          id?: string
+          receipt_id: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          asset_ref?: string | null
+          created_at?: string
+          creditor_ref?: string | null
+          gl_account?: string
+          id?: string
+          receipt_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_receipt_allocations_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "estate_receipts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estate_receipts: {
+        Row: {
+          amount: number
+          bank_account_id: string | null
+          created_at: string
+          deposit_date: string | null
+          estate_id: string
+          id: string
+          memo: string | null
+          payment_method: string | null
+          posted: boolean
+          receipt_date: string | null
+          receipt_number: string | null
+          received_from: string | null
+          reference: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          bank_account_id?: string | null
+          created_at?: string
+          deposit_date?: string | null
+          estate_id: string
+          id?: string
+          memo?: string | null
+          payment_method?: string | null
+          posted?: boolean
+          receipt_date?: string | null
+          receipt_number?: string | null
+          received_from?: string | null
+          reference?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          bank_account_id?: string | null
+          created_at?: string
+          deposit_date?: string | null
+          estate_id?: string
+          id?: string
+          memo?: string | null
+          payment_method?: string | null
+          posted?: boolean
+          receipt_date?: string | null
+          receipt_number?: string | null
+          received_from?: string | null
+          reference?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_receipts_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "estate_bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estate_receipts_estate_id_fkey"
             columns: ["estate_id"]
             isOneToOne: false
             referencedRelation: "estates"
