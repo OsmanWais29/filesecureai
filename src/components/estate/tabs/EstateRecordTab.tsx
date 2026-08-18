@@ -1,14 +1,15 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { toast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 import {
   RecordDrawer,
   RecordForm,
   Register,
   useRecordValues,
 } from "@/components/estate/forms/RecordForm";
+import type { RecordValues } from "@/components/estate/forms/RecordForm";
 import {
   consumerIdentitySection,
   corporateIdentitySection,
@@ -18,11 +19,17 @@ import {
   estateContactSection,
   estateCourtSection,
   estateDatesSection,
-  estateRecordDefaults,
   estateResponsibilitySection,
   statutoryDates,
   statutoryInformationSections,
 } from "@/data/estateFormSpecs";
+import { rowToValues } from "@/data/estateRecordMapping";
+import {
+  useEstateDates,
+  useEstateRow,
+  useSaveEstateDate,
+  useUpdateEstateRecord,
+} from "@/hooks/useEstateRecords";
 import { cn } from "@/lib/utils";
 
 const SUB_TABS = [
@@ -33,14 +40,38 @@ const SUB_TABS = [
 
 type SubTab = (typeof SUB_TABS)[number]["id"];
 
-const SignificantDates = () => {
+/** The canonical register: the statutory date catalogue merged with persisted values. */
+const SignificantDates = ({ estateId }: { estateId?: string }) => {
   const [query, setQuery] = useState("");
-  const [active, setActive] = useState<(typeof statutoryDates)[number] | null>(null);
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+  const { data: saved = [], isLoading } = useEstateDates(estateId);
+  const saveDate = useSaveEstateDate(estateId);
 
-  const filtered = statutoryDates.filter((d) =>
+  const register = useMemo(
+    () =>
+      statutoryDates.map((d) => {
+        const row = saved.find((s) => s.date_type === d.label);
+        return {
+          key: d.key,
+          group: d.group,
+          label: d.label,
+          type: d.type,
+          value: row?.date_value ?? row?.time_value ?? "",
+          source: row?.source_type ?? "Manual",
+          document: row?.source_document ?? undefined,
+          page: row?.source_page ?? undefined,
+          confirmedBy: row?.confirmed_by ?? undefined,
+          persisted: Boolean(row),
+        };
+      }),
+    [saved]
+  );
+
+  const filtered = register.filter((d) =>
     `${d.group} ${d.label}`.toLowerCase().includes(query.toLowerCase())
   );
   const groups = Array.from(new Set(filtered.map((d) => d.group)));
+  const active = register.find((d) => d.key === activeKey) ?? null;
 
   return (
     <>
@@ -56,6 +87,11 @@ const SignificantDates = () => {
           />
         }
       >
+        {isLoading ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Loading date register…
+          </div>
+        ) : (
         <div className="space-y-6">
           {groups.map((group) => (
             <div key={group} className="space-y-2">
@@ -74,7 +110,7 @@ const SignificantDates = () => {
                       {d.value || "Not recorded"}
                     </span>
                     <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-                      <Badge variant="outline">{d.source}</Badge>
+                      <Badge variant="outline">{d.persisted ? d.source : "Not recorded"}</Badge>
                       {d.document && (
                         <span>
                           {d.document}
@@ -83,7 +119,7 @@ const SignificantDates = () => {
                       )}
                       {d.confirmedBy && <span>· confirmed {d.confirmedBy}</span>}
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => setActive(d)}>
+                    <Button variant="outline" size="sm" onClick={() => setActiveKey(d.key)}>
                       Edit
                     </Button>
                   </div>
@@ -91,11 +127,12 @@ const SignificantDates = () => {
             </div>
           ))}
         </div>
+        )}
       </Register>
 
       <RecordDrawer
         open={Boolean(active)}
-        onOpenChange={(o) => !o && setActive(null)}
+        onOpenChange={(o) => !o && setActiveKey(null)}
         title={active?.label ?? ""}
         description={`${active?.group ?? ""} date · provenance and change history`}
         sections={[dateProvenanceSection]}
@@ -107,18 +144,51 @@ const SignificantDates = () => {
           confirmedBy: active?.confirmedBy,
         }}
         submitLabel="Save date"
-        onSubmit={() => toast({ title: "Date updated", description: "Change recorded in the estate audit trail." })}
+        onSubmit={async (values: RecordValues) => {
+          if (!active) return;
+          const next = values.value ? String(values.value) : "";
+          await saveDate.mutateAsync({
+            dateGroup: active.group,
+            dateType: active.label,
+            dateValue: active.type === "time" ? null : next,
+            timeValue: active.type === "time" ? next : null,
+            sourceType: values.source ? String(values.source) : "Manual",
+            sourceDocument: values.document ? String(values.document) : null,
+            sourcePage: values.page ? String(values.page) : null,
+            confirmedBy: values.confirmedBy ? String(values.confirmedBy) : null,
+            changeReason: values.changeReason ? String(values.changeReason) : null,
+            previousValue: active.value || null,
+          });
+          setActiveKey(null);
+        }}
       />
     </>
   );
 };
 
-export const EstateRecordTab = () => {
+export const EstateRecordTab = ({ estateId }: { estateId?: string }) => {
   const [sub, setSub] = useState<SubTab>("record");
-  const { values, onChange } = useRecordValues(estateRecordDefaults);
-  const { values: statValues, onChange: onStatChange } = useRecordValues({});
+  const { data: row, isLoading } = useEstateRow(estateId);
+  const updateEstate = useUpdateEstateRecord(estateId);
+  const { values, onChange, setValues } = useRecordValues({});
+  const { values: statValues, onChange: onStatChange, setValues: setStatValues } = useRecordValues({});
+
+  useEffect(() => {
+    if (!row) return;
+    const mapped = rowToValues(row);
+    setValues(mapped);
+    setStatValues(mapped);
+  }, [row, setValues, setStatValues]);
 
   const isCorporate = values.estateType === "Corporate";
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" /> Loading estate record…
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -150,8 +220,8 @@ export const EstateRecordTab = () => {
           ]}
           values={values}
           onChange={onChange}
-          submitLabel="Save Estate"
-          onSubmit={() => toast({ title: "Estate saved", description: "Estate record updated." })}
+          submitLabel={updateEstate.isPending ? "Saving…" : "Save Estate"}
+          onSubmit={(next: RecordValues) => updateEstate.mutate({ values: next })}
         />
       )}
 
@@ -160,12 +230,14 @@ export const EstateRecordTab = () => {
           sections={statutoryInformationSections}
           values={statValues}
           onChange={onStatChange}
-          submitLabel="Save statutory information"
-          onSubmit={() => toast({ title: "Statutory information saved" })}
+          submitLabel={updateEstate.isPending ? "Saving…" : "Save statutory information"}
+          onSubmit={(next: RecordValues) =>
+            updateEstate.mutate({ values: next, eventType: "estate.updated" })
+          }
         />
       )}
 
-      {sub === "dates" && <SignificantDates />}
+      {sub === "dates" && <SignificantDates estateId={estateId} />}
     </div>
   );
 };

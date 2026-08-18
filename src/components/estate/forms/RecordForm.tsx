@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -157,7 +157,7 @@ interface RecordFormProps {
   sections: SectionSpec[];
   values: RecordValues;
   onChange: (key: string, value: string | boolean) => void;
-  onSubmit?: () => void;
+  onSubmit?: (values: RecordValues) => void;
   submitLabel?: string;
   secondaryLabel?: string;
   onSecondary?: () => void;
@@ -197,7 +197,7 @@ export const RecordForm = ({
       className="space-y-6"
       onSubmit={(e) => {
         e.preventDefault();
-        onSubmit?.();
+        onSubmit?.(values);
       }}
     >
       {card
@@ -265,7 +265,13 @@ export const RecordDrawer = ({
   onSubmit,
   extra,
 }: RecordDrawerProps) => {
-  const { values, onChange } = useRecordValues(initial);
+  const { values, setValues, onChange } = useRecordValues(initial);
+
+  // Re-seed the drawer each time it opens so it reflects the selected record.
+  useEffect(() => {
+    if (open) setValues(initial);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, JSON.stringify(initial)]);
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-2xl">

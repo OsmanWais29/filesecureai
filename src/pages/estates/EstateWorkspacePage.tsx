@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
+import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { EstateWorkspaceHeader } from "@/components/estate/EstateWorkspaceHeader";
 import { EstateSubmoduleTabs, EstateTabId } from "@/components/estate/EstateSubmoduleTabs";
@@ -25,13 +27,14 @@ import { useEstate } from "@/data/estateStore";
 
 const EstateWorkspacePage = () => {
   const { estateId } = useParams();
-  const estate = useEstate(estateId);
+  const { estate, isLoading } = useEstate(estateId);
   const [tab, setTab] = useState<EstateTabId>("overview");
 
   const renderTab = () => {
+    if (!estate) return null;
     switch (tab) {
       case "overview": return <OverviewTab estate={estate} />;
-      case "record": return <EstateRecordTab />;
+      case "record": return <EstateRecordTab estateId={estateId} />;
       case "timeline": return <TimelineTab />;
       case "workflow": return <WorkflowTab />;
       case "financials": return <FinancialsTab />;
@@ -50,6 +53,32 @@ const EstateWorkspacePage = () => {
       case "activity": return <ActivityTab />;
     }
   };
+
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading estate…
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (!estate) {
+    return (
+      <MainLayout>
+        <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
+          <h1 className="text-lg font-semibold">Estate not found</h1>
+          <p className="max-w-md text-sm text-muted-foreground">
+            This estate does not exist, or your account does not have access to it.
+          </p>
+          <Button asChild variant="outline">
+            <Link to="/estates">Back to estates</Link>
+          </Button>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
