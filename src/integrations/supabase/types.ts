@@ -1290,6 +1290,162 @@ export type Database = {
         }
         Relationships: []
       }
+      estate_asset_securities: {
+        Row: {
+          amount: number
+          asset_id: string
+          created_at: string
+          creditor_id: string | null
+          creditor_name: string | null
+          estate_id: string
+          id: string
+          rank: number
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          asset_id: string
+          created_at?: string
+          creditor_id?: string | null
+          creditor_name?: string | null
+          estate_id: string
+          id?: string
+          rank?: number
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          asset_id?: string
+          created_at?: string
+          creditor_id?: string | null
+          creditor_name?: string | null
+          estate_id?: string
+          id?: string
+          rank?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_asset_securities_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "estate_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estate_asset_securities_creditor_id_fkey"
+            columns: ["creditor_id"]
+            isOneToOne: false
+            referencedRelation: "estate_creditors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estate_asset_securities_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estate_assets: {
+        Row: {
+          amount_deposited: number
+          amount_to_realize: number
+          asset_type: string | null
+          buy_back: boolean
+          completed: boolean
+          created_at: string
+          description: string
+          disposition: string | null
+          disposition_date: string | null
+          encumbered: boolean
+          estate_id: string
+          estimated: number
+          exempt: boolean
+          exempt_amount: number
+          exemption_status: string | null
+          id: string
+          not_sold: boolean
+          not_sold_reason: string | null
+          original_cost: number
+          print_on_rd: boolean
+          rd_notes: string | null
+          selling_costs: number
+          soa_unlocked: boolean
+          soa_value: number
+          third_party_interest: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_deposited?: number
+          amount_to_realize?: number
+          asset_type?: string | null
+          buy_back?: boolean
+          completed?: boolean
+          created_at?: string
+          description: string
+          disposition?: string | null
+          disposition_date?: string | null
+          encumbered?: boolean
+          estate_id: string
+          estimated?: number
+          exempt?: boolean
+          exempt_amount?: number
+          exemption_status?: string | null
+          id?: string
+          not_sold?: boolean
+          not_sold_reason?: string | null
+          original_cost?: number
+          print_on_rd?: boolean
+          rd_notes?: string | null
+          selling_costs?: number
+          soa_unlocked?: boolean
+          soa_value?: number
+          third_party_interest?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_deposited?: number
+          amount_to_realize?: number
+          asset_type?: string | null
+          buy_back?: boolean
+          completed?: boolean
+          created_at?: string
+          description?: string
+          disposition?: string | null
+          disposition_date?: string | null
+          encumbered?: boolean
+          estate_id?: string
+          estimated?: number
+          exempt?: boolean
+          exempt_amount?: number
+          exemption_status?: string | null
+          id?: string
+          not_sold?: boolean
+          not_sold_reason?: string | null
+          original_cost?: number
+          print_on_rd?: boolean
+          rd_notes?: string | null
+          selling_costs?: number
+          soa_unlocked?: boolean
+          soa_value?: number
+          third_party_interest?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_assets_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       estate_assignments: {
         Row: {
           assigned_by: string | null
@@ -1410,6 +1566,193 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "estate_bank_accounts_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estate_creditor_meetings: {
+        Row: {
+          amendment_made_by: string | null
+          chairperson: string | null
+          created_at: string
+          deemed_approval: boolean
+          deemed_approval_date: string | null
+          estate_id: string
+          id: string
+          location: string | null
+          meeting_date: string | null
+          meeting_time: string | null
+          notes: string | null
+          notice_sent_date: string | null
+          updated_at: string
+          user_id: string
+          voting_round: number | null
+        }
+        Insert: {
+          amendment_made_by?: string | null
+          chairperson?: string | null
+          created_at?: string
+          deemed_approval?: boolean
+          deemed_approval_date?: string | null
+          estate_id: string
+          id?: string
+          location?: string | null
+          meeting_date?: string | null
+          meeting_time?: string | null
+          notes?: string | null
+          notice_sent_date?: string | null
+          updated_at?: string
+          user_id: string
+          voting_round?: number | null
+        }
+        Update: {
+          amendment_made_by?: string | null
+          chairperson?: string | null
+          created_at?: string
+          deemed_approval?: boolean
+          deemed_approval_date?: string | null
+          estate_id?: string
+          id?: string
+          location?: string | null
+          meeting_date?: string | null
+          meeting_time?: string | null
+          notes?: string | null
+          notice_sent_date?: string | null
+          updated_at?: string
+          user_id?: string
+          voting_round?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_creditor_meetings_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estate_creditors: {
+        Row: {
+          account_number: string | null
+          address1: string | null
+          address2: string | null
+          admitted_dividend: number
+          admitted_voting: number
+          amended_payments_requested: boolean
+          city: string | null
+          claim_class: string | null
+          claim_status: string | null
+          completed: boolean
+          contingent_amount: number
+          country: string | null
+          created_at: string
+          creditor_type: string | null
+          deferred_amount: number
+          email: string | null
+          estate_id: string
+          filed_amount: number
+          head_office: boolean
+          id: string
+          legal_name: string
+          master_creditor: string | null
+          material_change_requested: boolean
+          meeting_requested: boolean
+          other_amount: number
+          phone: string | null
+          poc_filed: boolean
+          postal_code: string | null
+          province: string | null
+          rank: number | null
+          reasons: string | null
+          received_date: string | null
+          report_170_requested: boolean
+          soa_amount: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_number?: string | null
+          address1?: string | null
+          address2?: string | null
+          admitted_dividend?: number
+          admitted_voting?: number
+          amended_payments_requested?: boolean
+          city?: string | null
+          claim_class?: string | null
+          claim_status?: string | null
+          completed?: boolean
+          contingent_amount?: number
+          country?: string | null
+          created_at?: string
+          creditor_type?: string | null
+          deferred_amount?: number
+          email?: string | null
+          estate_id: string
+          filed_amount?: number
+          head_office?: boolean
+          id?: string
+          legal_name: string
+          master_creditor?: string | null
+          material_change_requested?: boolean
+          meeting_requested?: boolean
+          other_amount?: number
+          phone?: string | null
+          poc_filed?: boolean
+          postal_code?: string | null
+          province?: string | null
+          rank?: number | null
+          reasons?: string | null
+          received_date?: string | null
+          report_170_requested?: boolean
+          soa_amount?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_number?: string | null
+          address1?: string | null
+          address2?: string | null
+          admitted_dividend?: number
+          admitted_voting?: number
+          amended_payments_requested?: boolean
+          city?: string | null
+          claim_class?: string | null
+          claim_status?: string | null
+          completed?: boolean
+          contingent_amount?: number
+          country?: string | null
+          created_at?: string
+          creditor_type?: string | null
+          deferred_amount?: number
+          email?: string | null
+          estate_id?: string
+          filed_amount?: number
+          head_office?: boolean
+          id?: string
+          legal_name?: string
+          master_creditor?: string | null
+          material_change_requested?: boolean
+          meeting_requested?: boolean
+          other_amount?: number
+          phone?: string | null
+          poc_filed?: boolean
+          postal_code?: string | null
+          province?: string | null
+          rank?: number | null
+          reasons?: string | null
+          received_date?: string | null
+          report_170_requested?: boolean
+          soa_amount?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_creditors_estate_id_fkey"
             columns: ["estate_id"]
             isOneToOne: false
             referencedRelation: "estates"

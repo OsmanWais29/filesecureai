@@ -38,8 +38,8 @@ const EstateWorkspacePage = () => {
       case "timeline": return <TimelineTab estateId={estateId} />;
       case "workflow": return <WorkflowTab estateId={estateId} />;
       case "financials": return <FinancialsTab estateId={estateId} />;
-      case "creditors": return <CreditorsTab />;
-      case "assets": return <AssetsTab />;
+      case "creditors": return <CreditorsTab estateId={estateId} />;
+      case "assets": return <AssetsTab estateId={estateId} />;
       case "additional": return <AdditionalInfoTab />;
       case "documents": return <DocumentsTab />;
       case "forms": return <FormsTab />;
