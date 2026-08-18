@@ -1573,6 +1573,53 @@ export type Database = {
           },
         ]
       }
+      estate_closings: {
+        Row: {
+          checklist: Json
+          closed: boolean
+          closed_at: string | null
+          closing_date: string | null
+          created_at: string
+          estate_id: string
+          id: string
+          notes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          checklist?: Json
+          closed?: boolean
+          closed_at?: string | null
+          closing_date?: string | null
+          created_at?: string
+          estate_id: string
+          id?: string
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          checklist?: Json
+          closed?: boolean
+          closed_at?: string | null
+          closing_date?: string | null
+          created_at?: string
+          estate_id?: string
+          id?: string
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_closings_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: true
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       estate_counselling_sessions: {
         Row: {
           address: string | null
@@ -1989,6 +2036,50 @@ export type Database = {
           },
         ]
       }
+      estate_discharge_reports: {
+        Row: {
+          created_at: string
+          estate_id: string
+          generated_at: string | null
+          id: string
+          opposition: boolean
+          report_data: Json
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          estate_id: string
+          generated_at?: string | null
+          id?: string
+          opposition?: boolean
+          report_data?: Json
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          estate_id?: string
+          generated_at?: string | null
+          id?: string
+          opposition?: boolean
+          report_data?: Json
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_discharge_reports_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: true
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       estate_events: {
         Row: {
           actor: string | null
@@ -2041,6 +2132,68 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "estate_events_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estate_form_instances: {
+        Row: {
+          created_at: string
+          document_id: string | null
+          estate_id: string
+          filed_at: string | null
+          form_number: string
+          generated_at: string | null
+          id: string
+          parameters: Json
+          signing_date: string | null
+          status: string
+          title: string | null
+          updated_at: string
+          user_id: string
+          validation_messages: Json
+          validation_state: string
+        }
+        Insert: {
+          created_at?: string
+          document_id?: string | null
+          estate_id: string
+          filed_at?: string | null
+          form_number: string
+          generated_at?: string | null
+          id?: string
+          parameters?: Json
+          signing_date?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+          user_id: string
+          validation_messages?: Json
+          validation_state?: string
+        }
+        Update: {
+          created_at?: string
+          document_id?: string | null
+          estate_id?: string
+          filed_at?: string | null
+          form_number?: string
+          generated_at?: string | null
+          id?: string
+          parameters?: Json
+          signing_date?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+          validation_messages?: Json
+          validation_state?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_form_instances_estate_id_fkey"
             columns: ["estate_id"]
             isOneToOne: false
             referencedRelation: "estates"
@@ -2292,6 +2445,71 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "estate_milestones_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estate_notes: {
+        Row: {
+          billable: boolean
+          body: string | null
+          channel: string | null
+          contact_address: string | null
+          created_at: string
+          direction: string | null
+          estate_id: string
+          follow_up_date: string | null
+          id: string
+          minutes: number | null
+          note_date: string | null
+          note_time: string | null
+          party: string | null
+          subject: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          billable?: boolean
+          body?: string | null
+          channel?: string | null
+          contact_address?: string | null
+          created_at?: string
+          direction?: string | null
+          estate_id: string
+          follow_up_date?: string | null
+          id?: string
+          minutes?: number | null
+          note_date?: string | null
+          note_time?: string | null
+          party?: string | null
+          subject?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          billable?: boolean
+          body?: string | null
+          channel?: string | null
+          contact_address?: string | null
+          created_at?: string
+          direction?: string | null
+          estate_id?: string
+          follow_up_date?: string | null
+          id?: string
+          minutes?: number | null
+          note_date?: string | null
+          note_time?: string | null
+          party?: string | null
+          subject?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_notes_estate_id_fkey"
             columns: ["estate_id"]
             isOneToOne: false
             referencedRelation: "estates"
