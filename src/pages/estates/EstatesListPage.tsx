@@ -32,9 +32,9 @@ const str = (v: RecordValues[string]) => (v === undefined || v === null ? "" : S
 
 const EstatesListPage = () => {
   const { estates, isLoading, error } = useEstateList();
-  const [open, setOpen] = useState(false);
-  const navigate = useNavigate();
   const [params] = useSearchParams();
+  const [open, setOpen] = useState(params.get("new") === "1");
+  const navigate = useNavigate();
   const clientId = params.get("clientId") ?? undefined;
   const createEstate = useCreateEstateRecord();
 
