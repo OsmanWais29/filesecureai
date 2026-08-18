@@ -2464,9 +2464,16 @@ export type Database = {
           follow_up_date: string | null
           id: string
           minutes: number | null
+          note_code: string | null
           note_date: string | null
           note_time: string | null
           party: string | null
+          priority: string | null
+          reminder_done: boolean
+          reminder_from: string | null
+          reminder_text: string | null
+          reminder_to: string | null
+          staff: string | null
           subject: string | null
           updated_at: string
           user_id: string
@@ -2482,9 +2489,16 @@ export type Database = {
           follow_up_date?: string | null
           id?: string
           minutes?: number | null
+          note_code?: string | null
           note_date?: string | null
           note_time?: string | null
           party?: string | null
+          priority?: string | null
+          reminder_done?: boolean
+          reminder_from?: string | null
+          reminder_text?: string | null
+          reminder_to?: string | null
+          staff?: string | null
           subject?: string | null
           updated_at?: string
           user_id: string
@@ -2500,9 +2514,16 @@ export type Database = {
           follow_up_date?: string | null
           id?: string
           minutes?: number | null
+          note_code?: string | null
           note_date?: string | null
           note_time?: string | null
           party?: string | null
+          priority?: string | null
+          reminder_done?: boolean
+          reminder_from?: string | null
+          reminder_text?: string | null
+          reminder_to?: string | null
+          staff?: string | null
           subject?: string | null
           updated_at?: string
           user_id?: string

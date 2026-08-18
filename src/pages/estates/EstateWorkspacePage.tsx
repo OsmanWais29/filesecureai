@@ -42,14 +42,14 @@ const EstateWorkspacePage = () => {
       case "assets": return <AssetsTab estateId={estateId} />;
       case "additional": return <AdditionalInfoTab />;
       case "documents": return <DocumentsTab />;
-      case "forms": return <FormsTab />;
+      case "forms": return <FormsTab estateId={estateId} />;
       case "income": return <IncomeTab estateId={estateId} />;
       case "tax": return <TaxTab estateId={estateId} />;
       case "counselling": return <CounsellingTab estateId={estateId} />;
-      case "notes": return <NotesTab />;
-      case "compliance": return <ComplianceTab />;
-      case "discharge": return <DischargeTab />;
-      case "closing": return <ClosingTab />;
+      case "notes": return <NotesTab estateId={estateId} />;
+      case "compliance": return <ComplianceTab estateId={estateId} />;
+      case "discharge": return <DischargeTab estateId={estateId} />;
+      case "closing": return <ClosingTab estateId={estateId} />;
       case "activity": return <ActivityTab />;
     }
   };
