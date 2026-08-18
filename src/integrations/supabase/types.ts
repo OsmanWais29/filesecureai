@@ -1290,63 +1290,417 @@ export type Database = {
         }
         Relationships: []
       }
+      estate_assignments: {
+        Row: {
+          assigned_by: string | null
+          assignee_name: string
+          assignee_user_id: string | null
+          created_at: string
+          effective_from: string
+          effective_to: string | null
+          estate_id: string
+          id: string
+          reason: string | null
+          role: string
+          user_id: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          assignee_name: string
+          assignee_user_id?: string | null
+          created_at?: string
+          effective_from?: string
+          effective_to?: string | null
+          estate_id: string
+          id?: string
+          reason?: string | null
+          role: string
+          user_id: string
+        }
+        Update: {
+          assigned_by?: string | null
+          assignee_name?: string
+          assignee_user_id?: string | null
+          created_at?: string
+          effective_from?: string
+          effective_to?: string | null
+          estate_id?: string
+          id?: string
+          reason?: string | null
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_assignments_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estate_dates: {
+        Row: {
+          change_reason: string | null
+          confidence: number | null
+          confirmed_by: string | null
+          confirmed_date: string | null
+          created_at: string
+          date_group: string
+          date_type: string
+          date_value: string | null
+          entered_by: string | null
+          estate_id: string
+          extracted_by: string | null
+          id: string
+          previous_value: string | null
+          source_document: string | null
+          source_document_id: string | null
+          source_page: string | null
+          source_type: string
+          time_value: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          change_reason?: string | null
+          confidence?: number | null
+          confirmed_by?: string | null
+          confirmed_date?: string | null
+          created_at?: string
+          date_group?: string
+          date_type: string
+          date_value?: string | null
+          entered_by?: string | null
+          estate_id: string
+          extracted_by?: string | null
+          id?: string
+          previous_value?: string | null
+          source_document?: string | null
+          source_document_id?: string | null
+          source_page?: string | null
+          source_type?: string
+          time_value?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          change_reason?: string | null
+          confidence?: number | null
+          confirmed_by?: string | null
+          confirmed_date?: string | null
+          created_at?: string
+          date_group?: string
+          date_type?: string
+          date_value?: string | null
+          entered_by?: string | null
+          estate_id?: string
+          extracted_by?: string | null
+          id?: string
+          previous_value?: string | null
+          source_document?: string | null
+          source_document_id?: string | null
+          source_page?: string | null
+          source_type?: string
+          time_value?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_dates_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estate_events: {
+        Row: {
+          actor: string | null
+          actor_type: string
+          after_state: Json | null
+          before_state: Json | null
+          client_id: string | null
+          correlation_id: string | null
+          created_at: string
+          estate_id: string
+          event_type: string
+          evidence: Json | null
+          id: string
+          reason: string | null
+          source: string | null
+          user_id: string
+        }
+        Insert: {
+          actor?: string | null
+          actor_type?: string
+          after_state?: Json | null
+          before_state?: Json | null
+          client_id?: string | null
+          correlation_id?: string | null
+          created_at?: string
+          estate_id: string
+          event_type: string
+          evidence?: Json | null
+          id?: string
+          reason?: string | null
+          source?: string | null
+          user_id: string
+        }
+        Update: {
+          actor?: string | null
+          actor_type?: string
+          after_state?: Json | null
+          before_state?: Json | null
+          client_id?: string | null
+          correlation_id?: string | null
+          created_at?: string
+          estate_id?: string
+          event_type?: string
+          evidence?: Json | null
+          id?: string
+          reason?: string | null
+          source?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_events_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       estates: {
         Row: {
+          address: string | null
+          administration_type: string | null
+          aka: string | null
+          appointment_date: string | null
+          archive_box_number: string | null
+          archive_sent_date: string | null
           assigned_date: string | null
+          business_number: string | null
+          cause_details: string | null
+          cell_phone: string | null
           client_id: string | null
+          corporate_name: string | null
+          court_name: string | null
+          court_number: string | null
           created_at: string
+          date_of_birth: string | null
+          date_started: string | null
+          debtor_kind: string
           debtor_name: string
+          district: string | null
+          division: string | null
+          division_number: string | null
+          efile_enabled: boolean
+          email: string | null
+          estate_administrator: string | null
           estate_type: string
+          federal_charter_number: string | null
+          file_name: string | null
           file_number: string | null
+          file_status: string | null
+          first_name: string | null
+          gender: string | null
+          gst_refund_choice: string | null
+          home_phone: string | null
+          household_adults: number | null
+          household_minors: number | null
           id: string
+          incorporation_date: string | null
+          incorporation_place: string | null
+          initial_contact_date: string | null
+          initial_interviewer: string | null
+          insolvency_date: string | null
+          joint_filing: boolean
+          language: string | null
+          last_name: string | null
+          local_or: string | null
+          marital_status: string | null
+          middle_name: string | null
+          nature_of_business: string | null
           next_deadline: string | null
           next_deadline_description: string | null
+          office_manager: string | null
+          operating_as: string | null
+          osb_estate_number: string | null
+          primary_cause: string | null
+          proceeding_type: string | null
+          processing_centre: string | null
+          record_extras: Json
+          secondary_cause: string | null
+          service_location: string | null
+          signup_date: string | null
+          sin: string | null
           status: string
+          technician: string | null
           total_claims: number | null
           total_creditors: number | null
           trust_balance: number | null
           trustee_id: string | null
           trustee_name: string | null
+          trustee_office: string | null
           updated_at: string
           user_id: string | null
+          work_phone: string | null
         }
         Insert: {
+          address?: string | null
+          administration_type?: string | null
+          aka?: string | null
+          appointment_date?: string | null
+          archive_box_number?: string | null
+          archive_sent_date?: string | null
           assigned_date?: string | null
+          business_number?: string | null
+          cause_details?: string | null
+          cell_phone?: string | null
           client_id?: string | null
+          corporate_name?: string | null
+          court_name?: string | null
+          court_number?: string | null
           created_at?: string
+          date_of_birth?: string | null
+          date_started?: string | null
+          debtor_kind?: string
           debtor_name: string
+          district?: string | null
+          division?: string | null
+          division_number?: string | null
+          efile_enabled?: boolean
+          email?: string | null
+          estate_administrator?: string | null
           estate_type?: string
+          federal_charter_number?: string | null
+          file_name?: string | null
           file_number?: string | null
+          file_status?: string | null
+          first_name?: string | null
+          gender?: string | null
+          gst_refund_choice?: string | null
+          home_phone?: string | null
+          household_adults?: number | null
+          household_minors?: number | null
           id?: string
+          incorporation_date?: string | null
+          incorporation_place?: string | null
+          initial_contact_date?: string | null
+          initial_interviewer?: string | null
+          insolvency_date?: string | null
+          joint_filing?: boolean
+          language?: string | null
+          last_name?: string | null
+          local_or?: string | null
+          marital_status?: string | null
+          middle_name?: string | null
+          nature_of_business?: string | null
           next_deadline?: string | null
           next_deadline_description?: string | null
+          office_manager?: string | null
+          operating_as?: string | null
+          osb_estate_number?: string | null
+          primary_cause?: string | null
+          proceeding_type?: string | null
+          processing_centre?: string | null
+          record_extras?: Json
+          secondary_cause?: string | null
+          service_location?: string | null
+          signup_date?: string | null
+          sin?: string | null
           status?: string
+          technician?: string | null
           total_claims?: number | null
           total_creditors?: number | null
           trust_balance?: number | null
           trustee_id?: string | null
           trustee_name?: string | null
+          trustee_office?: string | null
           updated_at?: string
           user_id?: string | null
+          work_phone?: string | null
         }
         Update: {
+          address?: string | null
+          administration_type?: string | null
+          aka?: string | null
+          appointment_date?: string | null
+          archive_box_number?: string | null
+          archive_sent_date?: string | null
           assigned_date?: string | null
+          business_number?: string | null
+          cause_details?: string | null
+          cell_phone?: string | null
           client_id?: string | null
+          corporate_name?: string | null
+          court_name?: string | null
+          court_number?: string | null
           created_at?: string
+          date_of_birth?: string | null
+          date_started?: string | null
+          debtor_kind?: string
           debtor_name?: string
+          district?: string | null
+          division?: string | null
+          division_number?: string | null
+          efile_enabled?: boolean
+          email?: string | null
+          estate_administrator?: string | null
           estate_type?: string
+          federal_charter_number?: string | null
+          file_name?: string | null
           file_number?: string | null
+          file_status?: string | null
+          first_name?: string | null
+          gender?: string | null
+          gst_refund_choice?: string | null
+          home_phone?: string | null
+          household_adults?: number | null
+          household_minors?: number | null
           id?: string
+          incorporation_date?: string | null
+          incorporation_place?: string | null
+          initial_contact_date?: string | null
+          initial_interviewer?: string | null
+          insolvency_date?: string | null
+          joint_filing?: boolean
+          language?: string | null
+          last_name?: string | null
+          local_or?: string | null
+          marital_status?: string | null
+          middle_name?: string | null
+          nature_of_business?: string | null
           next_deadline?: string | null
           next_deadline_description?: string | null
+          office_manager?: string | null
+          operating_as?: string | null
+          osb_estate_number?: string | null
+          primary_cause?: string | null
+          proceeding_type?: string | null
+          processing_centre?: string | null
+          record_extras?: Json
+          secondary_cause?: string | null
+          service_location?: string | null
+          signup_date?: string | null
+          sin?: string | null
           status?: string
+          technician?: string | null
           total_claims?: number | null
           total_creditors?: number | null
           trust_balance?: number | null
           trustee_id?: string | null
           trustee_name?: string | null
+          trustee_office?: string | null
           updated_at?: string
           user_id?: string | null
+          work_phone?: string | null
         }
         Relationships: []
       }
