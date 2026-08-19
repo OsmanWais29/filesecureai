@@ -27,23 +27,14 @@ const Empty = ({ label }: { label: string }) => (
   <p className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">{label}</p>
 );
 
-export const TaxTab = ({ estateId }: { estateId?: string }) => {
-  const [tab, setTab] = useState<string>("returns");
+export const TaxReturnsRegister = ({ estateId }: { estateId?: string }) => {
   const { data: returns = [] } = useTaxReturns(estateId);
-  const { data: docs = [] } = useTaxDocuments(estateId);
   const saveReturn = useSaveTaxReturn(estateId);
-  const saveDoc = useSaveTaxDocument(estateId);
   const [returnDraft, setReturnDraft] = useState<{ open: boolean; row?: TaxReturnRow }>({ open: false });
-  const [docDraft, setDocDraft] = useState<{ open: boolean; row?: TaxDocumentRow }>({ open: false });
-
-  const outstandingDocs = docs.filter((d) => d.required && !d.received).length;
 
   return (
-    <div className="space-y-4">
-      <SubTabs tabs={TABS} active={tab} onChange={setTab} />
-
-      {tab === "returns" && (
-        <Register
+    <>
+      <Register
           title="Tax administration"
           description={`${returns.length} return(s) tracked. Refunds deposited into the estate are recorded as receipts in Financials.`}
           action={
@@ -52,7 +43,7 @@ export const TaxTab = ({ estateId }: { estateId?: string }) => {
             </Button>
           }
         >
-          <div className="space-y-2 text-sm">
+        <div className="space-y-2 text-sm">
             <div className="grid grid-cols-7 gap-2 text-xs uppercase text-muted-foreground">
               <span>Type</span>
               <span>Year</span>
@@ -83,12 +74,36 @@ export const TaxTab = ({ estateId }: { estateId?: string }) => {
                 </Button>
               </div>
             ))}
-          </div>
-        </Register>
-      )}
+        </div>
+      </Register>
 
-      {tab === "documents" && (
-        <Register
+      <RecordDrawer
+        open={returnDraft.open}
+        onOpenChange={(o) => setReturnDraft({ open: o })}
+        title={returnDraft.row ? "Edit tax return" : "Tax return"}
+        sections={taxReturnSections}
+        initial={returnDraft.row ? taxReturnToValues(returnDraft.row) : {}}
+        submitLabel="Save return"
+        onSubmit={(values) =>
+          saveReturn.mutate(
+            { values, id: returnDraft.row?.id },
+            { onSuccess: () => setReturnDraft({ open: false }) }
+          )
+        }
+      />
+    </>
+  );
+};
+
+export const RequiredDocumentsRegister = ({ estateId }: { estateId?: string }) => {
+  const { data: docs = [] } = useTaxDocuments(estateId);
+  const saveDoc = useSaveTaxDocument(estateId);
+  const [docDraft, setDocDraft] = useState<{ open: boolean; row?: TaxDocumentRow }>({ open: false });
+  const outstandingDocs = docs.filter((d) => d.required && !d.received).length;
+
+  return (
+    <>
+      <Register
           title="Required tax documents"
           description={`${outstandingDocs} required document(s) still outstanding.`}
           action={
@@ -97,7 +112,7 @@ export const TaxTab = ({ estateId }: { estateId?: string }) => {
             </Button>
           }
         >
-          <div className="space-y-2 text-sm">
+        <div className="space-y-2 text-sm">
             {docs.length === 0 && <Empty label="No document requirements recorded yet." />}
             {docs.map((d) => (
               <div key={d.id} className="flex flex-wrap items-center gap-3 rounded-md border p-3">
@@ -118,24 +133,9 @@ export const TaxTab = ({ estateId }: { estateId?: string }) => {
                 </Button>
               </div>
             ))}
-          </div>
-        </Register>
-      )}
+        </div>
+      </Register>
 
-      <RecordDrawer
-        open={returnDraft.open}
-        onOpenChange={(o) => setReturnDraft({ open: o })}
-        title={returnDraft.row ? "Edit tax return" : "Tax return"}
-        sections={taxReturnSections}
-        initial={returnDraft.row ? taxReturnToValues(returnDraft.row) : {}}
-        submitLabel="Save return"
-        onSubmit={(values) =>
-          saveReturn.mutate(
-            { values, id: returnDraft.row?.id },
-            { onSuccess: () => setReturnDraft({ open: false }) }
-          )
-        }
-      />
       <RecordDrawer
         open={docDraft.open}
         onOpenChange={(o) => setDocDraft({ open: o })}
@@ -147,6 +147,17 @@ export const TaxTab = ({ estateId }: { estateId?: string }) => {
           saveDoc.mutate({ values, id: docDraft.row?.id }, { onSuccess: () => setDocDraft({ open: false }) })
         }
       />
+    </>
+  );
+};
+
+export const TaxTab = ({ estateId }: { estateId?: string }) => {
+  const [tab, setTab] = useState<string>("returns");
+  return (
+    <div className="space-y-4">
+      <SubTabs tabs={TABS} active={tab} onChange={setTab} />
+      {tab === "returns" && <TaxReturnsRegister estateId={estateId} />}
+      {tab === "documents" && <RequiredDocumentsRegister estateId={estateId} />}
     </div>
   );
 };

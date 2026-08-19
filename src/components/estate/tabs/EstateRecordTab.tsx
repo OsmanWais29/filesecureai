@@ -166,8 +166,16 @@ const SignificantDates = ({ estateId }: { estateId?: string }) => {
   );
 };
 
-export const EstateRecordTab = ({ estateId }: { estateId?: string }) => {
-  const [sub, setSub] = useState<SubTab>("record");
+export const EstateRecordTab = ({
+  estateId,
+  sub: controlledSub,
+}: {
+  estateId?: string;
+  /** When provided the module navigation drives the subpage and the local tabs are hidden. */
+  sub?: SubTab;
+}) => {
+  const [localSub, setSub] = useState<SubTab>("record");
+  const sub = controlledSub ?? localSub;
   const { data: row, isLoading } = useEstateRow(estateId);
   const updateEstate = useUpdateEstateRecord(estateId);
   const { values, onChange, setValues } = useRecordValues({});
@@ -192,20 +200,22 @@ export const EstateRecordTab = ({ estateId }: { estateId?: string }) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-1.5">
-        {SUB_TABS.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setSub(t.id)}
-            className={cn(
-              "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-              sub === t.id ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted"
-            )}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      {!controlledSub && (
+        <div className="flex flex-wrap gap-1.5">
+          {SUB_TABS.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setSub(t.id)}
+              className={cn(
+                "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                sub === t.id ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted"
+              )}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {sub === "record" && (
         <RecordForm

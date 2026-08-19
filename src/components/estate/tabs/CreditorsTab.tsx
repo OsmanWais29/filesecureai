@@ -28,7 +28,7 @@ const Empty = ({ label }: { label: string }) => (
   <p className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">{label}</p>
 );
 
-const CreditorList = ({ estateId }: { estateId?: string }) => {
+export const CreditorList = ({ estateId }: { estateId?: string }) => {
   const { data: creditors = [], isLoading } = useEstateCreditors(estateId);
   const save = useSaveCreditor(estateId);
   const [editing, setEditing] = useState<EstateCreditorRow | null>(null);
@@ -133,7 +133,7 @@ const CreditorList = ({ estateId }: { estateId?: string }) => {
   );
 };
 
-const ProofsOfClaim = ({ estateId }: { estateId?: string }) => {
+export const ProofsOfClaim = ({ estateId }: { estateId?: string }) => {
   const { data: creditors = [] } = useEstateCreditors(estateId);
   const filed = creditors.filter((c) => c.poc_filed);
   return (
@@ -166,7 +166,7 @@ const ProofsOfClaim = ({ estateId }: { estateId?: string }) => {
   );
 };
 
-const Meetings = ({ estateId }: { estateId?: string }) => {
+export const CreditorMeetings = ({ estateId }: { estateId?: string }) => {
   const { data: meetings = [] } = useEstateMeetings(estateId);
   const { data: creditors = [] } = useEstateCreditors(estateId);
   const save = useSaveMeeting(estateId);
@@ -219,7 +219,7 @@ const Meetings = ({ estateId }: { estateId?: string }) => {
   );
 };
 
-const Dividends = ({ estateId }: { estateId?: string }) => {
+export const CreditorDividends = ({ estateId }: { estateId?: string }) => {
   const { data: creditors = [] } = useEstateCreditors(estateId);
   const eligible = creditors.filter((c) => c.admitted_dividend > 0);
   const total = eligible.reduce((s, c) => s + c.admitted_dividend, 0);
@@ -255,8 +255,8 @@ export const CreditorsTab = ({ estateId }: { estateId?: string }) => {
       <SubTabs tabs={TABS} active={tab} onChange={setTab} />
       {tab === "creditors" && <CreditorList estateId={estateId} />}
       {tab === "poc" && <ProofsOfClaim estateId={estateId} />}
-      {tab === "meetings" && <Meetings estateId={estateId} />}
-      {tab === "dividends" && <Dividends estateId={estateId} />}
+      {tab === "meetings" && <CreditorMeetings estateId={estateId} />}
+      {tab === "dividends" && <CreditorDividends estateId={estateId} />}
     </div>
   );
 };
