@@ -1,5 +1,5 @@
-import { ReactNode, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { ReactNode, useCallback, useState } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -43,13 +43,22 @@ import {
   GeneratedDocumentsTab,
 } from "@/components/estate/tabs/GeneratedDocumentsTab";
 import { useEstate } from "@/data/estateStore";
+import { useEstateNavBadges } from "@/hooks/useEstateSignals";
+import { ChevronRight } from "lucide-react";
 
 const EstateWorkspacePage = () => {
   const { estateId } = useParams();
   const { estate, row, isLoading } = useEstate(estateId);
-  const [module, setModule] = useState("overview");
-  const [page, setPage] = useState("overview");
+  const [params, setParams] = useSearchParams();
+  const module = params.get("m") ?? "overview";
+  const page = params.get("p") ?? getModule(params.get("m") ?? "overview").pages[0].id;
   const [safaCollapsed, setSafaCollapsed] = useState(false);
+  const badges = useEstateNavBadges(estateId);
+
+  const navigateTo = useCallback(
+    (m: string, p: string) => setParams({ m, p }, { replace: false }),
+    [setParams]
+  );
 
   const activeModule = getModule(module);
   const activePage = getPage(module, page);
@@ -68,14 +77,17 @@ const EstateWorkspacePage = () => {
     const key = `${module}:${page}`;
     switch (key) {
       case "overview:overview":
-        return withHeading(<OverviewTab estate={estate} />);
+        return withHeading(<OverviewTab estate={estate} estateId={estateId} />);
 
-      case "record:record":
-      case "record:statutory":
-      case "record:dates":
+      case "record:details":
+      case "record:client":
+      case "record:conduct":
+      case "record:court":
         return withHeading(<EstateRecordTab estateId={estateId} sub={page as any} />);
-      case "record:additional":
+      case "record:history":
         return withHeading(<AdditionalInfoTab />);
+      case "record:communications":
+        return withHeading(<NotesTab estateId={estateId} />);
 
       case "office:history":
       default:
@@ -98,26 +110,32 @@ const EstateWorkspacePage = () => {
       case "workflow:counselling":
         return withHeading(<CounsellingTab estateId={estateId} />);
       case "workflow:closing":
-        return withHeading(<ClosingTab estateId={estateId} />);
+        return withHeading(
+          <div className="space-y-6">
+            <ClosingTab estateId={estateId} />
+            <DischargeTab estateId={estateId} />
+          </div>
+        );
 
       case "financials:summary":
         return <FinancialsSummary estateId={estateId} {...heading} />;
       case "financials:income":
         return withHeading(<IncomeTab estateId={estateId} />);
+      case "financials:payments":
+        return withHeading(<FinancialsTab estateId={estateId} />);
       case "financials:assets":
         return withHeading(<AssetsTab estateId={estateId} />);
       case "financials:trust":
         return withHeading(<FinancialsTab estateId={estateId} />);
       case "financials:tax":
         return withHeading(<TaxReturnsRegister estateId={estateId} />);
-      case "financials:distributions":
-        return withHeading(<CreditorDividends estateId={estateId} />);
 
       case "creditors:overview":
         return <CreditorsOverview estateId={estateId} {...heading} />;
       case "creditors:register":
         return withHeading(<CreditorList estateId={estateId} />);
       case "creditors:claims":
+      case "creditors:proofs":
         return withHeading(<ProofsOfClaim estateId={estateId} />);
       case "creditors:meetings":
         return withHeading(<CreditorMeetings estateId={estateId} />);
@@ -141,14 +159,10 @@ const EstateWorkspacePage = () => {
         return withHeading(<ComplianceTab estateId={estateId} />);
       case "compliance:exceptions":
         return <ComplianceExceptions estateId={estateId} {...heading} />;
-      case "compliance:deadlines":
-        return withHeading(<TimelineTab estateId={estateId} />);
-      case "compliance:discharge":
-        return withHeading(<DischargeTab estateId={estateId} />);
       case "compliance:audit":
-        return withHeading(<ActivityTab />);
+        return withHeading(<ActivityTab estateId={estateId} />);
       default:
-        return withHeading(<OverviewTab estate={estate} />);
+        return withHeading(<OverviewTab estate={estate} estateId={estateId} />);
     }
   };
 
@@ -189,15 +203,32 @@ const EstateWorkspacePage = () => {
         <EstateNav
           module={module}
           page={page}
-          onChange={(m, p) => {
-            setModule(m);
-            setPage(p);
-          }}
+          onChange={navigateTo}
+          moduleBadges={badges.modules}
+          pageBadges={badges.pages}
         />
         <div className="flex flex-1 overflow-hidden">
-          <div className="min-w-0 flex-1 overflow-auto px-6 py-5">{renderPage()}</div>
+          <div className="min-w-0 flex-1 overflow-auto px-6 py-5">
+            <nav className="mb-3 flex items-center gap-1 text-xs text-muted-foreground">
+              <Link to="/estates" className="hover:text-foreground">
+                Estates
+              </Link>
+              <ChevronRight className="h-3 w-3" />
+              <span>{estate.debtorName}</span>
+              <ChevronRight className="h-3 w-3" />
+              <span>{activeModule.label}</span>
+              {activeModule.pages.length > 1 && (
+                <>
+                  <ChevronRight className="h-3 w-3" />
+                  <span className="text-foreground">{activePage.label}</span>
+                </>
+              )}
+            </nav>
+            {renderPage()}
+          </div>
           <SafaEstatePanel
             estate={estate}
+            estateId={estateId}
             context={module}
             scope={`${activeModule.label} › ${activePage.label}`}
             collapsed={safaCollapsed}

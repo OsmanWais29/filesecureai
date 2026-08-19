@@ -5,9 +5,19 @@ interface Props {
   module: string;
   page: string;
   onChange: (module: string, page: string) => void;
+  /** Open, actionable item counts. Absent or zero renders no badge. */
+  moduleBadges?: Record<string, number>;
+  pageBadges?: Record<string, number>;
 }
 
-export const EstateNav = ({ module, page, onChange }: Props) => {
+const Count = ({ n }: { n?: number }) =>
+  n ? (
+    <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive/10 px-1 text-[10px] font-semibold text-destructive">
+      {n}
+    </span>
+  ) : null;
+
+export const EstateNav = ({ module, page, onChange, moduleBadges = {}, pageBadges = {} }: Props) => {
   const active = getModule(module);
   const showSub = active.pages.length > 1;
 
@@ -26,6 +36,7 @@ export const EstateNav = ({ module, page, onChange }: Props) => {
             )}
           >
             {m.label}
+            <Count n={moduleBadges[m.id]} />
           </button>
         ))}
       </nav>
@@ -44,6 +55,7 @@ export const EstateNav = ({ module, page, onChange }: Props) => {
               )}
             >
               {p.label}
+              <Count n={pageBadges[`${active.id}:${p.id}`]} />
             </button>
           ))}
         </div>
