@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { ReactNode, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -56,7 +56,7 @@ const EstateWorkspacePage = () => {
   const heading = { title: activePage.label, description: activePage.description };
 
   /** Pages whose component owns its own heading. */
-  const withHeading = (node: React.ReactNode) => (
+  const withHeading = (node: ReactNode) => (
     <>
       <PageHeading title={heading.title} description={heading.description} />
       {node}
