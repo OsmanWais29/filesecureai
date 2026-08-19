@@ -2,10 +2,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
+import { Link } from "react-router-dom";
 import { AlertTriangle, CalendarClock, CheckCircle2, ShieldCheck, XCircle } from "lucide-react";
 import { EstateSummary } from "@/data/estateWorkspace";
 import { useEstateCompliance } from "@/hooks/useEstateCompliance";
 import { statusTone } from "@/components/estate/StatusBadge";
+import { useEstateSignals } from "@/hooks/useEstateSignals";
+import { displayValue, isKnown, locationHref } from "@/data/estateFieldState";
 
 interface Props {
   estate: EstateSummary;
@@ -15,8 +18,14 @@ interface Props {
 
 export const EstateWorkspaceHeader = ({ estate, estateId, officeManager }: Props) => {
   const { rules, failing, warning, score } = useEstateCompliance(estateId);
-  const complianceLabel = failing.length ? "Blocked" : warning.length ? "Attention Required" : "Complete";
-  const openSignals = failing.length + warning.length;
+  const { canAssess, missing, signals, health, openSignals } = useEstateSignals(estateId);
+  const complianceLabel = !canAssess
+    ? "Blocked"
+    : failing.length
+      ? "Blocked"
+      : warning.length
+        ? "Human Decision Required"
+        : "Complete";
 
   return (
     <header className="border-b bg-card px-6 py-3">
@@ -40,6 +49,9 @@ export const EstateWorkspaceHeader = ({ estate, estateId, officeManager }: Props
             <ShieldCheck className="mr-1 h-3.5 w-3.5" />
             Compliance: {complianceLabel}
           </Badge>
+          <Badge variant="outline" className={statusTone(isKnown(health) ? "Complete" : "Blocked")}>
+            Health: {isKnown(health) ? `${displayValue(health)}%` : "Not assessable"}
+          </Badge>
 
           <Popover>
             <PopoverTrigger asChild>
@@ -49,11 +61,41 @@ export const EstateWorkspaceHeader = ({ estate, estateId, officeManager }: Props
               </Button>
             </PopoverTrigger>
             <PopoverContent align="end" className="w-96">
+              {!canAssess && (
+                <div className="mb-4 space-y-1.5 rounded-md border border-dashed p-3 text-sm">
+                  <div className="font-medium">Assessment blocked</div>
+                  {missing.map((m) => (
+                    <div key={m.label}>
+                      {m.to ? (
+                        <Link
+                          to={locationHref(estateId, m.to)}
+                          className="text-primary hover:underline"
+                        >
+                          {m.label}
+                        </Link>
+                      ) : (
+                        m.label
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="mb-3 flex items-center justify-between">
                 <span className="text-sm font-medium">Compliance score</span>
-                <span className="text-sm text-muted-foreground">{score}%</span>
+                <span className="text-sm text-muted-foreground">{canAssess ? `${score}%` : "—"}</span>
               </div>
-              <Progress value={score} className="mb-4 h-2" />
+              {canAssess && <Progress value={score} className="mb-4 h-2" />}
+              {signals.length > 0 && (
+                <ul className="mb-4 space-y-1.5 text-sm">
+                  {signals.slice(0, 5).map((s) => (
+                    <li key={s.id}>
+                      <Link to={locationHref(estateId, s.to)} className="text-primary hover:underline">
+                        {s.title}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
               <ul className="space-y-2 text-sm">
                 {rules.map((c) => (
                   <li key={c.id} className="flex items-start gap-2">
@@ -70,10 +112,12 @@ export const EstateWorkspaceHeader = ({ estate, estateId, officeManager }: Props
             </PopoverContent>
           </Popover>
 
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-            <CalendarClock className="h-3.5 w-3.5" />
-            Next Critical Date: {estate.nextDeadline}
-          </span>
+          {estate.nextDeadline && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <CalendarClock className="h-3.5 w-3.5" />
+              Next critical date: {estate.nextDeadline}
+            </span>
+          )}
         </div>
       </div>
     </header>
