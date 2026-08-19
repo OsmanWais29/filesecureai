@@ -33,9 +33,10 @@ import {
 import { cn } from "@/lib/utils";
 
 const SUB_TABS = [
-  { id: "record", label: "Estate Record" },
-  { id: "statutory", label: "Statutory Information" },
-  { id: "dates", label: "Significant Dates" },
+  { id: "details", label: "Details" },
+  { id: "client", label: "Client / Debtor" },
+  { id: "conduct", label: "Conduct" },
+  { id: "court", label: "Court & Jurisdiction" },
 ] as const;
 
 type SubTab = (typeof SUB_TABS)[number]["id"];
@@ -174,7 +175,7 @@ export const EstateRecordTab = ({
   /** When provided the module navigation drives the subpage and the local tabs are hidden. */
   sub?: SubTab;
 }) => {
-  const [localSub, setSub] = useState<SubTab>("record");
+  const [localSub, setSub] = useState<SubTab>("details");
   const sub = controlledSub ?? localSub;
   const { data: row, isLoading } = useEstateRow(estateId);
   const updateEstate = useUpdateEstateRecord(estateId);
@@ -217,37 +218,63 @@ export const EstateRecordTab = ({
         </div>
       )}
 
-      {sub === "record" && (
+      {sub === "details" && (
+        <div className="space-y-6">
         <RecordForm
           sections={[
             estateClassificationSection,
-            isCorporate ? corporateIdentitySection : consumerIdentitySection,
             estateDatesSection,
             estateResponsibilitySection,
-            estateCourtSection,
-            estateContactSection,
             estateArchiveSection,
           ]}
           values={values}
           onChange={onChange}
-          submitLabel={updateEstate.isPending ? "Saving…" : "Save Estate"}
+          submitLabel={updateEstate.isPending ? "Saving…" : "Save estate details"}
           onSubmit={(next: RecordValues) => updateEstate.mutate({ values: next })}
         />
+          <SignificantDates estateId={estateId} />
+        </div>
       )}
 
-      {sub === "statutory" && (
+      {sub === "client" && (
         <RecordForm
-          sections={statutoryInformationSections}
+          sections={[
+            isCorporate ? corporateIdentitySection : consumerIdentitySection,
+            estateContactSection,
+            statutoryInformationSections[0],
+          ]}
           values={statValues}
           onChange={onStatChange}
-          submitLabel={updateEstate.isPending ? "Saving…" : "Save statutory information"}
+          submitLabel={updateEstate.isPending ? "Saving…" : "Save debtor record"}
           onSubmit={(next: RecordValues) =>
             updateEstate.mutate({ values: next, eventType: "estate.updated" })
           }
         />
       )}
 
-      {sub === "dates" && <SignificantDates estateId={estateId} />}
+      {sub === "conduct" && (
+        <RecordForm
+          sections={[statutoryInformationSections[1]]}
+          values={statValues}
+          onChange={onStatChange}
+          submitLabel={updateEstate.isPending ? "Saving…" : "Save conduct record"}
+          onSubmit={(next: RecordValues) =>
+            updateEstate.mutate({ values: next, eventType: "estate.updated" })
+          }
+        />
+      )}
+
+      {sub === "court" && (
+        <RecordForm
+          sections={[estateCourtSection]}
+          values={values}
+          onChange={onChange}
+          submitLabel={updateEstate.isPending ? "Saving…" : "Save court information"}
+          onSubmit={(next: RecordValues) =>
+            updateEstate.mutate({ values: next, eventType: "estate.updated" })
+          }
+        />
+      )}
     </div>
   );
 };
