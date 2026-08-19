@@ -127,7 +127,7 @@ export const useEstateSignals = (estateId?: string) => {
           severity: "warning",
           status: "Overdue",
           title: `${money(Number(p.outstanding))} surplus outstanding`,
-          detail: `Period ${p.period_label ?? p.period_start ?? ""}.`.trim(),
+          detail: `Period ${p.period_label ?? p.month ?? p.year ?? ""}.`.trim(),
           source: "Rule engine · BIA s.68",
           to: { module: "financials", page: "income", focus: String(p.id) },
         })
