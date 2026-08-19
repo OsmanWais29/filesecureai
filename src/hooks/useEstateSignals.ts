@@ -135,15 +135,15 @@ export const useEstateSignals = (estateId?: string) => {
 
     // --- Trust accounting -----------------------------------------------------
     reconciliations
-      .filter((r: any) => !r.completed)
+      .filter((r: any) => String(r.status ?? "").toLowerCase() !== "approved")
       .forEach((r: any) =>
         signals.push({
           id: `recon-${r.id}`,
           severity: "exception",
           status: "Waiting",
-          title: `${r.period_label ?? "Bank"} reconciliation outstanding`,
+          title: `${r.statement_end ?? "Bank"} reconciliation outstanding`,
           detail:
-            r.difference != null
+            Number(r.difference || 0) !== 0
               ? `Unreconciled difference ${money(Number(r.difference))}.`
               : "Reconciliation has not been completed.",
           source: "Rule engine · Directive 5R",
