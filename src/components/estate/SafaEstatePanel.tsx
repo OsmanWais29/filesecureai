@@ -118,8 +118,10 @@ export const SafaEstatePanel = ({ estate, estateId, scope, collapsed, onToggle }
       )}
 
       <div className="mt-4 space-y-2">
-        <Button variant="outline" className="w-full justify-start" size="sm">
-          <MessageSquare className="mr-2 h-4 w-4" /> Ask this estate
+        <Button asChild variant="outline" className="w-full justify-start" size="sm">
+          <Link to={`/safa?estate=${estateId ?? ""}&scope=${encodeURIComponent(scope ?? "")}`}>
+            <MessageSquare className="mr-2 h-4 w-4" /> Ask this estate
+          </Link>
         </Button>
         <Button variant="outline" className="w-full justify-start" size="sm">
           <Wand2 className="mr-2 h-4 w-4" /> Prepare action
