@@ -45,6 +45,7 @@ import {
 import { useEstate } from "@/data/estateStore";
 import { useEstateNavBadges } from "@/hooks/useEstateSignals";
 import { ChevronRight } from "lucide-react";
+import { SignalDrilldown, DrilldownScope } from "@/components/estate/SignalDrilldown";
 
 const EstateWorkspacePage = () => {
   const { estateId } = useParams();
@@ -54,6 +55,7 @@ const EstateWorkspacePage = () => {
   const page = params.get("p") ?? getModule(params.get("m") ?? "overview").pages[0].id;
   const [safaCollapsed, setSafaCollapsed] = useState(false);
   const badges = useEstateNavBadges(estateId);
+  const [drilldown, setDrilldown] = useState<DrilldownScope | null>(null);
 
   const navigateTo = useCallback(
     (m: string, p: string) => setParams({ m, p }, { replace: false }),
@@ -199,6 +201,7 @@ const EstateWorkspacePage = () => {
           estate={estate}
           estateId={estateId}
           officeManager={(row as Record<string, any> | undefined)?.office_manager ?? undefined}
+          onDrilldown={(title) => setDrilldown({ title })}
         />
         <EstateNav
           module={module}
@@ -206,6 +209,7 @@ const EstateWorkspacePage = () => {
           onChange={navigateTo}
           moduleBadges={badges.modules}
           pageBadges={badges.pages}
+          onBadgeClick={(m, p) => setDrilldown({ module: m, page: p })}
         />
         <div className="flex flex-1 overflow-hidden">
           <div className="min-w-0 flex-1 overflow-auto px-6 py-5">
@@ -235,6 +239,7 @@ const EstateWorkspacePage = () => {
             onToggle={() => setSafaCollapsed((v) => !v)}
           />
         </div>
+        <SignalDrilldown estateId={estateId} scope={drilldown} onOpenChange={() => setDrilldown(null)} />
       </div>
     </MainLayout>
   );
