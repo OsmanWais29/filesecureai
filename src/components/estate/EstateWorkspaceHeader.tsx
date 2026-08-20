@@ -14,9 +14,11 @@ interface Props {
   estate: EstateSummary;
   estateId?: string;
   officeManager?: string;
+  /** Opens the signal drilldown drawer. */
+  onDrilldown?: (title?: string) => void;
 }
 
-export const EstateWorkspaceHeader = ({ estate, estateId, officeManager }: Props) => {
+export const EstateWorkspaceHeader = ({ estate, estateId, officeManager, onDrilldown }: Props) => {
   const { rules, failing, warning, score } = useEstateCompliance(estateId);
   const { canAssess, missing, signals, health, openSignals } = useEstateSignals(estateId);
   const complianceLabel = !canAssess
@@ -45,13 +47,23 @@ export const EstateWorkspaceHeader = ({ estate, estateId, officeManager }: Props
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="outline" className={statusTone(complianceLabel)}>
-            <ShieldCheck className="mr-1 h-3.5 w-3.5" />
-            Compliance: {complianceLabel}
-          </Badge>
-          <Badge variant="outline" className={statusTone(isKnown(health) ? "Complete" : "Blocked")}>
-            Health: {isKnown(health) ? `${displayValue(health)}%` : "Not assessable"}
-          </Badge>
+          <button type="button" onClick={() => onDrilldown?.("Compliance")} title="View underlying records">
+            <Badge
+              variant="outline"
+              className={`${statusTone(complianceLabel)} cursor-pointer hover:opacity-80`}
+            >
+              <ShieldCheck className="mr-1 h-3.5 w-3.5" />
+              Compliance: {complianceLabel}
+            </Badge>
+          </button>
+          <button type="button" onClick={() => onDrilldown?.("Estate health")} title="View underlying records">
+            <Badge
+              variant="outline"
+              className={`${statusTone(isKnown(health) ? "Complete" : "Blocked")} cursor-pointer hover:opacity-80`}
+            >
+              Health: {isKnown(health) ? `${displayValue(health)}%` : "Not assessable"}
+            </Badge>
+          </button>
 
           <Popover>
             <PopoverTrigger asChild>
@@ -109,6 +121,14 @@ export const EstateWorkspaceHeader = ({ estate, estateId, officeManager }: Props
                   </li>
                 ))}
               </ul>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4 w-full"
+                onClick={() => onDrilldown?.("Estate signals")}
+              >
+                View underlying records
+              </Button>
             </PopoverContent>
           </Popover>
 
