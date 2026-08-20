@@ -8,16 +8,46 @@ interface Props {
   /** Open, actionable item counts. Absent or zero renders no badge. */
   moduleBadges?: Record<string, number>;
   pageBadges?: Record<string, number>;
+  /** Opens the drilldown for the badge's scope. */
+  onBadgeClick?: (module: string, page?: string) => void;
 }
 
-const Count = ({ n }: { n?: number }) =>
+const Count = ({ n, onClick }: { n?: number; onClick?: () => void }) =>
   n ? (
-    <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive/10 px-1 text-[10px] font-semibold text-destructive">
+    <span
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      title={onClick ? "View underlying records" : undefined}
+      onClick={(e) => {
+        if (!onClick) return;
+        e.stopPropagation();
+        onClick();
+      }}
+      onKeyDown={(e) => {
+        if (!onClick) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          e.stopPropagation();
+          onClick();
+        }
+      }}
+      className={cn(
+        "ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive/10 px-1 text-[10px] font-semibold text-destructive",
+        onClick && "cursor-pointer hover:bg-destructive/20"
+      )}
+    >
       {n}
     </span>
   ) : null;
 
-export const EstateNav = ({ module, page, onChange, moduleBadges = {}, pageBadges = {} }: Props) => {
+export const EstateNav = ({
+  module,
+  page,
+  onChange,
+  moduleBadges = {},
+  pageBadges = {},
+  onBadgeClick,
+}: Props) => {
   const active = getModule(module);
   const showSub = active.pages.length > 1;
 
@@ -36,7 +66,7 @@ export const EstateNav = ({ module, page, onChange, moduleBadges = {}, pageBadge
             )}
           >
             {m.label}
-            <Count n={moduleBadges[m.id]} />
+            <Count n={moduleBadges[m.id]} onClick={onBadgeClick ? () => onBadgeClick(m.id) : undefined} />
           </button>
         ))}
       </nav>
@@ -55,7 +85,10 @@ export const EstateNav = ({ module, page, onChange, moduleBadges = {}, pageBadge
               )}
             >
               {p.label}
-              <Count n={pageBadges[`${active.id}:${p.id}`]} />
+              <Count
+                n={pageBadges[`${active.id}:${p.id}`]}
+                onClick={onBadgeClick ? () => onBadgeClick(active.id, p.id) : undefined}
+              />
             </button>
           ))}
         </div>
