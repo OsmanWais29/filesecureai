@@ -11,7 +11,10 @@ import { toast } from "sonner";
 // Import client portal pages
 import { ClientDashboard } from "@/pages/client-portal/Dashboard";
 import { ClientDocuments } from "@/pages/client-portal/Documents";
-import { ClientTasks } from "@/components/client-portal/ClientTasks";
+import { ClientTasksPage } from "@/pages/client-portal/Tasks";
+import { ClientBanking } from "@/pages/client-portal/Banking";
+import { ClientIncome } from "@/pages/client-portal/Income";
+import { ClientMessages } from "@/pages/client-portal/Messages";
 import { ClientAppointments } from "@/pages/client-portal/Appointments";
 import { ClientSupport } from "@/pages/client-portal/Support";
 import { ClientSettings } from "@/pages/client-portal/Settings";
