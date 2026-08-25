@@ -90,7 +90,9 @@ function App() {
           <Route path="/estates/:estateId" element={<AuthCheck><EstateWorkspacePage /></AuthCheck>} />
 
           {/* Client Portal Routes */}
-          <Route path="/client-portal/*" element={<AuthCheck><ClientPortal /></AuthCheck>} />
+          <Route path="/client-portal/invite/:token" element={<InviteActivation />} />
+          <Route path="/client-portal/*" element={<ClientPortalRoute />} />
+
           
           {/* Legacy Routes (redirect to appropriate portal) */}
           <Route path="/" element={<AuthCheck><HomePage /></AuthCheck>} />
