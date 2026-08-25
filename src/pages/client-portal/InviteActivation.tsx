@@ -42,13 +42,16 @@ const InviteActivation = () => {
     if (resolution.ok) markInvitationOpened(resolution.invitation.id);
   }, [resolution]);
 
-  if (!resolution.ok) {
-    const copy = {
-      invalid: "This invitation is not valid.",
-      expired: "This invitation has expired. Contact your trustee or request a new invitation.",
-      revoked: "This invitation is no longer active.",
-      suspended: "Access to this portal is currently suspended. Please contact your trustee.",
-    }[resolution.reason];
+  if (resolution.ok !== true) {
+    const reason = (resolution as { reason: string }).reason;
+    const copy =
+      ({
+        invalid: "This invitation is not valid.",
+        expired: "This invitation has expired. Contact your trustee or request a new invitation.",
+        revoked: "This invitation is no longer active.",
+        suspended: "Access to this portal is currently suspended. Please contact your trustee.",
+      } as Record<string, string>)[reason] ?? "This invitation is not valid.";
+
     return (
       <Shell>
         <h1 className="text-xl font-semibold">Invitation unavailable</h1>
