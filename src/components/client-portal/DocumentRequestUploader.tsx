@@ -29,10 +29,11 @@ export const DocumentRequestUploader = ({
       const doc = addClientDocument({
         title: file.name,
         category: request.requestType === "provide_bank_statement" ? "Bank statement" : "Requested document",
-        source: "client_upload",
+        source: "CLIENT_UPLOAD",
         uploadedAt: new Date().toISOString(),
         uploadedBy: "You",
-        sizeBytes: file.size,
+        sharedWithClient: true,
+        downloadable: true,
         state: "Under review",
         linkedRequestId: request.id,
       });
