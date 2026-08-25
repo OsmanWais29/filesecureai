@@ -1,129 +1,107 @@
-
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  LayoutDashboard, 
-  FileText, 
-  CheckSquare, 
-  Calendar, 
-  MessageSquare, 
+import {
+  LayoutDashboard,
+  FileText,
+  CheckSquare,
+  Calendar,
+  MessageSquare,
   Settings,
   ChevronLeft,
   ChevronRight,
-  Shield
+  Shield,
+  Landmark,
+  Wallet,
 } from "lucide-react";
+import { useClientPortal, openRequests } from "@/data/clientPortal/store";
 
 const navigationItems = [
-  {
-    title: "Dashboard",
-    href: "/client-portal",
-    icon: LayoutDashboard,
-    end: true
-  },
-  {
-    title: "Documents",
-    href: "/client-portal/documents",
-    icon: FileText
-  },
-  {
-    title: "Tasks",
-    href: "/client-portal/tasks",
-    icon: CheckSquare
-  },
-  {
-    title: "Appointments",
-    href: "/client-portal/appointments",
-    icon: Calendar
-  },
-  {
-    title: "Support",
-    href: "/client-portal/support",
-    icon: MessageSquare
-  },
-  {
-    title: "Settings",
-    href: "/client-portal/settings",
-    icon: Settings
-  }
+  { title: "Home", href: "/client-portal", icon: LayoutDashboard, end: true },
+  { title: "What I need to do", href: "/client-portal/tasks", icon: CheckSquare, badge: "requests" as const },
+  { title: "Documents", href: "/client-portal/documents", icon: FileText },
+  { title: "Banking & payments", href: "/client-portal/banking", icon: Landmark, badge: "banking" as const },
+  { title: "Income & expenses", href: "/client-portal/income", icon: Wallet, badge: "income" as const },
+  { title: "Appointments", href: "/client-portal/appointments", icon: Calendar },
+  { title: "Messages", href: "/client-portal/messages", icon: MessageSquare },
+  { title: "Settings", href: "/client-portal/settings", icon: Settings },
 ];
 
 export const ClientSidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const state = useClientPortal();
 
-  // Emit collapse event for layout to listen to
+  const counts = {
+    requests: openRequests(state).length,
+    banking: state.padAuthorizations.filter(
+      (p) => p.status === "action_required" || p.status === "account_connection_required" || p.status === "failed",
+    ).length,
+    income: state.incomePeriods.filter((p) => p.status === "Not started" || p.status === "Draft" || p.status === "More information needed").length,
+  };
+
   const handleToggleCollapse = () => {
     const newCollapsed = !collapsed;
     setCollapsed(newCollapsed);
-    
-    // Dispatch custom event for layout to listen to
-    window.dispatchEvent(new CustomEvent('clientSidebarCollapse', {
-      detail: { collapsed: newCollapsed }
-    }));
+    window.dispatchEvent(new CustomEvent("clientSidebarCollapse", { detail: { collapsed: newCollapsed } }));
   };
 
   return (
-    <div className={cn(
-      "flex flex-col h-full bg-white shadow-xl border-r border-blue-100 transition-all duration-300",
-      collapsed ? "w-20" : "w-72"
-    )}>
-      {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b border-blue-100">
+    <div
+      className={cn(
+        "flex h-full flex-col border-r bg-card shadow-sm transition-all duration-300",
+        collapsed ? "w-20" : "w-72",
+      )}
+    >
+      <div className="flex items-center justify-between border-b p-5">
         {!collapsed && (
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-              <Shield className="h-6 w-6 text-white" />
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+              <Shield className="h-5 w-5" />
             </div>
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Client Portal</h2>
-              <p className="text-sm text-blue-600 font-medium">SecureFiles AI</p>
+            <div className="min-w-0">
+              <h2 className="truncate text-base font-semibold text-foreground">Client Portal</h2>
+              <p className="truncate text-xs text-muted-foreground">SecureFiles AI</p>
             </div>
           </div>
         )}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleToggleCollapse}
-          className="ml-auto hover:bg-blue-50 text-blue-600 rounded-xl"
-        >
-          {collapsed ? (
-            <ChevronRight className="h-5 w-5" />
-          ) : (
-            <ChevronLeft className="h-5 w-5" />
-          )}
+        <Button variant="ghost" size="icon" onClick={handleToggleCollapse} className="ml-auto rounded-lg">
+          {collapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
         </Button>
       </div>
 
-      {/* Navigation */}
-      <ScrollArea className="flex-1 px-4 py-6">
-        <nav className="space-y-2">
+      <ScrollArea className="flex-1 px-3 py-4">
+        <nav className="space-y-1">
           {navigationItems.map((item) => {
-            const isActive = item.end 
-              ? location.pathname === item.href
-              : location.pathname.startsWith(item.href) && location.pathname !== "/client-portal";
+            const isActive = item.end
+              ? location.pathname === item.href || location.pathname === "/client-portal/"
+              : location.pathname.startsWith(item.href);
+            const count = item.badge ? counts[item.badge] : 0;
 
             return (
               <NavLink
                 key={item.href}
                 to={item.href}
                 className={cn(
-                  "flex items-center gap-4 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 hover:bg-blue-50 group",
-                  isActive 
-                    ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg" 
-                    : "text-gray-700 hover:text-blue-600",
-                  collapsed && "justify-center px-2"
+                  "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                  isActive ? "bg-primary text-primary-foreground shadow-sm" : "text-foreground/80 hover:bg-muted",
+                  collapsed && "justify-center px-2",
                 )}
                 title={collapsed ? item.title : undefined}
               >
-                <item.icon className={cn(
-                  "h-5 w-5 flex-shrink-0",
-                  isActive ? "text-white" : "text-gray-500 group-hover:text-blue-600"
-                )} />
-                {!collapsed && (
-                  <span className="font-medium">{item.title}</span>
+                <item.icon className="h-5 w-5 flex-shrink-0" />
+                {!collapsed && <span className="flex-1 truncate">{item.title}</span>}
+                {!collapsed && count > 0 && (
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-xs font-semibold",
+                      isActive ? "bg-primary-foreground/20 text-primary-foreground" : "bg-destructive/10 text-destructive",
+                    )}
+                  >
+                    {count}
+                  </span>
                 )}
               </NavLink>
             );
@@ -131,21 +109,8 @@ export const ClientSidebar = () => {
         </nav>
       </ScrollArea>
 
-      {/* Footer */}
-      <div className="p-4 border-t border-blue-100">
-        <div className={cn(
-          "text-center",
-          collapsed ? "text-xs" : "text-sm"
-        )}>
-          <div className="text-gray-500 font-medium">
-            {collapsed ? "v1.0" : "SecureFiles AI"}
-          </div>
-          {!collapsed && (
-            <div className="text-xs text-gray-400 mt-1">
-              Client Portal v1.0
-            </div>
-          )}
-        </div>
+      <div className="border-t p-4 text-center text-xs text-muted-foreground">
+        {collapsed ? "v1" : "Secure client access · SecureFiles AI"}
       </div>
     </div>
   );
