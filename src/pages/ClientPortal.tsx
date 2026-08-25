@@ -7,6 +7,7 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { AuthErrorDisplay } from "@/components/auth/AuthErrorDisplay";
 import { ClientPortalLayout } from "@/components/client-portal/ClientPortalLayout";
 import { toast } from "sonner";
+import { usePreviewSession } from "@/data/clientPortal/invitations";
 
 // Import client portal pages
 import { ClientDashboard } from "@/pages/client-portal/Dashboard";
@@ -27,8 +28,9 @@ const ClientPortal = () => {
   
   const { user, session, loading: authLoading, signOut } = useAuthState();
   const { role, loading: roleLoading, isClient: isUserClient } = useUserRole();
+  const previewSession = usePreviewSession();
 
-  const isLoading = authLoading || roleLoading;
+  const isLoading = (authLoading || roleLoading) && !previewSession;
 
   console.log('ClientPortal state:', {
     user: user?.email,
@@ -41,6 +43,7 @@ const ClientPortal = () => {
 
   // Strict authentication and role checking
   useEffect(() => {
+    if (previewSession) return;
     if (!isLoading) {
       console.log("ClientPortal: Auth state loaded", { 
         hasUser: !!user, 
@@ -76,7 +79,7 @@ const ClientPortal = () => {
 
       console.log("ClientPortal: User authenticated and has correct role");
     }
-  }, [user, session, role, isLoading, isUserClient, navigate]);
+  }, [user, session, role, isLoading, isUserClient, navigate, previewSession]);
 
   // Handler for signing out
   const handleSignOut = async () => {
@@ -108,14 +111,14 @@ const ClientPortal = () => {
   }
 
   // If not authenticated, redirect to client login
-  if (!session || !user) {
+  if (!previewSession && (!session || !user)) {
     navigate('/client-login', { replace: true });
     return null;
   }
 
   // Check if user has client role (strict enforcement)
-  const userType = user.user_metadata?.user_type;
-  if (userType === 'trustee' || (role && !isUserClient)) {
+  const userType = user?.user_metadata?.user_type;
+  if (!previewSession && (userType === 'trustee' || (role && !isUserClient))) {
     navigate('/login', { replace: true });
     return null;
   }
