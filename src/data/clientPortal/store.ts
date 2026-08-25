@@ -365,3 +365,78 @@ export const toClientSafeRequest = (r: ClientRequest) => {
 
 export const openRequests = (s: ClientPortalState) =>
   s.requests.filter((r) => r.status === "Action Required" || r.status === "More Information Needed" || r.status === "Reopened");
+
+/* ------------------------------------------------- estate context binding */
+
+export interface PortalEstateContext {
+  estateId: string;
+  clientId: string;
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  firmName?: string;
+  proceedingLabel?: string;
+  trusteeName?: string;
+}
+
+/**
+ * Binds the demo portal state to the estate currently being administered.
+ *
+ * Preview-only concern: the seeded portal collections carry the demo estate id,
+ * so provisioning a portal from any estate re-points every record at that estate.
+ * In production the invitation itself establishes estateId/clientId server-side
+ * and no re-pointing is required.
+ */
+export function bindPortalToEstate(ctx: PortalEstateContext) {
+  const re = <T extends { estateId: string }>(rows: T[]) => rows.map((r) => ({ ...r, estateId: ctx.estateId }));
+  commit({
+    ...state,
+    profile: {
+      ...state.profile,
+      id: ctx.clientId,
+      estateId: ctx.estateId,
+      name: ctx.name || state.profile.name,
+      email: ctx.email || state.profile.email,
+      phone: ctx.phone || state.profile.phone,
+      address: ctx.address || state.profile.address,
+      firmName: ctx.firmName || state.profile.firmName,
+      proceedingLabel: ctx.proceedingLabel || state.profile.proceedingLabel,
+      trusteeName: ctx.trusteeName || state.profile.trusteeName,
+    },
+    requests: re(state.requests).map((r) => ({ ...r, clientId: ctx.clientId })),
+    events: re(state.events),
+    connections: re(state.connections),
+    consents: re(state.consents),
+    imports: re(state.imports),
+    statements: re(state.statements),
+    transactions: re(state.transactions),
+    padAuthorizations: re(state.padAuthorizations),
+    schedules: re(state.schedules),
+    payments: re(state.payments),
+    documents: re(state.documents),
+    incomePeriods: re(state.incomePeriods),
+    messages: re(state.messages),
+    appointments: re(state.appointments),
+    notifications: re(state.notifications),
+  });
+}
+
+/** Staff-side welcome flag consumed once by the client portal dashboard. */
+const WELCOME_KEY = "securefiles.clientPortal.welcomePending";
+export const setWelcomePending = () => {
+  welcomeCache = null;
+  try { window.localStorage.setItem(WELCOME_KEY, "1"); } catch { /* ignore */ }
+};
+let welcomeCache: boolean | null = null;
+export const consumeWelcomePending = () => {
+  if (welcomeCache !== null) return welcomeCache;
+  try {
+    const v = window.localStorage.getItem(WELCOME_KEY);
+    if (v) window.localStorage.removeItem(WELCOME_KEY);
+    welcomeCache = Boolean(v);
+    return welcomeCache;
+  } catch {
+    return false;
+  }
+};

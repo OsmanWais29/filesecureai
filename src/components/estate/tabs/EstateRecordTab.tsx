@@ -31,6 +31,7 @@ import {
   useUpdateEstateRecord,
 } from "@/hooks/useEstateRecords";
 import { cn } from "@/lib/utils";
+import { ClientPortalPanel } from "@/components/estate/client-portal/ClientPortalPanel";
 
 const SUB_TABS = [
   { id: "details", label: "Details" },
@@ -237,6 +238,7 @@ export const EstateRecordTab = ({
       )}
 
       {sub === "client" && (
+        <div className="space-y-6">
         <RecordForm
           sections={[
             isCorporate ? corporateIdentitySection : consumerIdentitySection,
@@ -250,6 +252,8 @@ export const EstateRecordTab = ({
             updateEstate.mutate({ values: next, eventType: "estate.updated" })
           }
         />
+          <ClientPortalPanel estateId={estateId} />
+        </div>
       )}
 
       {sub === "conduct" && (

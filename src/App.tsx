@@ -41,10 +41,17 @@ import TrusteeCalendarPage from './pages/trustee/CalendarPage';
 
 // Client Portal Pages
 import ClientPortal from './pages/ClientPortal';
+import InviteActivation from './pages/client-portal/InviteActivation';
+import { hasPreviewSession } from './data/clientPortal/invitations';
 
 // Authentication Pages
 import TrusteeLogin from './pages/auth/TrusteeLogin';
 import ClientLogin from './pages/auth/ClientLogin';
+
+/** Preview-activated portals bypass trustee auth; everything else stays gated. */
+const ClientPortalRoute = () =>
+  hasPreviewSession() ? <ClientPortal /> : <AuthCheck><ClientPortal /></AuthCheck>;
+
 
 function App() {
   return (
@@ -90,7 +97,9 @@ function App() {
           <Route path="/estates/:estateId" element={<AuthCheck><EstateWorkspacePage /></AuthCheck>} />
 
           {/* Client Portal Routes */}
-          <Route path="/client-portal/*" element={<AuthCheck><ClientPortal /></AuthCheck>} />
+          <Route path="/client-portal/invite/:token" element={<InviteActivation />} />
+          <Route path="/client-portal/*" element={<ClientPortalRoute />} />
+
           
           {/* Legacy Routes (redirect to appropriate portal) */}
           <Route path="/" element={<AuthCheck><HomePage /></AuthCheck>} />
