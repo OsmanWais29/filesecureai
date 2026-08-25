@@ -10,6 +10,7 @@ import {
   activateInvitation,
   markInvitationOpened,
   resolveInvitation,
+  type InvitationResolution,
 } from "@/data/clientPortal/invitations";
 import { setWelcomePending } from "@/data/clientPortal/store";
 import { supabase } from "@/lib/supabase";
@@ -29,7 +30,7 @@ const Shell = ({ children }: { children: React.ReactNode }) => (
 const InviteActivation = () => {
   const { token = "" } = useParams();
   const navigate = useNavigate();
-  const resolution = useMemo(() => resolveInvitation(token), [token]);
+  const resolution = useMemo<InvitationResolution>(() => resolveInvitation(token), [token]);
   const [step, setStep] = useState(0);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
