@@ -127,7 +127,10 @@ const ClientPortal = () => {
       <Routes>
         <Route index element={<ClientDashboard />} />
         <Route path="documents" element={<ClientDocuments />} />
-        <Route path="tasks" element={<ClientTasks />} />
+        <Route path="tasks" element={<ClientTasksPage />} />
+        <Route path="banking" element={<ClientBanking />} />
+        <Route path="income" element={<ClientIncome />} />
+        <Route path="messages" element={<ClientMessages />} />
         <Route path="appointments" element={<ClientAppointments />} />
         <Route path="support" element={<ClientSupport />} />
         <Route path="settings" element={<ClientSettings />} />
