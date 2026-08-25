@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { useClientPortal, openRequests } from "@/data/clientPortal/store";
+import { useClientPortal, openRequests, consumeWelcomePending } from "@/data/clientPortal/store";
 import { ClientPageHeading, ClientStatusBadge, EmptyState, formatDate, formatMoney } from "@/components/client-portal/primitives";
 import { ActionRequiredCard } from "@/components/client-portal/ClientRequestCard";
 import { ClientRequestDetail } from "@/components/client-portal/ClientRequestDetail";
@@ -15,6 +15,7 @@ export const ClientDashboard = () => {
   const state = useClientPortal();
   const navigate = useNavigate();
   const [selected, setSelected] = useState<ClientRequest | null>(null);
+  const [showWelcome, setShowWelcome] = useState(() => consumeWelcomePending());
 
   const actionable = openRequests(state);
   const inReview = state.requests.filter((r) => r.status === "Submitted" || r.status === "Under Review");
@@ -35,6 +36,25 @@ export const ClientDashboard = () => {
 
   return (
     <div className="mx-auto max-w-5xl">
+      {showWelcome && (
+        <Card className="mb-6 border-primary/30">
+          <CardHeader>
+            <CardTitle>Welcome, {state.profile.name.split(" ")[0]}. Your secure portal is ready.</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
+              <li>Review what your trustee needs from you</li>
+              <li>Complete any outstanding documents or income statements</li>
+              <li>Connect your bank only if requested</li>
+              <li>Review automatic payment authorization if requested</li>
+            </ol>
+            <div className="flex gap-2">
+              <Button onClick={() => navigate("/client-portal/tasks")}>Go to my tasks</Button>
+              <Button variant="ghost" onClick={() => setShowWelcome(false)}>Dismiss</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       <ClientPageHeading
         title={`Hello, ${state.profile.name.split(" ")[0]}`}
         description={`${state.profile.proceedingLabel} · Your trustee is ${state.profile.trusteeName}. Everything you need to do is listed below.`}
