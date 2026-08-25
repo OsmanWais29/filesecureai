@@ -425,13 +425,17 @@ export function bindPortalToEstate(ctx: PortalEstateContext) {
 /** Staff-side welcome flag consumed once by the client portal dashboard. */
 const WELCOME_KEY = "securefiles.clientPortal.welcomePending";
 export const setWelcomePending = () => {
+  welcomeCache = null;
   try { window.localStorage.setItem(WELCOME_KEY, "1"); } catch { /* ignore */ }
 };
+let welcomeCache: boolean | null = null;
 export const consumeWelcomePending = () => {
+  if (welcomeCache !== null) return welcomeCache;
   try {
     const v = window.localStorage.getItem(WELCOME_KEY);
     if (v) window.localStorage.removeItem(WELCOME_KEY);
-    return Boolean(v);
+    welcomeCache = Boolean(v);
+    return welcomeCache;
   } catch {
     return false;
   }
