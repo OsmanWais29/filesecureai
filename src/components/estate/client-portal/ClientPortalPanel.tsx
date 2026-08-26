@@ -804,14 +804,17 @@ export const ClientPortalPanel = ({ estateId }: { estateId?: string }) => {
       {invitation && (
         <>
           <ClientRequestsWorkspace
+            estateId={estateId}
             staffName={trusteeName}
             onCompose={() => {
               setComposerDefaults(undefined);
               setComposerOpen(true);
             }}
           />
+          <PortalSubmissionsReview estateId={estateId} staffName={trusteeName} />
           <BankingPayments onRequest={requestFor} />
           <ActivitySummary estateId={estateId} />
+
         </>
       )}
 
