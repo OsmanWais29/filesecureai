@@ -737,13 +737,22 @@ export const ClientPortalPanel = ({ estateId }: { estateId?: string }) => {
                   </Button>
                   <Button
                     variant="outline"
-                    onClick={() => {
-                      sendClientMessage("Your trustee has sent you a secure message.");
-                      toast.success("Secure message sent.");
+                    onClick={async () => {
+                      try {
+                        await staffMessage.mutateAsync({
+                          estateId,
+                          body: "Your trustee has sent you a secure message.",
+                          staffName: trusteeName,
+                        });
+                        toast.success("Secure message sent.");
+                      } catch (e) {
+                        toast.error("Message not sent", { description: (e as Error).message });
+                      }
                     }}
                   >
                     Send secure message
                   </Button>
+
                 </>
               )}
               {invitation.status === "suspended" ? (
