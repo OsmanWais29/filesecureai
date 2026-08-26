@@ -573,3 +573,60 @@ export function useMyPortalAccess() {
 
 /** No real transactional email backend is configured for this project yet. */
 export const EMAIL_DELIVERY_CONFIGURED = false;
+
+/* ------------------------------------------- invite-specific account creation */
+
+export type CreatePortalAccountResult =
+  | { ok: true; status: "created" | "existing_account"; email: string }
+  | {
+      ok: false;
+      reason: "invalid" | "expired" | "revoked" | "suspended" | "used" | "rate_limited" | "server_error";
+    };
+
+/**
+ * Creates the client's auth account server-side from the opaque invitation
+ * token. Possession of the invitation link proves control of the invited
+ * mailbox, so the account is created already confirmed and NO Supabase
+ * confirmation email is sent. Existing accounts are never modified.
+ */
+export async function createPortalAccount(input: {
+  token: string;
+  fullName: string;
+  password: string;
+}): Promise<CreatePortalAccountResult> {
+  const { data, error } = await supabase.functions.invoke("create-client-portal-account", {
+    body: { token: input.token, fullName: input.fullName, password: input.password },
+  });
+
+  if (data && typeof data === "object" && "status" in (data as Row)) {
+    const payload = data as Row;
+    return { ok: true, status: payload.status, email: payload.email };
+  }
+
+  // Non-2xx responses surface as FunctionsHttpError with the body on `context`.
+  const ctx = (error as { context?: Response } | null)?.context;
+  if (ctx && typeof ctx.json === "function") {
+    try {
+      const payload = (await ctx.json()) as Row;
+      const reason = payload?.error;
+      if (
+        reason === "expired" ||
+        reason === "revoked" ||
+        reason === "suspended" ||
+        reason === "used" ||
+        reason === "rate_limited"
+      ) {
+        return { ok: false, reason };
+      }
+      if (reason === "invalid" || reason === "invalid_name" || reason === "invalid_password") {
+        return { ok: false, reason: "invalid" };
+      }
+    } catch {
+      /* fall through */
+    }
+  }
+  if (data && typeof data === "object" && "error" in (data as Row)) {
+    return { ok: false, reason: "invalid" };
+  }
+  return { ok: false, reason: "server_error" };
+}
