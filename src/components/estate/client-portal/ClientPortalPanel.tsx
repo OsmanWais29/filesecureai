@@ -548,6 +548,9 @@ export const ClientPortalPanel = ({ estateId }: { estateId?: string }) => {
   const { data: row } = useEstateRow(estateId);
   const invitation = useEstateInvitation(estateId);
   const portal = useClientPortal();
+  const { data: staffRequests = [] } = useStaffRequests(estateId);
+  const staffMessage = useStaffMessage();
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
   const [composerDefaults, setComposerDefaults] = useState<Record<string, unknown> | undefined>();
