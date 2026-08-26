@@ -7,7 +7,7 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { AuthErrorDisplay } from "@/components/auth/AuthErrorDisplay";
 import { ClientPortalLayout } from "@/components/client-portal/ClientPortalLayout";
 import { toast } from "sonner";
-import { usePreviewSession } from "@/data/clientPortal/invitations";
+import { usePreviewSession, useMyPortalAccess, recordPortalLogin } from "@/data/clientPortal/invitations";
 
 // Import client portal pages
 import { ClientDashboard } from "@/pages/client-portal/Dashboard";
@@ -29,6 +29,11 @@ const ClientPortal = () => {
   const { user, session, loading: authLoading, signOut } = useAuthState();
   const { role, loading: roleLoading, isClient: isUserClient } = useUserRole();
   const previewSession = usePreviewSession();
+  const { loading: accessLoading, estateIds } = useMyPortalAccess();
+
+  useEffect(() => {
+    if (user) void recordPortalLogin();
+  }, [user]);
 
   const isLoading = (authLoading || roleLoading) && !previewSession;
 
@@ -121,6 +126,27 @@ const ClientPortal = () => {
   if (!previewSession && (userType === 'trustee' || (role && !isUserClient))) {
     navigate('/login', { replace: true });
     return null;
+  }
+
+  // Authenticated client with no estate granted yet.
+  if (!previewSession && user && !accessLoading && estateIds.length === 0) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
+        <div className="w-full max-w-md rounded-xl border bg-card p-8 text-center shadow-sm">
+          <h1 className="text-xl font-semibold">No file connected yet</h1>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Your account is ready, but it is not linked to a file yet. Open the secure invitation your trustee sent you
+            to connect your account. If you have not received one, contact your trustee's office.
+          </p>
+          <button
+            className="mt-6 text-sm text-primary underline-offset-2 hover:underline"
+            onClick={handleSignOut}
+          >
+            Sign out
+          </button>
+        </div>
+      </div>
+    );
   }
 
   // Show client portal dashboard for authenticated clients

@@ -37,7 +37,9 @@ import {
   EMAIL_DELIVERY_CONFIGURED,
   INVITATION_STATUS_LABEL,
   createInvitation,
+  changeInvitationEmail,
   inviteUrl,
+  mintedTokenFor,
   markInvitationSent,
   restorePortalAccess,
   revokeInvitation,
@@ -128,26 +130,34 @@ const ProvisioningDialog = ({
     }, 200);
   };
 
-  const create = () => {
+  const [creating, setCreating] = useState(false);
+
+  const create = async () => {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
       toast.error("Enter a valid email address for the invitation.");
       return;
     }
-    const inv = createInvitation({
-      estateId: context.estateId,
-      clientId: `client-${context.estateId}`,
-      clientName: context.clientName,
-      invitedEmail: email,
-      firmName: context.firmName,
-      officeName: context.officeName,
-      proceedingLabel: context.proceedingLabel,
-      trusteeName: context.trusteeName,
-      createdByUserId: "staff-current",
-      createdByName: context.trusteeName || "Trustee staff",
-    });
-    setCreated(inv);
-    onCreated(inv);
-    setStep(3);
+    setCreating(true);
+    try {
+      const inv = await createInvitation({
+        estateId: context.estateId,
+        clientId: `client-${context.estateId}`,
+        clientName: context.clientName,
+        invitedEmail: email,
+        firmName: context.firmName,
+        officeName: context.officeName,
+        proceedingLabel: context.proceedingLabel,
+        trusteeName: context.trusteeName,
+        createdByName: context.trusteeName || "Trustee staff",
+      });
+      setCreated(inv);
+      onCreated(inv);
+      setStep(3);
+    } catch (e) {
+      toast.error("Could not create the invitation. Confirm you have trustee permissions and try again.");
+    } finally {
+      setCreating(false);
+    }
   };
 
   return (
@@ -238,7 +248,7 @@ const ProvisioningDialog = ({
             </div>
             <div className="space-y-1.5">
               <Label>Secure link</Label>
-              <Input readOnly value={inviteUrl(created.tokenReference)} onFocus={(e) => e.currentTarget.select()} />
+              <Input readOnly value={inviteUrl(created.tokenReference ?? "")} onFocus={(e) => e.currentTarget.select()} />
               <p className="text-xs text-muted-foreground">
                 The link contains an opaque token only — no estate, client or email data.
               </p>
@@ -255,7 +265,9 @@ const ProvisioningDialog = ({
               {step < 2 ? (
                 <Button onClick={() => setStep(step + 1)}>Continue</Button>
               ) : (
-                <Button onClick={create}>Create secure invitation</Button>
+                <Button onClick={create} disabled={creating}>
+                  {creating ? "Creating…" : "Create secure invitation"}
+                </Button>
               )}
             </>
           ) : (
@@ -263,7 +275,7 @@ const ProvisioningDialog = ({
               <Button
                 variant="outline"
                 onClick={() => {
-                  navigator.clipboard?.writeText(inviteUrl(created!.tokenReference));
+                  navigator.clipboard?.writeText(inviteUrl(created!.tokenReference ?? ""));
                   toast.success("Secure invitation link copied.");
                 }}
               >
@@ -509,6 +521,7 @@ export const ClientPortalPanel = ({ estateId }: { estateId?: string }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
   const [composerDefaults, setComposerDefaults] = useState<Record<string, unknown> | undefined>();
+  const [emailDraft, setEmailDraft] = useState("");
 
   const values = useMemo(() => rowToValues(row), [row]);
   const clientName = row ? derivedDebtorName(values) : "Client";
@@ -546,7 +559,8 @@ export const ClientPortalPanel = ({ estateId }: { estateId?: string }) => {
   };
 
   const notCreated = !invitation;
-  const link = invitation ? inviteUrl(invitation.tokenReference) : "";
+  const mintedToken = invitation ? mintedTokenFor(invitation.id) : undefined;
+  const link = mintedToken ? inviteUrl(mintedToken) : "";
 
   return (
     <div className="space-y-4">
@@ -619,19 +633,49 @@ export const ClientPortalPanel = ({ estateId }: { estateId?: string }) => {
 
             <div className="space-y-1.5">
               <Label className="text-xs">Secure invitation link</Label>
-              <div className="flex gap-2">
-                <Input readOnly value={link} onFocus={(e) => e.currentTarget.select()} className="font-mono text-xs" />
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    navigator.clipboard?.writeText(link);
-                    toast.success("Secure invitation link copied.");
-                  }}
-                >
-                  <Copy className="mr-1.5 h-4 w-4" /> Copy link
-                </Button>
-              </div>
+              {link ? (
+                <div className="flex gap-2">
+                  <Input readOnly value={link} onFocus={(e) => e.currentTarget.select()} className="font-mono text-xs" />
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      navigator.clipboard?.writeText(link);
+                      toast.success("Secure invitation link copied.");
+                    }}
+                  >
+                    <Copy className="mr-1.5 h-4 w-4" /> Copy link
+                  </Button>
+                </div>
+              ) : (
+                <p className="rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+                  The secure link is shown once, at creation. Only a one-way fingerprint is stored, so it cannot be
+                  displayed again. Issue a new invitation if the client needs another link.
+                </p>
+              )}
             </div>
+
+            {invitation.status !== "active" && invitation.status !== "revoked" && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">Change client email (before activation)</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={emailDraft || invitation.invitedEmail}
+                    onChange={(e) => setEmailDraft(e.target.value)}
+                    placeholder="client@example.com"
+                  />
+                  <Button
+                    variant="outline"
+                    disabled={!emailDraft || emailDraft.trim().toLowerCase() === invitation.invitedEmail}
+                    onClick={async () => {
+                      await changeInvitationEmail(invitation.id, estateId, emailDraft, trusteeName);
+                      toast.success("Invitation email updated. Send a new invitation to that address.");
+                    }}
+                  >
+                    Update
+                  </Button>
+                </div>
+              </div>
+            )}
 
             <Separator />
 
@@ -669,16 +713,16 @@ export const ClientPortalPanel = ({ estateId }: { estateId?: string }) => {
                 </>
               )}
               {invitation.status === "suspended" ? (
-                <Button variant="outline" onClick={() => restorePortalAccess(invitation.id, trusteeName)}>
+                <Button variant="outline" onClick={() => restorePortalAccess(invitation.id, trusteeName, estateId)}>
                   Restore access
                 </Button>
               ) : (
                 <>
-                  <Button variant="outline" onClick={() => suspendPortalAccess(invitation.id, trusteeName)}>
+                  <Button variant="outline" onClick={() => suspendPortalAccess(invitation.id, trusteeName, estateId)}>
                     Suspend portal access
                   </Button>
                   {invitation.status !== "revoked" && (
-                    <Button variant="ghost" className="text-destructive" onClick={() => revokeInvitation(invitation.id, trusteeName)}>
+                    <Button variant="ghost" className="text-destructive" onClick={() => revokeInvitation(invitation.id, trusteeName, estateId)}>
                       <Ban className="mr-1.5 h-4 w-4" /> Revoke invitation
                     </Button>
                   )}
