@@ -282,12 +282,16 @@ export async function createInvitation(input: {
   const createdBy = auth?.user?.id;
   if (!createdBy) throw new Error("You must be signed in to create a client portal invitation.");
 
+  const isUuid = (v?: string) =>
+    !!v && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+
   const { data, error } = await supabase
     .from("client_portal_invitations")
     .insert({
       estate_id: input.estateId,
-      client_id: input.clientId ?? null,
+      client_id: isUuid(input.clientId) ? input.clientId! : null,
       invited_email: input.invitedEmail.trim().toLowerCase(),
+
       invited_name: input.clientName,
       token_hash: tokenHash,
       status: "created",

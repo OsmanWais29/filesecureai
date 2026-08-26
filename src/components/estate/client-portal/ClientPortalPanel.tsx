@@ -146,7 +146,6 @@ const ProvisioningDialog = ({
     try {
       const inv = await createInvitation({
         estateId: context.estateId,
-        clientId: `client-${context.estateId}`,
         clientName: context.clientName,
         invitedEmail: email,
         firmName: context.firmName,
@@ -159,10 +158,17 @@ const ProvisioningDialog = ({
       onCreated(inv);
       setStep(3);
     } catch (e) {
-      toast.error("Could not create the invitation. Confirm you have trustee permissions and try again.");
+      const err = e as { code?: string; message?: string };
+      console.error("createInvitation failed", err);
+      toast.error(
+        err?.code === "42501"
+          ? "You are not listed as staff on this estate, so the invitation was blocked."
+          : `Could not create the invitation: ${err?.message ?? "unknown error"}`,
+      );
     } finally {
       setCreating(false);
     }
+
   };
 
   return (
