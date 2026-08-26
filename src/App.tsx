@@ -48,9 +48,12 @@ import { hasPreviewSession } from './data/clientPortal/invitations';
 import TrusteeLogin from './pages/auth/TrusteeLogin';
 import ClientLogin from './pages/auth/ClientLogin';
 
-/** Preview-activated portals bypass trustee auth; everything else stays gated. */
-const ClientPortalRoute = () =>
-  hasPreviewSession() ? <ClientPortal /> : <AuthCheck><ClientPortal /></AuthCheck>;
+/** Real clients always authenticate; authorization comes from client_portal_access. */
+const ClientPortalRoute = () => (
+  <AuthCheck>
+    <ClientPortal />
+  </AuthCheck>
+);
 
 
 function App() {
