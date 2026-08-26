@@ -128,8 +128,20 @@ const ClientPortal = () => {
     return null;
   }
 
+  // Resolving server-authorized access rows.
+  if (user && accessLoading) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
+        <div className="text-center">
+          <LoadingSpinner size="large" />
+          <p className="mt-4 text-gray-600">Loading your file…</p>
+        </div>
+      </div>
+    );
+  }
+
   // Authenticated client with no estate granted yet.
-  if (user && !accessLoading && estateIds.length === 0) {
+  if (user && estateIds.length === 0) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
         <div className="w-full max-w-md rounded-xl border bg-card p-8 text-center shadow-sm">
