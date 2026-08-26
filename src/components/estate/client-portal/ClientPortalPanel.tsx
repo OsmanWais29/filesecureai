@@ -840,9 +840,11 @@ export const ClientPortalPanel = ({ estateId }: { estateId?: string }) => {
       <ClientRequestComposer
         open={composerOpen}
         onOpenChange={setComposerOpen}
+        estateId={estateId}
         staffName={trusteeName}
         defaults={composerDefaults as never}
       />
+
     </div>
   );
 };
