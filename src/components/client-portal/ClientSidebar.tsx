@@ -15,15 +15,19 @@ import {
   Shield,
   Landmark,
   Wallet,
+  UserRound,
 } from "lucide-react";
-import { useClientPortal, openRequests } from "@/data/clientPortal/store";
+import { usePortalSession } from "@/data/clientPortal/session";
+import { openRequestList, usePortalIntake, usePortalIncome, usePortalRequests } from "@/data/clientPortal/db";
+import { INTAKE_SECTIONS } from "@/data/clientPortal/intakeSpec";
 
 const navigationItems = [
   { title: "Home", href: "/client-portal", icon: LayoutDashboard, end: true },
   { title: "What I need to do", href: "/client-portal/tasks", icon: CheckSquare, badge: "requests" as const },
+  { title: "My information", href: "/client-portal/information", icon: UserRound, badge: "intake" as const },
   { title: "Documents", href: "/client-portal/documents", icon: FileText },
-  { title: "Banking & payments", href: "/client-portal/banking", icon: Landmark, badge: "banking" as const },
   { title: "Income & expenses", href: "/client-portal/income", icon: Wallet, badge: "income" as const },
+  { title: "Banking & payments", href: "/client-portal/banking", icon: Landmark },
   { title: "Appointments", href: "/client-portal/appointments", icon: Calendar },
   { title: "Messages", href: "/client-portal/messages", icon: MessageSquare },
   { title: "Settings", href: "/client-portal/settings", icon: Settings },
@@ -32,15 +36,20 @@ const navigationItems = [
 export const ClientSidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
-  const state = useClientPortal();
+  const { session } = usePortalSession();
+  const { data: requests = [] } = usePortalRequests(session?.estateId);
+  const { data: intake = [] } = usePortalIntake(session?.estateId);
+  const { data: income = [] } = usePortalIncome(session?.estateId);
 
   const counts = {
-    requests: openRequests(state).length,
-    banking: state.padAuthorizations.filter(
-      (p) => p.status === "action_required" || p.status === "account_connection_required" || p.status === "failed",
-    ).length,
-    income: state.incomePeriods.filter((p) => p.status === "Not started" || p.status === "Draft" || p.status === "More information needed").length,
+    requests: openRequestList(requests).length,
+    intake: INTAKE_SECTIONS.filter((s) => {
+      const r = intake.find((x) => x.sectionKey === s.key);
+      return !r || r.status === "not_started" || r.status === "draft" || r.status === "changes_requested";
+    }).length,
+    income: income.filter((p) => p.status === "draft" || p.status === "changes_requested").length,
   };
+
 
   const handleToggleCollapse = () => {
     const newCollapsed = !collapsed;

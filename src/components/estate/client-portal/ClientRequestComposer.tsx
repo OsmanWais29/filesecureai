@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { createClientRequest } from "@/data/clientPortal/store";
+import { useCreateStaffRequest } from "@/data/clientPortal/staff";
 import {
   ClientPriority,
   ClientRequestType,
@@ -31,6 +31,7 @@ const PRIORITIES: ClientPriority[] = ["Standard", "Important", "Time sensitive"]
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  estateId: string;
   staffName?: string;
   defaults?: Partial<{
     requestType: ClientRequestType;
@@ -43,7 +44,7 @@ interface Props {
 }
 
 /** Trustee-side composer that turns an internal need into a client-facing request. */
-export const ClientRequestComposer = ({ open, onOpenChange, staffName = "Trustee staff", defaults }: Props) => {
+export const ClientRequestComposer = ({ open, onOpenChange, estateId, staffName = "Trustee staff", defaults }: Props) => {
   const [requestType, setRequestType] = useState<ClientRequestType>(defaults?.requestType ?? "upload_document");
   const [title, setTitle] = useState(defaults?.title ?? "");
   const [description, setDescription] = useState(defaults?.description ?? "");
@@ -52,6 +53,7 @@ export const ClientRequestComposer = ({ open, onOpenChange, staffName = "Trustee
   const [priority, setPriority] = useState<ClientPriority>("Standard");
   const [docType, setDocType] = useState(defaults?.requestedDocumentType ?? "");
   const [staffNote, setStaffNote] = useState("");
+  const createRequest = useCreateStaffRequest();
 
   const reset = () => {
     setTitle("");
@@ -63,30 +65,35 @@ export const ClientRequestComposer = ({ open, onOpenChange, staffName = "Trustee
     setStaffNote("");
   };
 
-  const submit = () => {
+  const submit = async () => {
     if (!title.trim()) {
       toast.error("A client-facing title is required.");
       return;
     }
-    createClientRequest({
-      title: title.trim(),
-      description: [description.trim(), requirement.trim() && `What is required: ${requirement.trim()}`]
-        .filter(Boolean)
-        .join("\n\n"),
-      requestType,
-      requestedDocumentType: docType || undefined,
-      sourceSignalId: defaults?.sourceSignalId,
-      sourceDocumentId: defaults?.sourceDocumentId,
-      dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
-      priority,
-      requestedByUserId: "staff-current",
-      requestedByName: staffName,
-      staffNotes: staffNote || undefined,
-    });
-    toast.success("Request sent to the client portal.");
-    reset();
-    onOpenChange(false);
+    try {
+      await createRequest.mutateAsync({
+        estateId,
+        title: title.trim(),
+        description: [description.trim(), requirement.trim() && `What is required: ${requirement.trim()}`]
+          .filter(Boolean)
+          .join("\n\n"),
+        requestType,
+        requestedDocumentType: docType || undefined,
+        sourceSignalId: defaults?.sourceSignalId,
+        sourceDocumentId: defaults?.sourceDocumentId,
+        dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+        priority,
+        staffName,
+        staffNote: staffNote || undefined,
+      });
+      toast.success("Request sent to the client portal.");
+      reset();
+      onOpenChange(false);
+    } catch (e) {
+      toast.error("Request not sent", { description: (e as Error).message });
+    }
   };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -152,7 +159,7 @@ export const ClientRequestComposer = ({ open, onOpenChange, staffName = "Trustee
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={submit}>Send request</Button>
+          <Button onClick={() => void submit()} disabled={createRequest.isPending}>Send request</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

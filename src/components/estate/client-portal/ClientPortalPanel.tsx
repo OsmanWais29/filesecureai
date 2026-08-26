@@ -49,11 +49,16 @@ import {
 } from "@/data/clientPortal/invitations";
 import {
   bindPortalToEstate,
-  sendClientMessage,
-  setRequestReview,
   useClientPortal,
 } from "@/data/clientPortal/store";
+import {
+  useReviewStaffRequest,
+  useStaffMessage,
+  useStaffRequests,
+} from "@/data/clientPortal/staff";
+import { PortalSubmissionsReview } from "./PortalSubmissionsReview";
 import { ClientRequestComposer } from "./ClientRequestComposer";
+
 
 const fmt = (iso?: string) =>
   iso ? new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : "—";
@@ -311,11 +316,21 @@ const REQUEST_TABS = [
   { id: "done", label: "Completed" },
 ] as const;
 
-const ClientRequestsWorkspace = ({ staffName, onCompose }: { staffName: string; onCompose: () => void }) => {
-  const portal = useClientPortal();
+const ClientRequestsWorkspace = ({
+  estateId,
+  staffName,
+  onCompose,
+}: {
+  estateId: string;
+  staffName: string;
+  onCompose: () => void;
+}) => {
+  const { data: requests = [] } = useStaffRequests(estateId);
+  const reviewRequest = useReviewStaffRequest();
+  const staffMessage = useStaffMessage();
   const [tab, setTab] = useState<(typeof REQUEST_TABS)[number]["id"]>("waiting");
 
-  const rows = portal.requests.filter((r) => {
+  const rows = requests.filter((r) => {
     if (tab === "waiting") return r.status === "Action Required" || r.status === "In Progress" || r.status === "Reopened";
     if (tab === "review") return r.status === "Submitted" || r.status === "Under Review";
     if (tab === "more") return r.status === "More Information Needed";
@@ -323,10 +338,28 @@ const ClientRequestsWorkspace = ({ staffName, onCompose }: { staffName: string; 
   });
 
   const counts = {
-    waiting: portal.requests.filter((r) => ["Action Required", "In Progress", "Reopened"].includes(r.status)).length,
-    review: portal.requests.filter((r) => ["Submitted", "Under Review"].includes(r.status)).length,
-    more: portal.requests.filter((r) => r.status === "More Information Needed").length,
-    done: portal.requests.filter((r) => r.status === "Completed").length,
+    waiting: requests.filter((r) => ["Action Required", "In Progress", "Reopened"].includes(r.status)).length,
+    review: requests.filter((r) => ["Submitted", "Under Review"].includes(r.status)).length,
+    more: requests.filter((r) => r.status === "More Information Needed").length,
+    done: requests.filter((r) => r.status === "Completed").length,
+  };
+
+  const review = async (
+    request: (typeof requests)[number],
+    outcome: "Under Review" | "Completed" | "More Information Needed",
+  ) => {
+    try {
+      await reviewRequest.mutateAsync({ request, outcome, staffName });
+      toast.success(
+        outcome === "Completed"
+          ? "Request accepted."
+          : outcome === "More Information Needed"
+            ? "Returned to the client for more information."
+            : "Marked under review.",
+      );
+    } catch (e) {
+      toast.error("Review not saved", { description: (e as Error).message });
+    }
   };
 
   return (
@@ -390,24 +423,13 @@ const ClientRequestsWorkspace = ({ staffName, onCompose }: { staffName: string; 
                     <div className="flex flex-wrap gap-1.5">
                       {(r.status === "Submitted" || r.status === "Under Review") && (
                         <>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setRequestReview(r.id, "Under Review")}
-                          >
+                          <Button size="sm" variant="outline" onClick={() => void review(r, "Under Review")}>
                             Review
                           </Button>
-                          <Button size="sm" onClick={() => { setRequestReview(r.id, "Completed"); toast.success("Request accepted."); }}>
+                          <Button size="sm" onClick={() => void review(r, "Completed")}>
                             Accept
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setRequestReview(r.id, "More Information Needed");
-                              toast.message("Returned to the client for more information.");
-                            }}
-                          >
+                          <Button size="sm" variant="outline" onClick={() => void review(r, "More Information Needed")}>
                             More info
                           </Button>
                         </>
@@ -415,9 +437,18 @@ const ClientRequestsWorkspace = ({ staffName, onCompose }: { staffName: string; 
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => {
-                          sendClientMessage(`Regarding "${r.title}" — your trustee has sent you a message.`);
-                          toast.success("Message sent to the client.");
+                        onClick={async () => {
+                          try {
+                            await staffMessage.mutateAsync({
+                              estateId,
+                              body: `Regarding "${r.title}" — your trustee has sent you a message.`,
+                              staffName,
+                              relatedRequestId: r.id,
+                            });
+                            toast.success("Message sent to the client.");
+                          } catch (e) {
+                            toast.error("Message not sent", { description: (e as Error).message });
+                          }
                         }}
                       >
                         Message
@@ -434,6 +465,7 @@ const ClientRequestsWorkspace = ({ staffName, onCompose }: { staffName: string; 
     </SectionShell>
   );
 };
+
 
 /* ------------------------------------------------------------ banking */
 
@@ -479,17 +511,15 @@ const BankingPayments = ({ onRequest }: { onRequest: (kind: "bank" | "pad") => v
 
 const ActivitySummary = ({ estateId }: { estateId: string }) => {
   const portalEvents = usePortalEvents(estateId);
-  const portal = useClientPortal();
   const merged = useMemo(
     () =>
-      [
-        ...portalEvents.map((e) => ({ at: e.occurredAt, actor: e.actor, label: e.eventType.replace(/_/g, " ").toLowerCase(), detail: e.detail })),
-        ...portal.events.map((e) => ({ at: e.occurredAt, actor: e.actor, label: e.eventType.replace(/_/g, " ").toLowerCase(), detail: e.detail })),
-      ]
+      portalEvents
+        .map((e) => ({ at: e.occurredAt, actor: e.actor, label: e.eventType.replace(/_/g, " ").toLowerCase(), detail: e.detail }))
         .sort((a, b) => b.at.localeCompare(a.at))
         .slice(0, 12),
-    [portalEvents, portal.events],
+    [portalEvents],
   );
+
 
   return (
     <SectionShell title="Client activity" description="Portal and request activity, most recent first.">
@@ -533,10 +563,11 @@ export const ClientPortalPanel = ({ estateId }: { estateId?: string }) => {
 
   if (!estateId) return null;
 
-  const openRequests = portal.requests.filter((r) =>
+  const openRequests = staffRequests.filter((r) =>
     ["Action Required", "In Progress", "More Information Needed", "Reopened"].includes(r.status),
   ).length;
-  const awaitingReview = portal.requests.filter((r) => ["Submitted", "Under Review"].includes(r.status)).length;
+  const awaitingReview = staffRequests.filter((r) => ["Submitted", "Under Review"].includes(r.status)).length;
+
   const conn = portal.connections[0];
   const pad = portal.padAuthorizations[0];
 
