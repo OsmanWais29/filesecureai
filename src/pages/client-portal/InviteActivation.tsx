@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { CheckCircle2, Eye, EyeOff, Lock, ShieldCheck } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { CheckCircle2, Eye, EyeOff, Lock, Mail, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,19 +12,18 @@ import {
   markInvitationOpened,
   redeemInvitation,
   resolveInvitation,
-  startPreviewSession,
   type InvitationPreview,
   type InvitationResolution,
 } from "@/data/clientPortal/invitations";
-import { setWelcomePending } from "@/data/clientPortal/store";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Public invitation + activation route: /client-portal/invite/:token
  *
- * The token is opaque and resolved server-side. The client is never asked for an
- * estate number, file number, proceeding type or any other insolvency metadata —
- * the invitation already carries that relationship.
+ * The token is opaque, lives only in the URL (never localStorage) and is resolved
+ * server-side. Activation only reports success once an authenticated session
+ * exists, `redeem_client_portal_invitation` succeeded, and an active
+ * `client_portal_access` row can be read back for the signed-in user.
  */
 const Shell = ({ children }: { children: React.ReactNode }) => (
   <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
@@ -36,14 +36,39 @@ const FAILURE_COPY: Record<string, string> = {
   expired: "This invitation has expired. Contact your trustee to request a new invitation.",
   revoked: "This invitation is no longer active. Contact your trustee if you still need access.",
   suspended: "Access to this portal is currently paused. Please contact your trustee.",
-  used: "This invitation has already been used. Sign in to your portal instead.",
+  used: "This invitation has already been used by another account. Contact your trustee for a new invitation.",
   email_mismatch: "You are signed in with a different email address than the one that was invited.",
   unauthenticated: "Please create your account or sign in first.",
 };
 
+type Stage = "account" | "signup" | "signin" | "redeem" | "access";
+
+const devLog = (stage: Stage | string, err: unknown) => {
+  if (import.meta.env.DEV) {
+    const e = err as { code?: string; status?: number; message?: string } | null;
+    // eslint-disable-next-line no-console
+    console.error(`[invite-activation] ${stage} failed`, {
+      code: e?.code,
+      status: e?.status,
+      message: e?.message,
+    });
+  }
+};
+
+const safeAuthMessage = (message?: string) => {
+  const m = (message ?? "").toLowerCase();
+  if (m.includes("invalid login credentials")) return "That password did not work. Please try again.";
+  if (m.includes("email not confirmed")) return "Please confirm your email address first, then come back to this link.";
+  if (m.includes("password")) return "That password does not meet the requirements. Use at least 8 characters.";
+  if (m.includes("rate limit") || m.includes("too many")) return "Too many attempts. Please wait a moment and try again.";
+  return null;
+};
+
 const InviteActivation = () => {
   const { token = "" } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [resolution, setResolution] = useState<InvitationResolution | null>(null);
   const [mode, setMode] = useState<"create" | "signin">("create");
@@ -55,7 +80,13 @@ const InviteActivation = () => {
   const [agreePortal, setAgreePortal] = useState(false);
   const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [problem, setProblem] = useState<string | null>(null);
+  const [problem, setProblem] = useState<{ message: string; action: "retry" | "signin" | "resend" | "contact" } | null>(
+    null,
+  );
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
+  const [resuming, setResuming] = useState(searchParams.get("continue") === "1");
+  const [done, setDone] = useState(false);
+  const attaching = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -73,12 +104,93 @@ const InviteActivation = () => {
     };
   }, [token]);
 
-  if (!resolution) {
+  /**
+   * Redeem + verify access for the currently authenticated user.
+   * Returns true only when active portal access is readable afterwards.
+   */
+  const attachAndEnter = useCallback(async (): Promise<boolean> => {
+    const redeemed = await redeemInvitation(token);
+    if (redeemed.ok !== true) {
+      const reason = (redeemed as { reason: string }).reason;
+      devLog("redeem", { message: reason });
+      setProblem({
+        message: FAILURE_COPY[reason] ?? FAILURE_COPY.invalid,
+        action: reason === "used" || reason === "email_mismatch" ? "contact" : "retry",
+      });
+      return false;
+    }
+
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth?.user) {
+      setProblem({ message: "Your session expired. Please sign in to finish connecting your account.", action: "signin" });
+      return false;
+    }
+
+    const { data: access, error } = await supabase
+      .from("client_portal_access")
+      .select("estate_id")
+      .eq("user_id", auth.user.id)
+      .eq("estate_id", redeemed.estateId)
+      .eq("status", "active")
+      .maybeSingle();
+
+    if (error || !access) {
+      devLog("access", error);
+      setProblem({
+        message: "We couldn't confirm your access to this file. Please try again in a moment.",
+        action: "retry",
+      });
+      return false;
+    }
+
+    await queryClient.invalidateQueries({ queryKey: ["portal-session"] });
+    setDone(true);
+    toast.success("Your secure portal is ready.");
+    navigate("/client-portal", { replace: true, state: { justActivated: true } });
+    return true;
+  }, [navigate, queryClient, token]);
+
+  // Resume after email confirmation: Supabase restores the session on this URL.
+  useEffect(() => {
+    if (searchParams.get("continue") !== "1" || !resolution?.ok) return;
+    let cancelled = false;
+
+    const run = async () => {
+      if (attaching.current) return;
+      const { data } = await supabase.auth.getSession();
+      if (cancelled) return;
+      if (!data.session) {
+        setResuming(false);
+        setStep(1);
+        setMode("signin");
+        return;
+      }
+      attaching.current = true;
+      const ok = await attachAndEnter();
+      if (!cancelled && !ok) {
+        setResuming(false);
+        attaching.current = false;
+      }
+    };
+
+    void run();
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) void run();
+    });
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
+  }, [attachAndEnter, resolution, searchParams]);
+
+  if (!resolution || (resuming && !problem)) {
     return (
       <Shell>
         <div className="flex flex-col items-center py-6">
           <LoadingSpinner size="large" />
-          <p className="mt-4 text-sm text-muted-foreground">Checking your invitation…</p>
+          <p className="mt-4 text-sm text-muted-foreground">
+            {resuming ? "Setting up your secure portal…" : "Checking your invitation…"}
+          </p>
         </div>
       </Shell>
     );
@@ -99,11 +211,20 @@ const InviteActivation = () => {
 
   const inv: InvitationPreview = resolution.invitation;
   const firstName = (inv.invitedName || inv.invitedEmail).split(" ")[0];
+  const continueUrl = `${window.location.origin}/client-portal/invite/${token}?continue=1`;
 
-  const finish = async (estateId: string) => {
-    setWelcomePending();
-    toast.success("Your portal is ready.");
-    navigate("/client-portal", { replace: true });
+  const resendConfirmation = async () => {
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: inv.invitedEmail,
+      options: { emailRedirectTo: continueUrl },
+    });
+    if (error) {
+      devLog("signup", error);
+      toast.error("We couldn't resend the confirmation email. Please try again shortly.");
+      return;
+    }
+    toast.success(`Confirmation email sent to ${inv.invitedEmail}.`);
   };
 
   const submit = async () => {
@@ -111,50 +232,80 @@ const InviteActivation = () => {
     setProblem(null);
     try {
       if (mode === "create") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email: inv.invitedEmail,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/client-portal`,
+            emailRedirectTo: continueUrl,
             data: { user_type: "client", full_name: fullName },
           },
         });
-        if (error && !/already registered|already exists/i.test(error.message)) throw error;
+
+        if (error) {
+          devLog("signup", error);
+          if (/already registered|already exists|user already/i.test(error.message)) {
+            setMode("signin");
+            setProblem({
+              message: "An account already exists for this email. Enter your existing password to accept the invitation.",
+              action: "signin",
+            });
+            setStep(1);
+            return;
+          }
+          setProblem({
+            message: safeAuthMessage(error.message) ?? "We couldn't create your account. Please try again.",
+            action: "retry",
+          });
+          return;
+        }
+
+        if (!data.session) {
+          // Email confirmation is required — do NOT attempt a password sign-in.
+          setAwaitingConfirmation(true);
+          return;
+        }
+      } else {
+        const signIn = await supabase.auth.signInWithPassword({ email: inv.invitedEmail, password });
+        if (signIn.error || !signIn.data.session) {
+          devLog("signin", signIn.error);
+          setProblem({
+            message: safeAuthMessage(signIn.error?.message) ?? "We couldn't sign you in. Please check your password.",
+            action: "retry",
+          });
+          return;
+        }
       }
 
-      // Establish a session (covers both fresh sign-ups with auto-confirm and existing accounts).
-      const signIn = await supabase.auth.signInWithPassword({ email: inv.invitedEmail, password });
-      if (signIn.error || !signIn.data.session) {
-        setProblem(
-          mode === "create"
-            ? "We could not sign you in automatically. If you already have an account, choose “Sign in to accept” and use your existing password."
-            : "That password did not work. Please try again or reset your password.",
-        );
-        setBusy(false);
-        return;
-      }
-
-      const redeemed = await redeemInvitation(token);
-      if (redeemed.ok !== true) {
-        const reason = (redeemed as { reason: string }).reason;
-        setProblem(FAILURE_COPY[reason] ?? FAILURE_COPY.invalid);
-        setBusy(false);
-        return;
-      }
-
-      startPreviewSession({
-        invitationId: inv.invitationId,
-        email: inv.invitedEmail,
-        estateId: redeemed.estateId,
-        activatedAt: new Date().toISOString(),
-      });
-      await finish(redeemed.estateId);
+      await attachAndEnter();
     } catch (e) {
-      setProblem("Something went wrong activating your portal. Please try again or contact your trustee.");
+      devLog("account", e);
+      setProblem({
+        message: "We couldn't finish connecting your account. Please try again.",
+        action: "retry",
+      });
     } finally {
       setBusy(false);
     }
   };
+
+  if (awaitingConfirmation) {
+    return (
+      <Shell>
+        <Mail className="h-8 w-8 text-primary" />
+        <h1 className="mt-3 text-xl font-semibold">Check your email to finish creating your account</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          We sent a confirmation link to <strong>{inv.invitedEmail}</strong>. Open it on this device and your portal will
+          finish connecting automatically.
+        </p>
+        <Button className="mt-6 w-full" variant="outline" onClick={resendConfirmation}>
+          Resend confirmation email
+        </Button>
+        <Button className="mt-2 w-full" variant="ghost" onClick={() => setAwaitingConfirmation(false)}>
+          Back
+        </Button>
+      </Shell>
+    );
+  }
 
   return (
     <Shell>
@@ -189,6 +340,12 @@ const InviteActivation = () => {
               ? "Just a name and a password — nothing else is needed."
               : "Use the password for your existing portal account."}
           </p>
+
+          {problem && (
+            <p className="mt-4 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+              {problem.message}
+            </p>
+          )}
 
           <div className="mt-5 space-y-4">
             {mode === "create" && (
@@ -258,16 +415,36 @@ const InviteActivation = () => {
               } else if (!password) {
                 return toast.error("Enter your password.");
               }
+              setProblem(null);
               setStep(2);
             }}
           >
             Continue
           </Button>
 
+          {mode === "signin" && (
+            <button
+              type="button"
+              className="mt-4 w-full text-sm text-muted-foreground underline-offset-2 hover:underline"
+              onClick={async () => {
+                const { error } = await supabase.auth.resetPasswordForEmail(inv.invitedEmail, {
+                  redirectTo: continueUrl,
+                });
+                if (error) return toast.error("We couldn't send the reset email. Please try again.");
+                toast.success(`Password reset email sent to ${inv.invitedEmail}.`);
+              }}
+            >
+              Forgot your password?
+            </button>
+          )}
+
           <button
             type="button"
             className="mt-4 w-full text-sm text-muted-foreground underline-offset-2 hover:underline"
-            onClick={() => setMode(mode === "create" ? "signin" : "create")}
+            onClick={() => {
+              setProblem(null);
+              setMode(mode === "create" ? "signin" : "create");
+            }}
           >
             {mode === "create" ? "I already have an account — sign in to accept" : "I need to create an account"}
           </button>
@@ -304,23 +481,69 @@ const InviteActivation = () => {
 
       {step === 3 && (
         <>
-          <CheckCircle2 className="h-8 w-8 text-emerald-600" />
-          <h1 className="mt-3 text-xl font-semibold">Your portal is ready</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Everything your trustee has shared with you is already waiting inside.
-          </p>
-          {problem && (
-            <p className="mt-4 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-              {problem}
-            </p>
-          )}
-          <Button className="mt-6 w-full" size="lg" disabled={busy} onClick={submit}>
-            {busy ? "Activating…" : "Enter my portal"}
-          </Button>
-          {problem && (
-            <Button className="mt-2 w-full" variant="ghost" onClick={() => setStep(1)}>
-              Back
-            </Button>
+          {done ? (
+            <>
+              <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+              <h1 className="mt-3 text-xl font-semibold">Your secure portal is ready</h1>
+              <p className="mt-2 text-sm text-muted-foreground">Taking you to your portal…</p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-xl font-semibold">
+                {busy ? "Setting up your secure portal…" : "Finish setting up your secure portal"}
+              </h1>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {busy
+                  ? "This only takes a moment. Please don't close this window."
+                  : "We'll connect your account to the file your trustee prepared for you."}
+              </p>
+
+              {problem && (
+                <div className="mt-4 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-3 text-sm text-destructive">
+                  <p className="font-medium">We couldn't finish connecting your account</p>
+                  <p className="mt-1">{problem.message}</p>
+                </div>
+              )}
+
+              {busy ? (
+                <div className="mt-6 flex justify-center">
+                  <LoadingSpinner size="large" />
+                </div>
+              ) : (
+                <>
+                  <Button className="mt-6 w-full" size="lg" onClick={submit}>
+                    {problem?.action === "retry" ? "Try again" : "Enter my portal"}
+                  </Button>
+                  {problem?.action === "signin" && (
+                    <Button
+                      className="mt-2 w-full"
+                      variant="outline"
+                      onClick={() => {
+                        setMode("signin");
+                        setStep(1);
+                      }}
+                    >
+                      Sign in instead
+                    </Button>
+                  )}
+                  {problem?.action === "resend" && (
+                    <Button className="mt-2 w-full" variant="outline" onClick={resendConfirmation}>
+                      Resend confirmation
+                    </Button>
+                  )}
+                  {problem?.action === "contact" && (
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      Please contact your trustee's office for a new invitation.
+                    </p>
+                  )}
+                  {problem && (
+                    <Button className="mt-2 w-full" variant="ghost" onClick={() => setStep(1)}>
+                      Back
+                    </Button>
+                  )}
+                </>
+              )}
+            </>
           )}
         </>
       )}
