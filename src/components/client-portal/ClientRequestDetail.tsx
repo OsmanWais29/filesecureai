@@ -7,14 +7,16 @@ import { Separator } from "@/components/ui/separator";
 import { ClientRequest, REQUEST_TYPE_LABELS } from "@/data/clientPortal/types";
 import { ClientStatusBadge, formatDate, formatDateTime } from "./primitives";
 import { DocumentRequestUploader } from "./DocumentRequestUploader";
-import { submitClientRequest, markRequestViewed } from "@/data/clientPortal/store";
+import { usePortalSession } from "@/data/clientPortal/session";
+import { usePortalDocuments, usePortalRequestActions } from "@/data/clientPortal/db";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { requestActionTarget } from "./ClientRequestCard";
+import { FileText } from "lucide-react";
 
 /**
- * Client-facing request detail. Renders only client-safe fields — staff notes and
- * internal signal references are never passed into this component.
+ * Client-facing request detail. Renders only client-safe fields — staff notes
+ * live in a separate, staff-only table and are never fetched here.
  */
 export const ClientRequestDetail = ({
   request,
@@ -26,11 +28,16 @@ export const ClientRequestDetail = ({
   onOpenChange: (v: boolean) => void;
 }) => {
   const navigate = useNavigate();
+  const { session } = usePortalSession();
+  const actor = session ? { userId: session.userId, name: session.name } : undefined;
+  const { markViewed, submit } = usePortalRequestActions(session?.estateId, actor);
+  const { data: documents = [] } = usePortalDocuments(session?.estateId);
   const [response, setResponse] = useState("");
-  const [uploaded, setUploaded] = useState<string[]>([]);
+  const [uploadedCount, setUploadedCount] = useState(0);
 
   if (!request) return null;
 
+  const attached = documents.filter((d) => d.requestId === request.id);
   const needsAction =
     request.status === "Action Required" || request.status === "More Information Needed" || request.status === "Reopened";
   const needsUpload = ["upload_document", "replace_document", "provide_bank_statement", "sign_document"].includes(
@@ -38,23 +45,27 @@ export const ClientRequestDetail = ({
   );
   const target = requestActionTarget(request);
 
-  const handleSubmit = () => {
-    if (needsUpload && uploaded.length === 0) {
+  const handleSubmit = async () => {
+    if (needsUpload && attached.length + uploadedCount === 0) {
       toast.error("Please attach the requested document first.");
       return;
     }
-    submitClientRequest(request.id, response || "Submitted through the portal.", uploaded);
-    toast.success("Sent to your trustee", { description: "You will be notified once it has been reviewed." });
-    setResponse("");
-    setUploaded([]);
-    onOpenChange(false);
+    try {
+      await submit.mutateAsync({ request, response: response || "Submitted through the portal." });
+      toast.success("Sent to your trustee", { description: "You will be notified once it has been reviewed." });
+      setResponse("");
+      setUploadedCount(0);
+      onOpenChange(false);
+    } catch (e) {
+      toast.error("Could not send this yet", { description: (e as Error).message });
+    }
   };
 
   return (
     <Sheet
       open={open}
       onOpenChange={(v) => {
-        if (v) markRequestViewed(request.id);
+        if (v) void markViewed.mutateAsync(request).catch(() => undefined);
         onOpenChange(v);
       }}
     >
@@ -86,13 +97,25 @@ export const ClientRequestDetail = ({
 
         <Separator className="my-6" />
 
+        {attached.length > 0 && (
+          <div className="mb-6 space-y-2">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Files you have sent</p>
+            {attached.map((d) => (
+              <div key={d.id} className="flex items-center justify-between gap-3 rounded-md border bg-muted/20 px-3 py-2 text-sm">
+                <span className="flex min-w-0 items-center gap-2">
+                  <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span className="truncate">{d.fileName}</span>
+                </span>
+                <ClientStatusBadge label={d.state} />
+              </div>
+            ))}
+          </div>
+        )}
+
         {needsAction ? (
           <div className="space-y-5">
             {needsUpload ? (
-              <DocumentRequestUploader
-                request={request}
-                onUploaded={(ids) => setUploaded((prev) => [...prev, ...ids])}
-              />
+              <DocumentRequestUploader request={request} onUploaded={(ids) => setUploadedCount((c) => c + ids.length)} />
             ) : (
               <div className="rounded-lg border bg-muted/30 p-4 text-sm">
                 <p className="text-muted-foreground">This request is completed elsewhere in your portal.</p>
@@ -113,8 +136,8 @@ export const ClientRequestDetail = ({
               />
             </div>
 
-            <Button className="h-11 w-full" onClick={handleSubmit}>
-              Send to my trustee
+            <Button className="h-11 w-full" disabled={submit.isPending} onClick={() => void handleSubmit()}>
+              {submit.isPending ? "Sending…" : "Send to my trustee"}
             </Button>
             <p className="text-xs text-muted-foreground">
               Your trustee reviews everything you send. This request is marked complete only after their review.

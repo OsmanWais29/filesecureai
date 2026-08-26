@@ -3,216 +3,194 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
-import { useClientPortal, openRequests, consumeWelcomePending } from "@/data/clientPortal/store";
-import { ClientPageHeading, ClientStatusBadge, EmptyState, formatDate, formatMoney } from "@/components/client-portal/primitives";
+import { usePortalSession } from "@/data/clientPortal/session";
+import { openRequestList, usePortalDocuments, usePortalIntake, usePortalRequests } from "@/data/clientPortal/db";
+import { INTAKE_SECTIONS } from "@/data/clientPortal/intakeSpec";
+import { ClientPageHeading, EmptyState, formatDate } from "@/components/client-portal/primitives";
 import { ActionRequiredCard } from "@/components/client-portal/ClientRequestCard";
 import { ClientRequestDetail } from "@/components/client-portal/ClientRequestDetail";
 import { ClientRequest } from "@/data/clientPortal/types";
-import { CalendarClock, CheckCircle2, Landmark, MessageSquare, Wallet } from "lucide-react";
+import { CheckCircle2, ClipboardList, FileText, Loader2, MessageSquare, Wallet } from "lucide-react";
 
+/**
+ * Client home. Answers one question first — "what do I need to do next?" — then
+ * shows what is with the trustee. Every number comes from real records on the
+ * estate the invitation authorized.
+ */
 export const ClientDashboard = () => {
-  const state = useClientPortal();
   const navigate = useNavigate();
+  const { session, loading } = usePortalSession();
+  const { data: requests = [], isLoading: reqLoading } = usePortalRequests(session?.estateId);
+  const { data: documents = [] } = usePortalDocuments(session?.estateId);
+  const { data: intake = [] } = usePortalIntake(session?.estateId);
   const [selected, setSelected] = useState<ClientRequest | null>(null);
-  const [showWelcome, setShowWelcome] = useState(() => consumeWelcomePending());
 
-  const actionable = openRequests(state);
-  const inReview = state.requests.filter((r) => r.status === "Submitted" || r.status === "Under Review");
-  const completed = state.requests.filter((r) => r.status === "Completed");
-  const total = state.requests.filter((r) => r.status !== "Cancelled").length || 1;
-  const progress = Math.round((completed.length / total) * 100);
+  const actionable = openRequestList(requests);
+  const inReview = requests.filter((r) => r.status === "Submitted" || r.status === "Under Review");
+  const completed = requests.filter((r) => r.status === "Completed");
+  const intakeDone = INTAKE_SECTIONS.filter((s) => {
+    const r = intake.find((x) => x.sectionKey === s.key);
+    return r?.status === "submitted" || r?.status === "accepted";
+  }).length;
+  const intakePct = Math.round((intakeDone / INTAKE_SECTIONS.length) * 100);
 
-  const nextPayment = state.schedules
-    .filter((s) => s.nextPaymentDate)
-    .sort((a, b) => (a.nextPaymentDate! < b.nextPaymentDate! ? -1 : 1))[0];
-  const nextAppointment = state.appointments
-    .filter((a) => a.status === "Scheduled" && new Date(a.scheduledAt) > new Date())
-    .sort((a, b) => (a.scheduledAt < b.scheduledAt ? -1 : 1))[0];
-  const connection = state.connections.find((c) => c.status === "connected");
-  const openIncome = state.incomePeriods.find(
-    (p) => p.status === "Not started" || p.status === "Draft" || p.status === "More information needed",
-  );
+  if (loading || reqLoading) {
+    return (
+      <div className="flex justify-center py-20 text-muted-foreground">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
+
+  const next = actionable[0];
 
   return (
-    <div className="mx-auto max-w-5xl">
-      {showWelcome && (
-        <Card className="mb-6 border-primary/30">
-          <CardHeader>
-            <CardTitle>Welcome, {state.profile.name.split(" ")[0]}. Your secure portal is ready.</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
-              <li>Review what your trustee needs from you</li>
-              <li>Complete any outstanding documents or income statements</li>
-              <li>Connect your bank only if requested</li>
-              <li>Review automatic payment authorization if requested</li>
-            </ol>
-            <div className="flex gap-2">
-              <Button onClick={() => navigate("/client-portal/tasks")}>Go to my tasks</Button>
-              <Button variant="ghost" onClick={() => setShowWelcome(false)}>Dismiss</Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+    <div className="mx-auto max-w-4xl">
       <ClientPageHeading
-        title={`Hello, ${state.profile.name.split(" ")[0]}`}
-        description={`${state.profile.proceedingLabel} · Your trustee is ${state.profile.trusteeName}. Everything you need to do is listed below.`}
+        title={`Hello, ${session?.name?.split(" ")[0] ?? "there"}`}
+        description={
+          session?.fileNumber
+            ? `${session.proceedingLabel ?? "Your file"} · File ${session.fileNumber}${session.firmName ? ` · ${session.firmName}` : ""}`
+            : session?.firmName
+        }
       />
 
-      <Card className="mb-6 border-primary/20 bg-primary/5">
-        <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-medium text-foreground">
-              {actionable.length === 0
-                ? "You're all caught up"
-                : `${actionable.length} thing${actionable.length === 1 ? "" : "s"} need your attention`}
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {inReview.length > 0
-                ? `${inReview.length} item${inReview.length === 1 ? " is" : "s are"} with your trustee for review.`
-                : "Nothing is currently waiting on your trustee."}
-            </p>
-          </div>
-          <div className="w-full sm:w-56">
-            <div className="mb-1 flex justify-between text-xs text-muted-foreground">
-              <span>Your file progress</span>
-              <span>{progress}%</span>
-            </div>
-            <Progress value={progress} />
-          </div>
+      <Card className="mb-6 border-l-4 border-l-primary">
+        <CardHeader>
+          <CardTitle className="text-lg">What I need to do next</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {next ? (
+            <>
+              <ActionRequiredCard request={next} onOpen={setSelected} />
+              {actionable.length > 1 && (
+                <Button variant="outline" className="h-11" onClick={() => navigate("/client-portal/tasks")}>
+                  See all {actionable.length} items
+                </Button>
+              )}
+            </>
+          ) : (
+            <EmptyState
+              icon={<CheckCircle2 className="h-8 w-8 text-accent" />}
+              title="Nothing needs your action right now"
+              body="We'll let you know as soon as your trustee needs something from you."
+            />
+          )}
         </CardContent>
       </Card>
 
-      <section className="mb-8">
-        <h2 className="mb-3 text-lg font-semibold">What I need to do</h2>
-        {actionable.length === 0 ? (
-          <EmptyState
-            icon={<CheckCircle2 className="h-8 w-8 text-accent" />}
-            title="Nothing outstanding right now"
-            body="We'll email you and post here as soon as your trustee needs something."
-          />
-        ) : (
-          <div className="space-y-3">
-            {actionable.slice(0, 4).map((r) => (
-              <ActionRequiredCard key={r.id} request={r} onOpen={setSelected} />
-            ))}
-            {actionable.length > 4 && (
-              <Button variant="outline" className="h-11 w-full" onClick={() => navigate("/client-portal/tasks")}>
-                View all {actionable.length} items
-              </Button>
-            )}
-          </div>
-        )}
-      </section>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Wallet className="h-4 w-4 text-muted-foreground" /> Your payments
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            {nextPayment ? (
-              <>
-                <div className="flex items-baseline justify-between">
-                  <span className="text-muted-foreground">Next payment</span>
-                  <span className="text-lg font-semibold">{formatMoney(nextPayment.amount)}</span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Scheduled for</span>
-                  <span className="font-medium text-foreground">{formatDate(nextPayment.nextPaymentDate)}</span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Method</span>
-                  <ClientStatusBadge label={nextPayment.status} />
-                </div>
-                <Separator />
-                <Button variant="outline" className="h-11 w-full" onClick={() => navigate("/client-portal/banking")}>
-                  View payment details
-                </Button>
-              </>
-            ) : (
-              <p className="text-muted-foreground">No payment arrangement is set up yet.</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Landmark className="h-4 w-4 text-muted-foreground" /> Bank connection
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            {connection ? (
-              <>
-                <p className="font-medium">
-                  {connection.institutionName} {connection.accountMask}
-                </p>
-                <p className="text-muted-foreground">
-                  Last updated {formatDate(connection.lastSyncedAt)}. You can disconnect at any time.
-                </p>
-              </>
-            ) : (
-              <p className="text-muted-foreground">
-                No bank account connected. Connecting one lets your trustee confirm your income without you gathering paperwork.
+      {intakePct < 100 && (
+        <Card className="mb-6">
+          <CardContent className="flex flex-wrap items-center justify-between gap-4 p-5">
+            <div className="min-w-0 space-y-2">
+              <p className="font-medium">Finish telling us about your situation</p>
+              <p className="text-sm text-muted-foreground">
+                {intakeDone} of {INTAKE_SECTIONS.length} sections sent. You can stop and come back any time.
               </p>
-            )}
-            <Button variant="outline" className="h-11 w-full" onClick={() => navigate("/client-portal/banking")}>
-              {connection ? "Manage connection" : "Connect a bank account"}
+              <Progress value={intakePct} className="h-2 w-56" />
+            </div>
+            <Button className="h-11" onClick={() => navigate("/client-portal/information")}>
+              Continue
             </Button>
           </CardContent>
         </Card>
+      )}
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <CalendarClock className="h-4 w-4 text-muted-foreground" /> Next appointment
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            {nextAppointment ? (
-              <>
-                <p className="font-medium">{nextAppointment.title}</p>
-                <p className="text-muted-foreground">
-                  {formatDate(nextAppointment.scheduledAt)} · {nextAppointment.method}
-                </p>
-              </>
-            ) : (
-              <p className="text-muted-foreground">No appointments scheduled.</p>
-            )}
-            <Button variant="outline" className="h-11 w-full" onClick={() => navigate("/client-portal/appointments")}>
-              View appointments
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <MessageSquare className="h-4 w-4 text-muted-foreground" /> Monthly reporting
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            {openIncome ? (
-              <>
-                <p className="font-medium">{openIncome.periodLabel} statement</p>
-                <p className="text-muted-foreground">Due {formatDate(openIncome.dueDate)}</p>
-              </>
-            ) : (
-              <p className="text-muted-foreground">Your statements are up to date.</p>
-            )}
-            <Button variant="outline" className="h-11 w-full" onClick={() => navigate("/client-portal/income")}>
-              Open income & expenses
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="mb-6 grid gap-4 sm:grid-cols-3">
+        <StatCard label="With your trustee" value={inReview.length} hint="Waiting on review" to="/client-portal/tasks" icon={ClipboardList} />
+        <StatCard label="Documents sent" value={documents.length} hint="Everything you've shared" to="/client-portal/documents" icon={FileText} />
+        <StatCard label="Completed" value={completed.length} hint="Accepted by your trustee" to="/client-portal/tasks" icon={CheckCircle2} />
       </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <QuickAction
+          icon={Wallet}
+          title="Income & expenses"
+          body="Report what you earned and spent this month."
+          to="/client-portal/income"
+        />
+        <QuickAction
+          icon={MessageSquare}
+          title="Message your trustee"
+          body="Ask a question or tell us about a change."
+          to="/client-portal/messages"
+        />
+      </div>
+
+      {inReview.length > 0 && (
+        <section className="mt-8">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            With your trustee
+          </h2>
+          <div className="space-y-3">
+            {inReview.map((r) => (
+              <ActionRequiredCard key={r.id} request={r} onOpen={setSelected} compact />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {completed.length > 0 && (
+        <p className="mt-8 text-sm text-muted-foreground">
+          Last item accepted on {formatDate(completed[0]?.completedAt)}.
+        </p>
+      )}
 
       <ClientRequestDetail request={selected} open={!!selected} onOpenChange={(v) => !v && setSelected(null)} />
     </div>
+  );
+};
+
+const StatCard = ({
+  label,
+  value,
+  hint,
+  to,
+  icon: Icon,
+}: {
+  label: string;
+  value: number;
+  hint: string;
+  to: string;
+  icon: React.ComponentType<{ className?: string }>;
+}) => {
+  const navigate = useNavigate();
+  return (
+    <Card className="cursor-pointer transition-shadow hover:shadow-sm" onClick={() => navigate(to)}>
+      <CardContent className="space-y-1 p-5">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Icon className="h-4 w-4" />
+          <span className="text-sm">{label}</span>
+        </div>
+        <p className="text-2xl font-semibold">{value}</p>
+        <p className="text-xs text-muted-foreground">{hint}</p>
+      </CardContent>
+    </Card>
+  );
+};
+
+const QuickAction = ({
+  icon: Icon,
+  title,
+  body,
+  to,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  body: string;
+  to: string;
+}) => {
+  const navigate = useNavigate();
+  return (
+    <Card className="cursor-pointer transition-shadow hover:shadow-sm" onClick={() => navigate(to)}>
+      <CardContent className="flex items-start gap-3 p-5">
+        <Icon className="mt-0.5 h-5 w-5 text-primary" />
+        <div>
+          <p className="font-medium">{title}</p>
+          <p className="text-sm text-muted-foreground">{body}</p>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

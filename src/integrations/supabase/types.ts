@@ -517,6 +517,112 @@ export type Database = {
           },
         ]
       }
+      client_portal_documents: {
+        Row: {
+          content_hash: string | null
+          created_at: string
+          doc_category: string | null
+          estate_id: string
+          file_name: string
+          id: string
+          metadata: Json
+          mime_type: string | null
+          page_count: number | null
+          request_id: string | null
+          review_note: string | null
+          review_state: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          size_bytes: number | null
+          source: string
+          storage_path: string
+          supersedes_id: string | null
+          title: string
+          updated_at: string
+          uploaded_at: string
+          uploaded_by: string | null
+          uploaded_by_name: string | null
+          uploaded_by_role: string
+          version: number
+        }
+        Insert: {
+          content_hash?: string | null
+          created_at?: string
+          doc_category?: string | null
+          estate_id: string
+          file_name: string
+          id?: string
+          metadata?: Json
+          mime_type?: string | null
+          page_count?: number | null
+          request_id?: string | null
+          review_note?: string | null
+          review_state?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          size_bytes?: number | null
+          source?: string
+          storage_path: string
+          supersedes_id?: string | null
+          title: string
+          updated_at?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+          uploaded_by_role?: string
+          version?: number
+        }
+        Update: {
+          content_hash?: string | null
+          created_at?: string
+          doc_category?: string | null
+          estate_id?: string
+          file_name?: string
+          id?: string
+          metadata?: Json
+          mime_type?: string | null
+          page_count?: number | null
+          request_id?: string | null
+          review_note?: string | null
+          review_state?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          size_bytes?: number | null
+          source?: string
+          storage_path?: string
+          supersedes_id?: string | null
+          title?: string
+          updated_at?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+          uploaded_by_role?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_documents_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_documents_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "client_portal_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_documents_supersedes_id_fkey"
+            columns: ["supersedes_id"]
+            isOneToOne: false
+            referencedRelation: "client_portal_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_portal_events: {
         Row: {
           actor_name: string | null
@@ -530,6 +636,7 @@ export type Database = {
           new_state: string | null
           occurred_at: string
           previous_state: string | null
+          request_id: string | null
         }
         Insert: {
           actor_name?: string | null
@@ -543,6 +650,7 @@ export type Database = {
           new_state?: string | null
           occurred_at?: string
           previous_state?: string | null
+          request_id?: string | null
         }
         Update: {
           actor_name?: string | null
@@ -556,6 +664,7 @@ export type Database = {
           new_state?: string | null
           occurred_at?: string
           previous_state?: string | null
+          request_id?: string | null
         }
         Relationships: [
           {
@@ -570,6 +679,153 @@ export type Database = {
             columns: ["invitation_id"]
             isOneToOne: false
             referencedRelation: "client_portal_invitations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_events_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "client_portal_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_portal_income_submissions: {
+        Row: {
+          created_at: string
+          estate_id: string
+          expenses: Json
+          household: Json
+          id: string
+          income: Json
+          linked_income_period_id: string | null
+          notes: string | null
+          period_label: string | null
+          period_month: string
+          review_note: string | null
+          review_state: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          submitted_at: string | null
+          submitted_by: string | null
+          totals: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          estate_id: string
+          expenses?: Json
+          household?: Json
+          id?: string
+          income?: Json
+          linked_income_period_id?: string | null
+          notes?: string | null
+          period_label?: string | null
+          period_month: string
+          review_note?: string | null
+          review_state?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          totals?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          estate_id?: string
+          expenses?: Json
+          household?: Json
+          id?: string
+          income?: Json
+          linked_income_period_id?: string | null
+          notes?: string | null
+          period_label?: string | null
+          period_month?: string
+          review_note?: string | null
+          review_state?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          totals?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_income_submissions_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_income_submissions_linked_income_period_id_fkey"
+            columns: ["linked_income_period_id"]
+            isOneToOne: false
+            referencedRelation: "estate_income_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_portal_intake_sections: {
+        Row: {
+          created_at: string
+          data: Json
+          estate_id: string
+          id: string
+          last_saved_at: string | null
+          review_note: string | null
+          review_state: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          section_key: string
+          status: string
+          submitted_at: string | null
+          submitted_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          estate_id: string
+          id?: string
+          last_saved_at?: string | null
+          review_note?: string | null
+          review_state?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          section_key: string
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          estate_id?: string
+          id?: string
+          last_saved_at?: string | null
+          review_note?: string | null
+          review_state?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          section_key?: string
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_intake_sections_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
             referencedColumns: ["id"]
           },
         ]
@@ -659,6 +915,206 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "client_portal_invitations_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_portal_messages: {
+        Row: {
+          attachment_document_ids: string[]
+          body: string
+          created_at: string
+          estate_id: string
+          id: string
+          read_by_client_at: string | null
+          read_by_staff_at: string | null
+          related_request_id: string | null
+          sender_name: string | null
+          sender_role: string
+          sender_user_id: string | null
+          sent_at: string
+          thread_key: string
+        }
+        Insert: {
+          attachment_document_ids?: string[]
+          body: string
+          created_at?: string
+          estate_id: string
+          id?: string
+          read_by_client_at?: string | null
+          read_by_staff_at?: string | null
+          related_request_id?: string | null
+          sender_name?: string | null
+          sender_role?: string
+          sender_user_id?: string | null
+          sent_at?: string
+          thread_key?: string
+        }
+        Update: {
+          attachment_document_ids?: string[]
+          body?: string
+          created_at?: string
+          estate_id?: string
+          id?: string
+          read_by_client_at?: string | null
+          read_by_staff_at?: string | null
+          related_request_id?: string | null
+          sender_name?: string | null
+          sender_role?: string
+          sender_user_id?: string | null
+          sent_at?: string
+          thread_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_messages_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_messages_related_request_id_fkey"
+            columns: ["related_request_id"]
+            isOneToOne: false
+            referencedRelation: "client_portal_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_portal_request_staff_notes: {
+        Row: {
+          author_id: string | null
+          author_name: string | null
+          created_at: string
+          estate_id: string
+          id: string
+          note: string
+          request_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id?: string | null
+          author_name?: string | null
+          created_at?: string
+          estate_id: string
+          id?: string
+          note: string
+          request_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string | null
+          author_name?: string | null
+          created_at?: string
+          estate_id?: string
+          id?: string
+          note?: string
+          request_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_request_staff_notes_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_request_staff_notes_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "client_portal_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_portal_requests: {
+        Row: {
+          client_response: string | null
+          client_user_id: string | null
+          completed_at: string | null
+          created_at: string
+          description: string
+          due_date: string | null
+          estate_id: string
+          id: string
+          priority: string
+          reopened_count: number
+          request_type: string
+          requested_at: string
+          requested_by: string | null
+          requested_by_name: string | null
+          requested_document_type: string | null
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_document_id: string | null
+          source_signal_id: string | null
+          status: string
+          title: string
+          trustee_review_state: string
+          updated_at: string
+        }
+        Insert: {
+          client_response?: string | null
+          client_user_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string
+          due_date?: string | null
+          estate_id: string
+          id?: string
+          priority?: string
+          reopened_count?: number
+          request_type?: string
+          requested_at?: string
+          requested_by?: string | null
+          requested_by_name?: string | null
+          requested_document_type?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_document_id?: string | null
+          source_signal_id?: string | null
+          status?: string
+          title: string
+          trustee_review_state?: string
+          updated_at?: string
+        }
+        Update: {
+          client_response?: string | null
+          client_user_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string
+          due_date?: string | null
+          estate_id?: string
+          id?: string
+          priority?: string
+          reopened_count?: number
+          request_type?: string
+          requested_at?: string
+          requested_by?: string | null
+          requested_by_name?: string | null
+          requested_document_type?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_document_id?: string | null
+          source_signal_id?: string | null
+          status?: string
+          title?: string
+          trustee_review_state?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_requests_estate_id_fkey"
             columns: ["estate_id"]
             isOneToOne: false
             referencedRelation: "estates"
@@ -5287,6 +5743,7 @@ export type Database = {
         Args: { _estate_id: string; _user_id: string }
         Returns: boolean
       }
+      is_estate_staff: { Args: { _estate_id: string }; Returns: boolean }
       mark_client_portal_invitation_opened: {
         Args: { p_token: string }
         Returns: undefined
