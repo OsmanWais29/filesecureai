@@ -428,7 +428,7 @@ const InviteActivation = () => {
               className="mt-4 w-full text-sm text-muted-foreground underline-offset-2 hover:underline"
               onClick={async () => {
                 const { error } = await supabase.auth.resetPasswordForEmail(inv.invitedEmail, {
-                  redirectTo: `${window.location.origin}/reset-password`,
+                  redirectTo: continueUrl,
                 });
                 if (error) return toast.error("We couldn't send the reset email. Please try again.");
                 toast.success(`Password reset email sent to ${inv.invitedEmail}.`);
