@@ -332,7 +332,7 @@ async function patch(
     detail?: string;
   },
 ) {
-  const { error } = await supabase.from("client_portal_invitations").update(values).eq("id", id);
+  const { error } = await supabase.from("client_portal_invitations").update(values as never).eq("id", id);
   if (error) throw error;
   if (event) {
     await logEvent({ ...event, invitationId: id, actorRole: "staff" });

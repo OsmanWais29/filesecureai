@@ -84,11 +84,12 @@ const InviteActivation = () => {
     );
   }
 
-  if (!resolution.ok) {
+  if (resolution.ok !== true) {
+    const reason = (resolution as { reason: string }).reason;
     return (
       <Shell>
         <h1 className="text-xl font-semibold">Invitation unavailable</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{FAILURE_COPY[resolution.reason]}</p>
+        <p className="mt-2 text-sm text-muted-foreground">{FAILURE_COPY[reason] ?? FAILURE_COPY.invalid}</p>
         <Button className="mt-6 w-full" variant="outline" onClick={() => navigate("/client-login")}>
           Go to client sign in
         </Button>
@@ -134,8 +135,9 @@ const InviteActivation = () => {
       }
 
       const redeemed = await redeemInvitation(token);
-      if (!redeemed.ok) {
-        setProblem(FAILURE_COPY[redeemed.reason] ?? FAILURE_COPY.invalid);
+      if (redeemed.ok !== true) {
+        const reason = (redeemed as { reason: string }).reason;
+        setProblem(FAILURE_COPY[reason] ?? FAILURE_COPY.invalid);
         setBusy(false);
         return;
       }
