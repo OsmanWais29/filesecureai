@@ -73,3 +73,7 @@ url = ""
 [functions]
 [functions.process-ai-request]
 verify_jwt = true
+# Public invite activation endpoint — callers are anonymous by design.
+[functions.create-client-portal-account]
+verify_jwt = false
+
