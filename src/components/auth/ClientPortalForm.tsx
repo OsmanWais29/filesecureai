@@ -1,168 +1,104 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Lock, AlertTriangle, Mail, UserPlus, ArrowRight } from 'lucide-react';
-import { ClientSignUpFields } from './ClientSignUpFields';
-import { AuthFields } from './AuthFields';
-import { validateAuthForm } from './authValidation';
-import { authService } from './authService';
-import { useRateLimiting } from './hooks/useRateLimiting';
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { AlertTriangle, ArrowRight, Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { recordPortalLogin } from "@/data/clientPortal/invitations";
 
 interface ClientPortalFormProps {
   onConfirmationSent: (email: string) => void;
   onSwitchToTrusteePortal: () => void;
 }
 
+/**
+ * Client portal entry. Deliberately minimal: a client never supplies estate
+ * numbers, proceeding types, trustee names or any other insolvency metadata.
+ * Access to a file comes exclusively from the trustee's secure invitation.
+ */
 export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }: ClientPortalFormProps) => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [userId, setUserId] = useState('');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
-  const [occupation, setOccupation] = useState('');
-  const [income, setIncome] = useState('');
-  const [preferredContact, setPreferredContact] = useState('');
-  const [estateNumber, setEstateNumber] = useState('');
-  const [caseNumber, setCaseNumber] = useState('');
-  const [location, setLocation] = useState('');
-  const [administrativeType, setAdministrativeType] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [authInProgress, setAuthInProgress] = useState(false);
-  const { toast } = useToast();
-  const { attempts, isRateLimited, timeLeft, recordAttempt, resetAttempts } = useRateLimiting();
 
-  // Clear errors when switching between sign in and sign up
-  useEffect(() => {
-    setError(null);
-  }, [isSignUp]);
+  useEffect(() => setError(null), [isSignUp]);
 
-  const handleAuth = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (authInProgress) {
-      return;
-    }
-    
-    const validation = validateAuthForm({
-      email,
-      password,
-      isSignUp,
-      fullName,
-      userId
-    });
-    
-    if (!validation.isValid) {
-      setError(validation.error);
-      return;
-    }
+    if (loading) return;
 
-    if (isRateLimited) {
-      setError(`Too many attempts. Please wait ${timeLeft} seconds before trying again`);
-      return;
-    }
+    if (isSignUp && !fullName.trim()) return setError('Please enter your full name.');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return setError('Please enter a valid email address.');
+    if (password.length < 8) return setError('Your password must be at least 8 characters.');
 
     setLoading(true);
     setError(null);
-    setAuthInProgress(true);
 
     try {
       if (isSignUp) {
-        const metadata = {
-          phone,
-          address,
-          occupation,
-          income,
-          preferred_contact: preferredContact,
-          estate_number: estateNumber,
-          case_number: caseNumber,
-          location,
-          administrative_type: administrativeType
-        };
-
-        const { user } = await authService.signUp({
-          email,
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email: email.trim().toLowerCase(),
           password,
-          fullName,
-          userId,
-          avatarUrl,
-          userType: 'client',
-          metadata
+          options: {
+            emailRedirectTo: `${window.location.origin}/client-portal`,
+            data: { user_type: 'client', full_name: fullName.trim() },
+          },
         });
+        if (signUpError) throw signUpError;
 
-        if (user?.identities?.length === 0) {
-          setError("This email is already registered but not confirmed. Please check your email for the confirmation link.");
-        } else {
+        if (!data.session) {
           onConfirmationSent(email);
-          toast({
-            title: "Success",
-            description: "Please check your email to confirm your account",
-          });
+          toast({ title: 'Check your email', description: 'Confirm your address to finish creating your account.' });
+        } else {
+          navigate('/client-portal', { replace: true });
         }
       } else {
-        try {
-          const { user } = await authService.signIn(email, password, 'client');
-          
-          toast({
-            title: "Welcome back!",
-            description: "Successfully signed in to your client portal",
-          });
-          
-          setTimeout(() => {
-            navigate('/client-portal', { replace: true });
-          }, 300);
-        } catch (signInError: any) {
-          if (signInError.message.includes('Email not confirmed')) {
-            setError("Please check your email and confirm your account before signing in.");
-          } else {
-            throw signInError;
-          }
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: email.trim().toLowerCase(),
+          password,
+        });
+        // Deliberately generic: never reveal whether an account exists.
+        if (signInError) {
+          setError('We could not sign you in with those details. Please check your email and password.');
+          setLoading(false);
+          return;
         }
+        await recordPortalLogin();
+        toast({ title: 'Welcome back', description: 'You are signed in to your secure portal.' });
+        navigate('/client-portal', { replace: true });
       }
-
-      resetAttempts();
-    } catch (error: any) {
-      recordAttempt();
-
-      if (error.message.includes('Invalid login credentials')) {
-        setError('Invalid email or password');
-      } else if (error.message.includes('Email already registered')) {
-        setError('This email is already registered. Try signing in instead.');
-      } else if (error.message.includes('Password should be')) {
-        setError('Password should be at least 6 characters long');
-      } else if (error.message.includes('Access denied') || error.message.includes('not authorized')) {
-        setError(error.message);
-      } else {
-        setError(error.message || 'An error occurred during authentication');
-      }
+    } catch {
+      setError('Something went wrong. Please try again in a moment.');
     } finally {
       setLoading(false);
-      setAuthInProgress(false);
     }
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto space-y-8 rounded-2xl border border-blue-200/50 bg-white/95 p-8 shadow-2xl backdrop-blur-sm max-h-[80vh] overflow-y-auto">
+    <div className="w-full max-w-md mx-auto space-y-7 rounded-2xl border border-blue-200/50 bg-white/95 p-8 shadow-2xl backdrop-blur-sm">
       <div className="text-center space-y-3">
-        <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg">
           <Lock className="h-8 w-8 text-white" />
         </div>
-        <h1 className="text-3xl font-bold text-gray-900">
-          {isSignUp ? 'Create Account' : 'Welcome Back'}
-        </h1>
+        <h1 className="text-3xl font-bold text-gray-900">Client Portal</h1>
         <p className="text-gray-600">
-          {isSignUp 
-            ? 'Complete your profile to access your secure client portal' 
-            : 'Sign in to access your secure client portal'
-          }
+          {isSignUp ? 'Create your account with just your name, email and a password.' : 'Sign in to your secure portal.'}
         </p>
+      </div>
+
+      <div className="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5 text-sm text-blue-900">
+        <Mail className="mt-0.5 h-4 w-4 shrink-0" />
+        <span>Use the secure invitation sent by your trustee to connect your account to your file.</span>
       </div>
 
       {error && (
@@ -172,105 +108,72 @@ export const ClientPortalForm = ({ onConfirmationSent, onSwitchToTrusteePortal }
         </Alert>
       )}
 
-      <form onSubmit={handleAuth} className="space-y-6">
-        <AuthFields
-          email={email}
-          setEmail={setEmail}
-          password={password}
-          setPassword={setPassword}
-          isDisabled={loading || authInProgress}
-        />
-
+      <form onSubmit={handleSubmit} className="space-y-4">
         {isSignUp && (
-          <ClientSignUpFields
-            fullName={fullName}
-            setFullName={setFullName}
-            userId={userId}
-            setUserId={setUserId}
-            phone={phone}
-            setPhone={setPhone}
-            address={address}
-            setAddress={setAddress}
-            occupation={occupation}
-            setOccupation={setOccupation}
-            income={income}
-            setIncome={setIncome}
-            preferredContact={preferredContact}
-            setPreferredContact={setPreferredContact}
-            estateNumber={estateNumber}
-            setEstateNumber={setEstateNumber}
-            caseNumber={caseNumber}
-            setCaseNumber={setCaseNumber}
-            location={location}
-            setLocation={setLocation}
-            administrativeType={administrativeType}
-            setAdministrativeType={setAdministrativeType}
-            avatarUrl={avatarUrl}
-            setAvatarUrl={setAvatarUrl}
+          <div className="space-y-1.5">
+            <Label htmlFor="client-name">Full name</Label>
+            <Input
+              id="client-name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              autoComplete="name"
+              className="h-12"
+              disabled={loading}
+            />
+          </div>
+        )}
+
+        <div className="space-y-1.5">
+          <Label htmlFor="client-email">Email address</Label>
+          <Input
+            id="client-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+            className="h-12"
+            disabled={loading}
           />
-        )}
-
-        <Button
-          type="submit"
-          disabled={loading || isRateLimited || authInProgress}
-          className="w-full h-12 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl shadow-lg transition-all duration-200 transform hover:scale-[1.02]"
-        >
-          {loading ? (
-            <>
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent mr-2"></div>
-              <span>Processing...</span>
-            </>
-          ) : isSignUp ? (
-            <>
-              <UserPlus className="h-5 w-5 mr-2" />
-              <span>Create Account</span>
-            </>
-          ) : (
-            <>
-              <ArrowRight className="h-5 w-5 mr-2" />
-              <span>Sign In</span>
-            </>
-          )}
-        </Button>
-
-        {attempts > 0 && attempts < 5 && (
-          <p className="text-xs text-red-600 text-center font-medium">
-            {5 - attempts} attempts remaining before temporary lockout
-          </p>
-        )}
-      </form>
-
-      <div className="space-y-4">
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-200"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="bg-white px-4 text-gray-500">
-              {isSignUp ? 'Already have an account?' : "Don't have an account?"}
-            </span>
-          </div>
         </div>
 
-        <div className="space-y-3">
-          <Button
-            onClick={() => {
-              setIsSignUp(!isSignUp);
-              setError(null);
-            }}
-            variant="ghost"
-            className="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50 font-medium"
-          >
-            {isSignUp ? 'Sign in to existing account' : "Create a new account"}
-          </Button>
-          
-          <Button
-            onClick={onSwitchToTrusteePortal}
-            variant="ghost"
-            className="w-full text-gray-500 hover:text-gray-700 hover:bg-gray-50 text-sm"
-          >
-            Are you a trustee? Switch to Trustee Portal
-          </Button>
+        <div className="space-y-1.5">
+          <Label htmlFor="client-password">Password</Label>
+          <div className="relative">
+            <Input
+              id="client-password"
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete={isSignUp ? 'new-password' : 'current-password'}
+              className="h-12 pr-10"
+              disabled={loading}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((s) => !s)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+          {isSignUp && <p className="text-xs text-gray-500">At least 8 characters.</p>}
+        </div>
+
+        <Button type="submit" size="lg" className="h-12 w-full" disabled={loading}>
+          {loading ? 'Please wait…' : isSignUp ? 'Create account' : 'Sign in'}
+          {!loading && <ArrowRight className="ml-1.5 h-4 w-4" />}
+        </Button>
+      </form>
+
+      <div className="space-y-2 text-center text-sm">
+        <button type="button" className="text-blue-700 hover:underline" onClick={() => setIsSignUp(!isSignUp)}>
+          {isSignUp ? 'I already have an account — sign in' : "I don't have an account yet — create one"}
+        </button>
+        <div>
+          <button type="button" className="text-gray-500 hover:underline" onClick={onSwitchToTrusteePortal}>
+            I work at the trustee firm
+          </button>
         </div>
       </div>
     </div>

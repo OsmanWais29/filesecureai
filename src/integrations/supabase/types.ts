@@ -457,6 +457,215 @@ export type Database = {
           },
         ]
       }
+      client_portal_access: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          disabled_at: string | null
+          estate_id: string
+          granted_at: string
+          granted_by: string | null
+          id: string
+          invitation_id: string | null
+          last_login_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          disabled_at?: string | null
+          estate_id: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          invitation_id?: string | null
+          last_login_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          disabled_at?: string | null
+          estate_id?: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          invitation_id?: string | null
+          last_login_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_access_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_access_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "client_portal_invitations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_portal_events: {
+        Row: {
+          actor_name: string | null
+          actor_role: string
+          actor_user_id: string | null
+          detail: string | null
+          estate_id: string
+          event_type: string
+          id: string
+          invitation_id: string | null
+          new_state: string | null
+          occurred_at: string
+          previous_state: string | null
+        }
+        Insert: {
+          actor_name?: string | null
+          actor_role?: string
+          actor_user_id?: string | null
+          detail?: string | null
+          estate_id: string
+          event_type: string
+          id?: string
+          invitation_id?: string | null
+          new_state?: string | null
+          occurred_at?: string
+          previous_state?: string | null
+        }
+        Update: {
+          actor_name?: string | null
+          actor_role?: string
+          actor_user_id?: string | null
+          detail?: string | null
+          estate_id?: string
+          event_type?: string
+          id?: string
+          invitation_id?: string | null
+          new_state?: string | null
+          occurred_at?: string
+          previous_state?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_events_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_events_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "client_portal_invitations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_portal_invitations: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          created_by: string
+          created_by_name: string | null
+          estate_id: string
+          expires_at: string
+          firm_name: string | null
+          id: string
+          invited_email: string
+          invited_name: string | null
+          last_activity_at: string | null
+          last_sent_at: string | null
+          office_name: string | null
+          opened_at: string | null
+          proceeding_label: string | null
+          redeemed_at: string | null
+          redeemed_by: string | null
+          resend_count: number
+          revoked_at: string | null
+          sent_at: string | null
+          status: string
+          suspended_at: string | null
+          token_hash: string
+          trustee_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          created_by: string
+          created_by_name?: string | null
+          estate_id: string
+          expires_at?: string
+          firm_name?: string | null
+          id?: string
+          invited_email: string
+          invited_name?: string | null
+          last_activity_at?: string | null
+          last_sent_at?: string | null
+          office_name?: string | null
+          opened_at?: string | null
+          proceeding_label?: string | null
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+          resend_count?: number
+          revoked_at?: string | null
+          sent_at?: string | null
+          status?: string
+          suspended_at?: string | null
+          token_hash: string
+          trustee_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          created_by?: string
+          created_by_name?: string | null
+          estate_id?: string
+          expires_at?: string
+          firm_name?: string | null
+          id?: string
+          invited_email?: string
+          invited_name?: string | null
+          last_activity_at?: string | null
+          last_sent_at?: string | null
+          office_name?: string | null
+          opened_at?: string | null
+          proceeding_label?: string | null
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+          resend_count?: number
+          revoked_at?: string | null
+          sent_at?: string | null
+          status?: string
+          suspended_at?: string | null
+          token_hash?: string
+          trustee_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_invitations_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_tasks: {
         Row: {
           assigned_to: string | null
@@ -5073,6 +5282,23 @@ export type Database = {
       get_user_role: {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      has_portal_access: {
+        Args: { _estate_id: string; _user_id: string }
+        Returns: boolean
+      }
+      mark_client_portal_invitation_opened: {
+        Args: { p_token: string }
+        Returns: undefined
+      }
+      peek_client_portal_invitation: {
+        Args: { p_token: string }
+        Returns: Json
+      }
+      record_client_portal_login: { Args: never; Returns: undefined }
+      redeem_client_portal_invitation: {
+        Args: { p_token: string }
+        Returns: Json
       }
     }
     Enums: {

@@ -1,18 +1,21 @@
-import { useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Client portal provisioning + invitation model.
+ * Client portal provisioning + invitation model — Supabase backed.
  *
- * Backend mapping (eventual Supabase tables):
- *   client_portal_invitations -> ClientPortalInvitation
- *   client_portal_events      -> PortalEvent
+ * Tables:
+ *   client_portal_invitations   one invite per debtor/estate relationship
+ *   client_portal_access        authenticated portal user -> authorized estate
+ *   client_portal_events        audit trail
  *
  * SECURITY DESIGN
- * The invitation URL carries ONLY an opaque token. Estate/client/email are never
- * encoded into the link. Resolution happens through `resolveInvitation(token)`,
- * which in production becomes a server call that looks the token hash up and
- * returns the minimum safe payload (firm name + masked email). Activation is
- * one-time; revoke/suspend block access without deleting audit history.
+ * The invitation URL carries ONLY an opaque token. The database never stores the
+ * raw token — only a SHA-256 fingerprint — so a leaked row cannot be replayed as
+ * a credential. Resolution/redemption run through SECURITY DEFINER routines
+ * (`peek_client_portal_invitation`, `redeem_client_portal_invitation`) which
+ * verify expiry, revocation, one-time use and that the signed-in email matches
+ * the invited email before any estate access row is created.
  */
 
 export type InvitationStatus =
@@ -36,9 +39,7 @@ export const INVITATION_STATUS_LABEL: Record<InvitationStatus, string> = {
 
 export interface ClientPortalInvitation {
   id: string;
-  firmId: string;
   firmName: string;
-  officeId?: string;
   estateId: string;
   clientId: string;
   clientName: string;
@@ -46,8 +47,8 @@ export interface ClientPortalInvitation {
   trusteeName?: string;
   officeName?: string;
   invitedEmail: string;
-  /** Opaque reference. Server would persist a hash of the token only. */
-  tokenReference: string;
+  /** Present only in the browser session that created the invite. */
+  tokenReference?: string;
   status: InvitationStatus;
   createdByUserId: string;
   createdByName: string;
@@ -76,60 +77,24 @@ export type PortalEventType =
   | "CLIENT_PORTAL_INVITE_REVOKED"
   | "CLIENT_PORTAL_ACCESS_SUSPENDED"
   | "CLIENT_PORTAL_ACCESS_RESTORED"
+  | "CLIENT_PORTAL_EMAIL_CHANGED"
   | "CLIENT_LOGIN";
 
 export interface PortalEvent {
   id: string;
   estateId: string;
   invitationId?: string;
-  eventType: PortalEventType;
+  eventType: PortalEventType | string;
   actor: string;
   actorRole: "staff" | "client" | "system";
   occurredAt: string;
   detail?: string;
 }
 
-interface InvitationState {
-  invitations: ClientPortalInvitation[];
-  events: PortalEvent[];
-  /** Preview-only activation marker so the acceptance test runs in one browser. */
-  previewSession?: { invitationId: string; email: string; estateId: string; activatedAt: string } | null;
-}
+export const DEFAULT_EXPIRY_DAYS = 7;
 
-const STORAGE_KEY = "securefiles.clientPortalInvites.v1";
+/* ----------------------------------------------------------------- helpers */
 
-const empty: InvitationState = { invitations: [], events: [], previewSession: null };
-
-let state: InvitationState = load();
-const listeners = new Set<() => void>();
-
-function load(): InvitationState {
-  if (typeof window === "undefined") return empty;
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (raw) return { ...empty, ...(JSON.parse(raw) as InvitationState) };
-  } catch {
-    /* ignore */
-  }
-  return empty;
-}
-
-function commit(next: InvitationState) {
-  state = next;
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  } catch {
-    /* ignore */
-  }
-  listeners.forEach((l) => l());
-}
-
-const subscribe = (l: () => void) => {
-  listeners.add(l);
-  return () => listeners.delete(l);
-};
-
-const uid = (p: string) => `${p}-${Math.random().toString(36).slice(2, 10)}`;
 const now = () => new Date().toISOString();
 
 const opaqueToken = () => {
@@ -139,248 +104,434 @@ const opaqueToken = () => {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 };
 
-/** Applies lazy expiry so reads always reflect the true state. */
-const withExpiry = (inv: ClientPortalInvitation): ClientPortalInvitation => {
-  if (
-    (inv.status === "created" || inv.status === "sent" || inv.status === "opened") &&
-    new Date(inv.expiresAt).getTime() < Date.now()
-  ) {
-    return { ...inv, status: "expired" };
-  }
-  return inv;
+async function sha256Hex(value: string) {
+  const data = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+type Row = Record<string, any>;
+
+const rowToInvitation = (row: Row): ClientPortalInvitation => {
+  const expired =
+    ["created", "sent", "opened"].includes(row.status) && new Date(row.expires_at).getTime() < Date.now();
+  return {
+    id: row.id,
+    firmName: row.firm_name ?? "",
+    estateId: row.estate_id,
+    clientId: row.client_id ?? "",
+    clientName: row.invited_name ?? "",
+    proceedingLabel: row.proceeding_label ?? undefined,
+    trusteeName: row.trustee_name ?? undefined,
+    officeName: row.office_name ?? undefined,
+    invitedEmail: row.invited_email,
+    status: expired ? "expired" : (row.status as InvitationStatus),
+    createdByUserId: row.created_by,
+    createdByName: row.created_by_name ?? "Trustee staff",
+    createdAt: row.created_at,
+    expiresAt: row.expires_at,
+    sentAt: row.sent_at ?? undefined,
+    openedAt: row.opened_at ?? undefined,
+    acceptedAt: row.redeemed_at ?? undefined,
+    revokedAt: row.revoked_at ?? undefined,
+    suspendedAt: row.suspended_at ?? undefined,
+    activatedUserId: row.redeemed_by ?? undefined,
+    resendCount: row.resend_count ?? 0,
+    lastSentAt: row.last_sent_at ?? undefined,
+    lastActivityAt: row.last_activity_at ?? undefined,
+    simulated: !EMAIL_DELIVERY_CONFIGURED,
+  };
 };
 
-export const useInvitationState = () =>
+/* -------------------------------------------------------- refresh signalling */
+
+let version = 0;
+const listeners = new Set<() => void>();
+const subscribe = (l: () => void) => {
+  listeners.add(l);
+  return () => listeners.delete(l);
+};
+export const refreshPortalProvisioning = () => {
+  version += 1;
+  listeners.forEach((l) => l());
+};
+const useVersion = () =>
   useSyncExternalStore(
     subscribe,
-    () => state,
-    () => state,
+    () => version,
+    () => version,
   );
 
+/* --------------------------------------------------------- token disclosure */
+
+/**
+ * Freshly minted tokens are held in memory only (never localStorage) so the
+ * staff member can copy the link once, then they disappear on reload.
+ */
+const mintedTokens = new Map<string, string>();
+export const mintedTokenFor = (invitationId: string) => mintedTokens.get(invitationId);
+
+/* ------------------------------------------------------------------- reads */
+
 export function useEstateInvitation(estateId?: string) {
-  const s = useInvitationState();
-  if (!estateId) return undefined;
-  const found = [...s.invitations]
-    .filter((i) => i.estateId === estateId)
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
-  return found ? withExpiry(found) : undefined;
+  const v = useVersion();
+  const [invitation, setInvitation] = useState<ClientPortalInvitation | undefined>();
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!estateId) {
+      setInvitation(undefined);
+      return;
+    }
+    supabase
+      .from("client_portal_invitations")
+      .select("*")
+      .eq("estate_id", estateId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .then(({ data }) => {
+        if (!cancelled) setInvitation(data?.[0] ? rowToInvitation(data[0] as Row) : undefined);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [estateId, v]);
+
+  return invitation;
 }
 
 export function usePortalEvents(estateId?: string) {
-  const s = useInvitationState();
-  return s.events.filter((e) => !estateId || e.estateId === estateId);
+  const v = useVersion();
+  const [events, setEvents] = useState<PortalEvent[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!estateId) {
+      setEvents([]);
+      return;
+    }
+    supabase
+      .from("client_portal_events")
+      .select("*")
+      .eq("estate_id", estateId)
+      .order("occurred_at", { ascending: false })
+      .limit(100)
+      .then(({ data }) => {
+        if (cancelled) return;
+        setEvents(
+          (data ?? []).map((r: Row) => ({
+            id: r.id,
+            estateId: r.estate_id,
+            invitationId: r.invitation_id ?? undefined,
+            eventType: r.event_type,
+            actor: r.actor_name ?? (r.actor_role === "client" ? "Client" : "System"),
+            actorRole: r.actor_role,
+            occurredAt: r.occurred_at,
+            detail: r.detail ?? undefined,
+          })),
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [estateId, v]);
+
+  return events;
 }
-
-export const usePreviewSession = () => useInvitationState().previewSession ?? null;
-
-export const hasPreviewSession = () => Boolean(load().previewSession);
 
 /* ------------------------------------------------------------------ writes */
 
-function logEvent(e: Omit<PortalEvent, "id" | "occurredAt">) {
-  state = { ...state, events: [{ ...e, id: uid("pev"), occurredAt: now() }, ...state.events] };
-}
-
-function patch(id: string, p: Partial<ClientPortalInvitation>, event?: Omit<PortalEvent, "id" | "occurredAt">) {
-  const invitations = state.invitations.map((i) => (i.id === id ? { ...i, ...p } : i));
-  state = { ...state, invitations };
-  if (event) logEvent(event);
-  commit(state);
-  return state.invitations.find((i) => i.id === id);
-}
-
-export const DEFAULT_EXPIRY_DAYS = 7;
-
-export function createInvitation(input: {
+async function logEvent(e: {
   estateId: string;
-  clientId: string;
+  invitationId?: string;
+  eventType: PortalEventType;
+  actor: string;
+  actorRole: "staff" | "client" | "system";
+  previousState?: string;
+  newState?: string;
+  detail?: string;
+}) {
+  const { data: auth } = await supabase.auth.getUser();
+  await supabase.from("client_portal_events").insert({
+    estate_id: e.estateId,
+    invitation_id: e.invitationId ?? null,
+    event_type: e.eventType,
+    actor_user_id: auth?.user?.id ?? null,
+    actor_name: e.actor,
+    actor_role: e.actorRole,
+    previous_state: e.previousState ?? null,
+    new_state: e.newState ?? null,
+    detail: e.detail ?? null,
+  });
+}
+
+export async function createInvitation(input: {
+  estateId: string;
+  clientId?: string;
   clientName: string;
   invitedEmail: string;
-  firmId?: string;
   firmName: string;
-  officeId?: string;
   officeName?: string;
   proceedingLabel?: string;
   trusteeName?: string;
-  createdByUserId: string;
   createdByName: string;
-}): ClientPortalInvitation {
+}): Promise<ClientPortalInvitation> {
   const token = opaqueToken();
-  const invitation: ClientPortalInvitation = {
-    id: uid("inv"),
-    firmId: input.firmId ?? "firm-default",
-    firmName: input.firmName,
-    officeId: input.officeId,
-    officeName: input.officeName,
-    estateId: input.estateId,
-    clientId: input.clientId,
-    clientName: input.clientName,
-    proceedingLabel: input.proceedingLabel,
-    trusteeName: input.trusteeName,
-    invitedEmail: input.invitedEmail.trim().toLowerCase(),
-    tokenReference: token,
-    status: "created",
-    createdByUserId: input.createdByUserId,
-    createdByName: input.createdByName,
-    createdAt: now(),
-    expiresAt: new Date(Date.now() + DEFAULT_EXPIRY_DAYS * 864e5).toISOString(),
-    resendCount: 0,
-    simulated: true,
-  };
-  state = { ...state, invitations: [invitation, ...state.invitations] };
-  logEvent({
-    estateId: invitation.estateId,
-    invitationId: invitation.id,
-    eventType: "CLIENT_PORTAL_CREATED",
-    actor: input.createdByName,
-    actorRole: "staff",
-    detail: `Portal created for ${invitation.clientName}`,
-  });
-  logEvent({
+  const tokenHash = await sha256Hex(token);
+  const { data: auth } = await supabase.auth.getUser();
+  const createdBy = auth?.user?.id;
+  if (!createdBy) throw new Error("You must be signed in to create a client portal invitation.");
+
+  const { data, error } = await supabase
+    .from("client_portal_invitations")
+    .insert({
+      estate_id: input.estateId,
+      client_id: input.clientId ?? null,
+      invited_email: input.invitedEmail.trim().toLowerCase(),
+      invited_name: input.clientName,
+      token_hash: tokenHash,
+      status: "created",
+      firm_name: input.firmName,
+      office_name: input.officeName ?? null,
+      trustee_name: input.trusteeName ?? null,
+      proceeding_label: input.proceedingLabel ?? null,
+      created_by: createdBy,
+      created_by_name: input.createdByName,
+      expires_at: new Date(Date.now() + DEFAULT_EXPIRY_DAYS * 864e5).toISOString(),
+    })
+    .select("*")
+    .single();
+
+  if (error) throw error;
+
+  const invitation = { ...rowToInvitation(data as Row), tokenReference: token };
+  mintedTokens.set(invitation.id, token);
+
+  await logEvent({
     estateId: invitation.estateId,
     invitationId: invitation.id,
     eventType: "CLIENT_PORTAL_INVITE_CREATED",
     actor: input.createdByName,
     actorRole: "staff",
+    newState: "created",
     detail: invitation.invitedEmail,
   });
-  commit(state);
+  refreshPortalProvisioning();
   return invitation;
 }
 
-/**
- * Marks the invitation as sent. `delivered` is false whenever no real email
- * backend handled the message — the UI must say so rather than claim delivery.
- */
-export function markInvitationSent(id: string, actor: string, delivered: boolean, resend = false) {
-  const inv = state.invitations.find((i) => i.id === id);
-  if (!inv) return;
-  patch(
+async function patch(
+  id: string,
+  values: Row,
+  event?: {
+    estateId: string;
+    eventType: PortalEventType;
+    actor: string;
+    previousState?: string;
+    newState?: string;
+    detail?: string;
+  },
+) {
+  const { error } = await supabase.from("client_portal_invitations").update(values).eq("id", id);
+  if (error) throw error;
+  if (event) {
+    await logEvent({ ...event, invitationId: id, actorRole: "staff" });
+  }
+  refreshPortalProvisioning();
+}
+
+export async function markInvitationSent(id: string, actor: string, delivered: boolean, resend = false) {
+  const { data } = await supabase.from("client_portal_invitations").select("*").eq("id", id).single();
+  if (!data) return;
+  const inv = rowToInvitation(data as Row);
+  await patch(
     id,
     {
-      status: inv.status === "active" ? inv.status : "sent",
-      sentAt: inv.sentAt ?? now(),
-      lastSentAt: now(),
-      resendCount: resend ? inv.resendCount + 1 : inv.resendCount,
-      simulated: !delivered,
+      status: inv.status === "active" ? "active" : "sent",
+      sent_at: inv.sentAt ?? now(),
+      last_sent_at: now(),
+      resend_count: resend ? inv.resendCount + 1 : inv.resendCount,
     },
     {
       estateId: inv.estateId,
-      invitationId: id,
       eventType: resend ? "CLIENT_PORTAL_INVITE_RESENT" : "CLIENT_PORTAL_INVITE_SENT",
       actor,
-      actorRole: "staff",
-      detail: delivered ? `Emailed ${inv.invitedEmail}` : `Prepared for ${inv.invitedEmail} (email not configured)`,
+      previousState: inv.status,
+      newState: "sent",
+      detail: delivered
+        ? `Emailed ${inv.invitedEmail}`
+        : `Prepared for ${inv.invitedEmail} (email delivery not configured)`,
     },
   );
 }
 
-export function revokeInvitation(id: string, actor: string) {
-  const inv = state.invitations.find((i) => i.id === id);
-  if (!inv) return;
-  patch(id, { status: "revoked", revokedAt: now() }, {
-    estateId: inv.estateId,
-    invitationId: id,
+export async function changeInvitationEmail(id: string, estateId: string, email: string, actor: string) {
+  const next = email.trim().toLowerCase();
+  await patch(id, { invited_email: next }, {
+    estateId,
+    eventType: "CLIENT_PORTAL_EMAIL_CHANGED",
+    actor,
+    newState: next,
+    detail: `Invitation email changed to ${next}`,
+  });
+}
+
+export async function revokeInvitation(id: string, actor: string, estateId?: string) {
+  const eid = estateId ?? (await estateIdFor(id));
+  if (!eid) return;
+  await patch(id, { status: "revoked", revoked_at: now() }, {
+    estateId: eid,
     eventType: "CLIENT_PORTAL_INVITE_REVOKED",
     actor,
-    actorRole: "staff",
+    newState: "revoked",
   });
 }
 
-export function suspendPortalAccess(id: string, actor: string) {
-  const inv = state.invitations.find((i) => i.id === id);
-  if (!inv) return;
-  patch(id, { status: "suspended", suspendedAt: now() }, {
-    estateId: inv.estateId,
-    invitationId: id,
+export async function suspendPortalAccess(id: string, actor: string, estateId?: string) {
+  const eid = estateId ?? (await estateIdFor(id));
+  if (!eid) return;
+  await supabase.from("client_portal_access").update({ status: "disabled", disabled_at: now() }).eq("invitation_id", id);
+  await patch(id, { status: "suspended", suspended_at: now() }, {
+    estateId: eid,
     eventType: "CLIENT_PORTAL_ACCESS_SUSPENDED",
     actor,
-    actorRole: "staff",
+    newState: "suspended",
   });
 }
 
-export function restorePortalAccess(id: string, actor: string) {
-  const inv = state.invitations.find((i) => i.id === id);
-  if (!inv) return;
-  patch(id, { status: "active", suspendedAt: undefined }, {
-    estateId: inv.estateId,
-    invitationId: id,
+export async function restorePortalAccess(id: string, actor: string, estateId?: string) {
+  const eid = estateId ?? (await estateIdFor(id));
+  if (!eid) return;
+  await supabase
+    .from("client_portal_access")
+    .update({ status: "active", disabled_at: null })
+    .eq("invitation_id", id);
+  await patch(id, { status: "active", suspended_at: null }, {
+    estateId: eid,
     eventType: "CLIENT_PORTAL_ACCESS_RESTORED",
     actor,
-    actorRole: "staff",
+    newState: "active",
   });
 }
 
-/* ------------------------------------------------------- client-side flow */
+async function estateIdFor(id: string) {
+  const { data } = await supabase.from("client_portal_invitations").select("estate_id").eq("id", id).single();
+  return (data as Row | null)?.estate_id as string | undefined;
+}
+
+/* -------------------------------------------------------- client-side flow */
+
+export interface InvitationPreview {
+  invitationId: string;
+  invitedEmail: string;
+  invitedName: string;
+  firmName: string;
+  expiresAt: string;
+}
 
 export type InvitationResolution =
-  | { ok: true; invitation: ClientPortalInvitation }
-  | { ok: false; reason: "invalid" | "expired" | "revoked" | "suspended" };
+  | { ok: true; invitation: InvitationPreview }
+  | { ok: false; reason: "invalid" | "expired" | "revoked" | "suspended" | "used" };
 
-/** Server-side equivalent: opaque token -> firm/estate/client/email. */
-export function resolveInvitation(token: string): InvitationResolution {
-  const raw = state.invitations.find((i) => i.tokenReference === token);
-  if (!raw) return { ok: false, reason: "invalid" };
-  const inv = withExpiry(raw);
-  if (inv.status === "revoked") return { ok: false, reason: "revoked" };
-  if (inv.status === "suspended") return { ok: false, reason: "suspended" };
-  if (inv.status === "expired") return { ok: false, reason: "expired" };
-  return { ok: true, invitation: inv };
-}
-
-export function markInvitationOpened(id: string) {
-  const inv = state.invitations.find((i) => i.id === id);
-  if (!inv || inv.openedAt || inv.status === "active") return;
-  patch(id, { status: "opened", openedAt: now() }, {
-    estateId: inv.estateId,
-    invitationId: id,
-    eventType: "CLIENT_PORTAL_INVITE_OPENED",
-    actor: inv.clientName,
-    actorRole: "client",
-  });
-}
-
-/** One-time activation. Ties the authenticated user to the invitation. */
-export function activateInvitation(id: string, userId: string | undefined, previewOnly: boolean) {
-  const inv = state.invitations.find((i) => i.id === id);
-  if (!inv) return;
-  state = {
-    ...state,
-    invitations: state.invitations.map((i) =>
-      i.id === id
-        ? { ...i, status: "active", acceptedAt: now(), activatedUserId: userId, lastActivityAt: now() }
-        : i,
-    ),
-    previewSession: previewOnly
-      ? { invitationId: id, email: inv.invitedEmail, estateId: inv.estateId, activatedAt: now() }
-      : state.previewSession ?? null,
+/** Opaque token -> minimum safe payload, resolved server-side. */
+export async function resolveInvitation(token: string): Promise<InvitationResolution> {
+  if (!token) return { ok: false, reason: "invalid" };
+  const { data, error } = await supabase.rpc("peek_client_portal_invitation", { p_token: token });
+  const payload = data as Row | null;
+  if (error || !payload) return { ok: false, reason: "invalid" };
+  if (!payload.ok) return { ok: false, reason: (payload.reason ?? "invalid") as never };
+  return {
+    ok: true,
+    invitation: {
+      invitationId: payload.invitation_id,
+      invitedEmail: payload.invited_email,
+      invitedName: payload.invited_name ?? "",
+      firmName: payload.firm_name ?? "your trustee",
+      expiresAt: payload.expires_at,
+    },
   };
-  logEvent({
-    estateId: inv.estateId,
-    invitationId: id,
-    eventType: "CLIENT_PORTAL_INVITE_ACCEPTED",
-    actor: inv.clientName,
-    actorRole: "client",
-  });
-  logEvent({
-    estateId: inv.estateId,
-    invitationId: id,
-    eventType: "CLIENT_LOGIN",
-    actor: inv.clientName,
-    actorRole: "client",
-  });
-  commit(state);
 }
 
-export function touchPortalActivity(estateId: string) {
-  const inv = state.invitations.find((i) => i.estateId === estateId && i.status === "active");
-  if (!inv) return;
-  patch(inv.id, { lastActivityAt: now() });
+export async function markInvitationOpened(token: string) {
+  await supabase.rpc("mark_client_portal_invitation_opened", { p_token: token });
 }
 
-export function clearPreviewSession() {
-  commit({ ...state, previewSession: null });
+export type RedemptionResult =
+  | { ok: true; estateId: string }
+  | {
+      ok: false;
+      reason: "invalid" | "expired" | "revoked" | "suspended" | "used" | "email_mismatch" | "unauthenticated";
+    };
+
+/** One-time redemption for the currently authenticated portal user. */
+export async function redeemInvitation(token: string): Promise<RedemptionResult> {
+  const { data, error } = await supabase.rpc("redeem_client_portal_invitation", { p_token: token });
+  const payload = data as Row | null;
+  if (error || !payload) return { ok: false, reason: "invalid" };
+  if (!payload.ok) return { ok: false, reason: (payload.reason ?? "invalid") as never };
+  return { ok: true, estateId: payload.estate_id };
 }
+
+export async function recordPortalLogin() {
+  await supabase.rpc("record_client_portal_login");
+}
+
+export async function touchPortalActivity(estateId: string) {
+  await supabase
+    .from("client_portal_invitations")
+    .update({ last_activity_at: now() })
+    .eq("estate_id", estateId)
+    .eq("status", "active");
+}
+
+/* -------------------------------------------------- preview-only activation */
+
+const PREVIEW_KEY = "securefiles.clientPortalPreview.v1";
+
+export interface PreviewSession {
+  invitationId: string;
+  email: string;
+  estateId: string;
+  activatedAt: string;
+}
+
+const readPreview = (): PreviewSession | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(PREVIEW_KEY);
+    return raw ? (JSON.parse(raw) as PreviewSession) : null;
+  } catch {
+    return null;
+  }
+};
+
+let previewState: PreviewSession | null = readPreview();
+const previewListeners = new Set<() => void>();
+
+const setPreview = (next: PreviewSession | null) => {
+  previewState = next;
+  try {
+    if (next) window.localStorage.setItem(PREVIEW_KEY, JSON.stringify(next));
+    else window.localStorage.removeItem(PREVIEW_KEY);
+  } catch {
+    /* ignore */
+  }
+  previewListeners.forEach((l) => l());
+};
+
+export const usePreviewSession = () =>
+  useSyncExternalStore(
+    (l) => {
+      previewListeners.add(l);
+      return () => previewListeners.delete(l);
+    },
+    () => previewState,
+    () => previewState,
+  );
+
+export const hasPreviewSession = () => Boolean(readPreview());
+export const startPreviewSession = (s: PreviewSession) => setPreview(s);
+export const clearPreviewSession = () => setPreview(null);
 
 /* ------------------------------------------------------------------ utils */
 
@@ -393,6 +544,28 @@ export const maskEmail = (email: string) => {
   const head = local.slice(0, 2);
   return `${head}${"•".repeat(Math.max(local.length - 2, 2))}@${domain}`;
 };
+
+/** Portal access rows for the signed-in client. */
+export function useMyPortalAccess() {
+  const [state, setState] = useState<{ loading: boolean; estateIds: string[] }>({ loading: true, estateIds: [] });
+
+  const load = useCallback(async () => {
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth?.user) return setState({ loading: false, estateIds: [] });
+    const { data } = await supabase
+      .from("client_portal_access")
+      .select("estate_id")
+      .eq("user_id", auth.user.id)
+      .eq("status", "active");
+    setState({ loading: false, estateIds: (data ?? []).map((r: Row) => r.estate_id) });
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  return { ...state, reload: load };
+}
 
 /** No real transactional email backend is configured for this project yet. */
 export const EMAIL_DELIVERY_CONFIGURED = false;
