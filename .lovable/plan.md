@@ -1,113 +1,39 @@
-# Estate Workspace — Verification Report
+# Send real client portal invitation emails
 
-## What was built
+Today "Send" only marks the invitation as sent (`EMAIL_DELIVERY_CONFIGURED = false`). The trustee must copy the link manually, and if the page reloads before copying, the raw token is lost and the invitation has to be reissued. This plan makes the invite link actually arrive in the client's inbox.
 
-The Estate Management module is now a full operating workspace with two entry points and a shared in-session store.
+## Email provider
 
-### 1. Shared estate store
+This project uses an externally linked Supabase instance, so Lovable's built-in app-email system isn't available. We'll use **Resend** through the Lovable connector (you create the Resend account and verify your sending domain; no API key pasted into code).
 
-- File: `src/data/estateStore.ts`
-- A reactive client-side store seeded from the existing sample estates.
-- Exposes:
-  - `useEstateList()` — returns all estates for the list page.
-  - `useEstate(id?)` — returns the requested estate or falls back to the first one.
-  - `estateStore.add(estate)` — adds a new estate and notifies subscribers.
-- Important limitation: estates exist only in the current browser session. A refresh resets to the seed data.
+## How it will work
 
-### 2. Estates list page + "New estate" button
+1. Trustee clicks **Create client portal** — unchanged. A one-time token is minted and only its hash is stored.
+2. The raw token is passed straight to a new secure server function, which emails the activation link to the client. The token is never stored, never logged, and never returned to the browser after sending.
+3. The invitation is marked `sent`, `sent_at` / `last_sent_at` recorded, and a `client_portal_events` row is written.
+4. **Resend** on an existing invitation mints a fresh token (invalidating the previous one), re-emails it, and bumps `resend_count`.
+5. Copy-link stays available as a fallback for the freshly created invitation.
+6. Expired or revoked invitations refuse to send, with a clear message.
 
-- File: `src/pages/estates/EstatesListPage.tsx`
-- **New button**: `+ New estate` in the top-right of the `/estates` page.
-- Opens a `RecordDrawer` with sections for:
-  - Classification
-  - Consumer identity
-  - Corporate identity
-  - Important dates
-  - Responsibility
-  - Court
-- **Create logic**:
-  - Derives `debtorName` from the chosen estate type (corporate name vs. first/middle/last name).
-  - Enforces a unique OSB estate number.
-  - Adds the estate to the store and navigates to `/estates/:estateId`.
-- Uses the same `RecordForm` engine used inside the workspace.
+## Email content
 
-### 3. Estate workspace shell
+Branded to the firm on the invitation record: firm name, trustee name, estate/proceeding reference, a single **Activate your secure portal** button, the expiry date, and a short "you weren't expecting this? contact your trustee" note. Plain-text fallback included.
 
-- File: `src/pages/estates/EstateWorkspacePage.tsx`
-- Route: `/estates/:estateId`
-- Reads the estate from the shared store.
-- Layout:
-  - Top: `EstateWorkspaceHeader` (command center with OSB status, issues, next deadline).
-  - Middle: `EstateSubmoduleTabs` (18 submodule tabs).
-  - Right: persistent `SafaEstatePanel` context drawer.
-  - Center: active submodule tab.
+## Technical details
 
-### 4. Submodule tabs with data-entry surfaces
+- **Connector**: link Resend via the standard connector; calls go through the Lovable connector gateway from the server only.
+- **New edge function** `send-portal-invitation` (`verify_jwt` handled in code):
+  - Validates the caller's JWT, then re-checks `is_estate_staff(estate_id)` with the caller's token so a non-trustee cannot email invites.
+  - Validates input with Zod (`invitationId`, `estateId`, raw `token`).
+  - Loads the invitation with the service role, confirms status is `created`/`sent`/`opened` and not expired, rebuilds the activation URL from the request origin, sends via Resend, then updates `status`, `sent_at`, `last_sent_at`, `resend_count` and inserts a `client_portal_events` row.
+  - Never logs the token or the full URL.
+- **Client changes** (`src/data/clientPortal/invitations.ts`):
+  - `markInvitationSent` becomes a real `supabase.functions.invoke("send-portal-invitation", …)` call.
+  - Add `resendInvitation(invitationId)` that mints a new token, updates the stored hash + expiry, and invokes the same function.
+  - Flip `EMAIL_DELIVERY_CONFIGURED` to true so the UI stops labelling invitations as "simulated".
+- **UI** (`ClientPortalPanel.tsx`): "Send" and "Resend" show real success/failure toasts and surface the provider error text on failure; the simulated-delivery warning is removed.
+- No schema migration required — the existing `client_portal_invitations` columns already cover sent/resend tracking.
 
-| Tab | What it provides | Key buttons |
-|-----|------------------|-------------|
-| **Overview** | Estate health, stage progress, critical dates, signals | (view-only summary) |
-| **Estate Record** | Polymorphic consumer/corporate identity form + statutory info + statutory date register | Save Estate, Save statutory information, Edit (per date) |
-| **Timeline** | Statutory date register with provenance | (view-only) |
-| **Workflow** | Stage progress across intake → discharge | (view-only) |
-| **Financials** | Bank accounts, receipts, disbursements, payment schedules, reconciliation, GL | Add account, Add receipt, Add disbursement, Add schedule, Post Entry, Save Draft |
-| **Creditors** | Master creditor list, proofs of claim, meetings, dividends | (drawer-based add/edit) |
-| **Assets** | Assets, NRV, security rankings | Add asset |
-| **Documents** | Estate document tree | Upload / link |
-| **Forms** | OSB forms catalogue with parameter drawer | Parameters, Generate form |
-| **Income** | Form 65 monthly periods | Add period |
-| **Tax** | Tax returns and required documents | Add return |
-| **Counselling** | Counselling sessions and certificates | Add session |
-| **Notes** | Typed communications (call, SMS, email, billing) | Add note |
-| **Additional Info** | Repeatable records (dependents, prior insolvencies, etc.) | Add record |
-| **Compliance** | Compliance rules list | (view-only) |
-| **Discharge** | Form 82 / s.170 structured interview | Save s.170 report, Generate Form 82 |
-| **Closing** | Gated closing checklist | Close estate, Save |
-| **Activity** | Activity log | (view-only) |
+## Verification
 
-### 5. Form engine reused across the workspace
-
-- File: `src/components/estate/forms/RecordForm.tsx`
-- Provides:
-  - `RecordForm` — grid-based form with sections, text/number/money/date/select/checkbox/textarea fields.
-  - `RecordDrawer` — right-side sheet for add/edit flows.
-  - `Register` — list/card wrapper with an action button.
-  - `useRecordValues` — local form state hook.
-- Supports provenance badges (Manual / SAFA extraction / Rule engine) and inline hints.
-
-### 6. Routing and navigation
-
-- File: `src/App.tsx`
-- Added:
-  - `/estates` → `EstatesListPage`
-  - `/estates/:estateId` → `EstateWorkspacePage`
-- File: `src/components/layout/MainSidebar.tsx`
-- Added "Estates" link to the global sidebar.
-
-### 7. Field specification layer
-
-- File: `src/data/estateFormSpecs.ts`
-- Defines the controlled vocabularies and field sections for all submodules: estate classification, consumer/corporate identity, dates, banking, receipts, disbursements, payment schedules, GL, reconciliation, assets, creditors, tax, counselling, closing, etc.
-
-## Verification performed
-
-- `bunx tsgo` ran successfully with no TypeScript errors (exit code 0).
-- All new estate components are imported and wired into `App.tsx` and `EstateWorkspacePage.tsx`.
-- The "New estate" drawer uses the same form engine as the workspace tabs.
-- The workspace reads from the shared store, so newly created estates appear immediately in the list and header.
-
-## Known limitations / next decisions
-
-1. **Persistence**: The estate store is in-memory only. New estates disappear on page refresh. To keep them, estates must be persisted to the Supabase `estates` table with RLS.
-2. **Edit existing estates**: The "New estate" drawer only creates; editing an existing estate from the list is not yet wired.
-3. **Form 82 / s.170**: The structured interview is rendered but not yet persisted.
-4. **Real data wiring**: Financials, creditors, assets, etc. still show sample/mock rows. They need to be backed by the database.
-5. **OSB status**: Currently hardcoded to "attention" for new estates; should be computed from the actual record completion.
-
-## Recommended next steps
-
-- Persist the estate store to Supabase with RLS and audit logging.
-- Add an "Edit" action on each estate list card that opens the same drawer pre-filled with the existing record.
-- Wire the submodules to their respective tables so entered data survives refresh.
-
-I can proceed with any of these once you confirm which is the priority.
+Create an invitation against a test estate, confirm the email arrives, activate through the emailed link, and confirm the `client_portal_access` row and `client_portal_events` trail are written.
