@@ -168,7 +168,3 @@ export const sectionCompletion = (section: IntakeSection, data: Record<string, u
   }).length;
   return pool.length === 0 ? 0 : Math.round((answered / pool.length) * 100);
 };
-
-/** Look up a section definition by its stored key. */
-export const sectionByKey = (key: string): IntakeSection | undefined =>
-  INTAKE_SECTIONS.find((s) => s.key === key);
