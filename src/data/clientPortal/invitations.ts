@@ -622,6 +622,7 @@ export async function createPortalAccount(input: {
         reason === "revoked" ||
         reason === "suspended" ||
         reason === "used" ||
+        reason === "staff_account" ||
         reason === "rate_limited"
       ) {
         return { ok: false, reason };
