@@ -198,7 +198,7 @@ const InviteActivation = () => {
           devLog("create-account", { message: created.reason });
           setProblem({
             message: FAILURE_COPY[created.reason] ?? FAILURE_COPY.invalid,
-            action: created.reason === "used" ? "contact" : "retry",
+            action: created.reason === "used" || created.reason === "staff_account" ? "contact" : "retry",
           });
           return;
         }
