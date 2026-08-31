@@ -580,7 +580,15 @@ export type CreatePortalAccountResult =
   | { ok: true; status: "created" | "existing_account"; email: string }
   | {
       ok: false;
-      reason: "invalid" | "expired" | "revoked" | "suspended" | "used" | "rate_limited" | "server_error";
+      reason:
+        | "invalid"
+        | "expired"
+        | "revoked"
+        | "suspended"
+        | "used"
+        | "staff_account"
+        | "rate_limited"
+        | "server_error";
     };
 
 /**
