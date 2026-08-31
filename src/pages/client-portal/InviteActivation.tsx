@@ -242,6 +242,20 @@ const InviteActivation = () => {
         <ShieldCheck className="h-4 w-4" /> {inv.firmName}
       </div>
 
+      {signedInAs && (
+        <div className="mb-5 rounded-md border border-amber-300 bg-amber-50 px-3 py-3 text-sm text-amber-900">
+          <p className="font-medium">You're signed in as {signedInAs}</p>
+          <p className="mt-1">
+            This invitation is for {inv.invitedEmail}. Sign out on this device to continue as the invited client — any
+            other browser stays signed in.
+          </p>
+          <Button className="mt-3 w-full" variant="outline" size="sm" disabled={busy} onClick={switchAccount}>
+            Continue as invited client
+          </Button>
+        </div>
+      )}
+
+
       {step === 0 && (
         <>
           <h1 className="text-2xl font-semibold">You've been invited to your secure client portal.</h1>
