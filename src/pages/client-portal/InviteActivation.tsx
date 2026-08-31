@@ -42,6 +42,8 @@ const FAILURE_COPY: Record<string, string> = {
   revoked: "This invitation is no longer active. Contact your trustee if you still need access.",
   suspended: "Access to this portal is currently paused. Please contact your trustee.",
   used: "This invitation has already been used by another account. Contact your trustee for a new invitation.",
+  staff_account:
+    "That email address already belongs to a trustee/staff account. Ask your trustee to send the invitation to a personal email address.",
   email_mismatch: "You are signed in with a different email address than the one that was invited.",
   unauthenticated: "Please create your account or sign in first.",
   rate_limited: "Too many attempts from this device. Please wait a few minutes and try again.",
