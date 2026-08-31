@@ -42,6 +42,8 @@ const FAILURE_COPY: Record<string, string> = {
   revoked: "This invitation is no longer active. Contact your trustee if you still need access.",
   suspended: "Access to this portal is currently paused. Please contact your trustee.",
   used: "This invitation has already been used by another account. Contact your trustee for a new invitation.",
+  staff_account:
+    "That email address already belongs to a trustee/staff account. Ask your trustee to send the invitation to a personal email address.",
   email_mismatch: "You are signed in with a different email address than the one that was invited.",
   unauthenticated: "Please create your account or sign in first.",
   rate_limited: "Too many attempts from this device. Please wait a few minutes and try again.",
@@ -79,6 +81,7 @@ const InviteActivation = () => {
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<{ message: string; action: "retry" | "signin" | "contact" } | null>(null);
   const [done, setDone] = useState(false);
+  const [signedInAs, setSignedInAs] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -90,11 +93,29 @@ const InviteActivation = () => {
         setFullName(r.invitation.invitedName);
         void markInvitationOpened(token);
       }
+      const { data: auth } = await supabase.auth.getUser();
+      if (cancelled) return;
+      const currentEmail = auth?.user?.email?.toLowerCase() ?? null;
+      const invitedEmail = r.ok ? r.invitation.invitedEmail.toLowerCase() : null;
+      setSignedInAs(currentEmail && currentEmail !== invitedEmail ? currentEmail : null);
     })();
     return () => {
       cancelled = true;
     };
   }, [token]);
+
+  /** Sign out only this browser session so the invited client can continue here. */
+  const switchAccount = async () => {
+    setBusy(true);
+    try {
+      await supabase.auth.signOut({ scope: "local" });
+      setSignedInAs(null);
+      setProblem(null);
+      toast.success("Signed out on this device. You can continue as the invited client.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   /**
    * Redeem + verify access for the currently authenticated user.
@@ -177,7 +198,7 @@ const InviteActivation = () => {
           devLog("create-account", { message: created.reason });
           setProblem({
             message: FAILURE_COPY[created.reason] ?? FAILURE_COPY.invalid,
-            action: created.reason === "used" ? "contact" : "retry",
+            action: created.reason === "used" || created.reason === "staff_account" ? "contact" : "retry",
           });
           return;
         }
@@ -221,6 +242,20 @@ const InviteActivation = () => {
         <ShieldCheck className="h-4 w-4" /> {inv.firmName}
       </div>
 
+      {signedInAs && (
+        <div className="mb-5 rounded-md border border-amber-300 bg-amber-50 px-3 py-3 text-sm text-amber-900">
+          <p className="font-medium">You're signed in as {signedInAs}</p>
+          <p className="mt-1">
+            This invitation is for {inv.invitedEmail}. Sign out on this device to continue as the invited client — any
+            other browser stays signed in.
+          </p>
+          <Button className="mt-3 w-full" variant="outline" size="sm" disabled={busy} onClick={switchAccount}>
+            Continue as invited client
+          </Button>
+        </div>
+      )}
+
+
       {step === 0 && (
         <>
           <h1 className="text-2xl font-semibold">You've been invited to your secure client portal.</h1>
@@ -232,7 +267,7 @@ const InviteActivation = () => {
             <div className="text-xs uppercase tracking-wide text-muted-foreground">Invitation sent to</div>
             <div className="font-medium">{inv.invitedEmail}</div>
           </div>
-          <Button className="mt-6 w-full" size="lg" onClick={() => setStep(1)}>
+          <Button className="mt-6 w-full" size="lg" disabled={Boolean(signedInAs)} onClick={() => setStep(1)}>
             Continue
           </Button>
         </>
@@ -384,7 +419,7 @@ const InviteActivation = () => {
                 </div>
               ) : (
                 <>
-                  <Button className="mt-6 w-full" size="lg" onClick={submit}>
+                  <Button className="mt-6 w-full" size="lg" disabled={Boolean(signedInAs)} onClick={submit}>
                     {mode === "create" ? "Create account and enter portal" : "Sign in and enter portal"}
                   </Button>
                   {problem?.action === "signin" && (
