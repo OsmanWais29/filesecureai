@@ -81,6 +81,7 @@ const InviteActivation = () => {
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<{ message: string; action: "retry" | "signin" | "contact" } | null>(null);
   const [done, setDone] = useState(false);
+  const [signedInAs, setSignedInAs] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -92,11 +93,29 @@ const InviteActivation = () => {
         setFullName(r.invitation.invitedName);
         void markInvitationOpened(token);
       }
+      const { data: auth } = await supabase.auth.getUser();
+      if (cancelled) return;
+      const currentEmail = auth?.user?.email?.toLowerCase() ?? null;
+      const invitedEmail = r.ok ? r.invitation.invitedEmail.toLowerCase() : null;
+      setSignedInAs(currentEmail && currentEmail !== invitedEmail ? currentEmail : null);
     })();
     return () => {
       cancelled = true;
     };
   }, [token]);
+
+  /** Sign out only this browser session so the invited client can continue here. */
+  const switchAccount = async () => {
+    setBusy(true);
+    try {
+      await supabase.auth.signOut({ scope: "local" });
+      setSignedInAs(null);
+      setProblem(null);
+      toast.success("Signed out on this device. You can continue as the invited client.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   /**
    * Redeem + verify access for the currently authenticated user.
