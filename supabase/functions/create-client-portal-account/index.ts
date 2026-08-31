@@ -91,10 +91,16 @@ Deno.serve(async (req) => {
     { headers: { apikey: SERVICE_ROLE, Authorization: `Bearer ${SERVICE_ROLE}` } },
   );
   if (!lookup.ok) return json({ error: "server_error" }, 500);
-  const lookupBody = (await lookup.json()) as { users?: Array<{ id: string; email?: string }> };
+  const lookupBody = (await lookup.json()) as {
+    users?: Array<{ id: string; email?: string; user_metadata?: Record<string, unknown> }>;
+  };
   const existing = (lookupBody.users ?? []).find((u) => (u.email ?? "").toLowerCase() === email);
 
   if (existing) {
+    // A trustee/staff mailbox can never be turned into a portal client account.
+    if (String(existing.user_metadata?.user_type ?? "") === "trustee") {
+      return json({ error: "staff_account" }, 400);
+    }
     // Never touch the password of an account that already exists.
     if (invitation.redeemed_by && invitation.redeemed_by !== existing.id) {
       return json({ error: "used" }, 400);
