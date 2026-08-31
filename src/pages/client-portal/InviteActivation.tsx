@@ -267,7 +267,7 @@ const InviteActivation = () => {
             <div className="text-xs uppercase tracking-wide text-muted-foreground">Invitation sent to</div>
             <div className="font-medium">{inv.invitedEmail}</div>
           </div>
-          <Button className="mt-6 w-full" size="lg" onClick={() => setStep(1)}>
+          <Button className="mt-6 w-full" size="lg" disabled={Boolean(signedInAs)} onClick={() => setStep(1)}>
             Continue
           </Button>
         </>
@@ -419,7 +419,7 @@ const InviteActivation = () => {
                 </div>
               ) : (
                 <>
-                  <Button className="mt-6 w-full" size="lg" onClick={submit}>
+                  <Button className="mt-6 w-full" size="lg" disabled={Boolean(signedInAs)} onClick={submit}>
                     {mode === "create" ? "Create account and enter portal" : "Sign in and enter portal"}
                   </Button>
                   {problem?.action === "signin" && (
