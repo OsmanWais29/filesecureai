@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Sheet,
   SheetContent,
@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Download, Scale, Sparkles } from "lucide-react";
-import { PostureMetric, formatRatio } from "@/data/analytics/postureData";
+import { PostureMetric, formatRatio, ratioDetail } from "@/data/analytics/postureData";
 import { STATUS_STYLES } from "./statusStyles";
 
 interface Props {
@@ -45,8 +45,11 @@ const exportCsv = (metric: PostureMetric, asOf: string) => {
 };
 
 export const MetricDrilldown: React.FC<Props> = ({ metric, asOf, onOpenChange }) => {
+  const [showAllNote, setShowAllNote] = useState(false);
   if (!metric) return null;
   const style = STATUS_STYLES[metric.status];
+  const total = metric.totalFiles ?? metric.files.length;
+  const truncated = total > metric.files.length;
 
   return (
     <Sheet open={!!metric} onOpenChange={onOpenChange}>
@@ -57,8 +60,12 @@ export const MetricDrilldown: React.FC<Props> = ({ metric, asOf, onOpenChange })
             {metric.label}
           </SheetTitle>
           <SheetDescription>
-            As of {asOf} · {metric.numerator} of {metric.denominator} ·{" "}
-            <span className="font-medium">{formatRatio(metric)}</span>
+            {metric.drilldownHeader ?? (
+              <>
+                As of {asOf} · {ratioDetail(metric) || `${metric.numerator} / ${metric.denominator}`} ·{" "}
+                <span className="font-medium">{formatRatio(metric)}</span>
+              </>
+            )}
           </SheetDescription>
         </SheetHeader>
 
@@ -130,12 +137,30 @@ export const MetricDrilldown: React.FC<Props> = ({ metric, asOf, onOpenChange })
 
           <div>
             <Separator className="mb-3" />
-            <h4 className="text-sm font-semibold mb-2">
-              Files behind the number ({metric.files.length})
-            </h4>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <h4 className="text-sm font-semibold">
+                Files behind the number ({total})
+                {truncated && ` · showing ${metric.files.length}`}
+              </h4>
+              {truncated && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllNote(true)}
+                  className="text-xs text-primary underline underline-offset-2"
+                >
+                  Show all {total}
+                </button>
+              )}
+            </div>
+            {truncated && showAllNote && (
+              <p className="mb-2 text-xs text-muted-foreground">
+                The full list of {total} files opens in the SRD queue for this snapshot.
+              </p>
+            )}
             <div className="rounded-md border divide-y">
               {metric.files.map((r) => {
                 const rowStyle = STATUS_STYLES[r.status];
+                const showDot = metric.fileDotsBreachOnly ? r.status === "breach" : true;
                 return (
                   <div key={r.file} className="p-3 text-sm">
                     <div className="flex items-center justify-between gap-2">
@@ -146,7 +171,7 @@ export const MetricDrilldown: React.FC<Props> = ({ metric, asOf, onOpenChange })
                     </div>
                     <p className="mt-1 text-muted-foreground">{r.detail}</p>
                     <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                      <span className={`h-2 w-2 rounded-full ${rowStyle.dot}`} />
+                      {showDot && <span className={`h-2 w-2 rounded-full ${rowStyle.dot}`} />}
                       {r.lit} · {r.office}
                     </div>
                   </div>

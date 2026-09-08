@@ -40,7 +40,23 @@ export interface PostureMetric {
   spread?: SpreadRow[];
   files: FileRow[];
   note?: string;
+  /** Overrides the computed headline figure. */
+  headline?: string;
+  /** Overrides the "numerator / denominator" text entirely. */
+  ratioText?: string;
+  /** Names the population behind the denominator. */
+  population?: string;
+  /** Extra line rendered under the headline. */
+  secondLine?: string;
+  /** True total of underlying files when the list is truncated. */
+  totalFiles?: number;
+  /** Show a dot on file rows only when that file has a breached clock. */
+  fileDotsBreachOnly?: boolean;
+  /** Overrides the drill-down sub-header. */
+  drilldownHeader?: string;
 }
+
+export type BenchmarkBadge = "above" | "below" | "inline" | "context" | "none";
 
 export interface BenchmarkRow {
   id: string;
@@ -51,6 +67,10 @@ export interface BenchmarkRow {
   source: string;
   betterWhen: "lower" | "higher";
   asOf: string;
+  badge: BenchmarkBadge;
+  firmDisplay?: string;
+  publishedDisplay?: string;
+  subtext?: string;
 }
 
 /** Immutable snapshots. A view "as of 31 March" must reproduce on 30 September. */
@@ -68,21 +88,21 @@ export const SNAPSHOTS: Snapshot[] = [
     asOf: "2026-06-30",
     label: "As of 30 June 2026 (Q1 2026-27)",
     sealedAt: "2026-07-02T13:04:00Z",
-    sealedBy: "M. Harris, LIT",
+    sealedBy: "J. Okonkwo, LIT",
   },
   {
     id: "2026-03-31",
     asOf: "2026-03-31",
     label: "As of 31 March 2026 (fiscal year end)",
     sealedAt: "2026-04-01T09:12:00Z",
-    sealedBy: "M. Harris, LIT",
+    sealedBy: "J. Okonkwo, LIT",
   },
   {
     id: "2025-12-31",
     asOf: "2025-12-31",
     label: "As of 31 December 2025",
     sealedAt: "2026-01-02T10:41:00Z",
-    sealedBy: "M. Harris, LIT",
+    sealedBy: "J. Okonkwo, LIT",
   },
 ];
 
@@ -103,9 +123,12 @@ export const SECTION_A: PostureMetric[] = [
     numerator: 288,
     denominator: 317,
     unit: "percent",
+    population: "filings submitted",
     status: "watch",
     statusReason: "Below the 95% internal floor at two offices; no OSB threshold published yet.",
     spreadLabel: "By office — spread, not average",
+    totalFiles: 29,
+    fileDotsBreachOnly: true,
     spread: [
       { label: "Winnipeg", numerator: 96, denominator: 98 },
       { label: "Regina", numerator: 74, denominator: 86 },
@@ -127,6 +150,7 @@ export const SECTION_A: PostureMetric[] = [
     numerator: 17,
     denominator: 29,
     unit: "percent",
+    population: "returned filings",
     inverted: true,
     status: "watch",
     statusReason: "Majority of returns trace to unverified income at intake, not clerical error.",
@@ -145,6 +169,7 @@ export const SECTION_A: PostureMetric[] = [
     numerator: 23,
     denominator: 412,
     unit: "percent",
+    population: "open estates",
     inverted: true,
     status: "breach",
     statusReason: "4 estates are more than 24 months past expected closing with no s. 34(2) motion on file.",
@@ -169,6 +194,7 @@ export const SECTION_A: PostureMetric[] = [
     numerator: 19,
     denominator: 208,
     unit: "percent",
+    population: "consumer proposals",
     inverted: true,
     status: "watch",
     statusReason: "Projection is model output; each file requires human confirmation before contact.",
@@ -193,6 +219,7 @@ export const SECTION_A: PostureMetric[] = [
     numerator: 371,
     denominator: 412,
     unit: "percent",
+    population: "open estates",
     status: "watch",
     statusReason: "41 files have unknown source; 6 sit in hold-for-review pending paid-advisor attestation.",
     spreadLabel: "Source mix and concentration",
@@ -216,8 +243,10 @@ export const SECTION_A: PostureMetric[] = [
     numerator: 389,
     denominator: 412,
     unit: "percent",
+    population: "open estates",
     status: "watch",
-    statusReason: "23 files late; 11 sessions recorded under 45 minutes; all counsellors qualified on record.",
+    statusReason:
+      "23 files late; 11 sessions recorded under 45 minutes; all counsellors qualified on record. Firm-set ceiling: 12 sessions/day (configurable in Settings).",
     spreadLabel: "By office",
     spread: [
       { label: "Winnipeg", numerator: 163, denominator: 168 },
@@ -233,17 +262,18 @@ export const SECTION_A: PostureMetric[] = [
   {
     id: "surplus-income",
     label: "Files with Form 65 filed and income verified",
-    citation: "Surplus Income Directive (redraft pending 2026-27); Form 65",
-    numerator: 344,
-    denominator: 412,
+    citation: "Directive 11R2-2026, Surplus Income; Form 65. Bankruptcies only.",
+    numerator: 170,
+    denominator: 204,
     unit: "percent",
+    population: "bankruptcies",
     status: "watch",
-    statusReason: "68 files rely on intake estimates; mean variance to verified income is $310/month.",
+    statusReason: "34 files rely on intake estimates; mean variance to verified income is $310/month.",
     spreadLabel: "Intake estimate vs verified income",
     spread: [
-      { label: "Within $100", numerator: 201, denominator: 344 },
-      { label: "$100-$400 variance", numerator: 98, denominator: 344 },
-      { label: "Over $400 variance", numerator: 45, denominator: 344 },
+      { label: "Within $100", numerator: 101, denominator: 170 },
+      { label: "$100-$400 variance", numerator: 47, denominator: 170 },
+      { label: "Over $400 variance", numerator: 22, denominator: 170 },
     ],
     files: [
       f("Tremblay, L.", "31-2917330", "M. Harris", "Winnipeg", "Verified income $912 above intake estimate — adjustment #2", "breach"),
@@ -257,13 +287,15 @@ export const SECTION_A: PostureMetric[] = [
     numerator: 1189,
     denominator: 1246,
     unit: "percent",
+    population: "statutory clocks",
+    secondLine: "57 not in good standing: 54 amber (due within window) · 3 breached",
     status: "breach",
-    statusReason: "9 clocks breached, including two s. 170 reports past due.",
+    statusReason: "3 clocks breached, including two s. 170 reports past due.",
     spreadLabel: "Clock state",
     spread: [
       { label: "Green", numerator: 1189, denominator: 1246 },
-      { label: "Amber", numerator: 48, denominator: 1246 },
-      { label: "Breached", numerator: 9, denominator: 1246 },
+      { label: "Amber", numerator: 54, denominator: 1246 },
+      { label: "Breached", numerator: 3, denominator: 1246 },
     ],
     files: [
       f("Cormier Holdings", "31-2811004", "M. Harris", "Winnipeg", "s. 170 report 62 days past due", "breach"),
@@ -278,6 +310,7 @@ export const SECTION_A: PostureMetric[] = [
     numerator: 11,
     denominator: 12,
     unit: "percent",
+    population: "trust accounts",
     status: "breach",
     statusReason: "One account carries two unexplained exceptions past the reconciliation date.",
     files: [
@@ -291,6 +324,7 @@ export const SECTION_A: PostureMetric[] = [
     numerator: 397,
     denominator: 412,
     unit: "percent",
+    population: "open estates",
     status: "watch",
     statusReason: "15 files missing at least one of: banking consent, outsourcing notice, AI human sign-off.",
     spreadLabel: "Consent type completeness",
@@ -311,6 +345,7 @@ export const SECTION_A: PostureMetric[] = [
     numerator: 4,
     denominator: 412,
     unit: "percent",
+    population: "estates filed in period",
     inverted: true,
     status: "compliant",
     statusReason: "Rate 0.97% below national 0.98%; 1 open past the 10-business-day response target.",
@@ -327,10 +362,13 @@ export const SECTION_A: PostureMetric[] = [
   {
     id: "cyber-baseline",
     label: "Cyber baseline controls confirmed",
-    citation: "OSB Cybersecurity Notice; directive updates pending",
-    numerator: 46,
-    denominator: 51,
+    citation:
+      "OSB Cybersecurity Notice (22 Jan 2026): 10 baseline safeguards + breach-reporting procedure",
+    numerator: 9,
+    denominator: 11,
     unit: "percent",
+    headline: "9 / 11 controls",
+    ratioText: "",
     status: "watch",
     statusReason: "MFA coverage 96%; two access reviews overdue; data residency confirmed for all stores.",
     spreadLabel: "Control coverage",
@@ -345,13 +383,16 @@ export const SECTION_A: PostureMetric[] = [
   },
   {
     id: "provincial-consistency",
-    label: "Provincial consistency — best vs worst office",
-    citation: "Expanded NMJ supervision model",
-    numerator: 96,
-    denominator: 100,
+    label: "Office spread — SRD first-pass rate",
+    citation:
+      "Spread: best office 98.0% (Winnipeg) · worst 81.4% (Thunder Bay) · offices with n ≥ 10 only",
+    numerator: 166,
+    denominator: 10,
     unit: "percent",
+    headline: "16.6 pts",
+    ratioText: "",
     status: "watch",
-    statusReason: "Spread of 15 points on first-pass rate between Calgary (96.8%) and Thunder Bay (81.4%).",
+    statusReason: "Spread of 16.6 points on first-pass rate between Winnipeg (98.0%) and Thunder Bay (81.4%).",
     spreadLabel: "First-pass rate by province",
     spread: [
       { label: "Alberta", numerator: 61, denominator: 63 },
@@ -363,24 +404,91 @@ export const SECTION_A: PostureMetric[] = [
       f("Thunder Bay office", "OFF-004", "S. Okafor", "Thunder Bay", "Worst office on first-pass, counselling timeliness and unknown-source share", "breach"),
     ],
   },
+  {
+    id: "advisor-fees-nil",
+    label: "Referred files reporting advisor fees as nil or zero",
+    citation:
+      "Form 79 Q7.1 = yes with fees reported $0 · BIA s. 21, s. 158(d); BIGR s. 45; OSB Winter 2026 DAM Update",
+    numerator: 6,
+    denominator: 47,
+    unit: "percent",
+    headline: "12.8%",
+    ratioText: "6 / 47",
+    status: "breach",
+    statusReason: "Six referred files declare a paid advisor but report the fee as nil.",
+    files: [
+      f("Whitecloud, P.", "31-2918441", "M. Harris", "Winnipeg", "Form 79 Q7.1 = yes, fee reported $0", "breach"),
+      f("Santos, R.", "35-2906010", "L. Chen", "Calgary", "Form 79 Q7.1 = yes, fee field blank", "breach"),
+    ],
+  },
+  {
+    id: "cp-annulment-cohort",
+    label: "Consumer proposal annulment rate — filing cohort vs national",
+    citation:
+      "Div II proposals filed Q1–Q2 2024, observed 24 months · national baseline 16% (OSB, Phong Su decision fn 2)",
+    numerator: 19,
+    denominator: 134,
+    unit: "percent",
+    headline: "14.2%",
+    ratioText: "19 / 134",
+    status: "neutral",
+    statusReason: "Cohort measure. No obligation attaches to this rate; shown for comparison only.",
+    files: [
+      f("Cohort — Q1 2024", "COH-A", "—", "All", "9 annulments of 68 proposals", "neutral"),
+      f("Cohort — Q2 2024", "COH-B", "—", "All", "10 annulments of 66 proposals", "neutral"),
+    ],
+  },
+  {
+    id: "referral-source-review",
+    label: "Referral sources reviewed and signed off in last 12 months",
+    citation: "Code of Ethics Rules 34, 49; OSB Winter 2026 DAM Update",
+    numerator: 15,
+    denominator: 21,
+    unit: "percent",
+    headline: "71.4%",
+    ratioText: "15 / 21 sources",
+    status: "watch",
+    statusReason: "Six referral sources have not been reviewed within the last 12 months.",
+    files: [
+      f("Referral source — Northline Debt Co.", "REF-07", "M. Harris", "Winnipeg", "Last review 19 months ago", "watch"),
+      f("Referral source — Prairie Advisors", "REF-12", "L. Chen", "Calgary", "No review on record", "watch"),
+    ],
+  },
+  {
+    id: "correspondence-retention",
+    label: "Estate correspondence retained 4 years post-discharge",
+    citation: "BIA s. 26(1)–(2); Rule 68; Directive 17 ¶5, ¶7(1)",
+    numerator: 88,
+    denominator: 88,
+    unit: "percent",
+    headline: "100%",
+    ratioText: "88 / 88 discharged estates",
+    status: "neutral",
+    statusReason: "All discharged estates in scope carry complete retained correspondence.",
+    files: [
+      f("Retention sweep — 2026 Q1", "RET-01", "—", "All", "88 discharged estates verified", "neutral"),
+    ],
+  },
 ];
 
 export const SECTION_B: PostureMetric[] = [
   {
     id: "intake-funnel",
-    label: "Enquiry to engaged conversion",
+    label: "Intake funnel — enquiry → engaged",
     numerator: 188,
     denominator: 604,
     unit: "percent",
+    population: "enquiries",
+    secondLine: "604 enquiries → 341 consultations → 188 engaged → 118 filed",
     status: "neutral",
     statusReason: "Median 11 days enquiry → engaged; consultation no-show rate 18%.",
     spreadLabel: "Funnel stage",
     spread: [
       { label: "Enquiry", numerator: 604, denominator: 604 },
       { label: "Consultation booked", numerator: 402, denominator: 604 },
-      { label: "Consultation held", numerator: 329, denominator: 604 },
+      { label: "Consultation held", numerator: 341, denominator: 604 },
       { label: "Engaged", numerator: 188, denominator: 604 },
-      { label: "Filed", numerator: 171, denominator: 604 },
+      { label: "Filed", numerator: 118, denominator: 604 },
     ],
     files: [
       f("Channel — paid search", "CH-01", "—", "All", "Cost per filed estate $412", "neutral"),
@@ -394,6 +502,7 @@ export const SECTION_B: PostureMetric[] = [
     numerator: 118,
     denominator: 171,
     unit: "percent",
+    population: "filed estates",
     status: "neutral",
     statusReason: "Median 24 days. Stalls concentrate in document collection and income verification.",
     spreadLabel: "Where files stall",
@@ -413,6 +522,7 @@ export const SECTION_B: PostureMetric[] = [
     numerator: 244,
     denominator: 412,
     unit: "percent",
+    population: "open estates",
     status: "neutral",
     statusReason: "Manual verification adds a median 6 days and correlates with SRD income comments.",
     files: [
@@ -426,6 +536,7 @@ export const SECTION_B: PostureMetric[] = [
     numerator: 74,
     denominator: 96,
     unit: "percent",
+    population: "files in queue",
     status: "neutral",
     statusReason: "22 blocked. Named missing documents drive the queue.",
     spreadLabel: "Named missing document",
@@ -446,8 +557,12 @@ export const SECTION_B: PostureMetric[] = [
     numerator: 47,
     denominator: 4,
     unit: "count",
+    headline: "11.8",
+    ratioText: "47 sessions / 4 counsellors",
+    drilldownHeader: "As of 2026-06-30 · 47 sessions across 4 counsellors · avg 11.8/day",
     status: "watch",
-    statusReason: "Harris runs 12/day; the two offices with the highest session load also carry the late-session findings in Section A.",
+    statusReason:
+      "Firm-set ceiling: 12 sessions/day (configurable in Settings). The two offices with the highest session load also carry the late-session findings in Section A.",
     spreadLabel: "Load by person",
     spread: [
       { label: "M. Harris", numerator: 12, denominator: 12 },
@@ -462,9 +577,12 @@ export const SECTION_B: PostureMetric[] = [
   {
     id: "per-file-economics",
     label: "Fee realized against tariff",
+    citation: "From filed SRDs only; tariff per Canada Gazette Part I (proposed)",
     numerator: 91,
     denominator: 100,
     unit: "percent",
+    headline: "91.0%",
+    ratioText: "$91,200 / $100,200 tariff cap",
     status: "neutral",
     statusReason: "Summary admin realizes 91% of tariff; fixed-fee proposals realize 103% of modelled cost.",
     spreadLabel: "By administration type",
@@ -483,6 +601,7 @@ export const SECTION_B: PostureMetric[] = [
     numerator: 41,
     denominator: 412,
     unit: "percent",
+    population: "open estates",
     inverted: true,
     status: "watch",
     statusReason: "Rework is the cost of the Section A findings: 29 SRD returns, 8 form corrections, 4 debtor re-contacts.",
@@ -502,6 +621,7 @@ export const SECTION_B: PostureMetric[] = [
     numerator: 152,
     denominator: 166,
     unit: "percent",
+    population: "discharge applications",
     status: "neutral",
     statusReason: "14 opposed; median 9 months to discharge; 61 post-discharge re-engagements offered.",
     spreadLabel: "Outcome",
@@ -526,6 +646,7 @@ export const SECTION_C: BenchmarkRow[] = [
     source: "OSB insolvency statistics, 2025-26",
     betterWhen: "higher",
     asOf: "2026-06-30",
+    badge: "above",
   },
   {
     id: "complaint-rate",
@@ -536,6 +657,8 @@ export const SECTION_C: BenchmarkRow[] = [
     source: "OSB complaints reporting, 2025-26",
     betterWhen: "lower",
     asOf: "2026-06-30",
+    badge: "inline",
+    subtext: "4 complaints — difference is within sampling noise",
   },
   {
     id: "srd-threshold",
@@ -546,6 +669,7 @@ export const SECTION_C: BenchmarkRow[] = [
     source: "Threshold not yet published — Standards of Practice consultation 2026-27",
     betterWhen: "higher",
     asOf: "2026-06-30",
+    badge: "none",
   },
   {
     id: "aging-threshold",
@@ -556,22 +680,93 @@ export const SECTION_C: BenchmarkRow[] = [
     source: "Threshold not yet published — LITRAS aging model",
     betterWhen: "lower",
     asOf: "2026-06-30",
+    badge: "none",
   },
   {
     id: "debtor-mix",
     label: "Consumer proposals as a share of consumer insolvencies",
-    firmValue: 50.5,
+    firmValue: 62.1,
     publishedValue: 79.8,
     unit: "percent",
-    source: "OSB Consumer Debtor Profile",
+    source: "OSB insolvency statistics, 2025 · verify before release",
     betterWhen: "higher",
     asOf: "2026-03-31",
+    badge: "below",
+    firmDisplay: "62.1% of estates filed Q1 2026-27",
+  },
+  {
+    id: "darr-major-cases",
+    label: "DARR reviews referred to Major Cases",
+    firmValue: 0,
+    publishedValue: 0,
+    unit: "count",
+    source: "OSB Winter 2026 DAM Update",
+    betterWhen: "lower",
+    asOf: "2026-06-30",
+    badge: "context",
+    firmDisplay: "—",
+    publishedDisplay: "11 firms / 30+ LITs / 100%",
+  },
+  {
+    id: "advisor-advice-monthly",
+    label: "Estates reporting advisor advice (monthly)",
+    firmValue: 4.1,
+    publishedValue: 7.1,
+    unit: "percent",
+    source: "OSB Winter 2026 DAM Update",
+    betterWhen: "higher",
+    asOf: "2026-06-30",
+    badge: "below",
+    publishedDisplay: "7.1% (Dec 2025)",
+  },
+  {
+    id: "conduct-investigations",
+    label: "LITs under Professional Conduct Investigation",
+    firmValue: 0,
+    publishedValue: 0,
+    unit: "count",
+    source: "OSB Annual Report 2025-26, 31 Mar 2026",
+    betterWhen: "lower",
+    asOf: "2026-03-31",
+    badge: "context",
+    firmDisplay: "0",
+    publishedDisplay: "58 individual / 20 corporate",
+  },
+  {
+    id: "ai-examinations",
+    label: "AI-assisted debtor examinations → court intervention",
+    firmValue: 0,
+    publishedValue: 75.4,
+    unit: "percent",
+    source: "OSB Annual Report 2025-26",
+    betterWhen: "lower",
+    asOf: "2026-03-31",
+    badge: "context",
+    firmDisplay: "—",
+    publishedDisplay: "75.4%",
+  },
+  {
+    id: "cp-annulment-benchmark",
+    label: "Consumer proposal annulment rate",
+    firmValue: 14.2,
+    publishedValue: 16,
+    unit: "percent",
+    source: "OSB, Phong Su decision (2020–21 baseline)",
+    betterWhen: "lower",
+    asOf: "2026-06-30",
+    badge: "below",
   },
 ];
 
-export const formatRatio = (m: Pick<PostureMetric, "numerator" | "denominator" | "unit">) => {
+export const formatRatio = (m: Pick<PostureMetric, "numerator" | "denominator" | "unit" | "headline">) => {
+  if (m.headline) return m.headline;
   if (m.unit === "count") return `${m.numerator}`;
   if (m.unit === "days") return `${m.numerator} days`;
   if (!m.denominator) return "—";
   return `${((m.numerator / m.denominator) * 100).toFixed(1)}%`;
+};
+
+export const ratioDetail = (m: PostureMetric) => {
+  if (m.ratioText !== undefined) return m.ratioText;
+  return `${m.numerator} / ${m.denominator}${m.population ? ` ${m.population}` : ""}`;
 };

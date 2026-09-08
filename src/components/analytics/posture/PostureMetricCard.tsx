@@ -8,17 +8,20 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Sparkles } from "lucide-react";
-import { PostureMetric, formatRatio } from "@/data/analytics/postureData";
+import { PostureMetric, formatRatio, ratioDetail } from "@/data/analytics/postureData";
 import { STATUS_STYLES } from "./statusStyles";
 
 interface Props {
   metric: PostureMetric;
   asOf: string;
   onSelect: (metric: PostureMetric) => void;
+  /** Section B carries no status colour. */
+  hideDot?: boolean;
 }
 
-export const PostureMetricCard: React.FC<Props> = ({ metric, asOf, onSelect }) => {
+export const PostureMetricCard: React.FC<Props> = ({ metric, asOf, onSelect, hideDot }) => {
   const style = STATUS_STYLES[metric.status];
+  const detail = ratioDetail(metric);
 
   return (
     <TooltipProvider delayDuration={120}>
@@ -34,17 +37,27 @@ export const PostureMetricCard: React.FC<Props> = ({ metric, asOf, onSelect }) =
             <CardContent className="p-4 space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <p className="text-sm font-medium leading-snug">{metric.label}</p>
-                <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${style.dot}`} />
+                {!hideDot && (
+                  <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${style.dot}`} />
+                )}
               </div>
 
               <div className="flex items-baseline gap-2">
-                <span className={`text-2xl font-semibold tabular-nums ${style.text}`}>
+                <span
+                  className={`text-2xl font-semibold tabular-nums ${
+                    hideDot ? "text-foreground" : style.text
+                  }`}
+                >
                   {formatRatio(metric)}
                 </span>
-                <span className="text-xs text-muted-foreground tabular-nums">
-                  {metric.numerator}/{metric.denominator}
-                </span>
+                {detail && (
+                  <span className="text-xs text-muted-foreground tabular-nums">{detail}</span>
+                )}
               </div>
+
+              {metric.secondLine && (
+                <p className="text-xs text-muted-foreground leading-snug">{metric.secondLine}</p>
+              )}
 
               {metric.citation && (
                 <p className="text-[11px] leading-snug text-muted-foreground line-clamp-2">
