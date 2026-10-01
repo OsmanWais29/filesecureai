@@ -1,0 +1,8 @@
+{
+  "app": "npx tsx bin/app.ts",
+  "context": {
+    "appUrl": "https://app.example.com",
+    "emailFrom": "crm@example.com",
+    "websiteOrigins": ["https://www.example.com"]
+  }
+}
