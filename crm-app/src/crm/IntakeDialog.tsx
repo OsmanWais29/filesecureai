@@ -3,17 +3,17 @@
 import { useState } from "react";
 import { format, isWeekend } from "date-fns";
 import { toast } from "sonner";
-import { Check, CloudUpload, FileText, Info, MapPin, Phone, Video, X } from "lucide-react";
+import { Check, FileText, Info, MapPin, Phone, Video } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { LEAD_SOURCES, PROVINCES, REQUIRED_DOCS, Appointment, pretty } from "./data";
 import { useCRM } from "./store";
+import { FileDrop, SelectField } from "./ui";
 
 // ---------- Field lists ----------
 
@@ -165,81 +165,43 @@ const FieldGrid = ({ title, fields, form, set }: {
   <section className="space-y-4">
     <h3 className="text-sm font-semibold">{title}</h3>
     <div className="grid gap-4 sm:grid-cols-2">
-      {fields.map((f) => (
+      {fields.map((f) => { const label = f.label + (f.required ? " *" : ""); return (
         <div key={f.name} className={cn("space-y-1.5", f.wide && "sm:col-span-2")}>
-          <Label htmlFor={f.name}>{f.label}{f.required && " *"}</Label>
           {f.options ? (
-            <Select value={form[f.name]} onValueChange={(v) => set(f.name, v)}>
-              <SelectTrigger id={f.name}><SelectValue placeholder={f.placeholder ?? "Select…"} /></SelectTrigger>
-              <SelectContent>
-                {f.options.map((o) => <SelectItem key={o} value={o}>{f.options === PROVINCES ? o : pretty(o)}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          ) : f.type === "textarea" ? (
-            <Textarea id={f.name} rows={3} placeholder={f.placeholder} value={form[f.name] ?? ""} onChange={(e) => set(f.name, e.target.value)} />
-          ) : (
-            <Input id={f.name} type={f.type ?? "text"} placeholder={f.placeholder} autoComplete={f.name === "sin" ? "off" : undefined}
-              value={form[f.name] ?? ""} onChange={(e) => set(f.name, e.target.value)} />
-          )}
+            <SelectField id={f.name} label={label} value={form[f.name]} onChange={(v) => set(f.name, v)} options={f.options} placeholder={f.placeholder} show={f.options === PROVINCES ? undefined : pretty} />
+          ) : <>
+            <Label htmlFor={f.name}>{label}</Label>
+            {f.type === "textarea"
+              ? <Textarea id={f.name} rows={3} placeholder={f.placeholder} value={form[f.name] ?? ""} onChange={(e) => set(f.name, e.target.value)} />
+              : <Input id={f.name} type={f.type ?? "text"} placeholder={f.placeholder} autoComplete={f.name === "sin" ? "off" : undefined} value={form[f.name] ?? ""} onChange={(e) => set(f.name, e.target.value)} />}
+          </>}
         </div>
-      ))}
+      ); })}
     </div>
   </section>
 );
 
-// Step 3: drag-and-drop documents + the recommended list
-const DocumentsStep = ({ files, setFiles }: { files: File[]; setFiles: (f: File[]) => void }) => {
-  const add = (list: FileList | null) => list && setFiles([...files, ...Array.from(list)]);
-  return (
-    <section className="space-y-4">
-      <div className="flex gap-3 rounded-lg bg-primary/5 p-4">
-        <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-        <div>
-          <h3 className="text-sm font-semibold">Upload Supporting Documents</h3>
-          <p className="text-sm text-muted-foreground">
-            Please upload any relevant financial documents, statements, or forms that might help us understand your situation better.
-          </p>
-        </div>
+// Step 3: instructions, recommended documents, and the shared drop zone
+const DocumentsStep = ({ files, setFiles }: { files: File[]; setFiles: (f: File[]) => void }) => (
+  <section className="space-y-4">
+    <div className="flex gap-3 rounded-lg bg-primary/5 p-4">
+      <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+      <div>
+        <h3 className="text-sm font-semibold">Upload Supporting Documents</h3>
+        <p className="text-sm text-muted-foreground">Please upload any relevant financial documents, statements, or forms that might help us understand your situation better.</p>
       </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        {/* Recommended documents */}
-        <div className="rounded-lg border p-4">
-          <h4 className="mb-2 text-sm font-medium">Recommended Documents</h4>
-          <ul className="space-y-1.5 text-sm text-muted-foreground">
-            {REQUIRED_DOCS.map((d) => <li key={d} className="flex gap-2"><FileText className="mt-0.5 h-3.5 w-3.5 shrink-0" />{d}</li>)}
-          </ul>
-        </div>
-
-        {/* Drop zone */}
-        <label
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => { e.preventDefault(); add(e.dataTransfer.files); }}
-          className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 text-center transition-colors hover:border-primary hover:bg-primary/5"
-        >
-          <CloudUpload className="h-8 w-8 text-primary" />
-          <span className="text-sm font-medium">Drag files here or click to browse</span>
-          <span className="text-xs text-muted-foreground">PDF, Word, Excel or images</span>
-          <input type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx" className="hidden" onChange={(e) => add(e.target.files)} />
-        </label>
-      </div>
-
-      {/* Queued files */}
-      {files.length > 0 && (
-        <ul className="space-y-2">
-          {files.map((f, i) => (
-            <li key={i} className="flex items-center gap-3 rounded-lg border p-2.5 text-sm">
-              <FileText className="h-4 w-4 text-muted-foreground" />
-              <span className="flex-1 truncate">{f.name}</span>
-              <span className="text-xs text-muted-foreground">{(f.size / 1024 / 1024).toFixed(1)} MB</span>
-              <button aria-label={`Remove ${f.name}`} onClick={() => setFiles(files.filter((_, j) => j !== i))}><X className="h-4 w-4" /></button>
-            </li>
-          ))}
+    </div>
+    <div className="grid gap-4 sm:grid-cols-[2fr_3fr]">
+      <div className="rounded-lg border p-4">
+        <h4 className="mb-2 text-sm font-medium">Recommended Documents</h4>
+        <ul className="space-y-1.5 text-sm text-muted-foreground">
+          {REQUIRED_DOCS.map((d) => <li key={d} className="flex gap-2"><FileText className="mt-0.5 h-3.5 w-3.5 shrink-0" />{d}</li>)}
         </ul>
-      )}
-    </section>
-  );
-};
+      </div>
+      <FileDrop files={files} setFiles={setFiles} />
+    </div>
+  </section>
+);
 
 // Step 4: pick a date, a time slot and how to meet
 const ConsultationStep = ({ day, setDay, time, setTime, kind, setKind }: {

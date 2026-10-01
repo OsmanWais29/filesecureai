@@ -199,3 +199,10 @@ export const money = (n: number) => n.toLocaleString("en-CA", { style: "currency
 
 // Whole days between an ISO date and now (positive = in the past)
 export const daysAgo = (iso: string) => Math.floor((Date.now() - new Date(iso).getTime()) / DAY);
+
+// ---------- Shared rules (one definition, used everywhere) ----------
+
+export const isActive = (c: Client) => c.stage === "Filed" || c.stage === "In administration"; // open estate/proposal
+export const isConverted = (c: Client) => isActive(c) || c.stage === "Discharged"; // lead became a filing
+export const isLate = (d: Deadline) => !d.done && daysAgo(d.due) > 0;
+export const sumDebt = (cs: Client[]) => cs.reduce((s, c) => s + c.totalDebt, 0);
