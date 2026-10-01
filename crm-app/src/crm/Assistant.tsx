@@ -1,16 +1,19 @@
-// "Ask your CRM": answers questions from CRM data and offers one-click actions.
-// Answers are rule-based; `answer()` is the one place to swap in an LLM call later.
+// "Ask your CRM": the backend agent (Claude on Bedrock) answers from live CRM data.
+// Emails it writes come back as drafts; nothing is sent until you press Send.
+// If the agent is unreachable, the local rule-based `answer()` replies instead.
 import { useState } from "react";
 import { Bot, Send } from "lucide-react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Client, REQUIRED_DOCS, daysAgo, isActive, isConverted, isLate, money, pretty, sumDebt } from "./data";
+import { api } from "./api";
 import { useCRM } from "./store";
 import { EmailDialog } from "./EmailDialog";
+import { DraftCard } from "./DraftCard";
 
 type Store = ReturnType<typeof useCRM>;
-interface Reply { text: string; clients?: Client[]; email?: { tpl: string; label: string } }
+interface Reply { text: string; clients?: Client[]; email?: { tpl: string; label: string }; draftIds?: string[]; offline?: boolean }
 
 const SUGGESTIONS = ["What's due this week?", "Which files have gone cold?", "Who is missing documents?", "Which lead source converts best?", "Show my biggest open opportunities", "Give me a practice summary"];
 const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // make a name safe inside a RegExp
@@ -35,11 +38,11 @@ function answer(question: string, s: Store): Reply {
   }
   if (has("cold", "stall", "stuck", "follow", "contact")) {
     const cold = open.filter((c) => daysAgo(c.lastActivity) > 14);
-    return list(cold.length ? `${cold.length} open file(s) with no contact in over 14 days.` : "Every open file was contacted in the last 14 days.", cold, "t1", "Email a check-in");
+    return list(cold.length ? `${cold.length} open file(s) with no contact in over 14 days.` : "Every open file was contacted in the last 14 days.", cold, "check_in", "Email a check-in");
   }
   if (has("missing", "document", "docs")) {
     const owing = open.filter((c) => c.stage !== "New lead" && c.docsReceived.length < REQUIRED_DOCS.length);
-    return list(owing.length ? `${owing.length} client(s) still owe documents.` : "No one is missing documents.", owing, "t2", "Send document reminders");
+    return list(owing.length ? `${owing.length} client(s) still owe documents.` : "No one is missing documents.", owing, "documents", "Send document reminders");
   }
   if (has("source", "marketing", "convert", "where")) {
     const rows = [...new Set(s.clients.map((c) => c.leadSource))].map((src) => {
@@ -53,8 +56,8 @@ function answer(question: string, s: Store): Reply {
     return list(`${pre.length} file(s) not yet filed, with ${money(sumDebt(pre))} of assessed debt. Largest first:`, pre);
   }
   if (has("lead", "new")) {
-    const fresh = s.clients.filter((c) => daysAgo(c.createdAt) <= 30), waiting = fresh.filter((c) => c.stage === "New lead");
-    return list(`${fresh.length} new lead(s) in the last 30 days. ${waiting.length} still waiting for a first call.`, waiting, "t1", "Send welcome email");
+    const fresh = s.clients.filter((c) => daysAgo(c.createdAt) < 30), waiting = fresh.filter((c) => c.stage === "New lead");
+    return list(`${fresh.length} new lead(s) in the last 30 days. ${waiting.length} still waiting for a first call.`, waiting, "welcome", "Send welcome email");
   }
   if (has("summary", "report", "overview", "how")) {
     const active = s.clients.filter(isActive);
@@ -75,10 +78,25 @@ export const Assistant = ({ open, onOpenChange, openClient }: { open: boolean; o
   const [chat, setChat] = useState<{ q: string; r: Reply }[]>([]);
   const [email, setEmail] = useState<{ ids: string[]; tpl: string }>();
 
-  const ask = (question: string) => {
-    if (!question.trim()) return;
-    setChat((c) => [...c, { q: question, r: answer(question, store) }]);
+  const [busy, setBusy] = useState(false);
+
+  // Send the conversation so far to the agent; fall back to local rules on failure
+  const ask = async (question: string) => {
+    if (!question.trim() || busy) return;
     setQ("");
+    setBusy(true);
+    const messages = [...chat.flatMap((t) => [
+      { role: "user" as const, text: t.q }, { role: "assistant" as const, text: t.r.text },
+    ]), { role: "user" as const, text: question }];
+    let r: Reply;
+    try {
+      r = await api.ask(messages);
+      if (r.draftIds?.length) await store.refresh(); // load the new drafts
+    } catch {
+      r = { ...answer(question, store), offline: true };
+    }
+    setChat((c) => [...c, { q: question, r }]);
+    setBusy(false);
   };
 
   return (
@@ -109,18 +127,21 @@ export const Assistant = ({ open, onOpenChange, openClient }: { open: boolean; o
                     ))}
                   </div>
                 )}
+                {r.draftIds?.map((id) => <DraftCard key={id} id={id} />)}
+                {r.offline && <p className="text-xs text-muted-foreground">Quick answer (the AI assistant is offline).</p>}
                 {r.email && <Button size="sm" onClick={() => setEmail({ ids: r.clients!.map((c) => c.id), tpl: r.email!.tpl })}>{r.email.label}</Button>}
               </div>
             </div>
           ))}
+          {busy && <p className="w-fit animate-pulse rounded-2xl bg-muted px-3 py-2 text-sm text-muted-foreground">Thinking…</p>}
         </div>
 
         <form onSubmit={(e) => { e.preventDefault(); ask(q); }} className="flex gap-2">
           <Input id="assistant-q" placeholder="Ask about clients, deadlines, leads…" value={q} onChange={(e) => setQ(e.target.value)} />
-          <Button type="submit" size="icon" aria-label="Ask"><Send className="h-4 w-4" /></Button>
+          <Button type="submit" size="icon" aria-label="Ask" disabled={busy}><Send className="h-4 w-4" /></Button>
         </form>
 
-        <EmailDialog open={!!email} onOpenChange={(o) => !o && setEmail(undefined)} clientIds={email?.ids ?? []} templateId={email?.tpl} />
+        <EmailDialog open={!!email} onOpenChange={(o) => !o && setEmail(undefined)} clientIds={email?.ids ?? []} templateKey={email?.tpl} />
       </SheetContent>
     </Sheet>
   );

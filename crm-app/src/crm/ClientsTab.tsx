@@ -1,9 +1,9 @@
 // Clients tab: "All clients" table, or one client's full profile (chosen via Client options).
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { format, formatDistanceToNow } from "date-fns";
 import {
   ArrowLeft, CalendarClock, CheckCircle2, ChevronLeft, ChevronRight, Circle, ClipboardList,
-  FileCheck2, History, Mail, MapPin, Phone, Search, Sparkles, UserCheck, Users,
+  FileCheck2, History, Mail, MapPin, Phone, RefreshCw, Search, Sparkles, UserCheck, Users,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { Client, REQUIRED_DOCS, STAGES, Stage, daysAgo, isLate, money, pretty } from "./data";
 import { useCRM } from "./store";
 import { EmailDialog } from "./EmailDialog";
+import { api, type EmailRow } from "./api";
 import { ActivityRow, Chips, Empty, LEVEL_STYLE, Panel, Pill, STAGE_STYLE, initials } from "./ui";
 
 const LATE = "font-medium text-rose-600 dark:text-rose-400";
@@ -104,10 +105,10 @@ const ClientProfile = ({ client: c, onBack }: { client: Client; onBack: () => vo
 
   // Rule-based next steps (with an email template where one helps)
   const tips = ([
-    idle > 14 && { text: `No contact in ${idle} days. Reach out before the file goes cold.`, tpl: "t1" },
-    missing.length && c.stage !== "Discharged" && { text: `${missing.length} document(s) still missing.`, tpl: "t2" },
+    idle > 14 && { text: `No contact in ${idle} days. Reach out before the file goes cold.`, tpl: "check_in" },
+    missing.length && c.stage !== "Discharged" && { text: `${missing.length} document(s) still missing.`, tpl: "documents" },
     due.some(isLate) && { text: "A deadline is overdue. Review it today." },
-    c.stage === "New lead" && { text: "New lead: call back within the hour to book a free consultation.", tpl: "t1" },
+    c.stage === "New lead" && { text: "New lead: call back within the hour to book a free consultation.", tpl: "welcome" },
   ].filter(Boolean)) as { text: string; tpl?: string }[];
 
   const facts = [
@@ -133,7 +134,7 @@ const ClientProfile = ({ client: c, onBack }: { client: Client; onBack: () => vo
             <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground [&>span]:flex [&>span]:items-center [&>span]:gap-1.5">
               <span><Mail className="h-3.5 w-3.5" />{c.email}</span>
               <span><Phone className="h-3.5 w-3.5" />{c.phone}</span>
-              {c.city && <span><MapPin className="h-3.5 w-3.5" />{c.city}, {c.province}</span>}
+              {(c.city || c.province) && <span><MapPin className="h-3.5 w-3.5" />{[c.city, c.province].filter(Boolean).join(", ")}</span>}
               <span><UserCheck className="h-3.5 w-3.5" />{c.assignedTo}</span>
             </div>
           </div>
@@ -176,13 +177,13 @@ const ClientProfile = ({ client: c, onBack }: { client: Client; onBack: () => vo
             const got = c.docsReceived.includes(d);
             const Icon = got ? CheckCircle2 : Circle;
             return (
-              <button key={d} onClick={() => toggleDoc(c.id, d)} className="mb-2 flex w-full items-start gap-2 text-left text-sm">
+              <button key={d} onClick={() => toggleDoc(c.id, d, !got)} className="mb-2 flex w-full items-start gap-2 text-left text-sm">
                 <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", got ? "text-emerald-500" : "text-muted-foreground")} />
                 <span className={cn(got && "text-muted-foreground line-through")}>{d}</span>
               </button>
             );
           })}
-          {!!missing.length && <Button variant="outline" size="sm" className="mt-2 w-full" onClick={() => setEmail({ tpl: "t2" })}>Request missing documents</Button>}
+          {!!missing.length && <Button variant="outline" size="sm" className="mt-2 w-full" onClick={() => setEmail({ tpl: "documents" })}>Request missing documents</Button>}
         </Panel>
 
         <Panel icon={Sparkles} title="Next steps">
@@ -195,6 +196,8 @@ const ClientProfile = ({ client: c, onBack }: { client: Client; onBack: () => vo
           ))}
         </Panel>
       </div>
+
+      <EmailsPanel client={c} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Panel icon={History} title="Timeline">
@@ -216,7 +219,39 @@ const ClientProfile = ({ client: c, onBack }: { client: Client; onBack: () => vo
         </Panel>
       </div>
 
-      <EmailDialog open={!!email} onOpenChange={(o) => !o && setEmail(undefined)} clientIds={[c.id]} templateId={email?.tpl} />
+      <EmailDialog open={!!email} onOpenChange={(o) => !o && setEmail(undefined)} clientIds={[c.id]} templateKey={email?.tpl} />
     </div>
+  );
+};
+
+// The client's email conversation (synced from Gmail/Outlook), with reply
+const EmailsPanel = ({ client }: { client: Client }) => {
+  const { syncNow, activities } = useCRM();
+  const [rows, setRows] = useState<EmailRow[] | null>(null);
+  const [replyTo, setReplyTo] = useState<EmailRow>();
+
+  // Reload the thread whenever the timeline changes (new email sent/received)
+  useEffect(() => {
+    api.emailThread(client.id).then(setRows).catch(() => setRows([]));
+  }, [client.id, activities]);
+
+  return (
+    <Panel icon={Mail} title="Emails" right={<Button size="sm" variant="ghost" onClick={syncNow}><RefreshCw className="mr-1.5 h-3.5 w-3.5" />Sync now</Button>}>
+      {rows === null && <p className="text-sm text-muted-foreground">Loading…</p>}
+      {rows?.length === 0 && <Empty icon={Mail} text="No emails yet. Connect Google or Microsoft to sync this client's replies." />}
+      <div className="space-y-2">
+        {rows?.map((e) => (
+          <div key={e.id} className={cn("rounded-lg border p-3 text-sm", e.direction === "in" && "border-primary/30 bg-primary/5")}>
+            <div className="flex items-start justify-between gap-2">
+              <p className="font-medium">{e.direction === "in" ? "↙ " : "↗ "}{e.subject}</p>
+              <span className="shrink-0 text-xs text-muted-foreground">{formatDistanceToNow(new Date(e.sentAt), { addSuffix: true })}</span>
+            </div>
+            <p className="mt-1 line-clamp-2 text-muted-foreground">{e.snippet}</p>
+            {e.direction === "in" && <button className="mt-1 text-xs font-medium text-primary hover:underline" onClick={() => setReplyTo(e)}>Reply</button>}
+          </div>
+        ))}
+      </div>
+      <EmailDialog open={!!replyTo} onOpenChange={(o) => !o && setReplyTo(undefined)} clientIds={[client.id]} replyTo={replyTo && { id: replyTo.id, subject: replyTo.subject }} />
+    </Panel>
   );
 };

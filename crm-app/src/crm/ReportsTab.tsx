@@ -1,9 +1,12 @@
 // Reports: lead flow, conversion, sources, file mix and debt under administration.
-// Lazy-loaded, so the charts library only downloads when this tab is opened.
+// Numbers are computed in SQL by the backend (/reports/summary). Lazy-loaded, so the charts library only downloads when this tab is opened.
+import { useEffect, useState } from "react";
+import { format } from "date-fns";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { BarChart3, Download, Filter, Landmark, Percent, PieChart, TrendingUp, UserPlus, LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { FILE_TYPES, LEADS_BY_MONTH, STAGES, daysAgo, isActive, isConverted, money, pretty, sumDebt } from "./data";
+import { api } from "./api";
+import { FILE_TYPES, STAGES, money, pretty } from "./data";
 import { useCRM } from "./store";
 import { Panel, StatCard } from "./ui";
 
@@ -29,14 +32,24 @@ const Chart = ({ icon, title, data, x, bars, vertical }: { icon: LucideIcon; tit
   </Panel>
 );
 
+type Group = { key: string; leads: number; filed: number };
+type Summary = {
+  newLeads: number; conversionRate: number; debtUnderAdmin: number; avgDebtPerFiling: number;
+  byMonth: { month: string; leads: number; filed: number }[];
+  bySource: Group[]; byStage: Group[]; byFileType: Group[];
+};
+
+// Fill in every known category (0 when the server has none), in a fixed order
+const fill = (keys: readonly string[], rows: Group[] = []) =>
+  keys.map((k) => ({ key: k, files: rows.find((r) => r.key === k)?.leads ?? 0 }));
+
 export const ReportsTab = () => {
   const { clients } = useCRM();
-  const converted = clients.filter(isConverted);
-  const count = (pred: (c: (typeof clients)[number]) => boolean) => clients.filter(pred).length;
+  const [r, setR] = useState<Summary | null>(null);
+  useEffect(() => void api.reports().then((x) => setR(x as Summary)).catch(() => setR(null)), [clients]);
 
-  const bySource = [...new Set(clients.map((c) => c.leadSource))]
-    .map((s) => ({ source: pretty(s), leads: count((c) => c.leadSource === s), filed: count((c) => c.leadSource === s && isConverted(c)) }))
-    .sort((a, b) => b.leads - a.leads);
+  const bySource = (r?.bySource ?? []).map((g) => ({ ...g, source: pretty(g.key) })).sort((a, b) => b.leads - a.leads);
+  const byMonth = (r?.byMonth ?? []).map((m) => ({ ...m, month: format(new Date(`${m.month}-01T12:00`), "MMM") }));
 
   // Download the client list as CSV
   const exportCsv = () => {
@@ -51,17 +64,17 @@ export const ReportsTab = () => {
       <div className="flex justify-end"><Button variant="outline" onClick={exportCsv}><Download className="mr-2 h-4 w-4" />Export clients (CSV)</Button></div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard icon={UserPlus} label="New leads" hint="last 30 days" value={count((c) => daysAgo(c.createdAt) <= 30)} />
-        <StatCard icon={Percent} label="Lead → filing conversion" hint="all time" value={`${Math.round((converted.length / (clients.length || 1)) * 100)}%`} />
-        <StatCard icon={Landmark} label="Debt under administration" hint="filed + active estates" value={money(sumDebt(clients.filter(isActive)))} />
-        <StatCard icon={TrendingUp} label="Average debt per filing" value={money(sumDebt(converted) / (converted.length || 1))} />
+        <StatCard icon={UserPlus} label="New leads" hint="last 30 days" value={r?.newLeads ?? "–"} />
+        <StatCard icon={Percent} label="Lead → filing conversion" hint="all time" value={r ? `${Math.round(r.conversionRate * 100)}%` : "–"} />
+        <StatCard icon={Landmark} label="Debt under administration" hint="filed + active estates" value={r ? money(r.debtUnderAdmin) : "–"} />
+        <StatCard icon={TrendingUp} label="Average debt per filing" value={r ? money(r.avgDebtPerFiling) : "–"} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Chart icon={BarChart3} title="Leads and filings by month" data={LEADS_BY_MONTH} x="month" bars={[["leads", "Leads"], ["filed", "Filed"]]} />
+        <Chart icon={BarChart3} title="Leads and filings by month" data={byMonth} x="month" bars={[["leads", "Leads"], ["filed", "Filed"]]} />
         <Chart icon={Filter} title="Lead sources and how many filed" data={bySource} x="source" bars={[["leads", "Leads"], ["filed", "Filed"]]} vertical />
-        <Chart icon={Filter} title="Files by stage" data={STAGES.map((s) => ({ stage: s, files: count((c) => c.stage === s) }))} x="stage" bars={[["files", "Files"]]} vertical />
-        <Chart icon={PieChart} title="Files by type" data={FILE_TYPES.map((t) => ({ type: t, files: count((c) => c.fileType === t) }))} x="type" bars={[["files", "Files"]]} />
+        <Chart icon={Filter} title="Files by stage" data={fill(STAGES, r?.byStage)} x="key" bars={[["files", "Files"]]} vertical />
+        <Chart icon={PieChart} title="Files by type" data={fill(FILE_TYPES, r?.byFileType)} x="key" bars={[["files", "Files"]]} />
       </div>
     </div>
   );

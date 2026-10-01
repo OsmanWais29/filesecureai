@@ -107,8 +107,7 @@ export const IntakeDialog = ({ open, onOpenChange }: { open: boolean; onOpenChan
       toast.success(`${form.fullName} added${consult ? " and consultation booked" : ""}`);
       close();
     } catch (e) {
-      console.error("Failed to add client:", e);
-      toast.error("Could not save the client. Check your connection and try again.");
+      toast.error(`Could not save the client: ${(e as Error).message}`);
     } finally {
       setSaving(false);
     }

@@ -1,14 +1,24 @@
-// One shared store for the whole CRM: data, derived lookups and the actions that change it.
-// Demo data by default; with Supabase configured, clients load from / save to the database.
-import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
-import { supabase } from "@/lib/supabase";
+// One shared store for the CRM screens. Data comes from the backend (api.ts);
+// every action calls the API, then reloads, so the screens always show the server's truth.
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { api, type Draft, type Integrations } from "./api";
 import {
-  ACTIVITIES, APPOINTMENTS, AUTOMATIONS, Activity, Appointment, CLIENTS, Client,
-  DEADLINES, INTEGRATIONS, STAGES, Stage, TRUSTEES,
+  INTEGRATION_CATALOG, STAGES,
+  type Activity, type Appointment, type Automation, type Client, type Deadline,
+  type Integration, type Stage, type Template,
 } from "./data";
 
-const DEMO = { clients: CLIENTS, activities: ACTIVITIES, deadlines: DEADLINES, appointments: APPOINTMENTS, automations: AUTOMATIONS, integrations: INTEGRATIONS };
-type State = typeof DEMO;
+interface Data {
+  clients: Client[];
+  activities: Activity[];
+  deadlines: Deadline[];
+  appointments: Appointment[];
+  automations: Automation[];
+  templates: Template[];
+  integrations: Integrations;
+  drafts: Draft[];
+}
 
 // What the intake form hands over
 export interface NewClient {
@@ -17,113 +27,151 @@ export interface NewClient {
   consult?: { date: string; time: string; kind: Appointment["kind"] };
 }
 
-const uid = () => crypto.randomUUID();
-const now = () => new Date().toISOString();
-const flip = <T extends { id: string }>(list: T[], id: string, fn: (x: T) => T) => list.map((x) => (x.id === id ? fn(x) : x));
-
-// Raw Supabase `clients` row -> Client
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const rowToClient = (row: any): Client => {
-  const f = row.metadata?.intake_data ?? {};
-  return {
-    id: row.id, name: row.name, email: row.email ?? "", phone: row.phone ?? "", city: f.city ?? "", province: f.province ?? "",
-    status: row.status ?? "lead", stage: row.metadata?.stage ?? "New lead", fileType: row.metadata?.fileType ?? "Debt consultation",
-    leadSource: f.leadSource ?? "other", totalDebt: row.metadata?.totalDebt ?? 0, monthlyIncome: Number(f.monthlyIncome) || 0,
-    risk: "medium", assignedTo: TRUSTEES[0], createdAt: row.created_at, stageSince: row.updated_at ?? row.created_at,
-    lastActivity: row.last_interaction ?? row.created_at, docsReceived: [], intake: f,
-  };
-};
+// "2026-10-04T04:00:00.000Z" + "2:00 PM" -> the real instant (local time)
+function at(dateIso: string, time: string) {
+  const d = new Date(dateIso);
+  const [, h, m, pm] = time.match(/(\d+):(\d+)\s*(AM|PM)/i) ?? [];
+  d.setHours((Number(h) % 12) + (/pm/i.test(pm ?? "") ? 12 : 0), Number(m), 0, 0);
+  return d.toISOString();
+}
 
 function useCRMState() {
-  const [s, setS] = useState<State>(DEMO);
+  const [data, setData] = useState<Data | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // Actions only use functional updates, so they are created once and never change
-  const actions = useMemo(() => {
-    const patch = (fn: (s: State) => Partial<State>) => setS((p) => ({ ...p, ...fn(p) }));
-
-    const log = (clientId: string, type: Activity["type"], text: string, source?: string) =>
-      patch((s) => ({ activities: [{ id: uid(), clientId, type, text, at: now(), source }, ...s.activities] }));
-
-    const addAppointment = (a: Omit<Appointment, "id">) => {
-      patch((s) => ({ appointments: [...s.appointments, { ...a, id: uid() }] }));
-      if (a.clientId) log(a.clientId, "booking", `${a.title} booked for ${new Date(a.date).toLocaleDateString()} at ${a.time}`);
-    };
-
-    const setStage = (id: string, stage: Stage) => {
-      patch((s) => ({ clients: flip(s.clients, id, (c) => ({ ...c, stage, stageSince: now() })) }));
-      log(id, "note", `Moved to “${stage}”`);
-    };
-
-    return {
-      log, addAppointment, setStage,
-
-      // Intake form -> client (+ Supabase row, documents, consultation)
-      addClient: async ({ form, files, consult }: NewClient) => {
-        let id = uid();
-        if (supabase) {
-          const { data, error } = await supabase.from("clients").insert({
-            name: form.fullName, email: form.email, phone: form.phone, status: form.accountStatus || "lead",
-            last_interaction: now(), metadata: { intake_data: form, source: "crm_intake" },
-          }).select().single();
-          if (error) throw error;
-          id = data.id;
-          await Promise.all(files.map((f) => supabase!.storage.from("documents").upload(`${id}/${Date.now()}_${f.name}`, f)));
-        }
-        const client: Client = {
-          id, name: form.fullName, email: form.email, phone: form.phone, city: form.city ?? "", province: form.province ?? "",
-          status: (form.accountStatus as Client["status"]) || "lead", stage: consult ? "Consultation booked" : "New lead",
-          fileType: "Debt consultation", leadSource: form.leadSource || "other", totalDebt: 0, monthlyIncome: Number(form.monthlyIncome) || 0,
-          risk: "medium", assignedTo: TRUSTEES[0], createdAt: now(), stageSince: now(), lastActivity: now(), docsReceived: [], intake: form,
-        };
-        patch((s) => ({ clients: [client, ...s.clients] }));
-        log(id, "form", files.length ? `Intake completed with ${files.length} document(s)` : "Intake completed");
-        if (consult) addAppointment({ clientId: id, client: client.name, title: "Free consultation", ...consult, source: "CRM" });
-      },
-
-      shiftStage: (c: Client, by: 1 | -1) => { const next = STAGES[STAGES.indexOf(c.stage) + by]; if (next) setStage(c.id, next); },
-
-      toggleDoc: (id: string, doc: string) => patch((s) => ({
-        clients: flip(s.clients, id, (c) => ({ ...c, docsReceived: c.docsReceived.includes(doc) ? c.docsReceived.filter((d) => d !== doc) : [...c.docsReceived, doc] })),
-      })),
-
-      completeDeadline: (id: string) => patch((s) => ({ deadlines: flip(s.deadlines, id, (d) => ({ ...d, done: true })) })),
-
-      // Logged on the timeline (real sending needs a mailbox integration)
-      sendEmail: (ids: string[], subject: string) => ids.forEach((id) => log(id, "email", `Email sent: “${subject}”`)),
-
-      toggleAutomation: (id: string) => patch((s) => ({ automations: flip(s.automations, id, (a) => ({ ...a, enabled: !a.enabled })) })),
-
-      toggleIntegration: (id: string) => patch((s) => ({
-        integrations: flip(s.integrations, id, (i) => ({ ...i, connected: !i.connected, detail: i.connected ? "" : "Connected just now" })),
-      })),
-
-      loadClients: (rows: Client[]) => patch(() => ({ clients: rows })),
-    };
+  // (Re)load everything from the backend
+  const refresh = useCallback(async () => {
+    try {
+      setData(await api.loadAll());
+      setError(null);
+    } catch (e) {
+      setError((e as Error).message);
+    }
   }, []);
+  useEffect(() => void refresh(), [refresh]);
 
-  // Load real clients when Supabase is configured (keeps demo data if the table is empty)
-  useEffect(() => {
-    supabase?.from("clients").select("*").order("name").then(({ data, error }) => {
-      if (error) console.error("Could not load clients:", error.message);
-      else if (data?.length) actions.loadClients(data.map(rowToClient));
-    });
-  }, [actions]);
+  // Run an API call, then reload; show the server's error message if it fails
+  const run = useCallback(
+    async <T,>(work: () => Promise<T>, done?: string): Promise<T | undefined> => {
+      try {
+        const out = await work();
+        await refresh();
+        if (done) toast.success(done);
+        return out;
+      } catch (e) {
+        toast.error((e as Error).message);
+        return undefined;
+      }
+    },
+    [refresh],
+  );
+
+  const actions = useMemo(() => ({
+    refresh,
+
+    // Intake form -> client, then documents, then the booked consultation
+    addClient: async ({ form, files, consult }: NewClient) => {
+      const { fullName, email, phone, city, province, accountStatus, leadSource, monthlyIncome, sin, ...rest } = form;
+      const created = await api.createClient({
+        name: fullName,
+        email: email || undefined,
+        phone: phone || undefined,
+        city: city || undefined,
+        province: province || undefined,
+        status: accountStatus || undefined,
+        leadSource: leadSource || undefined,
+        monthlyIncome: Number(monthlyIncome) || undefined,
+        sin: sin || undefined, // encrypted by the backend, never stored in plain text
+        intake: Object.fromEntries(Object.entries(rest).filter(([, v]) => v)),
+      });
+      for (const f of files) await api.uploadDocument(created.id, f);
+      if (consult) {
+        await api.createAppointment({
+          clientId: created.id, title: "Free consultation",
+          startsAt: at(consult.date, consult.time), kind: consult.kind,
+        });
+        await api.updateClient(created.id, { stage: "Consultation booked" });
+      }
+      await refresh();
+    },
+
+    addAppointment: (a: { clientId: string; title: string; date: string; time: string; kind: string }) =>
+      run(() => api.createAppointment({ ...a, startsAt: at(a.date, a.time) }), `${a.title} booked`),
+
+    setStage: (id: string, stage: Stage) => run(() => api.updateClient(id, { stage })),
+    shiftStage: (c: Client, by: 1 | -1) => {
+      const next = STAGES[STAGES.indexOf(c.stage) + by];
+      return next && run(() => api.updateClient(c.id, { stage: next }), `Moved to ${next}`);
+    },
+    toggleDoc: (id: string, doc: string, received: boolean) => run(() => api.setDoc(id, doc, received)),
+    completeDeadline: (id: string) => run(() => api.completeDeadline(id), "Marked done"),
+
+    sendEmail: (ids: string[], subject: string, text: string, replyToId?: string) =>
+      run(() => api.sendEmail(ids, subject, text, replyToId)),
+    sendDraft: (id: string) => run(() => api.sendDraft(id), "Draft sent"),
+    discardDraft: (id: string) => run(() => api.discardDraft(id), "Draft discarded"),
+
+    toggleAutomation: (a: Automation) => run(() => api.toggleAutomation(a.id, !a.enabled)),
+
+    // Google / Microsoft: go to their sign-in page; they send the user back to the CRM
+    connect: async (provider: string) => {
+      try {
+        window.location.href = (await api.connectUrl(provider)).url;
+      } catch (e) {
+        toast.error((e as Error).message);
+      }
+    },
+    connectTwilio: (body: { accountSid: string; authToken: string; from: string }) =>
+      run(() => api.connectTwilio(body), "Twilio connected"),
+    disconnect: (provider: string) => run(() => api.disconnect(provider), "Disconnected"),
+    syncNow: () => run(async () => { await api.syncEmail(); await api.syncCalendar(); }, "Synced"),
+    uploadDocuments: (clientId: string, files: File[]) =>
+      run(async () => { for (const f of files) await api.uploadDocument(clientId, f); }),
+  }), [refresh, run]);
 
   // Derived lookups, recomputed only when the data changes
-  return useMemo(() => {
-    const byId = new Map(s.clients.map((c) => [c.id, c]));
+  const derived = useMemo(() => {
+    const d = data;
+    const byId = new Map((d?.clients ?? []).map((c) => [c.id, c]));
+    const connected = new Map((d?.integrations.connected ?? []).map((i) => [i.provider, i]));
+    // Catalog card + live status from the backend
+    const integrations: (Integration & { provider: string })[] = INTEGRATION_CATALOG.map((i) => {
+      const row = connected.get(i.provider);
+      const builtin = i.provider === "builtin";
+      const detail = row ? [row.account, row.lastSyncAt && `synced ${new Date(row.lastSyncAt).toLocaleString()}`]
+        .filter(Boolean).join(" · ") : builtin ? "Built in" : "";
+      return { ...i, connected: builtin || !!row, detail };
+    });
     return {
-      ...s, ...actions,
       byId,
+      integrations,
       nameOf: (id?: string) => (id && byId.get(id)?.name) || "",
-      openDeadlines: s.deadlines.filter((d) => !d.done).sort((a, b) => a.due.localeCompare(b.due)), // soonest first
+      openDeadlines: (d?.deadlines ?? []).filter((x) => !x.done).sort((a, b) => a.due.localeCompare(b.due)),
     };
-  }, [s, actions]);
+  }, [data]);
+
+  return {
+    ready: !!data,
+    error,
+    clients: data?.clients ?? [],
+    activities: data?.activities ?? [],
+    deadlines: data?.deadlines ?? [],
+    appointments: data?.appointments ?? [],
+    automations: data?.automations ?? [],
+    templates: data?.templates ?? [],
+    drafts: data?.drafts ?? [],
+    website: data?.integrations.website,
+    available: data?.integrations.available ?? {},
+    ...derived,
+    ...actions,
+  };
 }
 
 // ---------- React context plumbing ----------
 
 type Store = ReturnType<typeof useCRMState>;
 const Ctx = createContext<Store | null>(null);
-export const CRMProvider = ({ children }: { children: ReactNode }) => <Ctx.Provider value={useCRMState()}>{children}</Ctx.Provider>;
+export const CRMProvider = ({ children }: { children: ReactNode }) => (
+  <Ctx.Provider value={useCRMState()}>{children}</Ctx.Provider>
+);
 export const useCRM = () => useContext(Ctx)!;

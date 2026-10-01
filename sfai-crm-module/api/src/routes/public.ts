@@ -6,7 +6,7 @@ import { z } from "zod";
 import type { Ctx } from "../context.js";
 import { appointments, clients, firms } from "../db/schema.js";
 import { fire } from "../domain/automations.js";
-import { logActivity } from "../domain/firm.js";
+import { logActivity, when } from "../domain/firm.js";
 import { pushAppointment } from "../integrations/calendar.js";
 import { body, fail, found, router } from "../lib/http.js";
 
@@ -200,16 +200,15 @@ export default (ctx: Ctx) => {
         await pushAppointment(ctx, appt).catch((e) =>
           console.error("Calendar push failed", e),
         );
+        const date = await when(ctx, firm.firmId, start);
         await logActivity(ctx, firm.firmId, {
           clientId: client.id,
           type: "booking",
           source: "Website booking",
-          text: `Booked a free consultation for ${start.toISOString()}`,
+          text: `Booked a free consultation for ${date}`,
         });
         if (isNew) await fire(ctx, client, "lead.created");
-        await fire(ctx, client, "appointment.booked", appt.id, {
-          date: start.toString(),
-        });
+        await fire(ctx, client, "appointment.booked", appt.id, { date });
         return c.json({ ok: true, startsAt: start }, 201);
       })
   );

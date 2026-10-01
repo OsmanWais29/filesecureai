@@ -1,46 +1,56 @@
-// Email composer: pick a template, it fills in the client's details, edit, send.
+// Email composer: pick a template (from the backend), it fills in the client's
+// details, edit, send. The backend sends via Gmail/Outlook if connected, else SES.
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Client, REQUIRED_DOCS, TEMPLATES } from "./data";
+import { Client, REQUIRED_DOCS } from "./data";
 import { useCRM } from "./store";
 import { SelectField } from "./ui";
 
-// Replace {{placeholders}} with a client's details
+// Replace {{placeholders}} with a client's details (same names the backend uses)
 const fill = (text: string, c?: Client) => {
+  const missing = REQUIRED_DOCS.filter((d) => !c?.docsReceived.includes(d));
   const vars: Record<string, string> = {
     name: c?.name.split(" ")[0] ?? "there",
-    trustee: c?.assignedTo ?? "Your trustee",
-    missingDocs: REQUIRED_DOCS.filter((d) => !c?.docsReceived.includes(d)).map((d) => `• ${d}`).join("\n") || "• Nothing outstanding",
+    trustee: "Your trustee",
+    missingDocs: missing.map((d) => `• ${d}`).join("\n") || "• Nothing outstanding",
     date: new Date(Date.now() + 7 * 86_400_000).toLocaleDateString("en-CA", { month: "long", day: "numeric" }),
   };
   return text.replace(/\{\{(\w+)\}\}/g, (m, k) => vars[k] ?? m);
 };
 
-export const EmailDialog = ({ open, onOpenChange, clientIds, templateId }: {
-  open: boolean; onOpenChange: (o: boolean) => void; clientIds: string[]; templateId?: string;
+export const EmailDialog = ({ open, onOpenChange, clientIds, templateKey, replyTo }: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  clientIds: string[];
+  templateKey?: string; // e.g. "documents", "check_in"
+  replyTo?: { id: string; subject: string }; // answer inside an email thread
 }) => {
-  const { byId, sendEmail, integrations } = useCRM();
+  const { byId, sendEmail, templates, integrations } = useCRM();
   const to = clientIds.map((id) => byId.get(id)!).filter(Boolean);
-  const [tpl, setTpl] = useState(TEMPLATES[0].id);
+  const [key, setKey] = useState("");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
-  const mailbox = integrations.some((i) => ["Gmail", "Microsoft Outlook"].includes(i.name) && i.connected);
+  const [sending, setSending] = useState(false);
+  const mailbox = integrations.find((i) => ["google", "microsoft"].includes(i.provider) && i.connected);
 
   // Load a template, previewed with the first recipient's details
-  const pick = (id: string) => {
-    const t = TEMPLATES.find((x) => x.id === id) ?? TEMPLATES[0];
-    setTpl(t.id); setSubject(fill(t.subject, to[0])); setBody(fill(t.body, to[0]));
+  const pick = (k: string) => {
+    const t = templates.find((x) => x.key === k) ?? templates[0];
+    if (!t) return;
+    setKey(t.key);
+    setSubject(replyTo ? `Re: ${replyTo.subject}` : fill(t.subject, to[0]));
+    setBody(fill(t.body, to[0]));
   };
-  useEffect(() => { if (open) pick(templateId ?? TEMPLATES[0].id); }, [open, templateId]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (open) pick(templateKey ?? "check_in"); }, [open, templateKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const send = () => {
-    sendEmail(clientIds, subject);
-    toast.success(mailbox ? `Sent to ${to.length} client(s)` : `Logged on ${to.length} client timeline(s)`);
+  const send = async () => {
+    setSending(true);
+    await sendEmail(clientIds, subject, body, replyTo?.id);
+    setSending(false);
     onOpenChange(false);
   };
 
@@ -48,21 +58,22 @@ export const EmailDialog = ({ open, onOpenChange, clientIds, templateId }: {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Email {to.length === 1 ? to[0].name : `${to.length} clients`}</DialogTitle>
+          <DialogTitle>{replyTo ? "Reply to" : "Email"} {to.length === 1 ? to[0].name : `${to.length} clients`}</DialogTitle>
           <DialogDescription>
-            {to.length > 1 && "Each client gets their own copy with their details filled in. "}
-            {!mailbox && "No mailbox connected yet, so the email is logged on the client timeline. Connect Gmail or Outlook in Integrations to send it."}
+            {to.length > 1 && "Each client gets their own copy. "}
+            {mailbox ? `Sends from ${mailbox.name.split(" (")[0]}${mailbox.detail ? ` (${mailbox.detail.split(" · ")[0]})` : ""}.`
+              : "Sends from the firm's email address. Connect Google or Microsoft to send from your own mailbox and see replies here."}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
-          <SelectField id="tpl" label="Template" value={tpl} onChange={pick} options={TEMPLATES.map((t) => t.id)} show={(id) => TEMPLATES.find((t) => t.id === id)!.name} />
-          <p className="text-xs text-muted-foreground">To: {to.map((c) => c.email).join(", ")}</p>
-          <div className="space-y-1.5"><Label htmlFor="subject">Subject</Label><Input id="subject" value={subject} onChange={(e) => setSubject(e.target.value)} /></div>
+          <SelectField id="tpl" label="Template" value={key} onChange={pick} options={templates.map((t) => t.key)} show={(k) => templates.find((t) => t.key === k)?.name ?? k} />
+          <p className="text-xs text-muted-foreground">To: {to.map((c) => c.email || `${c.name} (no email)`).join(", ")}</p>
+          <div className="space-y-1.5"><Label htmlFor="subject">Subject</Label><Input id="subject" value={subject} disabled={!!replyTo} onChange={(e) => setSubject(e.target.value)} /></div>
           <div className="space-y-1.5"><Label htmlFor="body">Message</Label><Textarea id="body" rows={9} value={body} onChange={(e) => setBody(e.target.value)} /></div>
         </div>
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={send} disabled={!to.length || !subject.trim()}>{mailbox ? "Send" : "Log email"}</Button>
+          <Button onClick={send} disabled={sending || !to.length || !subject.trim() || !body.trim()}>{sending ? "Sending…" : "Send"}</Button>
         </div>
       </DialogContent>
     </Dialog>

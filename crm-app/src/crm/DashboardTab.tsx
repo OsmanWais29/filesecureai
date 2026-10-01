@@ -1,14 +1,15 @@
 // Dashboard: today's appointments, upcoming deadlines, files needing attention, recent activity.
 import { format, isToday } from "date-fns";
-import { AlertTriangle, CalendarClock, CalendarDays, History } from "lucide-react";
+import { AlertTriangle, CalendarClock, CalendarDays, History, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { REQUIRED_DOCS, daysAgo, isLate } from "./data";
 import { useCRM } from "./store";
+import { DraftCard } from "./DraftCard";
 import { ActivityRow, Empty, Panel, Pill } from "./ui";
 
 export const DashboardTab = ({ openClient }: { openClient: (id: string) => void }) => {
-  const { clients, appointments, openDeadlines, activities, nameOf } = useCRM();
+  const { clients, appointments, openDeadlines, activities, nameOf, drafts } = useCRM();
 
   const today = appointments.filter((a) => isToday(new Date(a.date)));
   const soon = openDeadlines.filter((d) => daysAgo(d.due) > -14); // due within 14 days (overdue included)
@@ -25,6 +26,12 @@ export const DashboardTab = ({ openClient }: { openClient: (id: string) => void 
 
   return (
     <div className="grid gap-6 lg:grid-cols-3">
+      {/* Emails the AI drafted, waiting for a person to approve */}
+      {!!drafts.length && (
+        <Panel icon={Mail} title={`Drafts awaiting approval (${drafts.length})`} className="lg:col-span-3">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{drafts.map((d) => <DraftCard key={d.id} id={d.id} />)}</div>
+        </Panel>
+      )}
       <Panel icon={CalendarDays} title={`Today · ${format(new Date(), "EEE, MMM d")}`}>
         {!today.length && <Empty icon={CalendarDays} text="No appointments today" />}
         <div className="space-y-2">

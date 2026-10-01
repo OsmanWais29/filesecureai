@@ -4,7 +4,7 @@ import { z } from "zod";
 import type { Ctx } from "../context.js";
 import { appointments, deadlines } from "../db/schema.js";
 import { fire } from "../domain/automations.js";
-import { getClient, logActivity } from "../domain/firm.js";
+import { getClient, logActivity, when } from "../domain/firm.js";
 import { pushAppointment } from "../integrations/calendar.js";
 import { body, found, router } from "../lib/http.js";
 
@@ -108,15 +108,14 @@ export const appointmentRoutes = (ctx: Ctx) =>
       await pushAppointment(ctx, row).catch((e) =>
         console.error("Calendar push failed", e),
       );
+      const date = await when(ctx, user.firmId, row.startsAt);
       await logActivity(ctx, user.firmId, {
         clientId: client.id,
         type: "booking",
         actor: user.id,
-        text: `${row.title} booked for ${row.startsAt.toISOString()}`,
+        text: `${row.title} booked for ${date}`,
       });
-      await fire(ctx, client, "appointment.booked", row.id, {
-        date: row.startsAt.toString(),
-      });
+      await fire(ctx, client, "appointment.booked", row.id, { date });
       return c.json(row, 201);
     })
 

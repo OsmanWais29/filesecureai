@@ -59,6 +59,16 @@ export async function logActivity(
   }
 }
 
+// A time as people read it, in the firm's timezone: "Thursday, October 15, 2026 at 9:00 a.m."
+export async function when(ctx: Ctx, firmId: string, at: Date) {
+  const [firm] = await ctx.db.select().from(firms).where(eq(firms.firmId, firmId));
+  return new Intl.DateTimeFormat("en-CA", {
+    dateStyle: "full",
+    timeStyle: "short",
+    timeZone: firm?.timezone ?? "America/Toronto",
+  }).format(at);
+}
+
 // Replace {{placeholders}} in a template with a client's details
 export function fill(
   text: string,

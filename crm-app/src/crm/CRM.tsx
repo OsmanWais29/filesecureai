@@ -1,8 +1,9 @@
 // CRM shell: header (Client options, Ask your CRM, Add client), headline numbers and tabs.
 // Tabs and dialogs are lazy-loaded, so each one's code (e.g. the charts library) downloads only when first opened.
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { isToday } from "date-fns";
-import { AlertTriangle, Bot, CalendarDays, Check, ChevronDown, Landmark, UserPlus, Users } from "lucide-react";
+import { AlertTriangle, Bot, RefreshCw, CalendarDays, Check, ChevronDown, Landmark, UserPlus, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -28,8 +29,19 @@ const IntakeDialog = load(() => import("./IntakeDialog"), "IntakeDialog");
 const Assistant = load(() => import("./Assistant"), "Assistant");
 
 export const CRM = () => {
-  const { clients, appointments, deadlines } = useCRM();
+  const { clients, appointments, deadlines, ready, error, refresh } = useCRM();
   const [tab, setTab] = useState("Dashboard");
+
+  // Back from Google/Microsoft sign-in (?connected=google): confirm and show Integrations
+  useEffect(() => {
+    const url = new URL(location.href);
+    const p = url.searchParams.get("connected");
+    if (!p) return;
+    toast.success(`${p === "google" ? "Google" : "Microsoft"} connected`);
+    setTab("Integrations");
+    url.searchParams.delete("connected");
+    history.replaceState(null, "", url);
+  }, []);
   const [clientId, setClientId] = useState<string | null>(null); // null = All clients view
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
@@ -50,6 +62,24 @@ export const CRM = () => {
     Integrations: <IntegrationsTab />,
     Documents: <DocumentsTab />,
   };
+
+  // Can't reach the backend (first load): explain and offer a retry
+  if (error && !ready) return (
+    <div className="mx-auto max-w-lg space-y-3 px-4 py-24 text-center">
+      <AlertTriangle className="mx-auto h-8 w-8 text-destructive" />
+      <p className="font-medium">Couldn't load the CRM</p>
+      <p className="text-sm text-muted-foreground">{error}</p>
+      <Button variant="outline" onClick={refresh}><RefreshCw className="mr-2 h-4 w-4" />Try again</Button>
+    </div>
+  );
+  // Still loading: placeholders the size of the real layout
+  if (!ready) return (
+    <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 md:px-6" aria-busy="true">
+      <Skeleton className="h-12 w-80" />
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-20" />)}</div>
+      <Skeleton className="h-96 w-full rounded-xl" />
+    </div>
+  );
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 md:px-6">
@@ -84,7 +114,7 @@ export const CRM = () => {
 
       {/* Headline numbers */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard icon={Users} label="New leads" hint={`${clients.filter((c) => c.stage === "New lead").length} awaiting a call`} value={clients.filter((c) => daysAgo(c.createdAt) <= 30).length} />
+        <StatCard icon={Users} label="New leads" hint={`${clients.filter((c) => c.stage === "New lead").length} awaiting a call`} value={clients.filter((c) => daysAgo(c.createdAt) < 30).length} />
         <StatCard icon={Landmark} label="Active estates & proposals" hint={`${money(sumDebt(active))} of debt`} value={active.length} />
         <StatCard icon={CalendarDays} label="Appointments today" value={appointments.filter((a) => isToday(new Date(a.date))).length} />
         <StatCard icon={AlertTriangle} label="Overdue deadlines" value={deadlines.filter(isLate).length} />
