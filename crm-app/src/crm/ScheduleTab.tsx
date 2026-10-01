@@ -1,81 +1,82 @@
-// Schedule tab: calendar + day agenda, client self-booking links, and analytics.
+// Schedule: calendar + day agenda (incl. synced bookings), book an appointment, staff availability,
+// and the client self-booking page link.
 import { useState } from "react";
 import { format, isSameDay } from "date-fns";
 import { toast } from "sonner";
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { CalendarDays, Clock, Copy, Link2, Mail, BarChart3, Users } from "lucide-react";
+import { CalendarDays, CalendarPlus, Copy, ExternalLink, Link2, MapPin, Phone, Users, Video } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { APPOINTMENTS, STAFF, TIME_ALLOCATION, WEEKLY_MEETINGS } from "./data";
-import { Empty, LEVEL_STYLE, Pill, SectionTitle } from "./ui";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Appointment } from "./data";
+import { useCRM } from "./store";
+import { Empty, Pill, SectionTitle } from "./ui";
 
-export const ScheduleTab = () => (
-  <Tabs defaultValue="calendar" className="space-y-4">
-    {/* Sub-navigation */}
-    <TabsList>
-      <TabsTrigger value="calendar">Calendar</TabsTrigger>
-      <TabsTrigger value="booking">Self-booking</TabsTrigger>
-      <TabsTrigger value="analytics">Analytics</TabsTrigger>
-    </TabsList>
-    <TabsContent value="calendar"><CalendarPanel /></TabsContent>
-    <TabsContent value="booking"><BookingPanel /></TabsContent>
-    <TabsContent value="analytics"><AnalyticsPanel /></TabsContent>
-  </Tabs>
-);
+const KIND_ICON = { video: Video, phone: Phone, in_person: MapPin }; // meeting type -> icon
 
-// ---------- Calendar + agenda for the picked day ----------
-const CalendarPanel = () => {
+// Staff busy blocks per weekday (demo)
+const STAFF = [
+  { name: "Sarah Johnson, LIT", busy: { Monday: ["9:00–10:30"], Thursday: ["9:00–4:30"] } as Record<string, string[]> },
+  { name: "John Doe, LIT", busy: { Tuesday: ["11:00–12:30"], Friday: ["1:00–2:30"] } as Record<string, string[]> },
+  { name: "Jane Smith (Counsellor)", busy: { Monday: ["11:00–1:00"], Wednesday: ["10:00–11:30"] } as Record<string, string[]> },
+];
+
+// Copy text, with a toast either way
+const copy = (text: string, what: string) =>
+  navigator.clipboard.writeText(text).then(() => toast.success(`${what} copied`), () => toast.error("Copy failed — select the text instead"));
+
+export const ScheduleTab = () => {
+  const { appointments } = useCRM();
   const [day, setDay] = useState(new Date()); // selected date
-  const agenda = APPOINTMENTS.filter((a) => isSameDay(a.date, day)); // that day's appointments
-  const weekday = format(day, "EEEE"); // e.g. "Monday" for staff lookup
+  const agenda = appointments.filter((a) => isSameDay(new Date(a.date), day));
+  const bookingUrl = `${window.location.origin}/book/free-consultation`; // public self-booking page
 
   return (
     <div className="grid gap-6 lg:grid-cols-[auto_1fr]">
-      {/* Month picker; days with appointments are underlined */}
-      <Card className="p-3">
-        <Calendar
-          mode="single"
-          selected={day}
-          onSelect={(d) => d && setDay(d)}
-          modifiers={{ booked: APPOINTMENTS.map((a) => a.date) }}
-          modifiersClassNames={{ booked: "font-bold underline decoration-primary decoration-2 underline-offset-4" }}
-        />
-      </Card>
+      <div className="space-y-6">
+        {/* Month picker; days with appointments are underlined */}
+        <Card className="p-3">
+          <Calendar
+            mode="single" selected={day} onSelect={(d) => d && setDay(d)}
+            modifiers={{ booked: appointments.map((a) => new Date(a.date)) }}
+            modifiersClassNames={{ booked: "font-bold underline decoration-primary decoration-2 underline-offset-4" }}
+          />
+        </Card>
+
+        {/* Client self-booking page */}
+        <Card className="max-w-[300px] p-5">
+          <SectionTitle icon={Link2}>Self-booking page</SectionTitle>
+          <p className="mb-3 text-xs text-muted-foreground">Share this link or put it on your website. Bookings land here and in your synced calendar.</p>
+          <p className="mb-3 select-all break-all rounded-md bg-muted p-2 font-mono text-xs">{bookingUrl}</p>
+          <Button size="sm" variant="outline" className="w-full" onClick={() => copy(bookingUrl, "Booking link")}><Copy className="mr-2 h-4 w-4" />Copy link</Button>
+        </Card>
+      </div>
 
       <div className="space-y-6">
-        {/* Appointments on the selected day */}
+        {/* Agenda for the selected day */}
         <Card className="p-5">
           <SectionTitle icon={CalendarDays}>{format(day, "EEEE, MMMM d")}</SectionTitle>
           {agenda.length === 0 && <Empty icon={CalendarDays} text="No appointments this day" />}
           <ul className="space-y-2">
-            {agenda.map((a) => (
-              <li key={a.id} className="flex items-center gap-4 rounded-lg border p-3">
-                <span className="flex w-24 items-center gap-1 whitespace-nowrap text-sm font-medium"><Clock className="h-3.5 w-3.5" />{a.time}</span>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{a.title}</p>
-                  <p className="text-xs text-muted-foreground">{a.client}</p>
-                </div>
-                <Pill className={LEVEL_STYLE[a.priority]}>{a.priority}</Pill>
-              </li>
-            ))}
+            {agenda.map((a) => <AgendaItem key={a.id} a={a} />)}
           </ul>
         </Card>
 
-        {/* Staff busy blocks for that weekday */}
+        <BookForm day={day} />
+
+        {/* Staff availability for that weekday */}
         <Card className="p-5">
-          <SectionTitle icon={Users}>Staff availability</SectionTitle>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <SectionTitle icon={Users}>Staff availability · {format(day, "EEEE")}</SectionTitle>
+          <div className="grid gap-3 sm:grid-cols-3">
             {STAFF.map((s) => {
-              const busy = s.busy[weekday] ?? [];
+              const busy = s.busy[format(day, "EEEE")] ?? [];
               return (
-                <div key={s.id} className="rounded-lg border p-3">
-                  <p className="text-sm font-medium">{s.name}</p>
-                  <p className="mb-2 text-xs text-muted-foreground">{s.role}</p>
+                <div key={s.name} className="rounded-lg border p-3">
+                  <p className="mb-2 text-sm font-medium">{s.name}</p>
                   {busy.length === 0
-                    ? <Pill className={LEVEL_STYLE.low}>Available all day</Pill>
+                    ? <Pill className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">Available all day</Pill>
                     : busy.map((b) => <Pill key={b} className="mr-1 bg-muted text-muted-foreground">Busy {b}</Pill>)}
                 </div>
               );
@@ -87,73 +88,81 @@ const CalendarPanel = () => {
   );
 };
 
-// ---------- Generate a self-booking link for a client ----------
-const BookingPanel = () => {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [link, setLink] = useState(""); // generated URL
-
-  // Random token -> booking URL
-  const generate = () => {
-    if (!name || !email) return toast.error("Enter the client's name and email");
-    setLink(`${window.location.origin}/booking-request/${crypto.randomUUID()}`);
-  };
-
-  // Open the user's mail app with the link pre-filled
-  const sendEmail = () =>
-    window.open(`mailto:${email}?subject=${encodeURIComponent("Book your appointment")}&body=${encodeURIComponent(`Hi ${name},\n\nPlease pick a time that suits you:\n${link}\n\nBest regards`)}`);
-
+// One appointment row with join / copy actions
+const AgendaItem = ({ a }: { a: Appointment }) => {
+  const Icon = KIND_ICON[a.kind];
   return (
-    <Card className="grid gap-6 p-6 md:grid-cols-2">
-      {/* Form */}
-      <div className="space-y-3">
-        <SectionTitle icon={Link2}>Create booking link</SectionTitle>
-        <Input placeholder="Client name" value={name} onChange={(e) => setName(e.target.value)} />
-        <Input type="email" placeholder="client@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
-        <Button onClick={generate} className="w-full">Generate link</Button>
+    <li className="flex flex-wrap items-center gap-3 rounded-lg border p-3">
+      <span className="w-20 text-sm font-medium tabular-nums">{a.time}</span>
+      <Icon className="h-4 w-4 text-muted-foreground" />
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium">{a.title}</p>
+        <p className="text-xs text-muted-foreground">{a.client}</p>
       </div>
-
-      {/* Result */}
-      <div className="flex flex-col justify-center rounded-lg border border-dashed p-5">
-        {!link ? (
-          <Empty icon={Link2} text="Your link will appear here" />
-        ) : (
-          <div className="space-y-3">
-            <p className="break-all rounded-md bg-muted p-3 font-mono text-xs">{link}</p>
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => { navigator.clipboard.writeText(link); toast.success("Link copied"); }}>
-                <Copy className="mr-2 h-4 w-4" />Copy
-              </Button>
-              <Button className="flex-1" onClick={sendEmail}><Mail className="mr-2 h-4 w-4" />Email client</Button>
-            </div>
-          </div>
-        )}
-      </div>
-    </Card>
+      {a.source !== "CRM" && <Pill className="bg-muted text-muted-foreground">via {a.source}</Pill>}
+      {a.url && (
+        <div className="flex gap-1">
+          <Button size="sm" asChild><a href={a.url} target="_blank" rel="noreferrer"><ExternalLink className="mr-1.5 h-4 w-4" />Join</a></Button>
+          <Button size="sm" variant="outline" aria-label="Copy meeting link" onClick={() => copy(a.url!, "Meeting link")}><Copy className="h-4 w-4" /></Button>
+        </div>
+      )}
+    </li>
   );
 };
 
-// ---------- Two simple bar charts ----------
-const AnalyticsPanel = () => (
-  <div className="grid gap-6 md:grid-cols-2">
-    <ChartCard title="Meetings per weekday" data={WEEKLY_MEETINGS} x="day" y="meetings" />
-    <ChartCard title="Hours by activity (weekly)" data={TIME_ALLOCATION} x="name" y="hours" />
-  </div>
-);
+// Book an appointment for the selected day
+const BookForm = ({ day }: { day: Date }) => {
+  const { clients, addAppointment } = useCRM();
+  const [clientId, setClientId] = useState("");
+  const [title, setTitle] = useState("Consultation");
+  const [time, setTime] = useState("10:00");
+  const [kind, setKind] = useState<Appointment["kind"]>("video");
 
-// Reusable bar-chart card
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const ChartCard = ({ title, data, x, y }: { title: string; data: any[]; x: string; y: string }) => (
-  <Card className="p-5">
-    <SectionTitle icon={BarChart3}>{title}</SectionTitle>
-    <ResponsiveContainer width="100%" height={240}>
-      <BarChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-muted" />
-        <XAxis dataKey={x} tickLine={false} axisLine={false} fontSize={12} />
-        <YAxis tickLine={false} axisLine={false} fontSize={12} width={30} />
-        <Tooltip cursor={{ fill: "hsl(var(--muted))" }} />
-        <Bar dataKey={y} fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
-      </BarChart>
-    </ResponsiveContainer>
-  </Card>
-);
+  const book = () => {
+    const c = clients.find((x) => x.id === clientId);
+    if (!c) return toast.error("Choose a client first");
+    const [h, m] = time.split(":").map(Number);
+    addAppointment({ clientId: c.id, client: c.name, title, date: day.toISOString(), time: format(new Date(2000, 0, 1, h, m), "h:mm a"), kind, source: "CRM" });
+    toast.success(`${title} booked with ${c.name}`);
+  };
+
+  return (
+    <Card className="p-5">
+      <SectionTitle icon={CalendarPlus}>Book on {format(day, "MMM d")}</SectionTitle>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:items-end">
+        <div className="space-y-1.5 lg:col-span-2">
+          <Label htmlFor="book-client">Client</Label>
+          <Select value={clientId} onValueChange={setClientId}>
+            <SelectTrigger id="book-client"><SelectValue placeholder="Choose a client" /></SelectTrigger>
+            <SelectContent>{clients.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="book-title">Type</Label>
+          <Select value={title} onValueChange={setTitle}>
+            <SelectTrigger id="book-title"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {["Consultation", "Assessment meeting", "1st counselling session", "2nd counselling session", "Proposal signing", "Follow-up"].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="book-time">Time</Label>
+          <Input id="book-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="book-kind">Meeting</Label>
+          <Select value={kind} onValueChange={(v) => setKind(v as Appointment["kind"])}>
+            <SelectTrigger id="book-kind"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="video">Video</SelectItem>
+              <SelectItem value="phone">Phone</SelectItem>
+              <SelectItem value="in_person">In person</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <Button className="mt-4" onClick={book}>Book appointment</Button>
+    </Card>
+  );
+};

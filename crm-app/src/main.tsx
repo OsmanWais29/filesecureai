@@ -1,13 +1,13 @@
 import { createRoot } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
+import { CRMProvider } from "@/crm/store";
 import { CRM } from "@/crm/CRM";
 import "./index.css";
 
-// App entry: data cache (React Query) + toast notifications around the CRM
+// App entry: shared CRM store + toast notifications around the CRM
 createRoot(document.getElementById("root")!).render(
-  <QueryClientProvider client={new QueryClient()}>
-    <CRM intake />
+  <CRMProvider>
+    <CRM />
     <Toaster position="top-right" richColors />
-  </QueryClientProvider>,
+  </CRMProvider>,
 );

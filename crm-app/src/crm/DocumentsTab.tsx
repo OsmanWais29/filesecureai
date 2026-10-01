@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/lib/supabase";
-import { Client } from "./data";
+import { useCRM } from "./store";
 import { Empty, SectionTitle } from "./ui";
 
 const ACCEPT = ".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx"; // allowed file types
@@ -28,8 +28,10 @@ async function uploadFile(file: File, clientName: string) {
   });
 }
 
-export const DocumentsTab = ({ clients }: { clients: Client[] }) => {
-  const [clientName, setClientName] = useState(clients[0]?.name ?? ""); // who the files belong to
+export const DocumentsTab = () => {
+  const { clients, log } = useCRM();
+  const [clientId, setClientId] = useState(clients[0]?.id ?? ""); // who the files belong to
+  const clientName = clients.find((c) => c.id === clientId)?.name ?? "";
   const [files, setFiles] = useState<File[]>([]); // queued files
   const [done, setDone] = useState<string[]>([]); // names uploaded this session
   const [progress, setProgress] = useState<number | null>(null); // null = not uploading
@@ -52,6 +54,7 @@ export const DocumentsTab = ({ clients }: { clients: Client[] }) => {
       setProgress(((i + 1) / files.length) * 100);
     }
     setProgress(null);
+    if (files.length > failed) log(clientId, "note", `${files.length - failed} document(s) uploaded`);
     setFiles([]);
     if (failed) toast.error(`${failed} file(s) failed to upload`);
     else toast.success(supabase ? "Documents uploaded" : "Demo mode: files not stored");
@@ -65,10 +68,10 @@ export const DocumentsTab = ({ clients }: { clients: Client[] }) => {
         <SectionTitle icon={CloudUpload}>Upload client documents</SectionTitle>
 
         {/* Client picker */}
-        <Select value={clientName} onValueChange={setClientName}>
+        <Select value={clientId} onValueChange={setClientId}>
           <SelectTrigger><SelectValue placeholder="Choose a client" /></SelectTrigger>
           <SelectContent>
-            {clients.map((c) => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+            {clients.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
           </SelectContent>
         </Select>
 
