@@ -1,0 +1,28 @@
+# Checks the SFAI CRM Module on every push / pull request that touches it:
+# type-check, end-to-end tests (in-process Postgres, no AWS needed), CDK synth.
+name: SFAI CRM Module
+
+on:
+  push:
+    paths: ["sfai-crm-module/**", ".github/workflows/sfai-crm-module.yml"]
+  pull_request:
+    paths: ["sfai-crm-module/**", ".github/workflows/sfai-crm-module.yml"]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sfai-crm-module
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: sfai-crm-module/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      # Builds the Lambda bundles and the CloudFormation template (no deploy)
+      - run: npm run synth

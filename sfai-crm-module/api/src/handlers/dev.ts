@@ -24,10 +24,10 @@ const crm = await createCrmModule({
   services: live
     ? {}
     : {
-        mail: async (firmId, e) => (
-          console.log(`[email] ${firmId} -> ${e.to}: ${e.subject}`),
-          "ses"
-        ),
+        mail: async (firmId, e) => {
+          console.log(`[email] ${firmId} -> ${e.to}: ${e.subject}`);
+          return { via: "ses", id: crypto.randomUUID(), threadId: null };
+        },
         sms: async (firmId, to, text) => (
           console.log(`[sms] ${firmId} -> ${to}: ${text}`),
           "sns"

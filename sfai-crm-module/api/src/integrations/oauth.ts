@@ -20,7 +20,9 @@ function provider(ctx: Ctx, p: OAuthProvider) {
       tokenUrl: "https://oauth2.googleapis.com/token",
       scopes:
         "openid email https://www.googleapis.com/auth/calendar.events " +
-        "https://www.googleapis.com/auth/gmail.send",
+        "https://www.googleapis.com/auth/gmail.send " +
+        // Read client replies. A "restricted" scope: Google verifies the app first.
+        "https://www.googleapis.com/auth/gmail.readonly",
       extra: { access_type: "offline", prompt: "consent" }, // needed for refresh token
     };
   }
@@ -29,7 +31,9 @@ function provider(ctx: Ctx, p: OAuthProvider) {
     ...ctx.cfg.microsoft,
     authUrl: `${ms(ctx.cfg.microsoft.tenant)}/authorize`,
     tokenUrl: `${ms(ctx.cfg.microsoft.tenant)}/token`,
-    scopes: "offline_access openid email User.Read Calendars.ReadWrite Mail.Send",
+    scopes:
+      "offline_access openid email User.Read Calendars.ReadWrite " +
+      "Mail.Send Mail.ReadWrite", // ReadWrite: sync replies + create drafts to send
     extra: {} as Record<string, string>,
   };
 }

@@ -201,6 +201,48 @@ export const integrations = crm.table(
   (t) => [uniqueIndex("integrations_provider").on(t.firmId, t.provider)],
 );
 
+// Mirror of client email, both directions (Gmail / Outlook sync + what we send).
+// Only messages to or from a known client are stored, never the whole mailbox.
+export const emails = crm.table(
+  "emails",
+  {
+    id: id(),
+    firmId: firmId(),
+    clientId: uuid("client_id").references(() => clients.id, { onDelete: "cascade" }),
+    provider: text("provider").notNull(), // gmail | outlook | ses
+    externalId: text("external_id").notNull(), // provider message id
+    threadId: text("thread_id"), // provider thread / conversation id
+    direction: text("direction").notNull(), // in | out
+    fromAddr: text("from_addr").notNull(),
+    toAddr: text("to_addr").notNull(),
+    subject: text("subject").notNull(),
+    snippet: text("snippet").notNull(), // first ~500 characters
+    sentAt: at("sent_at").notNull(),
+  },
+  (t) => [
+    uniqueIndex("emails_message").on(t.firmId, t.provider, t.externalId),
+    index("emails_client").on(t.firmId, t.clientId, t.sentAt),
+  ],
+);
+
+// Emails written by the AI (in-app assistant or MCP). Nothing is sent until a
+// person approves it: status pending -> sent | discarded.
+export const drafts = crm.table(
+  "drafts",
+  {
+    id: id(),
+    firmId: firmId(),
+    clientIds: jsonb("client_ids").$type<string[]>().notNull(),
+    subject: text("subject").notNull(),
+    body: text("body").notNull(),
+    source: text("source").notNull(), // assistant | mcp
+    status: text("status").default("pending").notNull(),
+    decidedBy: text("decided_by"), // user who sent or discarded it
+    createdAt: createdAt(),
+  },
+  (t) => [index("drafts_status").on(t.firmId, t.status)],
+);
+
 // Who did what and when (compliance)
 export const auditLog = crm.table(
   "audit_log",

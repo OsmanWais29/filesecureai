@@ -12,6 +12,7 @@ import {
   templates,
   type Client,
 } from "../db/schema.js";
+import { emailClient } from "./email.js";
 import { fill, logActivity } from "./firm.js";
 import { REQUIRED_DOCS } from "./rules.js";
 
@@ -103,12 +104,13 @@ async function runAction(
 
   if (action === "email.template" && tpl && c.email) {
     const subject = fill(tpl.subject, c, extra);
-    await ctx.svc.mail(c.firmId, {
-      to: c.email,
+    // Sends, stores a copy and logs it on the timeline
+    await emailClient(ctx, c, {
       subject,
       text: fill(tpl.body, c, extra),
+      actor: "system",
     });
-    return log("email", `Email sent: “${subject}”`);
+    return;
   }
   if (action === "sms.reminder" && c.phone) {
     const text = tpl ? fill(tpl.subject, c, extra) : "Reminder from your trustee";

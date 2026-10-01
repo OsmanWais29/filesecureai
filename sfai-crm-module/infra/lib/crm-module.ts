@@ -207,9 +207,9 @@ export class CrmModule extends Construct {
       executeOnHandlerChange: true,
     });
 
-    // Hourly: automations (reminders, follow-ups) + calendar sync
-    new scheduler.Schedule(this, "Hourly", {
-      schedule: scheduler.ScheduleExpression.rate(Duration.hours(1)),
+    // Every 15 minutes: automations, calendar sync, inbound email sync
+    new scheduler.Schedule(this, "Every15Min", {
+      schedule: scheduler.ScheduleExpression.rate(Duration.minutes(15)),
       target: new targets.LambdaInvoke(this.fn, {
         input: scheduler.ScheduleTargetInput.fromObject({ source: "sfai.crm.scheduler" }),
       }),

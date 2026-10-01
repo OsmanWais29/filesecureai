@@ -28,6 +28,8 @@ import settings from "./routes/settings.js";
 import { integrationRoutes, oauthCallback } from "./routes/integrations.js";
 import publicRoutes from "./routes/public.js";
 import assistant, { type Ask } from "./routes/assistant.js";
+import drafts from "./routes/drafts.js";
+import mcp from "./routes/mcp.js";
 
 export interface CrmOptions {
   config?: Partial<Config>; // override any env-based setting
@@ -95,6 +97,8 @@ export async function createCrmModule(opts: CrmOptions = {}) {
   app.route("/settings", settings(ctx));
   app.route("/integrations", integrationRoutes(ctx));
   app.route("/assistant", assistant(ctx, opts.ask ?? bedrockAsk));
+  app.route("/drafts", drafts(ctx)); // AI-written emails awaiting approval
+  app.route("/mcp", mcp(ctx)); // the CRM as an MCP server for external agents
 
   const http = handle(app);
   return {

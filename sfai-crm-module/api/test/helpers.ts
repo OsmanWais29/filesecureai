@@ -10,7 +10,8 @@ export interface Sent {
 }
 export type FakeFetch = (url: string, init?: RequestInit) => Promise<Response> | Response;
 
-export async function setup(fetchImpl?: FakeFetch) {
+// realMail: use the real mailer (Gmail/Outlook/SES code) over the fake fetch
+export async function setup(fetchImpl?: FakeFetch, opts: { realMail?: boolean } = {}) {
   const db = await localDb();
   const sent: Sent[] = [];
   const calls: { url: string; init?: RequestInit }[] = [];
@@ -33,10 +34,12 @@ export async function setup(fetchImpl?: FakeFetch) {
         : null;
     },
     services: {
-      mail: async (firmId, e) => (
-        sent.push({ kind: "email", firmId, to: e.to, text: e.subject }),
-        "ses"
-      ),
+      mail: opts.realMail
+        ? undefined
+        : async (firmId, e) => {
+            sent.push({ kind: "email", firmId, to: e.to, text: e.subject });
+            return { via: "ses", id: `ses-${sent.length}`, threadId: null };
+          },
       sms: async (firmId, to, text) => (
         sent.push({ kind: "sms", firmId, to, text }),
         "sns"
@@ -54,7 +57,7 @@ export async function setup(fetchImpl?: FakeFetch) {
     },
     ask: async (_ctx, firmId, history) => ({
       text: `echo ${firmId}: ${history.at(-1)?.text}`,
-      drafts: [],
+      draftIds: [],
     }),
   });
 

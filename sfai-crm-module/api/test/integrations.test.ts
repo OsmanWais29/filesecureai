@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { createMailer } from "../src/integrations/email.js";
 import { createSms } from "../src/integrations/sms.js";
-import { crmTools, type EmailDraft } from "../src/ai/tools.js";
+import { crmTools } from "../src/ai/tools.js";
 import { setup, type FakeFetch } from "./helpers.js";
 
 const json = (v: unknown) => new Response(JSON.stringify(v), { status: 200 });
@@ -24,7 +24,7 @@ const fakeGoogle: FakeFetch = (url, init) => {
         })
       : json({ access_token: "at-2", expires_in: 3600 });
   }
-  if (url.includes("gmail.googleapis.com")) return json({ id: "msg-1" });
+  if (url.includes("gmail.googleapis.com")) return json({ id: "msg-1", threadId: "t-1" });
   if (url.includes("calendar/v3") && init?.method === "POST")
     return json({ id: "evt-new" });
   if (url.includes("calendar/v3")) {
@@ -72,9 +72,12 @@ describe("Google OAuth + Gmail + Calendar", () => {
     });
 
     // 3. Real mailer now routes through Gmail
-    expect(
-      await createMailer(crm.ctx)("f1", { to: "a@b.c", subject: "Hi", text: "Body" }),
-    ).toBe("gmail");
+    const mailed = await createMailer(crm.ctx)("f1", {
+      to: "a@b.c",
+      subject: "Hi",
+      text: "B",
+    });
+    expect(mailed.via).toBe("gmail");
 
     // 4. Booking pushes an event; sync pulls the external one in (once)
     const { body: c } = await api("/clients", { method: "POST", json: { name: "Ivy" } });
@@ -117,21 +120,21 @@ describe("assistant tools", () => {
     const { api, crm, sent } = await setup();
     await api("/clients", { method: "POST", json: { name: "Jo F1" } }, "f1");
     await api("/clients", { method: "POST", json: { name: "Kai F2" } }, "f2");
-    const drafts: EmailDraft[] = [];
-    const tools = crmTools(crm.ctx, "f1", drafts);
+    const created: string[] = [];
+    const tools = crmTools(crm.ctx, "f1", "assistant", (id) => created.push(id));
     const run = (name: string, input: unknown) =>
-      tools.find((t) => t.name === name)!.run(input as never);
+      tools.find((t) => t.name === name)!.run(input);
 
-    const found = JSON.parse(String(await run("search_clients", {})));
+    const found = JSON.parse(await run("search_clients", {}));
     expect(found.map((c: { name: string }) => c.name)).toEqual(["Jo F1"]);
 
     const before = sent.length;
     await run("draft_email", {
       clientIds: [found[0].id],
       subject: "Hi",
-      text: "Hello Jo",
+      body: "Hello Jo",
     });
-    expect(drafts).toHaveLength(1);
+    expect(created).toHaveLength(1);
     expect(sent.length).toBe(before); // nothing actually sent
   });
 });
