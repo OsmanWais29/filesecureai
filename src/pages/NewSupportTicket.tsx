@@ -10,9 +10,9 @@ import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { AlertCircle, CheckCircle2, ArrowLeft, Upload, Paperclip } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import { useAuthState } from "@/hooks/useAuthState";
 
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 const NewSupportTicket = () => {
   const navigate = useNavigate();
   const { user } = useAuthState();
@@ -35,7 +35,7 @@ const NewSupportTicket = () => {
     setIsSubmitting(true);
     
     try {
-      const { error } = await supabase.functions.invoke('handle-notifications', {
+      const { error } = await sfaiFunctions.invoke('handle-notifications', {
         body: {
           action: 'supportRequest',
           userId: 'admin', // This would target the admin or support team

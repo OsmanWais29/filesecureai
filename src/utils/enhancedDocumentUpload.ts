@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { EnhancedDocumentAnalysis } from '@/services/EnhancedDocumentAnalysis';
 
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 interface EnhancedUploadOptions {
   onProgress?: (progress: number) => void;
   clientName?: string;
@@ -109,7 +110,7 @@ export const uploadDocumentWithEnhancedAnalysis = async (
 
     // Create notification for successful upload
     try {
-      await supabase.functions.invoke('handle-notifications', {
+      await sfaiFunctions.invoke('handle-notifications', {
         body: {
           action: 'create',
           userId: user.id,

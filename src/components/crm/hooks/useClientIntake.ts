@@ -3,6 +3,7 @@ import { FormData } from "../types";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 export const useClientIntake = () => {
   const [isClientDialogOpen, setIsClientDialogOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -212,7 +213,7 @@ export const useClientIntake = () => {
       if (interactionError) throw interactionError;
 
       // Call DeepSeek AI to process the intake and generate recommendations
-      const { data: aiResponse, error: aiError } = await supabase.functions.invoke('deepseek-chat', {
+      const { data: aiResponse, error: aiError } = await sfaiFunctions.invoke('deepseek-chat', {
         body: {
           prompt: `New client intake completed for ${formData.fullName}. 
           

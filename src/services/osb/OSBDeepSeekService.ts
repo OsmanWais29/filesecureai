@@ -1,7 +1,7 @@
 
-import { supabase } from '@/lib/supabase';
 import { DeepSeekAnalysisResponse } from '@/types/osb-analysis';
 
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 export class OSBDeepSeekService {
   /**
    * Analyze OSB document using enhanced DeepSeek prompts
@@ -13,7 +13,7 @@ export class OSBDeepSeekService {
   ): Promise<DeepSeekAnalysisResponse> {
     try {
       // Call enhanced DeepSeek analysis edge function
-      const { data, error } = await supabase.functions.invoke('enhanced-osb-analysis', {
+      const { data, error } = await sfaiFunctions.invoke('enhanced-osb-analysis', {
         body: {
           documentText,
           formNumber,
@@ -52,7 +52,7 @@ export class OSBDeepSeekService {
         throw new Error('Invalid document ID provided');
       }
 
-      const { data, error } = await supabase.functions.invoke('enhanced-osb-analysis', {
+      const { data, error } = await sfaiFunctions.invoke('enhanced-osb-analysis', {
         body: {
           documentId: documentId,
           analysisType: 'deepseek_reasoning_reinforcement',

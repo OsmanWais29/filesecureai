@@ -1,8 +1,9 @@
 
-import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { FolderRecommendation } from "../types/folderTypes";
 
+import { supabase } from "@/lib/supabase";
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 // Create a notification for new client folder
 export const suggestNewClientFolder = async (
   userId: string,
@@ -11,7 +12,7 @@ export const suggestNewClientFolder = async (
 ) => {
   try {
     // Create notification suggesting new client folder
-    await supabase.functions.invoke('handle-notifications', {
+    await sfaiFunctions.invoke('handle-notifications', {
       body: {
         action: 'create',
         userId: userId,
@@ -75,7 +76,7 @@ export const notifyFolderRecommendation = async (
 ) => {
   try {
     // Create recommendation notification
-    await supabase.functions.invoke('handle-notifications', {
+    await sfaiFunctions.invoke('handle-notifications', {
       body: {
         action: 'folderRecommendation',
         userId: userId,

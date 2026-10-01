@@ -6,6 +6,7 @@ import { APIIntegration, IntegrationProvider } from "./types";
 import { IntegrationCard } from "./components/IntegrationCard";
 import { AddIntegrationDialog } from "./components/AddIntegrationDialog";
 
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 export const IntegrationsSection = () => {
   const [activeIntegrations, setActiveIntegrations] = useState<APIIntegration[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -75,7 +76,7 @@ export const IntegrationsSection = () => {
       if (dbError) throw dbError;
 
       // Then, call our edge function to handle the API-specific setup
-      const response = await supabase.functions.invoke('handle-integration', {
+      const response = await sfaiFunctions.invoke('handle-integration', {
         body: {
           provider: provider.id,
           action: 'setup',

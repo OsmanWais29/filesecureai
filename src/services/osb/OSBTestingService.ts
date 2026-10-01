@@ -1,6 +1,7 @@
 
 import { supabase } from '@/lib/supabase';
 
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 export class OSBTestingService {
   /**
    * Test PDF extraction and analysis
@@ -45,7 +46,7 @@ export class OSBTestingService {
       console.log('PDF URL generated:', urlData.publicUrl);
 
       // Test document analysis
-      const analysisResult = await supabase.functions.invoke('analyze-document', {
+      const analysisResult = await sfaiFunctions.invoke('analyze-document', {
         body: {
           documentId: docId,
           extractionMode: 'comprehensive',

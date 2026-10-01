@@ -2,6 +2,7 @@
 import { supabase } from "@/lib/supabase";
 import logger from "@/utils/logger";
 
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 export const simulateProcessingStages = async (
   isSpecialForm: boolean,
   isExcel: boolean,
@@ -103,7 +104,7 @@ export const triggerDocumentAnalysis = async (
     }
     
     // Call the correct DeepSeek edge function with proper auth context
-    const { error } = await supabase.functions.invoke('deepseek-document-analysis', {
+    const { error } = await sfaiFunctions.invoke('deepseek-document-analysis', {
       body: {
         documentId,
         fileName,
@@ -142,7 +143,7 @@ export const createNotification = async (
       return; // Don't throw error for notifications, just log and return
     }
 
-    await supabase.functions.invoke('handle-notifications', {
+    await sfaiFunctions.invoke('handle-notifications', {
       body: {
         action: 'create',
         userId,

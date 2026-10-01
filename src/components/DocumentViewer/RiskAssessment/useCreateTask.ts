@@ -3,6 +3,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { Risk } from "./types";
 
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 export const useCreateTask = (documentId: string) => {
   const { toast } = useToast();
 
@@ -49,7 +50,7 @@ export const useCreateTask = (documentId: string) => {
       if (docError) throw docError;
 
       // Create notification for the task
-      await supabase.functions.invoke('handle-notifications', {
+      await sfaiFunctions.invoke('handle-notifications', {
         body: {
           action: 'create',
           userId: user.id,
@@ -71,7 +72,7 @@ export const useCreateTask = (documentId: string) => {
       });
 
       // Add a second notification for task deadline
-      await supabase.functions.invoke('handle-notifications', {
+      await sfaiFunctions.invoke('handle-notifications', {
         body: {
           action: 'create',
           userId: user.id,

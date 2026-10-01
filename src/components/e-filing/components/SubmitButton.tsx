@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 interface SubmitButtonProps {
   isAnalyzing: boolean;
   overallStatus: 'pending' | 'failed' | 'passed';
@@ -22,7 +23,7 @@ export const SubmitButton = ({
       try {
         const userData = await supabase.auth.getUser();
         if (userData.data.user) {
-          await supabase.functions.invoke('handle-notifications', {
+          await sfaiFunctions.invoke('handle-notifications', {
             body: {
               action: 'create',
               userId: userData.data.user.id,

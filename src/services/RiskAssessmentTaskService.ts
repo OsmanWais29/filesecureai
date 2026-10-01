@@ -1,6 +1,7 @@
 
-import { supabase } from '@/lib/supabase';
 
+import { supabase } from '@/lib/supabase';
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 export class RiskAssessmentTaskService {
   /**
    * Handle risk assessment and auto-task creation
@@ -35,7 +36,7 @@ export class RiskAssessmentTaskService {
 
     // Create notification for risk findings
     if (highRiskFactors.length > 0) {
-      await supabase.functions.invoke('handle-notifications', {
+      await sfaiFunctions.invoke('handle-notifications', {
         body: {
           action: 'create',
           userId: analysis.userId || 'system',

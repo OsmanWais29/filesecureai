@@ -1,9 +1,10 @@
 
 import { useState } from 'react';
-import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { Comment, Profile } from '../types';
 
+import { supabase } from "@/lib/supabase";
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 export interface UseCommentActionsProps {
   documentId: string;
   onCommentAdded: () => void;
@@ -51,7 +52,7 @@ export const useCommentActions = ({ documentId, onCommentAdded }: UseCommentActi
       if (mentions && mentions.length > 0) {
         for (const userId of mentions) {
           // Call the handle-notifications function with correct structure
-          await supabase.functions.invoke('handle-notifications', {
+          await sfaiFunctions.invoke('handle-notifications', {
             body: {
               action: 'create',
               userId: userId,

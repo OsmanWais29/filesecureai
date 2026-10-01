@@ -5,6 +5,7 @@ import { updateAnalysisStatus } from "../documentStatusUpdates";
 import { AnalysisProcessContext } from "../types";
 import { toSafeSpreadArray, toSafeSpreadObject } from "@/utils/typeSafetyUtils";
 
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 export const dataExtraction = async (
   documentRecord: DocumentRecord,
   isForm76: boolean,
@@ -39,7 +40,7 @@ export const dataExtraction = async (
   try {
     const userData = await supabase.auth.getUser();
     if (userData.data.user) {
-      await supabase.functions.invoke('handle-notifications', {
+      await sfaiFunctions.invoke('handle-notifications', {
         body: {
           action: 'create',
           userId: userData.data.user.id,

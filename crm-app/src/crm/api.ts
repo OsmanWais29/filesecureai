@@ -1,4 +1,4 @@
-// Talks to the SFAI CRM backend (sfai-crm-module). Every network call lives here.
+// Talks to the SFAI CRM backend (sfai-platform-module). Every network call lives here.
 //   VITE_API_URL  backend base URL (default: local dev server)
 //   Login: the host app calls setTokenProvider() with its Cognito token getter.
 //   Without one (local dev), requests use the dev server's demo-firm header.
@@ -8,7 +8,7 @@ import {
   type Activity, type Appointment, type Automation, type Client, type Deadline, type Template,
 } from "./data";
 
-const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3000/crm";
+const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3000/api";
 
 let getToken: (() => Promise<string | null>) | null = null;
 // Host app: setTokenProvider(() => cognitoIdToken())

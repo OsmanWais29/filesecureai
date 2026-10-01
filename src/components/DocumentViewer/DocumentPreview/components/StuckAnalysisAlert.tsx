@@ -2,9 +2,10 @@
 import React, { useState } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
+import { supabase } from '@/lib/supabase';
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 interface StuckAnalysisAlertProps {
   documentId: string;
   minutesStuck: number;
@@ -37,7 +38,7 @@ export const StuckAnalysisAlert: React.FC<StuckAnalysisAlertProps> = ({
         .eq('id', documentId);
         
       // Trigger document analysis again
-      const { error } = await supabase.functions.invoke('analyze-document', {
+      const { error } = await sfaiFunctions.invoke('analyze-document', {
         body: { documentId }
       });
       

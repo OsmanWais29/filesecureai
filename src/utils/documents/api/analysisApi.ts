@@ -2,6 +2,7 @@
 import { supabase } from '@/lib/supabase';
 import { safeStringCast, safeObjectCast } from '@/utils/typeGuards';
 
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 interface AnalysisRequest {
   documentId: string;
   storagePath: string;
@@ -68,7 +69,7 @@ export const requestDocumentAnalysis = async (
       .eq('id', request.documentId);
 
     // Call the edge function
-    const { data: analysisData, error: analysisError } = await supabase.functions.invoke('process-ai-request', {
+    const { data: analysisData, error: analysisError } = await sfaiFunctions.invoke('process-ai-request', {
       body: {
         documentId: request.documentId,
         storagePath: request.storagePath,

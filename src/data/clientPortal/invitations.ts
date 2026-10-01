@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 /**
  * Client portal provisioning + invitation model — Supabase backed.
  *
@@ -602,7 +603,7 @@ export async function createPortalAccount(input: {
   fullName: string;
   password: string;
 }): Promise<CreatePortalAccountResult> {
-  const { data, error } = await supabase.functions.invoke("create-client-portal-account", {
+  const { data, error } = await sfaiFunctions.invoke("create-client-portal-account", {
     body: { token: input.token, fullName: input.fullName, password: input.password },
   });
 

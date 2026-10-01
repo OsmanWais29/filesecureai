@@ -7,8 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileSignature, Send, Clock, CheckCircle2, AlertCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/lib/supabase";
 
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 interface Document {
   id: string;
   title: string;
@@ -61,7 +61,7 @@ export const DocumentSignaturesPanel = ({ clientId, clientName, clientEmail }: D
       
       // In a real implementation, this would prepare the document for signature
       // and send it to the client via the process-document edge function
-      const { error } = await supabase.functions.invoke('process-document', {
+      const { error } = await sfaiFunctions.invoke('process-document', {
         body: {
           action: 'prepare_signature',
           documentId: selectedDocumentId,
@@ -100,7 +100,7 @@ export const DocumentSignaturesPanel = ({ clientId, clientName, clientEmail }: D
 
   const checkSignatureStatus = async (documentId: string) => {
     try {
-      const { data, error } = await supabase.functions.invoke('process-document', {
+      const { data, error } = await sfaiFunctions.invoke('process-document', {
         body: {
           action: 'check_signatures',
           documentId

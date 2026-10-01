@@ -2,13 +2,13 @@
 
 The CRM front end (React + Vite + Tailwind + shadcn/ui), rebuilt from the
 `src/components/crm` module of FileSecure AI with short, commented code.
-All data comes from the **SFAI CRM Module** backend (`../sfai-crm-module`).
+All data comes from the **SFAI Platform Module** backend (`../sfai-platform-module`).
 
 ## Run it locally
 
 ```bash
 # 1. Backend (terminal 1): API + local Postgres (PGlite) + demo data
-cd ../sfai-crm-module && npm install && npm run dev -w api   # http://localhost:3000/crm
+cd ../sfai-platform-module && npm install && npm run dev -w api   # http://localhost:3000/api
 
 # 2. Front end (terminal 2)
 npm install
@@ -17,14 +17,14 @@ npm run build    # type-check + production build
 ```
 
 Locally, emails/SMS are logged by the backend instead of sent, files go to
-`sfai-crm-module/api/.data/files`, and "Ask your CRM" falls back to quick rule-based
+`sfai-platform-module/api/.data/files`, and "Ask your CRM" falls back to quick rule-based
 answers when Bedrock is not reachable.
 
 ## Settings (`.env`, see `.env.example`)
 
 | Variable | What it is |
 |---|---|
-| `VITE_API_URL` | Backend base URL, e.g. `https://api.example.com/crm`. Default `http://localhost:3000/crm` |
+| `VITE_API_URL` | Backend base URL, e.g. `https://api.example.com/api`. Default `http://localhost:3000/api` |
 | `VITE_DEV_FIRM` | Local dev only: the demo firm the dev server logs you in as |
 
 ## Login (inside the bigger app)

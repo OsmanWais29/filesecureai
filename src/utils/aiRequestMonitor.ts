@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { safeObjectCast, safeStringCast } from '@/utils/typeGuards';
 
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 // Interface for AI request logs
 interface AIRequestLog {
   documentId: string;
@@ -123,7 +124,7 @@ export const triggerManualAnalysis = async (documentId: string): Promise<void> =
     }
     
     // Call the edge function with the document information
-    const { data: analysisData, error: analysisError } = await supabase.functions.invoke('process-ai-request', {
+    const { data: analysisData, error: analysisError } = await sfaiFunctions.invoke('process-ai-request', {
       body: { 
         documentId,
         storagePath: document.storage_path,

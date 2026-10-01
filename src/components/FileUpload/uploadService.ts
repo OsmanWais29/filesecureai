@@ -2,6 +2,7 @@
 import { supabase } from '@/lib/supabase';
 import { extractTextFromPdf } from './pdfUtils';
 
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 export const handleDocumentUpload = async (
   file: File,
   documentId: string,
@@ -59,7 +60,7 @@ export const handleDocumentUpload = async (
     if (updateError) throw updateError;
 
     // Continue with document analysis
-    const { error } = await supabase.functions.invoke('analyze-document', {
+    const { error } = await sfaiFunctions.invoke('analyze-document', {
       body: {
         documentText,
         documentId

@@ -1,10 +1,11 @@
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Document } from "@/components/DocumentList/types";
 import { ValidationResult, RiskItem } from "../types";
 
+import { supabase } from "@/integrations/supabase/client";
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 export function useDocumentValidation(
   document: Document | null,
   onValidationComplete: (isValid: boolean) => void
@@ -114,7 +115,7 @@ export function useDocumentValidation(
       // Call the Supabase Edge Function for document analysis
       console.log(`Calling process-ai-request for document: ${document.id}`);
       
-      const { data, error } = await supabase.functions.invoke('process-ai-request', {
+      const { data, error } = await sfaiFunctions.invoke('process-ai-request', {
         body: {
           documentId: document.id,
           includeRegulatory: true,

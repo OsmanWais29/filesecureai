@@ -1,7 +1,8 @@
 
-import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
+import { supabase } from '@/lib/supabase';
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 export interface EnhancedAnalysisResult {
   documentId: string;
   formType: string;
@@ -94,7 +95,7 @@ export class EnhancedDocumentAnalysis {
         .eq('id', documentId);
 
       // Call DeepSeek analysis edge function
-      const { data: analysisResult, error: analysisError } = await supabase.functions.invoke('enhanced-document-analysis', {
+      const { data: analysisResult, error: analysisError } = await sfaiFunctions.invoke('enhanced-document-analysis', {
         body: {
           documentId,
           documentTitle: document.title,
@@ -216,7 +217,7 @@ export class EnhancedDocumentAnalysis {
   private static async generateTasksFromAnalysis(documentId: string, analysis: EnhancedAnalysisResult) {
     try {
       // Call the AI task generator
-      const { data: taskResult } = await supabase.functions.invoke('ai-task-generator', {
+      const { data: taskResult } = await sfaiFunctions.invoke('ai-task-generator', {
         body: {
           documentId,
           riskAssessments: analysis.riskAssessment.riskFactors,

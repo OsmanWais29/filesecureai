@@ -2,6 +2,7 @@
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 export interface DeepSeekAnalysisResult {
   documentId: string;
   formIdentification: {
@@ -109,7 +110,7 @@ export class DeepSeekCoreService {
       const formHint = this.extractFormHint(document.title);
 
       // Call enhanced DeepSeek analysis
-      const { data: analysisResult, error: analysisError } = await supabase.functions.invoke('deepseek-document-analysis', {
+      const { data: analysisResult, error: analysisError } = await sfaiFunctions.invoke('deepseek-document-analysis', {
         body: {
           documentId,
           documentText,
@@ -302,7 +303,7 @@ export class DeepSeekCoreService {
 
     // Create notification for risk findings
     if (highRiskFactors.length > 0) {
-      await supabase.functions.invoke('handle-notifications', {
+      await sfaiFunctions.invoke('handle-notifications', {
         body: {
           action: 'create',
           notification: {

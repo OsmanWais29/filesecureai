@@ -3,8 +3,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileSignature } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/lib/supabase";
 
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 interface Document {
   id: string;
   title: string;
@@ -21,7 +21,7 @@ export const DocumentList = ({ documents }: DocumentListProps) => {
 
   const handleSignDocument = async (documentId: string) => {
     try {
-      const { error } = await supabase.functions.invoke('process-document', {
+      const { error } = await sfaiFunctions.invoke('process-document', {
         body: {
           action: 'sign',
           documentId,

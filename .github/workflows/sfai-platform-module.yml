@@ -1,0 +1,28 @@
+# Checks the SFAI Platform Module on every push / pull request that touches it:
+# type-check, end-to-end tests (in-process Postgres, no AWS needed), CDK synth.
+name: SFAI Platform Module
+
+on:
+  push:
+    paths: ["sfai-platform-module/**", ".github/workflows/sfai-platform-module.yml"]
+  pull_request:
+    paths: ["sfai-platform-module/**", ".github/workflows/sfai-platform-module.yml"]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sfai-platform-module
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: sfai-platform-module/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      # Builds the Lambda bundles and the CloudFormation template (no deploy)
+      - run: npm run synth

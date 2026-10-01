@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 interface UploadDocumentOptions {
   onProgress?: (progress: number) => void;
   clientName?: string;
@@ -83,7 +84,7 @@ export const uploadDocumentToStorage = async (
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session) {
-        await supabase.functions.invoke('deepseek-document-analysis', {
+        await sfaiFunctions.invoke('deepseek-document-analysis', {
           body: {
             documentId: documentData.id,
             fileName: file.name,
@@ -108,7 +109,7 @@ export const uploadDocumentToStorage = async (
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session) {
-        await supabase.functions.invoke('handle-notifications', {
+        await sfaiFunctions.invoke('handle-notifications', {
           body: {
             action: 'create',
             userId: user.id,

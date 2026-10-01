@@ -4,6 +4,7 @@ import { updateAnalysisStatus } from "../documentStatusUpdates";
 import { AnalysisProcessProps } from "../types";
 import { DocumentRecord } from "../../types";
 
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 export const collaborationSetup = async (
   documentRecord: DocumentRecord,
   documentText: string,
@@ -33,7 +34,7 @@ export const collaborationSetup = async (
     // Create notification about document analysis completion
     const userData = await supabase.auth.getUser();
     if (userData.data.user) {
-      await supabase.functions.invoke('handle-notifications', {
+      await sfaiFunctions.invoke('handle-notifications', {
         body: {
           action: 'create',
           userId: userData.data.user.id,

@@ -4,8 +4,8 @@ import { Progress } from "@/components/ui/progress";
 import { AlertTriangle, RefreshCw, Timer, Info, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
 
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 interface AnalysisProgressProps {
   documentId: string;
   progress: number;
@@ -85,7 +85,7 @@ export const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
   const checkConnectionStatus = async () => {
     try {
       // Try to call a simple API to check connection
-      const { error } = await supabase.functions.invoke('process-ai-request', {
+      const { error } = await sfaiFunctions.invoke('process-ai-request', {
         body: { ping: true }
       });
       

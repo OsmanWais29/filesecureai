@@ -1,6 +1,7 @@
-import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
+import { supabase } from '@/lib/supabase';
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 export interface DeepSeekDocumentAnalysisResult {
   formType: string;
   formNumber: string;
@@ -54,7 +55,7 @@ export class DeepSeekDocumentAnalysisService {
       }
 
       // Call comprehensive DeepSeek analysis edge function
-      const { data: analysisResult, error: analysisError } = await supabase.functions.invoke('enhanced-osb-analysis', {
+      const { data: analysisResult, error: analysisError } = await sfaiFunctions.invoke('enhanced-osb-analysis', {
         body: {
           documentId,
           documentText: docContent,

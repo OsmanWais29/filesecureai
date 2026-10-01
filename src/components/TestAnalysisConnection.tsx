@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { checkAndRefreshToken } from "@/utils/jwtMonitoring";
 
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 export const TestAnalysisConnection = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [response, setResponse] = useState<any>(null);
@@ -96,7 +97,7 @@ export const TestAnalysisConnection = () => {
       });
       
       // Call the edge function directly
-      const { error: functionError, data: functionData } = await supabase.functions.invoke('process-ai-request', {
+      const { error: functionError, data: functionData } = await sfaiFunctions.invoke('process-ai-request', {
         body: {
           documentId: documentData.id,
           storagePath: testFileName,

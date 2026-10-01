@@ -1,7 +1,7 @@
 
-import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 /**
  * Tests OpenAI connectivity and provides detailed diagnostics
  * @returns Diagnostic results including connectivity status and error details
@@ -40,7 +40,7 @@ export const testOpenAIConnection = async () => {
     
     console.log("Calling the edge function to test OpenAI connectivity");
     
-    const { data, error } = await supabase.functions.invoke('process-ai-request', {
+    const { data, error } = await sfaiFunctions.invoke('process-ai-request', {
       body: {
         message: "Test connection",
         testMode: true,

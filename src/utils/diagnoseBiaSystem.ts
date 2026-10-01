@@ -2,6 +2,7 @@
 import { supabase } from "@/lib/supabase";
 import { safeStringCast, safeObjectCast } from "@/utils/typeGuards";
 
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 /**
  * Runs comprehensive diagnostics on the Bankruptcy & Insolvency Act (BIA) system
  * @param documentId The document ID to diagnose
@@ -192,7 +193,7 @@ export const runFullSystemDiagnostics = async (documentId: string) => {
 export const testOpenAIKey = async () => {
   try {
     // Call the edge function to test the OpenAI key
-    const { data, error } = await supabase.functions.invoke('process-ai-request', {
+    const { data, error } = await sfaiFunctions.invoke('process-ai-request', {
       body: {
         message: "This is a test to verify OpenAI connectivity.",
         testMode: true

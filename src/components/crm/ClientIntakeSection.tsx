@@ -15,8 +15,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useVoiceRecognition } from "@/hooks/useVoiceRecognition";
 import { FormSteps } from "./FormSteps";
 import { FormData } from "./types";
-import { supabase } from "@/lib/supabase";
 
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 export const ClientIntakeSection = () => {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
@@ -97,7 +97,7 @@ export const ClientIntakeSection = () => {
     } else {
       // Submit the final form data
       try {
-        const { data, error } = await supabase.functions.invoke('process-client-intake', {
+        const { data, error } = await sfaiFunctions.invoke('process-client-intake', {
           body: { formData, transcription }
         });
 

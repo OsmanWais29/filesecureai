@@ -8,6 +8,7 @@ import { useState } from "react";
 import { UploadDiagnostics } from "@/components/storage/UploadDiagnostics";
 import { withFreshToken } from "@/utils/jwt/tokenManager";
 
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 export const DocumentUpload = () => {
   const { toast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
@@ -69,7 +70,7 @@ export const DocumentUpload = () => {
         console.log('Creating notification for document upload');
         
         // Create notification for document upload
-        await supabase.functions.invoke('handle-notifications', {
+        await sfaiFunctions.invoke('handle-notifications', {
           body: {
             action: 'create',
             userId: user?.id,

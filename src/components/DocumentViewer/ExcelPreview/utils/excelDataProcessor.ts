@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { ExcelData } from '../types';
 import { extractClientNameFromWorksheet } from './clientNameExtractor';
 
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 /**
  * Processes Excel file data, extracting client name and content with optimized approach
  */
@@ -41,7 +42,7 @@ export const processExcelData = async (
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          await supabase.functions.invoke('handle-notifications', {
+          await sfaiFunctions.invoke('handle-notifications', {
             body: {
               action: 'create',
               userId: user.id,

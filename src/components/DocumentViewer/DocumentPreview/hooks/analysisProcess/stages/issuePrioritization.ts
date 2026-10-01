@@ -3,6 +3,7 @@ import { DocumentRecord } from "../../types";
 import { updateAnalysisStatus } from "../documentStatusUpdates";
 import { AnalysisProcessContext } from "../types";
 
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 export const issuePrioritization = async (
   documentRecord: DocumentRecord,
   isForm76: boolean,
@@ -102,7 +103,7 @@ export const issuePrioritization = async (
       if (documentRecord.metadata?.submissionDeadline) {
         try {
           const { data: userData } = await supabase.auth.getUser();
-          await supabase.functions.invoke('handle-notifications', {
+          await sfaiFunctions.invoke('handle-notifications', {
             body: {
               action: 'create',
               userId: userData?.user?.id,

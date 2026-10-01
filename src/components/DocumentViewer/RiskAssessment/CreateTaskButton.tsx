@@ -7,6 +7,7 @@ import { useCreateTask } from "./useCreateTask";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 interface CreateTaskButtonProps {
   documentId: string;
   title?: string;
@@ -31,7 +32,7 @@ export const CreateTaskButton = ({
       if (!user.data.user) return;
       
       // Call the handle-notifications edge function
-      const { error } = await supabase.functions.invoke('handle-notifications', {
+      const { error } = await sfaiFunctions.invoke('handle-notifications', {
         body: {
           action: 'create',
           userId: user.data.user.id,

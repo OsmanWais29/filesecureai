@@ -1,9 +1,10 @@
 
 import { useState, useCallback } from 'react';
 import { ChatMessage } from '../types';
-import { supabase } from '@/lib/supabase';
 import { safeStringCast } from '@/utils/typeGuards';
 
+import { supabase } from '@/lib/supabase';
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 interface UseConversationsResult {
   categoryMessages: Record<string, ChatMessage[]>;
   isLoading: boolean;
@@ -83,7 +84,7 @@ export const useConversations = (activeTab?: string): UseConversationsResult => 
       }));
 
       // Call DeepSeek API
-      const { data: aiData, error: aiError } = await supabase.functions.invoke('deepseek-chat', {
+      const { data: aiData, error: aiError } = await sfaiFunctions.invoke('deepseek-chat', {
         body: { message: content, category }
       });
 

@@ -6,8 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Zap, Brain, CheckCircle, AlertTriangle, Clock, Users } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from '@/lib/supabase';
 
+import { sfaiFunctions } from "@/lib/sfaiFunctions";
 interface AITaskGeneratorProps {
   documentId: string;
   documentTitle: string;
@@ -55,7 +55,7 @@ export const AITaskGenerator: React.FC<AITaskGeneratorProps> = ({
         setProgress(prev => Math.min(prev + 10, 90));
       }, 500);
 
-      const { data, error } = await supabase.functions.invoke('ai-task-generator', {
+      const { data, error } = await sfaiFunctions.invoke('ai-task-generator', {
         body: {
           documentId,
           riskAssessments,
