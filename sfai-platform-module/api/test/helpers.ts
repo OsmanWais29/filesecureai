@@ -86,7 +86,12 @@ export async function setup(
     authenticate: async (req): Promise<AuthUser | null> => {
       const firmId = req.headers.get("x-firm");
       return firmId
-        ? { id: "u1", firmId, role: req.headers.get("x-role") ?? "trustee" }
+        ? {
+            id: req.headers.get("x-user") ?? "u1",
+            firmId,
+            role: req.headers.get("x-role") ?? "trustee",
+            email: req.headers.get("x-email") ?? "u1@firm.test",
+          }
         : null;
     },
     services: {
@@ -104,10 +109,19 @@ export async function setup(
         uploadUrl: async (key) => `https://s3.test/put/${key}`,
         downloadUrl: async (key) => `https://s3.test/get/${key}`,
         read: async (key) => files.get(key) ?? new TextEncoder().encode("hello"),
+        remove: async (keys) => keys.forEach((k) => files.delete(k)),
+        list: async (prefix) =>
+          [...files.keys()]
+            .filter((k) => k.startsWith(prefix))
+            .map((key) => ({
+              key,
+              size: files.get(key)!.length,
+              updated: new Date().toISOString(),
+            })),
       },
       identity: {
         roleOf: async (email) => portalUsers.get(email) ?? null,
-        createClientUser: async (u) => void portalUsers.set(u.email, "client"),
+        createUser: async (u) => (portalUsers.set(u.email, u.role), `user-${u.email}`),
       },
       readDocument: async () => (opts.analysis ?? fakeAnalysis)(),
       fetch: (async (url: string, init?: RequestInit) => {
@@ -129,8 +143,11 @@ export async function setup(
     init: RequestInit & { json?: unknown } = {},
     firm = "f1",
     role = "trustee",
+    who: { user?: string; email?: string } = {},
   ) => {
     const headers: Record<string, string> = { "x-firm": firm, "x-role": role };
+    if (who.user) headers["x-user"] = who.user;
+    if (who.email) headers["x-email"] = who.email;
     if (init.json !== undefined) headers["content-type"] = "application/json";
     const res = await crm.app.request(`/api${path}`, {
       ...init,

@@ -1,47 +1,31 @@
-// Drop-in replacement for `supabase.functions.invoke(name, { body })`.
-// The old Supabase Edge Functions now live in the SFAI Platform Module on AWS
-// (sfai-platform-module/). This maps each old function name to its new API route
-// and keeps the same `{ data, error }` result, so call sites change by one line.
-//
-//   VITE_SFAI_API_URL  the module's base URL (default: local dev server)
-//   setSfaiToken(fn)   once logins move to Cognito, pass the ID-token getter here.
-//                      Until then (local dev) requests use the dev firm header.
+// The old Supabase Edge Function names, re-pointed at the SFAI Platform Module on
+// AWS. Same `{ data, error }` result as supabase.functions.invoke(name, { body }),
+// so call sites didn't change. Results land in the same tables the screens read
+// (document_analysis, tasks, notifications, signatures...).
+import { from } from "./sfai/db";
+import { request, type ApiError } from "./sfai/http";
 
 type Body = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 type Result = { data: any; error: { message: string; context?: Response } | null }; // eslint-disable-line @typescript-eslint/no-explicit-any
 
-const BASE = import.meta.env.VITE_SFAI_API_URL ?? "http://localhost:3000/api";
-let getToken: (() => Promise<string | null>) | null = null;
-export const setSfaiToken = (fn: typeof getToken) => (getToken = fn);
-
-// One request; throws with the API's error message (and the raw response)
-async function call(path: string, method = "GET", json?: unknown) {
-  const token = getToken && (await getToken());
-  const headers: Record<string, string> = token
-    ? { authorization: `Bearer ${token}` }
-    : { "x-dev-firm": import.meta.env.VITE_DEV_FIRM ?? "demo-firm" };
-  if (json !== undefined) headers["content-type"] = "application/json";
-  const res = await fetch(BASE + path, {
-    method,
-    headers,
-    body: json === undefined ? undefined : JSON.stringify(json),
-  });
-  if (!res.ok) {
-    const err = new Error(`Request failed (${res.status})`) as Error & { context: Response };
-    err.context = res; // same place the Supabase client puts it
-    throw err;
-  }
-  return res.status === 204 ? null : res.json();
+// Run a query and return its rows, or throw its error
+async function rows<T = Body>(q: PromiseLike<{ data: T; error: ApiError | null }>) {
+  const { data, error } = await q;
+  if (error) throw error;
+  return data;
 }
 
-// Start an analysis and wait for it (it runs in the background on AWS)
+// Start the AI analysis (it runs in the background) and wait for the result
 async function analyze(documentId: string) {
-  await call(`/documents/${documentId}/analyze`, "POST");
+  await request(`/data/documents/${documentId}/analyze`);
   for (let i = 0; i < 40; i++) {
-    const doc = await call(`/documents/${documentId}`);
-    if (doc.analysisStatus === "done") return { success: true, ...doc.analysis, analysis: doc.analysis };
-    if (doc.analysisStatus === "failed") throw new Error(doc.analysisError ?? "Analysis failed");
     await new Promise((r) => setTimeout(r, 3000));
+    const doc = await rows(from("documents").select("ai_processing_status, metadata").eq("id", documentId).single());
+    if (doc.ai_processing_status === "failed") throw new Error(doc.metadata?.analysis_error ?? "Analysis failed");
+    if (doc.ai_processing_status === "complete") {
+      const a = await rows(from("document_analysis").select("content").eq("document_id", documentId).single());
+      return { success: true, ...a.content, analysis: a.content };
+    }
   }
   throw new Error("Analysis is taking longer than expected; check back shortly");
 }
@@ -54,61 +38,81 @@ const partiesFor = (formType = "") =>
       ? ["creditor", "witness"]
       : ["debtor", "trustee", "witness"];
 
-// Old notification body -> new API body
-const note = (b: Body, preset: Body = {}) => ({
-  userId: b.userId,
+// A notification row as the old function wrote it
+const notice = (b: Body, preset: Body = {}) => ({
+  user_id: b.userId,
   title: b.notification?.title,
   message: b.notification?.message,
-  type: b.notification?.type,
-  priority: b.notification?.priority === "high" ? "high" : undefined,
-  actionUrl: b.notification?.action_url,
-  metadata: { ...b.notification?.metadata, category: b.notification?.category },
+  type: b.notification?.type ?? "info",
+  priority: b.notification?.priority ?? "normal",
+  action_url: b.notification?.action_url,
+  icon: b.notification?.icon,
+  read: false,
+  metadata: { ...b.notification?.metadata, category: b.notification?.category ?? "file_activity" },
   ...preset,
 });
 
-// Each old function, re-pointed at its new route
+async function signatures(documentId: string) {
+  const doc = await rows(from("documents").select("metadata").eq("id", documentId).single());
+  const signed: string[] = (await rows(from("signatures").select("metadata").eq("document_id", documentId)))
+    .map((s: Body) => s.metadata?.party_type)
+    .filter(Boolean);
+  const required: string[] = doc.metadata?.signaturesRequired ?? partiesFor(doc.metadata?.formType);
+  const pending = required.filter((p) => !signed.includes(p));
+  return { required, signed, pending, complete: required.length > 0 && !pending.length };
+}
+
 const ROUTES: Record<string, (b: Body) => Promise<unknown>> = {
-  // Six analysis functions -> one pipeline
+  // Six analysis functions -> one pipeline (S3 -> SQS -> Bedrock)
   "process-ai-request": (b) =>
     b.ping
-      ? call("/health").then(() => ({ status: "ok", message: "pong" }))
+      ? request("/health", undefined, "GET").then(() => ({ status: "ok", message: "pong" }))
       : b.documentId
         ? analyze(b.documentId)
-        : call("/ai/chat", "POST", { message: b.message }),
+        : request("/ai/chat", { message: b.message }),
   "analyze-document": (b) => analyze(b.documentId),
   "deepseek-document-analysis": (b) => analyze(b.documentId),
   "enhanced-document-analysis": (b) => analyze(b.documentId),
   "enhanced-osb-analysis": (b) => analyze(b.documentId),
-  // Tasks are made during analysis; return them
+  // The analysis makes the tasks; return them
   "ai-task-generator": async (b) => ({
     success: true,
-    tasks: await call(`/tasks?documentId=${b.documentId}`),
+    tasks: await rows(from("tasks").select("*").eq("document_id", b.documentId)),
   }),
-  "deepseek-chat": (b) =>
-    call("/ai/chat", "POST", { message: b.message ?? b.prompt, category: b.category }),
+  "deepseek-chat": (b) => request("/ai/chat", { message: b.message ?? b.prompt, category: b.category }),
 
-  "handle-notifications": (b) => {
+  "handle-notifications": async (b) => {
     const n = b.notification ?? {};
     switch (b.action) {
       case "create":
-        return call("/notifications", "POST", note(b));
+        return { success: true, notification: (await rows(from("notifications").insert(notice(b)).select()))[0] };
       case "markRead":
-        return call("/notifications/read", "POST", { ids: n.ids });
+        await rows(from("notifications").update({ read: true }).in("id", n.ids ?? []));
+        return { success: true };
       case "deleteAll":
-        return call("/notifications", "DELETE");
+        await rows(from("notifications").delete().eq("user_id", b.userId));
+        return { success: true };
       case "folderRecommendation":
-        return call("/notifications", "POST", note(b, {
-          title: "Folder Recommendation",
-          message: n.message ?? "AI has suggested a folder for your document",
-          metadata: { documentId: n.documentId, suggestedPath: n.suggestedPath },
-        }));
+        return {
+          success: true,
+          notification: (await rows(from("notifications").insert(notice(b, {
+            title: "Folder Recommendation",
+            message: n.message ?? "AI has suggested a folder for your document",
+            icon: "folder-tree",
+            metadata: { category: "file_activity", documentId: n.documentId, suggestedPath: n.suggestedPath },
+          })).select()))[0],
+        };
       case "supportRequest":
-        return call("/notifications", "POST", note(b, {
-          title: "Client Assistance Request",
-          message: n.message ?? "A client has requested assistance",
-          type: "support",
-          priority: "high",
-        }));
+        return {
+          success: true,
+          notification: (await rows(from("notifications").insert(notice(b, {
+            title: "Client Assistance Request",
+            message: n.message ?? "A client has requested assistance",
+            type: "support",
+            priority: "high",
+            icon: "help-circle",
+          })).select()))[0],
+        };
       default:
         throw new Error("Invalid action");
     }
@@ -117,47 +121,37 @@ const ROUTES: Record<string, (b: Body) => Promise<unknown>> = {
   "process-document": async (b) => {
     const id = b.documentId;
     if (b.action === "sign") {
-      return call(`/documents/${id}/signatures`, "POST", {
-        partyType: b.partyType ?? "signer",
-        signatureData: b.signatureData,
-      });
+      // The server records the signed-in user as the signer
+      await rows(from("signatures").insert({
+        document_id: id,
+        signature_data: b.signatureData,
+        status: "completed",
+        signed_at: new Date().toISOString(),
+        metadata: { party_type: b.partyType ?? "signer" },
+      }));
+      const s = await signatures(id);
+      if (s.complete) await rows(from("documents").update({ status: "signed" }).eq("id", id));
+      return { success: true, ...s };
     }
     if (b.action === "prepare_signature") {
+      const doc = await rows(from("documents").select("metadata").eq("id", id).single());
       const parties = b.metadata?.signaturesRequired ?? partiesFor(b.metadata?.formType);
-      return call(`/documents/${id}`, "PATCH", { requiredParties: parties });
+      await rows(from("documents").update({ metadata: { ...doc.metadata, signaturesRequired: parties } }).eq("id", id));
+      return { success: true, required: parties };
     }
-    // check_signatures / analyze / check_deadline: the document's current state
-    const doc = await call(`/documents/${id}`);
-    const signed = [...new Set(doc.signatures.map((s: Body) => s.partyType))];
-    const required: string[] = doc.requiredParties;
-    return {
-      ...doc,
-      required,
-      signed,
-      pending: required.filter((p) => !signed.includes(p)),
-      complete: required.length > 0 && required.every((p) => signed.includes(p)),
-    };
+    return signatures(id); // check_signatures / analyze / check_deadline
   },
 
-  // Intake: create the client in the CRM
-  "process-client-intake": async (b) => {
-    const f = b.formData ?? {};
-    const data = await call("/clients", "POST", {
-      name: f.fullName ?? f.name,
-      email: f.email || undefined,
-      phone: f.phone || undefined,
-      intake: Object.fromEntries(
-        Object.entries(f).filter(([, v]) => typeof v === "string" && v),
-      ),
-    });
-    return { success: true, data };
-  },
+  "process-client-intake": async (b) => ({
+    success: true,
+    data: (await rows(from("clients").insert({ ...b.formData, transcription: b.transcription }).select()))[0],
+  }),
 
-  // Integrations are connected from the CRM's Integrations tab (real OAuth now)
-  "handle-integration": () => call("/integrations").then(() => ({ success: true })),
+  // Integrations are connected from the CRM's Integrations tab (real OAuth)
+  "handle-integration": async () => ({ success: true }),
 
-  // Public: no login (the invite token is the credential)
-  "create-client-portal-account": (b) => call("/public/portal/activate", "POST", b),
+  // Public: the invite token is the credential
+  "create-client-portal-account": (b) => request("/public/portal/activate", b),
 };
 
 export const sfaiFunctions = {
@@ -167,8 +161,8 @@ export const sfaiFunctions = {
     try {
       return { data: await route(opts.body ?? {}), error: null };
     } catch (e) {
-      const err = e as Error & { context?: Response };
-      return { data: null, error: { message: err.message, context: err.context } };
+      const err = e as ApiError;
+      return { data: null, error: { message: err.message ?? String(e), context: err.context } };
     }
   },
 };

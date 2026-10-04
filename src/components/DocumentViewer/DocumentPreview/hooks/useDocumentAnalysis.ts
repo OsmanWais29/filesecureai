@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { toString, toSafeSpreadArray, toSafeSpreadObject, toRecord } from "@/utils/typeSafetyUtils";
-import { Session } from "@supabase/supabase-js";
+import type { Session  } from '@/lib/sfai/client';
 
 export interface AnalysisProcessProps {
   setAnalysisStep: (step: string) => void;

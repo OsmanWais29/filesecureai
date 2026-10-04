@@ -19,11 +19,12 @@ sfai-platform-module/
 ```bash
 npm install
 npm run dev -w api        # http://localhost:3000/api  (demo firm, demo data)
-npm test                  # 38 end-to-end tests against a real in-process Postgres
+npm test                  # 47 end-to-end tests against a real in-process Postgres
 ```
 
-The dev server uses PGlite (Postgres in WebAssembly, data in `api/.data`), fake login
-headers (`x-dev-firm`, `x-dev-user`) and logs emails/texts instead of sending them.
+The dev server uses PGlite (Postgres in WebAssembly, data in `api/.data`), a stand-in
+for Cognito (demo login **trustee@demo.test / demo-password**, or `x-dev-firm` headers),
+files in `api/.data/files` instead of S3, and logs emails/texts instead of sending them.
 
 ```bash
 curl -H "x-dev-firm: demo-firm" http://localhost:3000/api/clients
@@ -197,6 +198,53 @@ All routes are under `/api` and need a signed-in user unless marked public.
 | **Public:** `GET /integrations/:provider/callback` | OAuth return (verified by a signed state) |
 | **Public:** `POST /public/portal/activate` | A client sets their password from the invite link (creates a Cognito login, role `client`) |
 
+## The FileSecure web app's backend (replaces Supabase)
+
+The web app (`src/` at the repo root) used to talk to Supabase directly. It now uses a
+look-alike client (`src/lib/sfai/`) with the same calls (`supabase.from(...).select()`,
+`supabase.auth...`, `supabase.storage...`), backed by this module:
+
+| Was (Supabase) | Now (AWS) |
+|---|---|
+| Auth (email + password) | Cognito, the shared user pool. Trustees sign up a new firm; clients get a login from their invite link |
+| Postgres tables + row-level security | `POST /data/:table`: the app's 70+ tables as firm-scoped JSON rows in `crm.records`, with the access rules in `api/src/data/policies.ts` |
+| Storage buckets | `POST /files/*`: S3 under `<firm>/<bucket>/<path>`, 5-minute links |
+| Realtime | Polling `POST /data/:table/changes` every 5 seconds |
+| Database functions (portal invites) | `POST /rpc/*` and `POST /public/portal/*` |
+
+**How a query runs:** the app's chain (`from("documents").select("*").eq("user_id", id)`)
+becomes one JSON request. `src/data/access.ts` adds the firm and the table's rule, and
+`src/data/query.ts` turns the filters into SQL with every value bound as a parameter.
+
+**The table rules** (`src/data/policies.ts`), on top of "only your firm":
+
+| Rule | Tables |
+|---|---|
+| Anyone at the firm (default) | documents, estates, clients, tasks, creditors, claims... |
+| Only your own rows | notifications, user_settings, user_preferences, api_integrations, conversations; profiles (everyone reads, you edit yours) |
+| Read + add only | audit and access logs |
+| Trustees only write | client_portal_invitations, client_portal_access |
+| Server only | user_roles |
+| Always the signer | signatures |
+| Portal clients | only the portal tables and their own estate(s), as the old RLS did |
+
+**Why one JSON table:** the old app writes many free-form columns (metadata objects,
+per-estate schedules). Keeping each row as JSON means no 70 hand-written table
+definitions to drift out of sync, and new columns need no migration. The trade-off: no
+foreign keys or joins in the database. As pages move to purpose-built routes, their
+tables can move to typed tables like the CRM's.
+
+| Route | What it does |
+|---|---|
+| `POST /data/:table` | `{ action: select | insert | update | upsert | delete, filters, or, order, limit, values, onConflict... }` |
+| `POST /data/:table/changes` | Rows changed since a time (live updates) |
+| `POST /data/documents/:id/analyze` | AI analysis of one of the app's documents (writes `document_analysis`, `tasks`, `notifications`) |
+| `POST /files/upload-url`, `/download-url`, `/list`, `/remove` | File storage |
+| `POST /rpc/redeem_client_portal_invitation`, `/rpc/record_client_portal_login` | Portal, after the client signs in |
+| **Public:** `POST /public/signup` | A trustee creates a new firm and login |
+| **Public:** `POST /public/portal/peek`, `/opened`, `/activate` | Invite links: preview, mark opened, set password |
+| **Public:** `GET /public/files/view?bucket&path&token` | Checks the login token, redirects to a 5-minute S3 link (for `<img>` / `<iframe>`) |
+
 ## Where the old Supabase Edge Functions went
 
 The FileSecure app called 17 Supabase Edge Functions. They now live here, behind the
@@ -280,10 +328,14 @@ new SfaiModule(this, "Crm", { vpc, database, userPool, userPoolClient, httpApi, 
 
 Database migrations run automatically after each deploy.
 
-Users need two Cognito attributes, set by an admin: `custom:firm_id` and `custom:role`
-(`trustee` or `staff`). Users can't change these themselves. Portal clients are created by
-the module with role `client` and `custom:client_id`, so the host pool needs those three
-custom attributes, and its app client must not let users write them.
+Users need two Cognito attributes: `custom:firm_id` and `custom:role` (`trustee`,
+`staff` or `client`). Sign-up and portal activation set them; staff added to an
+existing firm are created by an admin. Users can't change them, so the host pool's app
+client must not let users write custom attributes.
+
+The web app needs `VITE_SFAI_API_URL`, `VITE_COGNITO_USER_POOL_ID` and
+`VITE_COGNITO_CLIENT_ID` (stack outputs), and the module's `appUrl` must be the web
+app's address (CORS).
 
 ## Backups and security
 
@@ -312,6 +364,10 @@ custom attributes, and its app client must not let users write them.
 - Have your compliance lead confirm the deadline rules in `api/src/domain/rules.ts`.
 - Verify the SES domain and request SES production access.
 - Enable the Bedrock models.
+- Sign-up is public (throttled by API Gateway) and creates a firm with no email check.
+  Add email verification (Cognito) or invite-only staff accounts before opening it up.
+- `getPublicUrl` links carry the user's login token in the URL (it expires within an
+  hour); the bucket itself is never public.
 - Document analysis runs in the background (SQS), so it has no 30-second limit. Watch
   the dead-letter queue (`JobsDlq`): a message there is a document that failed 3 times.
 - Long assistant questions must finish within API Gateway's 30-second limit. If they

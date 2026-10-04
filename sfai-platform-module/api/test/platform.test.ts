@@ -1,5 +1,6 @@
 // The AWS replacements for the old Supabase Edge Functions: document analysis,
-// search, tasks, notifications, signatures, chat/financials, client portal.
+// search, tasks, notifications, signatures, chat/financials.
+// (The client portal is covered in data.test.ts.)
 // Each test also checks the hole the old function had (other firms, other users).
 import { describe, expect, it } from "vitest";
 import { notifications } from "../src/db/schema.js";
@@ -229,77 +230,3 @@ describe("ai helpers", () => {
     expect(res.status).toBe(400);
   });
 });
-
-describe("client portal (replaces create-client-portal-account)", () => {
-  async function invite(s: Awaited<ReturnType<typeof setup>>) {
-    const c = await s.api("/clients", {
-      method: "POST",
-      json: { name: "Ana Diaz", email: "Ana@Example.com" },
-    });
-    const inv = await s.api("/portal/invites", {
-      method: "POST",
-      json: { clientId: c.body.id },
-    });
-    expect(inv.status).toBe(201);
-    expect(inv.body.tokenHash).toBeUndefined();
-    const mail = s.sent.find((m) => m.text === "Your secure client portal");
-    expect(mail?.to).toBe("Ana@Example.com");
-    return inv.body;
-  }
-  const activate = (
-    s: Awaited<ReturnType<typeof setup>>,
-    token: string,
-    password = "a-long-password",
-  ) =>
-    s.crm.app.request("/api/public/portal/activate", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ token, fullName: "Ana Diaz", password }),
-    });
-
-  it("only trustees invite; the link creates a client login once", async () => {
-    const s = await setup();
-    const staff = await s.api(
-      "/portal/invites",
-      { method: "POST", json: {} },
-      "f1",
-      "staff",
-    );
-    expect(staff.status).toBe(403);
-
-    await invite(s);
-    const token = await tokenFromDb(s);
-    const ok = await activate(s, token);
-    expect(await ok.json()).toEqual({ status: "created", email: "ana@example.com" });
-    expect(s.portalUsers.get("ana@example.com")).toBe("client");
-    const again = await activate(s, token);
-    expect(await again.json()).toEqual({ error: "used" });
-    expect((await activate(s, "x".repeat(40))).status).toBe(400);
-  });
-
-  it("never turns a staff login into a portal account", async () => {
-    const s = await setup();
-    await invite(s);
-    s.portalUsers.set("ana@example.com", "trustee");
-    const res = await activate(s, await tokenFromDb(s));
-    expect(await res.json()).toEqual({ error: "staff_account" });
-  });
-
-  it("portal clients are locked out of every staff route", async () => {
-    const s = await setup();
-    for (const path of ["/clients", "/documents", "/tasks", "/notifications"]) {
-      expect((await s.api(path, {}, "f1", "client")).status).toBe(403);
-    }
-  });
-});
-
-// Tests can't read the emailed token, so the invite is re-issued with a known one
-async function tokenFromDb(s: Awaited<ReturnType<typeof setup>>) {
-  const { createHash } = await import("node:crypto");
-  const { portalInvites } = await import("../src/db/schema.js");
-  const token = "test-token-" + "z".repeat(30);
-  await s.crm.ctx.db
-    .update(portalInvites)
-    .set({ tokenHash: createHash("sha256").update(token).digest("hex") });
-  return token;
-}

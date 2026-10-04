@@ -1,4 +1,43 @@
-# Welcome to your Lovable project
+# SecureFiles AI (FileSecure)
+
+The trustee web app. It runs on **AWS** through the SFAI Platform Module
+(`sfai-platform-module/`): Cognito for login, a data API for the database, S3 for
+files and Bedrock for AI. It no longer uses Supabase.
+
+## Run it locally
+
+```bash
+# 1. Backend (terminal 1): API + local Postgres + demo data, no AWS needed
+cd sfai-platform-module && npm install && APP_URL=http://localhost:8080 npm run dev -w api
+
+# 2. Web app (terminal 2)
+npm install --legacy-peer-deps
+npm run dev                 # http://localhost:8080
+```
+
+Sign in with **trustee@demo.test / demo-password**, or create a new firm from the
+sign-up page. Settings are in `.env` (see `.env.example`):
+
+| Variable | What it is |
+|---|---|
+| `VITE_SFAI_API_URL` | The module's API, e.g. `https://xxxx.execute-api.ca-central-1.amazonaws.com/api` |
+| `VITE_COGNITO_USER_POOL_ID`, `VITE_COGNITO_CLIENT_ID` | The shared Cognito pool (stack outputs). Empty = local dev login |
+
+## How the app reaches AWS
+
+`src/lib/sfai/` is the whole backend client: login (`auth.ts`), database (`db.ts`),
+files (`storage.ts`), live updates (`realtime.ts`). It keeps the old Supabase client's
+shape, so the app's calls (`supabase.from("documents").select()...`) work unchanged;
+`@/lib/supabase` and `@/integrations/supabase/client` both export it under the old name.
+`src/lib/sfaiFunctions.ts` maps the old Edge Function names to the new API.
+What runs where, and the table access rules: `sfai-platform-module/README.md`.
+
+> **Lovable:** don't reconnect this project to Supabase in Lovable. Lovable regenerates
+> `src/integrations/supabase/client.ts` and would point the app back at Supabase.
+
+---
+
+## Lovable project (original notes)
 
 ## Project info
 

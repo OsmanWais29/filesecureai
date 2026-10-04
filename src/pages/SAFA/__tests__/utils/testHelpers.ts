@@ -1,6 +1,6 @@
 
 import { vi } from 'vitest';
-import { User, Session } from '@supabase/supabase-js';
+import type { User, Session  } from '@/lib/sfai/client';
 import { fireEvent } from '../../../../setupTests';
 
 export const waitForAsync = () => new Promise(resolve => setTimeout(resolve, 0));

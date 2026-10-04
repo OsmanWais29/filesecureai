@@ -18,6 +18,25 @@ export const PasswordReset = ({ onBackToLogin }: PasswordResetProps) => {
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Cognito emails a code; the user types it here with their new password
+  const [code, setCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [done, setDone] = useState(false);
+
+  const handleConfirm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!code.trim() || newPassword.length < 12) {
+      setError('Enter the code from the email and a new password of at least 12 characters');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    const { error } = await supabase.auth.confirmPasswordReset(email, code.trim(), newPassword);
+    setLoading(false);
+    if (error) return setError(error.message);
+    setDone(true);
+    toast.success('Password changed. You can sign in now.');
+  };
 
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +57,7 @@ export const PasswordReset = ({ onBackToLogin }: PasswordResetProps) => {
       if (error) throw error;
 
       setEmailSent(true);
-      toast.success('Password reset email sent!');
+      toast.success('Password reset code sent!');
     } catch (error: any) {
       console.error('Password reset error:', error);
       setError(error.message);
@@ -55,21 +74,32 @@ export const PasswordReset = ({ onBackToLogin }: PasswordResetProps) => {
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
             <CheckCircle className="h-6 w-6 text-green-600" />
           </div>
-          <CardTitle>Check Your Email</CardTitle>
+          <CardTitle>{done ? 'Password Changed' : 'Check Your Email'}</CardTitle>
           <CardDescription>
-            We've sent a password reset link to <strong>{email}</strong>
+            {done ? 'Sign in with your new password.' : <>We've sent a reset code to <strong>{email}</strong></>}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="text-center space-y-2">
-            <p className="text-sm text-muted-foreground">
-              Click the link in the email to reset your password.
-            </p>
-            <p className="text-xs text-muted-foreground">
-              The link will expire in 24 hours.
-            </p>
-          </div>
-
+          {!done && (
+            <form onSubmit={handleConfirm} className="space-y-4">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="reset-code">Code from the email</Label>
+                <Input id="reset-code" value={code} onChange={(e) => setCode(e.target.value)} autoComplete="one-time-code" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-password">New password</Label>
+                <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} autoComplete="new-password" />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Saving…' : 'Set new password'}
+              </Button>
+            </form>
+          )}
           <Button
             variant="outline"
             onClick={onBackToLogin}
@@ -91,7 +121,7 @@ export const PasswordReset = ({ onBackToLogin }: PasswordResetProps) => {
         </div>
         <CardTitle>Reset Your Password</CardTitle>
         <CardDescription>
-          Enter your email address and we'll send you a link to reset your password
+          Enter your email address and we'll send you a code to reset your password
         </CardDescription>
       </CardHeader>
       <CardContent>

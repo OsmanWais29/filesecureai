@@ -1,5 +1,6 @@
-// Login accounts for client-portal users, in the shared Cognito user pool.
-// Staff accounts are made by an admin; this only ever creates role "client" users.
+// Login accounts in the shared Cognito user pool: a trustee signing up a new firm,
+// or a client activating their portal invite. Staff for an existing firm are
+// invited by an admin in the Cognito console.
 import {
   AdminCreateUserCommand,
   AdminDeleteUserCommand,
@@ -11,17 +12,17 @@ import {
 } from "@aws-sdk/client-cognito-identity-provider";
 import type { Config } from "../config.js";
 
-export interface PortalUser {
+export interface NewUser {
   email: string;
   name: string;
   password: string;
   firmId: string;
-  clientId: string;
+  role: "trustee" | "client";
 }
 
 export interface Identity {
   roleOf(email: string): Promise<string | null>; // null = no account yet
-  createClientUser(u: PortalUser): Promise<void>;
+  createUser(u: NewUser): Promise<string>; // returns the new user's id
 }
 
 export function createIdentity(cfg: Config): Identity {
@@ -44,8 +45,8 @@ export function createIdentity(cfg: Config): Identity {
     },
 
     // Create the account with a permanent password and no welcome email
-    async createClientUser(u) {
-      await cognito.send(
+    async createUser(u) {
+      const res = await cognito.send(
         new AdminCreateUserCommand({
           UserPoolId,
           Username: u.email,
@@ -55,8 +56,7 @@ export function createIdentity(cfg: Config): Identity {
             { Name: "email_verified", Value: "true" },
             { Name: "name", Value: u.name },
             { Name: "custom:firm_id", Value: u.firmId },
-            { Name: "custom:role", Value: "client" },
-            { Name: "custom:client_id", Value: u.clientId },
+            { Name: "custom:role", Value: u.role },
           ],
         }),
       );
@@ -75,6 +75,7 @@ export function createIdentity(cfg: Config): Identity {
         if (e instanceof InvalidPasswordException) throw new WeakPasswordError();
         throw e;
       }
+      return res.User!.Attributes!.find((a) => a.Name === "sub")!.Value!;
     },
   };
 }

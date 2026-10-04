@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { safeObjectCast } from '@/utils/typeSafetyUtils';
-import { Session } from '@supabase/supabase-js';
+import type { Session  } from '@/lib/sfai/client';
 
 export interface DocumentAnalysisProps {
   storagePath: string;

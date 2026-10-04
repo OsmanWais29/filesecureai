@@ -55,23 +55,24 @@ export const AnalysisDashboard: React.FC = () => {
         .eq('user_id', user.id)
         .eq('is_folder', false);
 
+      // The user's own documents, then their analyses and categorizations
+      const { data: myDocs } = await supabase
+        .from('documents')
+        .select('id')
+        .eq('user_id', user.id);
+      const myDocIds = (myDocs ?? []).map((d) => d.id);
+
       // Get analyzed documents
       const { data: analyses } = await supabase
         .from('ai_document_analysis')
-        .select(`
-          *,
-          documents!inner(user_id)
-        `)
-        .eq('documents.user_id', user.id);
+        .select('*')
+        .in('document_id', myDocIds);
 
       // Get categorization data
       const { data: categorizations } = await supabase
         .from('document_categorization')
-        .select(`
-          *,
-          documents!inner(user_id)
-        `)
-        .eq('documents.user_id', user.id);
+        .select('*')
+        .in('document_id', myDocIds);
 
       const analyzedCount = analyses?.length || 0;
       const highConfidenceCount = analyses?.filter(a => a.confidence_score >= 0.8).length || 0;

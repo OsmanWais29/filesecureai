@@ -8,6 +8,7 @@ import {
   integer,
   jsonb,
   pgSchema,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -226,24 +227,25 @@ export const signatures = crm.table(
   (t) => [uniqueIndex("signatures_once").on(t.documentId, t.signerId, t.partyType)],
 );
 
-// Client portal invitations. Only a hash of the token is stored.
-export const portalInvites = crm.table(
-  "portal_invites",
+// The FileSecure app's tables (documents, estates, creditors, portal...), one row per
+// record, stored as JSON. Each old table is a `tbl` value; who may read or write it
+// is decided in src/data/policies.ts. Every row belongs to one firm.
+export const records = crm.table(
+  "records",
   {
-    id: id(),
-    firmId: firmId(),
-    clientId: uuid("client_id")
-      .notNull()
-      .references(() => clients.id, { onDelete: "cascade" }),
-    email: text("email").notNull(),
-    tokenHash: text("token_hash").notNull().unique(),
-    status: text("status").default("pending").notNull(), // pending | redeemed | revoked
-    expiresAt: at("expires_at").notNull(),
-    redeemedAt: at("redeemed_at"),
-    createdBy: text("created_by").notNull(),
+    firmId: firmId(), // "*" = reference data shared by every firm
+    tbl: text("tbl").notNull(), // the old table name, e.g. "documents"
+    id: text("id").notNull(), // the row's id (also kept in data.id)
+    ownerId: text("owner_id"), // the user the row belongs to (policy "own")
+    data: jsonb("data").$type<Record<string, unknown>>().notNull(),
     createdAt: createdAt(),
+    updatedAt: at("updated_at").defaultNow().notNull(),
   },
-  (t) => [index("portal_invites_client").on(t.firmId, t.clientId)],
+  (t) => [
+    primaryKey({ columns: [t.firmId, t.tbl, t.id] }),
+    index("records_changes").on(t.firmId, t.tbl, t.updatedAt),
+    index("records_data").using("gin", t.data),
+  ],
 );
 
 export const templates = crm.table(

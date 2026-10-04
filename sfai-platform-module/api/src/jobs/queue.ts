@@ -4,7 +4,9 @@
 import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
 import type { Config } from "../config.js";
 
-export type Job = { type: "analyze"; firmId: string; documentId: string };
+export type Job =
+  | { type: "analyze"; firmId: string; documentId: string } // crm.documents
+  | { type: "analyze-record"; firmId: string; documentId: string }; // the app's documents
 export type Queue = (job: Job) => Promise<void>;
 
 // SQS when configured; otherwise `runInline` (local dev and tests)

@@ -84,7 +84,6 @@ export class SharedPlatformStack extends Stack {
       customAttributes: {
         firm_id: new cognito.StringAttribute({ mutable: true }),
         role: new cognito.StringAttribute({ mutable: true }), // trustee | staff | client
-        client_id: new cognito.StringAttribute({ mutable: true }), // portal clients only
       },
       mfa: cognito.Mfa.OPTIONAL,
       mfaSecondFactor: { otp: true, sms: false },

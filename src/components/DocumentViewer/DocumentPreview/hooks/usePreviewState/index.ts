@@ -6,7 +6,7 @@ import { useFileChecker } from './useFileChecker';
 import { useNetworkResilience } from './useNetworkResilience';
 import { useAnalysisInitialization } from './useAnalysisInitialization';
 import { useTimeTracker } from './useTimeTracker';
-import { Session } from '@supabase/supabase-js';
+import type { Session  } from '@/lib/sfai/client';
 import { PreviewState } from '../types';
 import { logDocumentEvent } from '@/utils/debugMode';
 import { useSessionContext } from '@/contexts/SessionContext';

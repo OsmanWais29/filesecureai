@@ -1,5 +1,5 @@
 
-import { Session } from "@supabase/supabase-js";
+import type { Session  } from '@/lib/sfai/client';
 import { RefObject } from "react";
 
 export interface DocumentRecord {
