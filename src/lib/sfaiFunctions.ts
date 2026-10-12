@@ -17,7 +17,7 @@ async function rows<T = Body>(q: PromiseLike<{ data: T; error: ApiError | null }
 
 // Start the AI analysis (it runs in the background) and wait for the result
 async function analyze(documentId: string) {
-  await request(`/data/documents/${documentId}/analyze`);
+  await request(`/records/documents/${documentId}/analyze`);
   for (let i = 0; i < 40; i++) {
     await new Promise((r) => setTimeout(r, 3000));
     const doc = await rows(from("documents").select("ai_processing_status, metadata").eq("id", documentId).single());

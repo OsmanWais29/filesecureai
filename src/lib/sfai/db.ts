@@ -116,7 +116,7 @@ class Query<T = any> implements PromiseLike<Result<T>> { // eslint-disable-line 
   // ---------- Run it (await / .then) ----------
   private async run(): Promise<Result<T>> {
     try {
-      const out = await request<{ data: Row[] | null; count?: number }>(`/data/${this.table}`, this.req);
+      const out = await request<{ data: Row[] | null; count?: number }>(`/records/${this.table}`, this.req);
       const write = this.req.action !== "select";
       let data: unknown = write && !this.returning ? null : out.data;
       if (this.one && Array.isArray(data)) {
@@ -149,14 +149,19 @@ class Query<T = any> implements PromiseLike<Result<T>> { // eslint-disable-line 
 
 export const from = <T = any>(table: string) => new Query<T>(table); // eslint-disable-line @typescript-eslint/no-explicit-any
 
-// Database functions (portal invites). Two work before sign-in.
+// Database functions (portal invites) -> API paths. The first two work before sign-in.
 const PUBLIC_RPC: Record<string, string> = {
   peek_client_portal_invitation: "/public/portal/peek",
   mark_client_portal_invitation_opened: "/public/portal/opened",
 };
+const RPC: Record<string, string> = {
+  redeem_client_portal_invitation: "/portal/invites/redeem",
+  record_client_portal_login: "/portal/logins",
+};
 export async function rpc(name: string, args: Row = {}) {
   try {
-    const path = PUBLIC_RPC[name] ?? `/rpc/${name}`;
+    const path = PUBLIC_RPC[name] ?? RPC[name];
+    if (!path) throw { message: `Unknown function: ${name}`, code: "404" } as ApiError;
     const body = PUBLIC_RPC[name] ? { token: args.p_token } : args;
     return { data: await request(path, body), error: null };
   } catch (e) {

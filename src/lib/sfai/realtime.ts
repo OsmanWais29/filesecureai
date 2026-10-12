@@ -37,7 +37,7 @@ export class Channel {
         if (document.hidden) return; // don't poll from background tabs
         try {
           const { rows, at } = await request<{ rows: Row[]; at: string }>(
-            `/data/${opts.table}/changes`,
+            `/records/${opts.table}/changes`,
             { since, filters },
           );
           for (const row of rows) {

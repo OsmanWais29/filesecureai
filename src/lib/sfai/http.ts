@@ -1,8 +1,10 @@
 // One place that talks to the SFAI Platform Module API on AWS.
-//   VITE_SFAI_API_URL  the API base, e.g. https://api.sfai.ca/api (default: local dev)
+//   VITE_SFAI_API_URL  the API base, e.g. https://api.sfai.ca/api (default: local dev).
+//                      Requests go to its version 1: <base>/v1/...
 // Every request carries the signed-in user's token (see auth.ts).
 
 export const API_URL: string = import.meta.env.VITE_SFAI_API_URL ?? "http://localhost:3000/api";
+export const API_V1 = `${API_URL}/v1`;
 
 // The current login token, set by auth.ts (null when signed out)
 let token: string | null = null;
@@ -49,7 +51,7 @@ export interface ApiError {
 
 export async function request<T = unknown>(path: string, json?: unknown, method = "POST"): Promise<T> {
   const send = (t: string | null) =>
-    fetch(API_URL + path, {
+    fetch(API_V1 + path, {
       method,
       headers: {
         ...(json !== undefined && { "content-type": "application/json" }),

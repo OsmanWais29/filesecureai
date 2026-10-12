@@ -2,7 +2,7 @@
 //   supabase.storage.from("documents").upload(path, file)
 // Files live in a private S3 bucket under the firm's folder; the browser gets
 // 5-minute links from the API and uploads/downloads straight to S3.
-import { API_URL, getViewKey, request, type ApiError } from "./http";
+import { API_V1, getViewKey, request, type ApiError } from "./http";
 
 const BUCKETS = ["documents", "client-portal-uploads", "avatars"];
 // cacheControl/duplex are accepted for compatibility; S3 links don't need them
@@ -68,12 +68,12 @@ function bucket(name: string) {
     // itself is never public.
     getPublicUrl(path: string) {
       const q = new URLSearchParams({ bucket: name, path, key: getViewKey() ?? "" });
-      return { data: { publicUrl: `${API_URL}/public/files/view?${q}` } };
+      return { data: { publicUrl: `${API_V1}/public/files/view?${q}` } };
     },
 
     async remove(paths: string[]) {
       try {
-        await request("/files/remove", { bucket: name, paths });
+        await request("/files", { bucket: name, paths }, "DELETE");
         return { data: paths.map((p) => ({ name: p })), error: null };
       } catch (e) {
         return failed(e);
@@ -82,10 +82,19 @@ function bucket(name: string) {
 
     async list(prefix = "", opts: { limit?: number; offset?: number; search?: string; sortBy?: unknown } = {}) {
       try {
-        const { files } = await request<{ files: { name: string; size: number; updated_at: string }[] }>(
-          "/files/list",
-          { bucket: name, prefix, limit: opts.limit, search: opts.search },
-        );
+        // The API pages its lists ({ items, next }); read pages up to `limit` (default 100)
+        type File = { name: string; size: number; updated_at: string };
+        const want = opts.limit ?? 100;
+        const files: File[] = [];
+        let after: string | null = null;
+        do {
+          const q = new URLSearchParams({ bucket: name, prefix, limit: String(Math.min(want - files.length, 200)) });
+          if (opts.search) q.set("search", opts.search);
+          if (after) q.set("after", after);
+          const res: { items: File[]; next: string | null } = await request(`/files?${q}`, undefined, "GET");
+          files.push(...res.items);
+          after = res.next;
+        } while (after && files.length < want);
         return { data: files.map((f) => ({ ...f, id: f.name, metadata: { size: f.size } })), error: null };
       } catch (e) {
         return failed(e);
