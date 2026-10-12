@@ -6,8 +6,34 @@ export const API_URL: string = import.meta.env.VITE_SFAI_API_URL ?? "http://loca
 
 // The current login token, set by auth.ts (null when signed out)
 let token: string | null = null;
-export const setToken = (t: string | null) => (token = t);
+export const setToken = (t: string | null) => {
+  token = t;
+  void refreshViewKey();
+};
 export const getToken = () => token;
+
+// File-view key for getPublicUrl links (<img>, <iframe>): it only opens files and
+// lasts 10 minutes, so links never carry the login token. Renewed before it runs out.
+let viewKey: string | null = null;
+let viewTimer: ReturnType<typeof setTimeout> | undefined;
+export const getViewKey = () => viewKey;
+async function refreshViewKey() {
+  clearTimeout(viewTimer);
+  if (!token) {
+    viewKey = null;
+    return;
+  }
+  const forToken = token;
+  try {
+    const { key, expiresAt } = await request<{ key: string; expiresAt: string }>("/files/view-key");
+    if (token !== forToken) return; // signed out or switched user meanwhile
+    viewKey = key;
+    const renewIn = Date.parse(expiresAt) - Date.now() - 2 * 60_000; // 2 minutes early
+    viewTimer = setTimeout(refreshViewKey, Math.max(renewIn, 30_000));
+  } catch {
+    viewTimer = setTimeout(refreshViewKey, 30_000); // offline: try again soon
+  }
+}
 let refresh: (() => Promise<string | null>) | null = null;
 export const onRefreshNeeded = (fn: typeof refresh) => (refresh = fn);
 

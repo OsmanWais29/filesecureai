@@ -2,7 +2,7 @@
 //   supabase.storage.from("documents").upload(path, file)
 // Files live in a private S3 bucket under the firm's folder; the browser gets
 // 5-minute links from the API and uploads/downloads straight to S3.
-import { API_URL, getToken, request, type ApiError } from "./http";
+import { API_URL, getViewKey, request, type ApiError } from "./http";
 
 const BUCKETS = ["documents", "client-portal-uploads", "avatars"];
 // cacheControl/duplex are accepted for compatibility; S3 links don't need them
@@ -63,10 +63,11 @@ function bucket(name: string) {
       return { data: out.map((r, i) => ({ path: paths[i], signedUrl: r.data?.signedUrl ?? "", error: r.error?.message ?? null })), error: null };
     },
 
-    // Synchronous, like Supabase's: a link to the API that checks the login and
-    // redirects to a 5-minute S3 link. The bucket itself is never public.
+    // Synchronous, like Supabase's: a link to the API that checks a 10-minute view
+    // key (never the login token) and redirects to a 5-minute S3 link. The bucket
+    // itself is never public.
     getPublicUrl(path: string) {
-      const q = new URLSearchParams({ bucket: name, path, token: getToken() ?? "" });
+      const q = new URLSearchParams({ bucket: name, path, key: getViewKey() ?? "" });
       return { data: { publicUrl: `${API_URL}/public/files/view?${q}` } };
     },
 
