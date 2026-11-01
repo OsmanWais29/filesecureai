@@ -119,14 +119,6 @@ export const PostureAnalytics: React.FC = () => {
           </TabsTrigger>
         </TabsList>
 
-        <p className="text-xs text-muted-foreground">
-          <span className="text-destructive">●</span> Red = breached obligation ·{" "}
-          <span className="text-warning">●</span> Amber = statutory clock due within its warning
-          window · <span className="text-muted-foreground">●</span> Grey = no data. Colour is never
-          used for "below target".
-        </p>
-
-
         {/* SECTION A */}
         <TabsContent value="regulatory" className="space-y-4">
           <Card>
@@ -150,22 +142,9 @@ export const PostureAnalytics: React.FC = () => {
                 </Button>
               </div>
               <div className="flex flex-wrap gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setSelected(
-                      SECTION_A.find((m) => m.id === "deadline-health") ?? breaches[0] ?? null
-                    )
-                  }
-                  className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full"
-                >
-                  <Badge
-                    variant="outline"
-                    className={`${STATUS_STYLES.breach.chip} cursor-pointer`}
-                  >
-                    {breaches.length} breached obligations
-                  </Badge>
-                </button>
+                <Badge variant="outline" className={STATUS_STYLES.breach.chip}>
+                  {breaches.length} breached obligations
+                </Badge>
                 <Badge variant="outline" className={STATUS_STYLES.watch.chip}>
                   {watches.length} exposures
                 </Badge>
@@ -219,7 +198,6 @@ export const PostureAnalytics: React.FC = () => {
                     metric={m}
                     asOf={snapshot.asOf}
                     onSelect={setSelected}
-                    hideDot
                   />
                 ))}
               </div>
