@@ -6,6 +6,8 @@
 Statement CSV import and reviewed matching; atomic posting; authenticated payment authorization; immutable reconciliation packages.
 
 ## Accounting controls requested
-- [ ] Add per-estate running ledger, transaction evidence and monthly reconciliation coverage.
-- [ ] Add levy, tariff, administrative-disbursement, proposal-schedule and negative-balance checks.
-- [ ] Gate evidence-backed SRD export; identify unavailable bank-feed and pooled-account evidence.
+- [x] Add per-estate running ledger and existing statement-evidence views.
+- [ ] Complete read-only bank matching and pooled monthly reconciliation — blocked by missing bank-provider connection, immutable transaction provenance and canonical pooled-account membership.
+- [x] Add levy, tariff, administrative-disbursement, proposal-schedule and historical negative-balance checks with missing-evidence abstention.
+- [ ] Enable live tariff/levy/schedule assessments — blocked by verified realization deductions, fee authority, levy-bearing payment basis and bank-to-schedule links.
+- [x] Gate evidence-backed SRD export and identify unavailable bank-feed / pooled-account evidence.
