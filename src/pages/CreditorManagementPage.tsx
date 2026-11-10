@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useEstate } from "@/data/estateStore";
 import { Button } from "@/components/ui/button";
 import {
   Users,
@@ -30,10 +32,9 @@ import {
 } from "@/types/creditor";
 import { ImportedCreditorRow } from "@/types/creditor-import";
 import { toast } from "sonner";
-import { TrustAccountTab } from "@/components/creditor/trust/TrustAccountTab";
 import { TrustRiskFlags } from "@/components/creditor/trust/TrustRiskFlags";
 import { TrustBalanceChip } from "@/components/creditor/trust/TrustBalanceChip";
-import { useTrustLedger } from "@/lib/trust/trustStore";
+import { useEstateTrustLedger } from "@/hooks/useEstateTrustLedger";
 import { computeBalances, lastReconciliation, distributionBlockers } from "@/lib/trust/trustLedger";
 import { useCreditors, useCreditorStats, useCreateCreditor, useCreateClaim, CreditorWithClaim } from "@/hooks/useCreditors";
 import { useDistributions, useCreateDistribution, useUpdateDistribution } from "@/hooks/useDistributions";
@@ -69,7 +70,11 @@ export default function CreditorManagementPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedCreditor, setSelectedCreditor] = useState<CreditorWithClaim | null>(null);
   const [showContextPanel, setShowContextPanel] = useState(false);
-  const [currentEstateId, setCurrentEstateId] = useState<string | undefined>();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentEstateId = searchParams.get("estate") ?? undefined;
+  const { estate: selectedEstate } = useEstate(currentEstateId);
+  const openTrust = () => { if (currentEstateId) navigate(`/estates/${currentEstateId}?m=financials&p=trust`); };
   const [showAddCreditorWizard, setShowAddCreditorWizard] = useState(false);
   const [showImportCreditorWizard, setShowImportCreditorWizard] = useState(false);
 
@@ -155,7 +160,7 @@ export default function CreditorManagementPage() {
     }
   };
 
-  const trustLedger = useTrustLedger();
+  const { ledger: trustLedger } = useEstateTrustLedger(currentEstateId);
   const trustBalances = computeBalances(trustLedger);
   const trustLastRecon = lastReconciliation(trustLedger);
   const admittedClaims = creditors.filter(c => c.claim?.status === 'admitted').length;
@@ -479,13 +484,15 @@ export default function CreditorManagementPage() {
       case 'trust-account':
         return (
           <div className="p-6">
-            <TrustAccountTab />
+            <h2 className="text-lg font-semibold">Estate Trust Account</h2>
+            <p className="my-3 text-sm text-muted-foreground">Receipts, payments and reconciliation belong to the selected estate.</p>
+            <Button disabled={!currentEstateId} onClick={openTrust}>Open estate Trust Account</Button>
           </div>
         );
       case 'risk-flags':
         return (
           <div className="p-6">
-            <TrustRiskFlags onOpenTrust={() => setActiveTab('trust-account')} />
+            <TrustRiskFlags estateId={currentEstateId} onOpenTrust={openTrust} />
           </div>
         );
       case 'distribution':
@@ -495,20 +502,21 @@ export default function CreditorManagementPage() {
               distribution={currentDistribution}
               availableFromTrust={trustBalances.available}
               lastReconciledOn={trustLastRecon?.statementDate ?? null}
-              onOpenTrust={() => setActiveTab('trust-account')}
+              onOpenTrust={openTrust}
               blockers={distributionBlockers({
                 distributionAmount: currentDistribution
                   ? (currentDistribution.secured_distribution + currentDistribution.preferred_distribution + currentDistribution.unsecured_distribution)
                   : 0,
                 available: trustBalances.available,
                 admittedClaims,
+                assessmentBlockers: trustLedger.assessmentBlockers,
                 lastReconciledOn: trustLastRecon?.statementDate ?? null,
                 reconDifference: trustLastRecon?.difference ?? 0,
                 today: new Date().toISOString().slice(0, 10),
               })}
               onCalculateDistribution={handleCalculateDistribution}
               onApproveDistribution={() => {
-                if (currentDistribution) {
+                if (currentDistribution && !trustLedger.assessmentBlockers?.length && distributionBlockers({ distributionAmount: currentDistribution.secured_distribution + currentDistribution.preferred_distribution + currentDistribution.unsecured_distribution, available: trustBalances.available, admittedClaims, lastReconciledOn: trustLastRecon?.statementDate ?? null, reconDifference: trustLastRecon?.difference ?? 0, today: new Date().toISOString().slice(0, 10) }).length === 0) {
                   updateDistribution.mutate({ id: currentDistribution.id, status: 'approved' });
                 }
               }}
@@ -558,9 +566,9 @@ export default function CreditorManagementPage() {
       <div className="flex flex-col h-full overflow-hidden">
         {/* Estate Switcher Bar - Always visible at top */}
         <div className="relative">
-          <EstateSwitcher />
-          <div className="absolute right-[19rem] top-1/2 -translate-y-1/2 hidden lg:block">
-            <TrustBalanceChip onClick={() => setActiveTab('trust-account')} />
+          <EstateSwitcher selectedEstate={selectedEstate} onEstateChange={estate => { setSearchParams({ estate: estate.id }); setSelectedCreditor(null); setViewMode("list"); }} />
+          <div className="flex justify-end border-b bg-card px-4 py-2">
+            <TrustBalanceChip estateId={currentEstateId} onClick={openTrust} />
           </div>
         </div>
         
