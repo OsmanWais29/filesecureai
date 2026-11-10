@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.validate_estate_trust_posting() FROM anon, authenticated;
