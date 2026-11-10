@@ -7,6 +7,8 @@ import {
   Calendar,
   Wallet,
   FileText,
+  Landmark,
+  AlertTriangle,
 } from "lucide-react";
 
 export type ModuleTab =
@@ -14,7 +16,9 @@ export type ModuleTab =
   | "creditors" 
   | "claims" 
   | "meetings" 
-  | "distribution" 
+  | "trust-account"
+  | "distribution"
+  | "risk-flags"
   | "osb-forms" 
   | "safa" 
   | "audit";
@@ -29,7 +33,9 @@ const tabs: { id: ModuleTab; label: string; icon: React.ComponentType<{ classNam
   { id: "creditors", label: "Creditors", icon: Users },
   { id: "claims", label: "Claims", icon: FileCheck },
   { id: "meetings", label: "Meetings", icon: Calendar },
+  { id: "trust-account", label: "Trust Account", icon: Landmark },
   { id: "distribution", label: "Distribution", icon: Wallet },
+  { id: "risk-flags", label: "Risk Flags", icon: AlertTriangle },
   { id: "osb-forms", label: "OSB Forms", icon: FileText },
 ];
 
