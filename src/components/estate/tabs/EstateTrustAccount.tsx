@@ -13,7 +13,7 @@ export function EstateTrustAccount({ estateId }: { estateId?: string }) {
   const exportSRD = () => {
     const srd = buildSRD(ledger);
     const rows = [["Draft SRD", estateId ?? ""], ["Source", "Posted trust-bank ledger entries"], ...srd.receipts.map(r => [r.label, r.amount.toFixed(2)]), ["Total receipts", srd.totalReceipts.toFixed(2)], ...srd.disbursements.map(d => [d.label, d.amount.toFixed(2)]), ["Total disbursements", srd.totalDisbursements.toFixed(2)], ["Balance", srd.balance.toFixed(2)]];
-    const url = URL.createObjectURL(new Blob([rows.map(row => row.map(v => `"${v.replaceAll('"', '""')}"`).join(",")).join("\n")], { type: "text/csv" }));
+    const url = URL.createObjectURL(new Blob([rows.map(row => row.map(v => `"${v.replace(/"/g, '""')}"`).join(",")).join("\n")], { type: "text/csv" }));
     const a = document.createElement("a"); a.href = url; a.download = `estate-${estateId}-SRD-draft.csv`; a.click(); URL.revokeObjectURL(url);
   };
   return <div className="space-y-6">
