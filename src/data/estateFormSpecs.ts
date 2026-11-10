@@ -292,7 +292,7 @@ export const bankAccountSections: SectionSpec[] = [
   {
     title: "Accounting & Integration",
     fields: [
-      { key: "openingBalance", label: "Opening Balance", type: "money" },
+      { key: "openingBalance", label: "Opening balance — post supported ledger entry", type: "money", readOnly: true },
       sel("glBankAccount", "GL Bank Account", ["10000 · Trust Bank", "10100 · Operating Bank"]),
       sel("bankExportFormat", "Bank export format", OPTIONS.bankExport),
       { key: "padEnabled", label: "PAD enabled", type: "checkbox" },
@@ -395,7 +395,7 @@ export const reconciliationSections: SectionSpec[] = [
       sel("bankAccount", "Bank Account", ["RBC Estate Trust ****2331"]),
       { key: "openingStatementBalance", label: "Opening Statement Balance", type: "money" },
       { key: "closingStatementBalance", label: "Closing Statement Balance", type: "money" },
-      { key: "ledgerBalance", label: "Ledger Balance", type: "money" },
+      { key: "ledgerBalance", label: "Ledger Balance", type: "money", readOnly: true },
     ],
   },
   {
@@ -405,7 +405,7 @@ export const reconciliationSections: SectionSpec[] = [
       { key: "outstandingWithdrawals", label: "Outstanding Withdrawals", type: "money" },
       { key: "bankCharges", label: "Bank Charges", type: "money" },
       { key: "interest", label: "Interest", type: "money" },
-      { key: "reconciledBalance", label: "Reconciled Balance", type: "money" },
+      { key: "reconciledBalance", label: "Reconciled Balance", type: "money", readOnly: true },
       { key: "difference", label: "Difference", type: "money", readOnly: true },
     ],
   },

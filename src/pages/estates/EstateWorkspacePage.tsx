@@ -11,6 +11,7 @@ import { SafaEstatePanel } from "@/components/estate/SafaEstatePanel";
 import { OverviewTab } from "@/components/estate/tabs/OverviewTab";
 import { TimelineTab } from "@/components/estate/tabs/TimelineTab";
 import { WorkflowTab } from "@/components/estate/tabs/WorkflowTab";
+import { EstateTrustAccount } from "@/components/estate/tabs/EstateTrustAccount";
 import { FinancialsTab } from "@/components/estate/tabs/FinancialsTab";
 import {
   CreditorList,
@@ -128,7 +129,7 @@ const EstateWorkspacePage = () => {
       case "financials:assets":
         return withHeading(<AssetsTab estateId={estateId} />);
       case "financials:trust":
-        return withHeading(<FinancialsTab estateId={estateId} />);
+        return withHeading(<EstateTrustAccount estateId={estateId} />);
       case "financials:tax":
         return withHeading(<TaxReturnsRegister estateId={estateId} />);
 

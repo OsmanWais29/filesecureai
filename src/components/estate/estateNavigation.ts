@@ -60,7 +60,7 @@ export const ESTATE_MODULES: EstateModule[] = [
       { id: "income", label: "Income & Surplus", description: "Income register, Form 65 periods and surplus calculation." },
       { id: "payments", label: "Payments", description: "Payment obligations, schedules and arrears." },
       { id: "assets", label: "Assets", description: "Realization values, costs and ranked security interests." },
-      { id: "trust", label: "Trust Accounting", description: "Banking, receipts, disbursements and reconciliation." },
+      { id: "trust", label: "Trust Account", description: "Banking, receipts, disbursements and reconciliation." },
       { id: "tax", label: "Tax", description: "Return tracking and refund administration." },
     ],
   },
