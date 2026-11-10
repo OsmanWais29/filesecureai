@@ -135,7 +135,7 @@ interface Allocation {
   amount: string;
 }
 
-const ReceiptForm = ({ estateId, onDone }: { estateId?: string; onDone: () => void }) => {
+export const ReceiptForm = ({ estateId, onDone, focused = false }: { estateId?: string; onDone: () => void; focused?: boolean }) => {
   const { values, onChange } = useRecordValues({ receiptDate: new Date().toISOString().slice(0, 10), amount: "" });
   const [allocations, setAllocations] = useState<Allocation[]>([
     { id: 1, account: "Surplus Income", amount: "" },
@@ -154,10 +154,13 @@ const ReceiptForm = ({ estateId, onDone }: { estateId?: string; onDone: () => vo
 
   return (
     <RecordForm
-      sections={receiptSections}
-      values={values}
+      card={!focused}
+      sections={focused ? [{ title: "Receipt details", fields: receiptSections[0].fields.map(field => field.key === "receivedFrom" ? { ...field, type: "text" as const, options: undefined } : field.key === "bankAccount" ? { ...field, type: "text" as const, readOnly: true, options: undefined } : field) }] : receiptSections}
+      values={focused ? { ...values, bankAccount: accounts.find(a => a.is_default)?.institution ?? accounts[0]?.institution ?? "No account recorded" } : values}
       onChange={onChange}
       submitLabel="Post Receipt"
+      secondaryLabel={focused ? "Cancel" : undefined}
+      onSecondary={onDone}
       onSubmit={async () => {
         if (!canPost) {
           toast({
