@@ -302,10 +302,17 @@ const Receipts = ({ estateId }: { estateId?: string }) => {
 };
 
 // --------------------------------------------------------------- Disbursements
-const Disbursements = ({ estateId }: { estateId?: string }) => {
+const Disbursements = ({ estateId, focused = false }: { estateId?: string; focused?: boolean }) => {
   const [open, setOpen] = useState(false);
+  const { values, onChange } = useRecordValues({ paymentDate: new Date().toISOString().slice(0, 10) });
+  const { data: accounts = [] } = useBankAccounts(estateId);
   const { data: disbursements = [], isLoading } = useDisbursements(estateId);
   const saveDisbursement = useSaveDisbursement(estateId);
+  if (focused) return <RecordForm card={false}
+    sections={disbursementSections.map(section => ({ ...section, fields: section.fields.filter(field => !["asset", "creditor"].includes(field.key)).map(field => field.key === "payee" ? { ...field, type: "text" as const, options: undefined } : field.key === "bankAccount" ? { ...field, type: "text" as const, readOnly: true, options: undefined } : field) }))}
+    values={{ ...values, bankAccount: accounts.find(a => a.is_default)?.institution ?? accounts[0]?.institution ?? "No account recorded" }}
+    onChange={onChange} submitLabel={saveDisbursement.isPending ? "Recording…" : "Record payment"}
+    onSubmit={async () => { if (!saveDisbursement.isPending) await saveDisbursement.mutateAsync(values); }} />;
   return (
     <>
       <Register
@@ -773,7 +780,7 @@ export const FinancialsTab = ({ estateId, initialTab = "accounts", hideNavigatio
       {!hideNavigation && <SubTabs tabs={TABS} active={tab} onChange={setTab} />}
       {tab === "accounts" && <BankAccounts estateId={estateId} />}
       {tab === "receipts" && <Receipts estateId={estateId} />}
-      {tab === "disbursements" && <Disbursements estateId={estateId} />}
+      {tab === "disbursements" && <Disbursements estateId={estateId} focused={hideNavigation} />}
       {tab === "schedules" && <Schedules estateId={estateId} />}
       {tab === "reconciliation" && <Reconciliation estateId={estateId} />}
       {tab === "gl" && <GeneralLedger estateId={estateId} />}
