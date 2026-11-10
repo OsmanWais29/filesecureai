@@ -766,11 +766,11 @@ const GeneralLedger = ({ estateId }: { estateId?: string }) => {
   );
 };
 
-export const FinancialsTab = ({ estateId, initialTab = "accounts" }: { estateId?: string; initialTab?: string }) => {
+export const FinancialsTab = ({ estateId, initialTab = "accounts", hideNavigation = false }: { estateId?: string; initialTab?: string; hideNavigation?: boolean }) => {
   const [tab, setTab] = useState<string>(initialTab);
   return (
     <div className="space-y-4">
-      <SubTabs tabs={TABS} active={tab} onChange={setTab} />
+      {!hideNavigation && <SubTabs tabs={TABS} active={tab} onChange={setTab} />}
       {tab === "accounts" && <BankAccounts estateId={estateId} />}
       {tab === "receipts" && <Receipts estateId={estateId} />}
       {tab === "disbursements" && <Disbursements estateId={estateId} />}
