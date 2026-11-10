@@ -202,7 +202,7 @@ export const usePostReceipt = (estateId?: string) => {
       }
 
       // Double-entry: debit the bank, credit each allocation account.
-      await db.from("estate_ledger_entries").insert({
+      const { error: ledgerError } = await db.from("estate_ledger_entries").insert({
         estate_id: estateId,
         user_id: user.id,
         gl_date: str(input.values.receiptDate),
@@ -218,6 +218,7 @@ export const usePostReceipt = (estateId?: string) => {
         total_credit: allocated,
       });
 
+      if (ledgerError) throw new Error(`Receipt recorded but ledger posting failed: ${ledgerError.message}. Do not repost; review the receipt.`);
       await logEstateEvent({ estateId, eventType: "estate.receipt.posted", after: receipt });
       return receipt as ReceiptRow;
     },
@@ -264,7 +265,7 @@ export const useSaveDisbursement = (estateId?: string) => {
         .single();
       if (error) throw error;
 
-      await db.from("estate_ledger_entries").insert({
+      const { error: ledgerError } = await db.from("estate_ledger_entries").insert({
         estate_id: estateId,
         user_id: user.id,
         gl_date: str(values.paymentDate) ?? str(values.dueDate),
@@ -279,6 +280,7 @@ export const useSaveDisbursement = (estateId?: string) => {
         total_credit: amount,
       });
 
+      if (ledgerError) throw new Error(`Payment record exists but ledger posting failed: ${ledgerError.message}. Do not repost; review the payment.`);
       await logEstateEvent({ estateId, eventType: "estate.disbursement.created", after: data });
       return data as DisbursementRow;
     },
