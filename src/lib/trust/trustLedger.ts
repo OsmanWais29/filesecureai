@@ -18,6 +18,7 @@ export type DisbursementKind =
   | "dividend"
   | "secured_payout"
   | "preferred_payout"
+  | "administrative_disbursement"
   | "other";
 
 export interface TrustAccount {
@@ -63,6 +64,7 @@ export interface Reconciliation {
   adjustedBankBalance: number;
   difference: number;
   notes?: string;
+  bankEvidenceVerified?: boolean;
 }
 
 export interface Holdback {
@@ -128,12 +130,13 @@ export function reconcile(ledgerBalance: number, statementBalance: number, depos
 }
 
 // ---------------------------------------------------------------- levy (s.147)
-// Superintendent's levy on dividends: 5% of the first $1M, 2.5% of the next
-// $1M, 1.25% above $2M.
-export function superintendentLevy(dividends: number) {
-  const t1 = Math.min(dividends, 1_000_000) * 0.05;
-  const t2 = Math.min(Math.max(dividends - 1_000_000, 0), 1_000_000) * 0.025;
-  const t3 = Math.max(dividends - 2_000_000, 0) * 0.0125;
+// General Rules 123: rates depend on the administration/proceeding.
+export function superintendentLevy(dividends: number, regime: "ordinary" | "proposal" | "summary" = "ordinary") {
+  const payments = Math.max(0, dividends);
+  if (regime === "summary") return round(Math.min(payments, 200));
+  const t1 = Math.min(payments, 1_000_000) * 0.05;
+  const t2 = Math.min(Math.max(payments - 1_000_000, 0), 1_000_000) * 0.0125;
+  const t3 = Math.max(payments - 2_000_000, 0) * (regime === "proposal" ? 0 : 0.0025);
   return round(t1 + t2 + t3);
 }
 
@@ -234,6 +237,7 @@ export const DISB_LABEL: Record<DisbursementKind, string> = {
   dividend: "Dividends to creditors",
   secured_payout: "Payments to secured creditors",
   preferred_payout: "Payments to preferred creditors",
+  administrative_disbursement: "Administrative disbursements",
   other: "Other disbursements",
 };
 
@@ -251,3 +255,77 @@ export function buildSRD(l: TrustLedger) {
 
 export const fmt = (n: number) =>
   new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" }).format(n);
+
+export function summaryTrusteeTariff(netRealizationReceipts: number) {
+  const net = Math.max(0, netRealizationReceipts);
+  return round(Math.min(net, 975) + Math.min(Math.max(net - 975, 0), 1025) * 0.35 + Math.max(net - 2000, 0) * 0.5);
+}
+
+export function consumerProposalTariff(distributed: number, filed: boolean, approved: boolean) {
+  return round((filed ? 750 : 0) + (approved ? 750 : 0) + Math.max(0, distributed) * 0.2);
+}
+
+export interface AccountingCheck {
+  code: string;
+  title: string;
+  status: "met" | "breach" | "blocked";
+  detail: string;
+  citation: string;
+  url?: string;
+}
+
+export interface AccountingContext {
+  proceeding?: string;
+  administration?: string;
+  tariffBase?: number;
+  proposalFiled?: boolean;
+  proposalApproved?: boolean;
+  levyBasis?: number;
+  scheduleDue?: number;
+  scheduleMatchedReceipts?: number;
+  classificationComplete: boolean;
+  bankFeedVerified: boolean;
+  pooledCoverageVerified: boolean;
+  today: string;
+}
+
+/** Compliance checks abstain when scope, classification or source evidence is missing. */
+export function accountingChecks(l: TrustLedger, c: AccountingContext): AccountingCheck[] {
+  const rules = "https://laws-lois.justice.gc.ca/eng/regulations/C.R.C.,_c._368/";
+  const b = computeBalances(l);
+  const last = lastReconciliation(l);
+  const rows = runningTrustLedger(l);
+  const checks: AccountingCheck[] = [];
+  const add = (code: string, title: string, status: AccountingCheck["status"], detail: string, citation: string, url?: string) => checks.push({ code, title, status, detail, citation, url });
+  const negative = rows.find(r => r.balance < 0);
+  add("nonnegative", "No negative estate balance", negative ? "breach" : "met", negative ? `${fmt(negative.balance)} on ${negative.date}; entry ${negative.id}.` : `${rows.length} bank-side postings checked, including historical balances.`, "Directive 5R8");
+  const unmatched = l.receipts.filter(r => !r.clearedOnStatement).length + l.disbursements.filter(d => !d.cleared).length;
+  add("bank-matches", "Read-only bank transaction evidence", !c.bankFeedVerified ? "blocked" : unmatched ? "breach" : "met", !c.bankFeedVerified ? "No verified read-only bank feed is connected. Statement records alone do not prove provider provenance." : `${unmatched} postings lack a verified bank match.`, "Directive 5R8");
+  add("reconciliation", "Monthly bank / estate reconciliation", !last || !last.bankEvidenceVerified ? "blocked" : last.difference !== 0 ? "breach" : daysBetween(last.statementDate, c.today) > 45 ? "blocked" : "met", !last ? "No monthly statement is on file." : `${last.statementDate}: adjusted bank ${fmt(last.adjustedBankBalance)}, estate ledger ${fmt(last.ledgerBalanceAtDate)}, difference ${fmt(last.difference)}. ${last.bankEvidenceVerified ? "" : "Statement provenance and reviewed matches are not verified."}`, "Directive 5R8");
+  add("pooled", "Bank balance / sum of estate sub-ledgers", c.pooledCoverageVerified ? "met" : "blocked", c.pooledCoverageVerified ? "All estate sub-ledgers for this bank account are included." : "Canonical shared bank-account identity and complete sub-ledger coverage are not recorded; an estate-only total cannot prove pooled reconciliation.", "Directive 5R8");
+  const summary = c.proceeding === "Bankruptcy" && c.administration === "Summary";
+  const proposal = c.proceeding === "Consumer Proposal";
+  const admin = sum(l.disbursements.filter(d => d.kind === "administrative_disbursement").map(d => d.amount));
+  const cap = summary ? 100 : proposal ? 0 : null;
+  add("admin-cap", "Administrative disbursement allowance", cap === null || !c.classificationComplete ? "blocked" : admin > cap ? "breach" : "met", cap === null ? "Rule 128 summary / Rule 129 consumer proposal scope does not apply; review ordinary-administration authority." : `${fmt(admin)} recorded / ${fmt(cap)} allowance. Counselling, filing, registrar fees and applicable taxes are separate permitted categories.`, summary ? "Rule 128(2)(e)" : "Rule 129(1)", rules + (summary ? "section-128.html" : "section-129.html"));
+  const fees = sum(l.disbursements.filter(d => d.kind === "trustee_fee").map(d => d.amount));
+  const tariff = summary && c.tariffBase !== undefined ? summaryTrusteeTariff(c.tariffBase) : proposal && c.proposalFiled !== undefined && c.proposalApproved !== undefined && c.levyBasis !== undefined ? consumerProposalTariff(c.levyBasis, c.proposalFiled, c.proposalApproved) : null;
+  add("tariff", "Trustee / administrator fees against tariff", tariff === null || !c.classificationComplete ? "blocked" : fees > tariff ? "breach" : "met", tariff === null ? "Verified realization deductions or filing/approval milestones and distributed payments are missing; ordinary estates require approved fee authority." : `${fmt(fees)} recorded / ${fmt(tariff)} tariff ceiling (before separate taxes and permitted expenses). Advance timing requires separate review.`, summary ? "Rule 128" : "Rule 129", rules + (summary ? "section-128.html" : "section-129.html"));
+  const levy = sum(l.disbursements.filter(d => d.kind === "superintendent_levy").map(d => d.amount));
+  const expectedLevy = c.levyBasis === undefined ? null : superintendentLevy(c.levyBasis, summary ? "summary" : c.proceeding?.includes("Proposal") ? "proposal" : "ordinary");
+  add("levy", "Superintendent’s levy", expectedLevy === null || !c.classificationComplete ? "blocked" : Math.abs(levy - expectedLevy) >= 0.01 ? "breach" : "met", expectedLevy === null ? "Verified levy-bearing creditor payments are missing. No levy inferred from unclassified cash." : `${fmt(levy)} recorded / ${fmt(expectedLevy)} required on ${fmt(c.levyBasis ?? 0)} payments.`, "BIA s.147 · Rule 123", rules + "section-123.html");
+  if (proposal) add("schedule", "Proposal receipts against payment schedule", c.scheduleDue === undefined || c.scheduleMatchedReceipts === undefined ? "blocked" : c.scheduleMatchedReceipts < c.scheduleDue ? "breach" : "met", c.scheduleDue === undefined || c.scheduleMatchedReceipts === undefined ? "Bank-matched proposal receipts must be linked to due schedule periods; schedule amounts alone are not evidence of payment." : `${fmt(c.scheduleMatchedReceipts)} bank-matched / ${fmt(c.scheduleDue)} due.`, "Approved consumer proposal payment terms");
+  return checks;
+}
+
+export function runningTrustLedger(l: TrustLedger) {
+  const rows = [...l.receipts.map(r => ({ id: r.id, date: r.date, party: r.payer, source: r.sourceRef, category: RECEIPT_LABEL[r.source], incoming: r.amount, outgoing: 0, matched: r.clearedOnStatement })), ...l.disbursements.map(d => ({ id: d.id, date: d.date, party: d.payee, source: d.reference, category: DISB_LABEL[d.kind], incoming: 0, outgoing: d.amount, matched: d.cleared }))].sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
+  let balance = 0;
+  return rows.map(r => ({ ...r, balance: balance = round(balance + r.incoming - r.outgoing) }));
+}
+
+export function srdEvidenceStatus(l: TrustLedger, checks: AccountingCheck[]) {
+  const blockers = checks.filter(c => c.status !== "met").map(c => `${c.title}: ${c.detail}`);
+  if (!l.receipts.length && !l.disbursements.length) blockers.push("No posted transactions are available.");
+  return { ready: blockers.length === 0, blockers, srd: buildSRD(l) };
+}
