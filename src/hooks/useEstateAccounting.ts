@@ -49,6 +49,7 @@ export interface ReceiptRow {
   receipt_number: string | null;
   deposit_date: string | null;
   posted: boolean;
+  bank_account_id?: string | null;
   estate_receipt_allocations?: { id: string; gl_account: string; amount: number }[];
 }
 
@@ -62,6 +63,7 @@ export interface DisbursementRow {
   payment_method: string | null;
   payment_date: string | null;
   cleared: boolean;
+  bank_account_id?: string | null;
 }
 
 export interface LedgerEntryRow {
@@ -70,6 +72,7 @@ export interface LedgerEntryRow {
   memo: string | null;
   source_type: string;
   source_id?: string | null;
+  bank_account_id?: string | null;
   lines: { account: string; asset?: string; creditor?: string; debit: number; credit: number }[];
   total_debit: number;
   total_credit: number;
