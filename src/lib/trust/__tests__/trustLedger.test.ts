@@ -60,8 +60,8 @@ describe("trust ledger", () => {
     expect(reconcile(1000, 1100, 0, 100)).toEqual({ adjustedBankBalance: 1000, difference: 0 });
   });
 
-  it("levy is 5% up to $1M then 2.5%", () => {
+  it("ordinary levy is 5% then 1.25% under Rule 123", () => {
     expect(superintendentLevy(10000)).toBe(500);
-    expect(superintendentLevy(1_500_000)).toBe(62500);
+    expect(superintendentLevy(1_500_000)).toBe(56250);
   });
 });
