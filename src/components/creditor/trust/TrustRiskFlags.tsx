@@ -2,11 +2,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
-import { useTrustLedger } from "@/lib/trust/trustStore";
+import { useEstateTrustLedger } from "@/hooks/useEstateTrustLedger";
 import { trustRiskFlags } from "@/lib/trust/trustLedger";
 
-export function TrustRiskFlags({ onOpenTrust }: { onOpenTrust: () => void }) {
-  const l = useTrustLedger();
+export function TrustRiskFlags({ estateId, onOpenTrust }: { estateId?: string; onOpenTrust: () => void }) {
+  const { ledger: l, isLoading, error } = useEstateTrustLedger(estateId);
+  if (!estateId || isLoading || error) return <p className="p-4 text-sm text-muted-foreground">{!estateId ? "Select an estate to assess trust risks." : isLoading ? "Loading trust evidence…" : "Assessment blocked: trust evidence could not be loaded."}</p>;
   const flags = trustRiskFlags(l, new Date().toISOString().slice(0, 10));
   const order = { high: 0, medium: 1, low: 2 } as const;
   flags.sort((a, b) => order[a.severity] - order[b.severity]);

@@ -180,9 +180,9 @@ export function DistributionEngine({
               <Separator />
               <div className="flex justify-between items-center">
                 <span className="font-medium">Available for Distribution</span>
-                <button onClick={onOpenTrust} className="font-mono font-bold underline-offset-2 hover:underline">
-                  {formatCurrency(availableFromTrust)}
-                </button>
+                <Button variant="link" onClick={onOpenTrust} className="h-auto p-0 font-mono font-bold">
+                  {blockers.length ? "Assessment blocked" : formatCurrency(availableFromTrust)}
+                </Button>
               </div>
               <p className="text-xs text-muted-foreground">
                 From the trust account (balance − holdbacks − reserve){lastReconciledOn ? ` · reconciled ${lastReconciledOn}` : " · not reconciled"}. Not editable here.

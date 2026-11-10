@@ -25,7 +25,7 @@ export interface TrustAccount {
   last4: string;
   holder: string; // trustee firm — funds never sit with SecureFiles
   designation: "estate_specific" | "pooled";
-  dualSignatureThreshold: number;
+  dualSignatureThreshold: number | null; // firm policy, not an OSB dollar threshold
   openedOn: string;
 }
 
@@ -78,12 +78,14 @@ export interface TrustLedger {
   reconciliations: Reconciliation[];
   holdbacks: Holdback[];
   reserveForCosts: number;
+  assessmentBlockers?: string[];
 }
 
 const round = (n: number) => Math.round(n * 100) / 100;
 const sum = (xs: number[]) => round(xs.reduce((a, b) => a + b, 0));
 
-export const RECON_MAX_AGE_DAYS = 30;
+export const RECON_MAX_AGE_DAYS = 45;
+export const RECON_ERROR_NOTICE_DAYS = 75;
 export const DEPOSIT_MAX_DAYS = 5; // business promptness proxy
 export const STALE_CHEQUE_DAYS = 183;
 
@@ -143,16 +145,17 @@ export interface ApprovalGateInput {
   lastReconciledOn: string | null;
   reconDifference: number;
   today: string;
+  assessmentBlockers?: string[];
 }
 
 export function distributionBlockers(i: ApprovalGateInput): string[] {
-  const out: string[] = [];
+  const out: string[] = [...(i.assessmentBlockers ?? [])];
   if (i.admittedClaims === 0) out.push("No claims are admitted yet.");
   if (i.distributionAmount > i.available)
     out.push(`Amount exceeds funds available in trust (${fmt(i.distributionAmount)} vs ${fmt(i.available)}).`);
   if (!i.lastReconciledOn) out.push("The trust account has never been reconciled.");
   else if (daysBetween(i.lastReconciledOn, i.today) > RECON_MAX_AGE_DAYS)
-    out.push(`Last reconciliation is older than ${RECON_MAX_AGE_DAYS} days.`);
+    out.push(`Monthly statement reconciliation is overdue (${RECON_MAX_AGE_DAYS}-day completion window).`);
   if (Math.abs(i.reconDifference) >= 0.01) out.push("Ledger does not match the bank statement.");
   return out;
 }
@@ -180,9 +183,11 @@ export function trustRiskFlags(l: TrustLedger, today: string, estateClosing = fa
   else {
     const age = daysBetween(last.statementDate, today);
     if (age > RECON_MAX_AGE_DAYS)
-      flags.push({ code: "RECON_STALE", severity: age > 60 ? "high" : "medium", title: "Reconciliation overdue", detail: `Last matched to the bank statement ${age} days ago (limit ${RECON_MAX_AGE_DAYS}).`, citation: "Dir. 5R8" });
+      flags.push({ code: "RECON_STALE", severity: "medium", title: "Monthly reconciliation evidence overdue", detail: `Latest statement is ${age} days old. Monthly reconciliations must be completed within 45 days of the statement date; obtain any newer statement.`, citation: "Dir. 5R8" });
     if (Math.abs(last.difference) >= 0.01)
       flags.push({ code: "LEDGER_MISMATCH", severity: "high", title: "Ledger does not match bank", detail: `Unexplained difference of ${fmt(last.difference)} at ${last.statementDate}.`, citation: "Dir. 5R8" });
+    if (Math.abs(last.difference) >= 0.01 && age > RECON_ERROR_NOTICE_DAYS)
+      flags.push({ code: "OSB_NOTICE_REQUIRED", severity: "high", title: "Written OSB notice required", detail: "Reconciliation error remains uncorrected more than 75 days after the statement date. Record written notification to the OSB.", citation: "Dir. 5R8" });
   }
 
   if (b.ledgerBalance < 0)
@@ -201,8 +206,8 @@ export function trustRiskFlags(l: TrustLedger, today: string, estateClosing = fa
   for (const d of l.disbursements) {
     if (!d.cleared && daysBetween(d.date, today) > STALE_CHEQUE_DAYS)
       flags.push({ code: `STALE_${d.id}`, severity: "medium", title: "Stale-dated cheque", detail: `${fmt(d.amount)} to ${d.payee} uncashed for over 6 months; unclaimed dividends go to the Superintendent.`, citation: "BIA s.154" });
-    if (l.account && d.amount >= l.account.dualSignatureThreshold && d.approvals.length < 2)
-      flags.push({ code: `SINGLE_SIG_${d.id}`, severity: "high", title: "Single approval above threshold", detail: `${fmt(d.amount)} to ${d.payee} has ${d.approvals.length} approval(s).`, citation: "Dir. 5R8" });
+    if (l.account?.dualSignatureThreshold != null && d.amount >= l.account.dualSignatureThreshold && d.approvals.length < 2)
+      flags.push({ code: `SINGLE_SIG_${d.id}`, severity: "high", title: "Single approval above firm threshold", detail: `${fmt(d.amount)} to ${d.payee} has ${d.approvals.length} approval(s).`, citation: "Firm payment policy (not an OSB dollar threshold)" });
   }
 
   if (estateClosing && b.ledgerBalance !== 0)

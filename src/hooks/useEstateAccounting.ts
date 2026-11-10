@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import type { RecordValues } from "@/components/estate/forms/RecordForm";
 import { logEstateEvent } from "@/hooks/useEstateRecords";
+import { ledgerFromPostings } from "@/lib/trust/persistedLedger";
+import { computeBalances } from "@/lib/trust/trustLedger";
 
 const db = supabase as unknown as { from: (table: string) => any };
 
@@ -67,6 +69,7 @@ export interface LedgerEntryRow {
   gl_date: string | null;
   memo: string | null;
   source_type: string;
+  source_id?: string | null;
   lines: { account: string; asset?: string; creditor?: string; debit: number; credit: number }[];
   total_debit: number;
   total_credit: number;
@@ -113,7 +116,7 @@ export const useSaveBankAccount = (estateId?: string) => {
           opened_date: str(values.openedDate),
           as_of_date: str(values.asOfDate),
           closed_date: str(values.closedDate),
-          opening_balance: num(values.openingBalance),
+          opening_balance: 0,
           gl_bank_account: str(values.glBankAccount),
           export_format: str(values.bankExportFormat),
           pad_enabled: bool(values.padEnabled),
@@ -333,9 +336,7 @@ export const usePostJournalEntry = (estateId?: string) => {
 
 /** Trust position derived from posted receipts and disbursements. */
 export const useTrustPosition = (estateId?: string) => {
-  const { data: receipts = [] } = useReceipts(estateId);
-  const { data: disbursements = [] } = useDisbursements(estateId);
-  const received = receipts.reduce((s, r) => s + Number(r.amount || 0), 0);
-  const paid = disbursements.reduce((s, d) => s + Number(d.amount || 0), 0);
-  return { received, paid, balance: received - paid };
+  const query = useLedgerEntries(estateId);
+  const b = computeBalances(ledgerFromPostings(query.data ?? []));
+  return { received: b.totalReceipts, paid: b.totalDisbursements, balance: b.ledgerBalance, isLoading: query.isLoading, error: query.error };
 };

@@ -46,6 +46,8 @@ import {
   useSaveDisbursement,
   useTrustPosition,
 } from "@/hooks/useEstateAccounting";
+import { ledgerFromPostings } from "@/lib/trust/persistedLedger";
+import { computeBalances } from "@/lib/trust/trustLedger";
 
 const TABS = [
   { id: "accounts", label: "Bank Accounts" },
@@ -101,10 +103,10 @@ const BankAccounts = ({ estateId }: { estateId?: string }) => {
                   <span className="ml-auto text-muted-foreground">{a.currency}</span>
                 </div>
                 <div className="mt-2 grid gap-2 text-muted-foreground md:grid-cols-4">
-                  <span>Opening {money(Number(a.opening_balance))}</span>
+                  <span>Opening via ledger entries</span>
                   <span>Receipts {money(trust.received)}</span>
                   <span>Disbursements {money(trust.paid)}</span>
-                  <span>Trust balance {money(Number(a.opening_balance) + trust.balance)}</span>
+                  <span>Trust balance {money(trust.balance)}</span>
                 </div>
               </div>
             ))}
@@ -134,7 +136,7 @@ interface Allocation {
 }
 
 const ReceiptForm = ({ estateId, onDone }: { estateId?: string; onDone: () => void }) => {
-  const { values, onChange } = useRecordValues({ receiptDate: "", amount: "" });
+  const { values, onChange } = useRecordValues({ receiptDate: new Date().toISOString().slice(0, 10), amount: "" });
   const [allocations, setAllocations] = useState<Allocation[]>([
     { id: 1, account: "Surplus Income", amount: "" },
   ]);
@@ -513,13 +515,16 @@ const Schedules = ({ estateId }: { estateId?: string }) => {
 // -------------------------------------------------------------- Reconciliation
 const Reconciliation = ({ estateId }: { estateId?: string }) => {
   const { values, onChange } = useRecordValues({ status: "Draft" });
+  const { data: entries = [] } = useLedgerEntries(estateId);
+  const ledgerBalance = computeBalances(ledgerFromPostings(entries, values.statementEnd ? String(values.statementEnd) : undefined)).ledgerBalance;
+  const derivedValues = { ...values, ledgerBalance };
   const { data: history = [] } = useReconciliations(estateId);
   const { data: accounts = [] } = useBankAccounts(estateId);
   const { data: receipts = [] } = useReceipts(estateId);
   const { data: disbursements = [] } = useDisbursements(estateId);
   const save = useSaveReconciliation(estateId);
 
-  const { reconciled, difference } = deriveReconciliation(values);
+  const { reconciled, difference } = deriveReconciliation(derivedValues);
   const start = values.statementStart ? String(values.statementStart) : "";
   const end = values.statementEnd ? String(values.statementEnd) : "";
   const inPeriod = (d?: string | null) => !d || ((!start || d >= start) && (!end || d <= end));
@@ -565,12 +570,12 @@ const Reconciliation = ({ estateId }: { estateId?: string }) => {
 
       <RecordForm
         sections={reconciliationSections}
-        values={{ ...values, reconciledBalance: reconciled, difference }}
+        values={{ ...derivedValues, reconciledBalance: reconciled, difference }}
         onChange={onChange}
         submitLabel="Save reconciliation"
         onSubmit={() =>
           save.mutate({
-            values,
+            values: derivedValues,
             bankAccountId: accounts.find((a) => a.is_default)?.id ?? accounts[0]?.id ?? null,
           })
         }
@@ -758,8 +763,8 @@ const GeneralLedger = ({ estateId }: { estateId?: string }) => {
   );
 };
 
-export const FinancialsTab = ({ estateId }: { estateId?: string }) => {
-  const [tab, setTab] = useState<string>("accounts");
+export const FinancialsTab = ({ estateId, initialTab = "accounts" }: { estateId?: string; initialTab?: string }) => {
+  const [tab, setTab] = useState<string>(initialTab);
   return (
     <div className="space-y-4">
       <SubTabs tabs={TABS} active={tab} onChange={setTab} />
