@@ -30,6 +30,11 @@ import {
 } from "@/types/creditor";
 import { ImportedCreditorRow } from "@/types/creditor-import";
 import { toast } from "sonner";
+import { TrustAccountTab } from "@/components/creditor/trust/TrustAccountTab";
+import { TrustRiskFlags } from "@/components/creditor/trust/TrustRiskFlags";
+import { TrustBalanceChip } from "@/components/creditor/trust/TrustBalanceChip";
+import { useTrustLedger } from "@/lib/trust/trustStore";
+import { computeBalances, lastReconciliation, distributionBlockers } from "@/lib/trust/trustLedger";
 import { useCreditors, useCreditorStats, useCreateCreditor, useCreateClaim, CreditorWithClaim } from "@/hooks/useCreditors";
 import { useDistributions, useCreateDistribution, useUpdateDistribution } from "@/hooks/useDistributions";
 import { useCreditorMeetings, useCreateCreditorMeeting, useUpdateCreditorMeeting } from "@/hooks/useCreditorMeetings";
@@ -149,6 +154,11 @@ export default function CreditorManagementPage() {
       console.error('Failed to create distribution:', error);
     }
   };
+
+  const trustLedger = useTrustLedger();
+  const trustBalances = computeBalances(trustLedger);
+  const trustLastRecon = lastReconciliation(trustLedger);
+  const admittedClaims = creditors.filter(c => c.claim?.status === 'admitted').length;
 
   const currentDistribution = distributions[0];
   const currentMeeting = meetings[0];
@@ -466,11 +476,36 @@ export default function CreditorManagementPage() {
             />
           </div>
         );
+      case 'trust-account':
+        return (
+          <div className="p-6">
+            <TrustAccountTab />
+          </div>
+        );
+      case 'risk-flags':
+        return (
+          <div className="p-6">
+            <TrustRiskFlags onOpenTrust={() => setActiveTab('trust-account')} />
+          </div>
+        );
       case 'distribution':
         return (
           <div className="p-6">
             <DistributionEngine
               distribution={currentDistribution}
+              availableFromTrust={trustBalances.available}
+              lastReconciledOn={trustLastRecon?.statementDate ?? null}
+              onOpenTrust={() => setActiveTab('trust-account')}
+              blockers={distributionBlockers({
+                distributionAmount: currentDistribution
+                  ? (currentDistribution.secured_distribution + currentDistribution.preferred_distribution + currentDistribution.unsecured_distribution)
+                  : 0,
+                available: trustBalances.available,
+                admittedClaims,
+                lastReconciledOn: trustLastRecon?.statementDate ?? null,
+                reconDifference: trustLastRecon?.difference ?? 0,
+                today: new Date().toISOString().slice(0, 10),
+              })}
               onCalculateDistribution={handleCalculateDistribution}
               onApproveDistribution={() => {
                 if (currentDistribution) {
@@ -522,7 +557,12 @@ export default function CreditorManagementPage() {
     <MainLayout>
       <div className="flex flex-col h-full overflow-hidden">
         {/* Estate Switcher Bar - Always visible at top */}
-        <EstateSwitcher />
+        <div className="relative">
+          <EstateSwitcher />
+          <div className="absolute right-[19rem] top-1/2 -translate-y-1/2 hidden lg:block">
+            <TrustBalanceChip onClick={() => setActiveTab('trust-account')} />
+          </div>
+        </div>
         
         {/* Module Tabs - Client context navigation */}
         <ModuleTabs activeTab={activeTab} onTabChange={setActiveTab} />
