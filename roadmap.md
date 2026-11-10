@@ -1,4 +1,5 @@
 # Trust account rollout
+- [ ] Simplify trustee workspace into Transactions, Reconciliation and Reports; focus entry in a side panel and clearly distinguish working automation from unavailable bank connectivity.
 - [x] Make estate Financials the trust-account workspace; creditor screens link to the same saved estate figures.
 - [x] Remove sample balances, enforce evidence-blocked availability, and correct reconciliation timing rules.
 
