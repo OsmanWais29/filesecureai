@@ -32,6 +32,10 @@ interface DistributionEngineProps {
   onApproveDistribution: () => void;
   onGenerateForm12: () => void;
   onExportReport: () => void;
+  availableFromTrust: number;
+  lastReconciledOn: string | null;
+  blockers: string[];
+  onOpenTrust: () => void;
 }
 
 export function DistributionEngine({
@@ -40,6 +44,10 @@ export function DistributionEngine({
   onApproveDistribution,
   onGenerateForm12,
   onExportReport,
+  availableFromTrust,
+  lastReconciledOn,
+  blockers,
+  onOpenTrust,
 }: DistributionEngineProps) {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-CA', {
@@ -106,7 +114,7 @@ export function DistributionEngine({
         <CardContent>
           <div className="flex gap-2">
             {distribution.status === 'draft' && (
-              <Button onClick={onApproveDistribution}>
+              <Button onClick={onApproveDistribution} disabled={blockers.length > 0} title={blockers.join(" ")}>
                 <CheckCircle2 className="h-4 w-4 mr-2" />
                 Approve Distribution
               </Button>
@@ -120,6 +128,13 @@ export function DistributionEngine({
               Export Report
             </Button>
           </div>
+          {distribution.status === 'draft' && blockers.length > 0 && (
+            <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm">
+              <div className="font-medium text-destructive mb-1">Approval blocked</div>
+              <ul className="list-disc pl-5 space-y-0.5 text-muted-foreground">{blockers.map(b => <li key={b}>{b}</li>)}</ul>
+              <Button variant="link" className="px-0 h-auto mt-1" onClick={onOpenTrust}>Open Trust Account</Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -165,10 +180,13 @@ export function DistributionEngine({
               <Separator />
               <div className="flex justify-between items-center">
                 <span className="font-medium">Available for Distribution</span>
-                <span className="font-mono font-bold">
-                  {formatCurrency(distribution.total_receipts - distribution.total_disbursements)}
-                </span>
+                <button onClick={onOpenTrust} className="font-mono font-bold underline-offset-2 hover:underline">
+                  {formatCurrency(availableFromTrust)}
+                </button>
               </div>
+              <p className="text-xs text-muted-foreground">
+                From the trust account (balance − holdbacks − reserve){lastReconciledOn ? ` · reconciled ${lastReconciledOn}` : " · not reconciled"}. Not editable here.
+              </p>
             </div>
           </CardContent>
         </Card>
