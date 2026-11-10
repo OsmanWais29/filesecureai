@@ -35,10 +35,20 @@ describe("trust ledger", () => {
     expect(distributionBlockers({ distributionAmount: 500, available: 1000, admittedClaims: 2, lastReconciledOn: "2026-11-03", reconDifference: 0, today: "2026-11-06" })).toEqual([]);
   });
 
-  it("flags reconciliation older than 30 days", () => {
-    const codes = trustRiskFlags(base, "2026-12-10").map((f) => f.code);
+  it("flags monthly reconciliation evidence after the 45-day window", () => {
+    const codes = trustRiskFlags(base, "2026-12-19").map((f) => f.code);
     expect(codes).toContain("RECON_STALE");
-    expect(trustRiskFlags(base, "2026-11-10").map((f) => f.code)).not.toContain("RECON_STALE");
+    expect(trustRiskFlags(base, "2026-12-18").map((f) => f.code)).not.toContain("RECON_STALE");
+  });
+
+  it("requires written OSB notice for uncorrected differences after 75 days", () => {
+    const ledger = { ...base, reconciliations: [{ ...base.reconciliations[0], difference: 25 }] };
+    expect(trustRiskFlags(ledger, "2027-01-17").map(f => f.code)).not.toContain("OSB_NOTICE_REQUIRED");
+    expect(trustRiskFlags(ledger, "2027-01-18").map(f => f.code)).toContain("OSB_NOTICE_REQUIRED");
+  });
+
+  it("blocks distribution with missing reserve evidence", () => {
+    expect(distributionBlockers({ distributionAmount: 500, available: 1000, admittedClaims: 2, lastReconciledOn: "2026-11-03", reconDifference: 0, today: "2026-11-06", assessmentBlockers: ["Reserves not verified"] })).toContain("Reserves not verified");
   });
 
   it("flags ledger that does not match bank", () => {
