@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
 import { FormDetailsEditor, buildFormPdf, missingFields, templateFor } from "@/components/estate/forms/FormDetails";
 import { useEstateRow } from "@/hooks/useEstateRecords";
+import { Link } from "react-router-dom";
+import { useCreateFiling, useOsbFilings } from "@/hooks/useOsbFilings";
+import { STATUS_LABEL } from "@/lib/filing/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -78,6 +81,8 @@ export const FormsTab = ({ estateId }: { estateId?: string }) => {
   const [osbDate, setOsbDate] = useState("");
   const { data: estate } = useEstateRow(estateId);
   const fill = useFillFormData(estateId);
+  const { data: filings = [] } = useOsbFilings(estateId);
+  const createFiling = useCreateFiling();
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const active = items.find((i) => i.number === activeNo) ?? null;
 
@@ -158,6 +163,19 @@ export const FormsTab = ({ estateId }: { estateId?: string }) => {
                   <SheetDescription>{e.period ? `Covers ${e.period}. ` : ""}{e.status ?? "Not applicable"}</SheetDescription>
                 </SheetHeader>
                 <div className="mt-4 space-y-5 text-sm">
+                  {(() => {
+                    const f = filings.find((x) => x.form_number === active.number && x.version_label === e.version.label);
+                    return (
+                      <section className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3">
+                        <div>
+                          <h4 className="font-semibold">OSB filing</h4>
+                          <p className="text-xs text-muted-foreground">{f ? `In the Filing Centre: ${STATUS_LABEL[f.status]}${f.osb_reference ? ` · OSB ref ${f.osb_reference}` : ""}` : "Checks, signing, the evidence pack and the OSB response are handled in the Filing Centre."}</p>
+                        </div>
+                        {f ? <Button size="sm" variant="outline" asChild><Link to={`/filing/${f.id}`}>Open filing</Link></Button>
+                          : <Button size="sm" disabled={!estateId || !e.version.known || e.bucket === "na" || createFiling.isPending} onClick={() => createFiling.mutate({ estateId: estateId!, formNumber: active.number, versionLabel: e.version.label, deadline: e.deadline })}>Start OSB filing</Button>}
+                      </section>
+                    );
+                  })()}
                   <FormDetailsEditor item={active} estate={estate as Record<string, any> | null} saving={fill.isPending} onSave={(patch) => fill.mutate({ patch, formNumber: active.number }, { onSuccess: () => setPdfUrl(null) })} />
                   <section className="space-y-2">
                     <div className="flex items-center justify-between gap-2">

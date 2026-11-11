@@ -4550,6 +4550,224 @@ export type Database = {
           },
         ]
       }
+      osb_evidence_packs: {
+        Row: {
+          document_id: string | null
+          estate_id: string
+          filing_id: string
+          id: string
+          pack: Json
+          pack_sha256: string
+          sealed_at: string
+          sealed_by: string | null
+        }
+        Insert: {
+          document_id?: string | null
+          estate_id: string
+          filing_id: string
+          id?: string
+          pack: Json
+          pack_sha256: string
+          sealed_at?: string
+          sealed_by?: string | null
+        }
+        Update: {
+          document_id?: string | null
+          estate_id?: string
+          filing_id?: string
+          id?: string
+          pack?: Json
+          pack_sha256?: string
+          sealed_at?: string
+          sealed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "osb_evidence_packs_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "osb_evidence_packs_filing_id_fkey"
+            columns: ["filing_id"]
+            isOneToOne: true
+            referencedRelation: "osb_filings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      osb_field_mappings: {
+        Row: {
+          id: string
+          schema_element_id: string
+          source_field: string
+          transform: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          schema_element_id: string
+          source_field: string
+          transform?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          schema_element_id?: string
+          source_field?: string
+          transform?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "osb_field_mappings_schema_element_id_fkey"
+            columns: ["schema_element_id"]
+            isOneToOne: true
+            referencedRelation: "osb_schema_elements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      osb_filing_events: {
+        Row: {
+          actor: string | null
+          at: string
+          detail: string | null
+          estate_id: string
+          filing_id: string
+          from_status: string | null
+          id: string
+          to_status: string
+        }
+        Insert: {
+          actor?: string | null
+          at?: string
+          detail?: string | null
+          estate_id: string
+          filing_id: string
+          from_status?: string | null
+          id?: string
+          to_status: string
+        }
+        Update: {
+          actor?: string | null
+          at?: string
+          detail?: string | null
+          estate_id?: string
+          filing_id?: string
+          from_status?: string | null
+          id?: string
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "osb_filing_events_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "osb_filing_events_filing_id_fkey"
+            columns: ["filing_id"]
+            isOneToOne: false
+            referencedRelation: "osb_filings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      osb_filings: {
+        Row: {
+          amends_filing_id: string | null
+          created_at: string
+          created_by: string
+          deadline: string | null
+          deadline_outcome: string | null
+          estate_id: string
+          form_number: string
+          id: string
+          late_reason: string | null
+          osb_reference: string | null
+          osb_response: Json | null
+          payload: Json
+          readiness: Json
+          responded_at: string | null
+          signed_at: string | null
+          signed_by: string | null
+          status: string
+          updated_at: string
+          version_label: string
+          xml: string | null
+          xml_sha256: string | null
+        }
+        Insert: {
+          amends_filing_id?: string | null
+          created_at?: string
+          created_by?: string
+          deadline?: string | null
+          deadline_outcome?: string | null
+          estate_id: string
+          form_number: string
+          id?: string
+          late_reason?: string | null
+          osb_reference?: string | null
+          osb_response?: Json | null
+          payload?: Json
+          readiness?: Json
+          responded_at?: string | null
+          signed_at?: string | null
+          signed_by?: string | null
+          status?: string
+          updated_at?: string
+          version_label: string
+          xml?: string | null
+          xml_sha256?: string | null
+        }
+        Update: {
+          amends_filing_id?: string | null
+          created_at?: string
+          created_by?: string
+          deadline?: string | null
+          deadline_outcome?: string | null
+          estate_id?: string
+          form_number?: string
+          id?: string
+          late_reason?: string | null
+          osb_reference?: string | null
+          osb_response?: Json | null
+          payload?: Json
+          readiness?: Json
+          responded_at?: string | null
+          signed_at?: string | null
+          signed_by?: string | null
+          status?: string
+          updated_at?: string
+          version_label?: string
+          xml?: string | null
+          xml_sha256?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "osb_filings_amends_filing_id_fkey"
+            columns: ["amends_filing_id"]
+            isOneToOne: false
+            referencedRelation: "osb_filings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "osb_filings_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       osb_form_analyses: {
         Row: {
           amounts_reasonable: boolean | null
@@ -4740,6 +4958,89 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      osb_schema_elements: {
+        Row: {
+          choice_group: string | null
+          data_type: string | null
+          enum_values: Json | null
+          id: string
+          max_occurs: number | null
+          min_occurs: number
+          path: string
+          schema_version_id: string
+          seq: number
+        }
+        Insert: {
+          choice_group?: string | null
+          data_type?: string | null
+          enum_values?: Json | null
+          id?: string
+          max_occurs?: number | null
+          min_occurs?: number
+          path: string
+          schema_version_id: string
+          seq: number
+        }
+        Update: {
+          choice_group?: string | null
+          data_type?: string | null
+          enum_values?: Json | null
+          id?: string
+          max_occurs?: number | null
+          min_occurs?: number
+          path?: string
+          schema_version_id?: string
+          seq?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "osb_schema_elements_schema_version_id_fkey"
+            columns: ["schema_version_id"]
+            isOneToOne: false
+            referencedRelation: "osb_schema_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      osb_schema_versions: {
+        Row: {
+          effective_from: string | null
+          form_number: string
+          id: string
+          loaded_at: string
+          loaded_by: string | null
+          namespace: string | null
+          notes: string | null
+          source_url: string | null
+          version_label: string
+          xsd_sha256: string | null
+        }
+        Insert: {
+          effective_from?: string | null
+          form_number: string
+          id?: string
+          loaded_at?: string
+          loaded_by?: string | null
+          namespace?: string | null
+          notes?: string | null
+          source_url?: string | null
+          version_label: string
+          xsd_sha256?: string | null
+        }
+        Update: {
+          effective_from?: string | null
+          form_number?: string
+          id?: string
+          loaded_at?: string
+          loaded_by?: string | null
+          namespace?: string | null
+          notes?: string | null
+          source_url?: string | null
+          version_label?: string
+          xsd_sha256?: string | null
+        }
+        Relationships: []
       }
       profiles: {
         Row: {

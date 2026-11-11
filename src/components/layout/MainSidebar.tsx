@@ -20,7 +20,8 @@ import {
   User,
   MessageSquare,
   LifeBuoy,
-  Landmark
+  Landmark,
+  Send
 } from "lucide-react";
 
 export const MainSidebar = () => {
@@ -32,6 +33,7 @@ export const MainSidebar = () => {
     { name: "Estates", href: "/estates", icon: Landmark },
     { name: "Documents", href: "/documents", icon: FileText },
     { name: "Creditors", href: "/creditors", icon: Landmark },
+    { name: "Filing Centre", href: "/filing", icon: Send },
     { name: "PDF to XML Converter", href: "/converter", icon: FileCode },
     { name: "SAFA", href: "/safa", icon: MessageSquare },
     { name: "CRM", href: "/trustee/crm", icon: Users },

@@ -13,6 +13,9 @@ import SignupPage from './pages/SignupPage';
 import WorkflowPage from './pages/WorkflowPage';
 import SettingsPage from './pages/SettingsPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
+import FilingCentrePage from './pages/filing/FilingCentrePage';
+import FilingDetailPage from './pages/filing/FilingDetailPage';
+import MappingStudioPage from './pages/filing/MappingStudioPage';
 import DocumentsPage from './pages/documents/DocumentsPage';
 import ConverterPage from './pages/ConverterPage';
 import SAFAPage from './pages/SAFA/SAFAPage';
@@ -111,6 +114,9 @@ function App() {
           <Route path="/income-expense" element={<AuthCheck><IncomeExpensePage /></AuthCheck>} />
           <Route path="/audit" element={<AuthCheck><AuditTrailPage /></AuthCheck>} />
           <Route path="/audit/production" element={<AuthCheck><ProductionAudit /></AuthCheck>} />
+          <Route path="/filing" element={<AuthCheck><FilingCentrePage /></AuthCheck>} />
+          <Route path="/filing/studio" element={<AuthCheck><MappingStudioPage /></AuthCheck>} />
+          <Route path="/filing/:id" element={<AuthCheck><FilingDetailPage /></AuthCheck>} />
           <Route path="/analytics" element={<AuthCheck><AnalyticsPage /></AuthCheck>} />
           <Route path="/notifications" element={<AuthCheck><NotificationsPage /></AuthCheck>} />
           <Route path="/messages" element={<AuthCheck><MessagesPage /></AuthCheck>} />
