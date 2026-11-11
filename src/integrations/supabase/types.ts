@@ -2180,6 +2180,7 @@ export type Database = {
           opened_date: string | null
           opening_balance: number
           pad_enabled: boolean
+          superintendent_approval_ref: string | null
           transit_number: string | null
           updated_at: string
           user_id: string
@@ -2202,6 +2203,7 @@ export type Database = {
           opened_date?: string | null
           opening_balance?: number
           pad_enabled?: boolean
+          superintendent_approval_ref?: string | null
           transit_number?: string | null
           updated_at?: string
           user_id: string
@@ -2224,6 +2226,7 @@ export type Database = {
           opened_date?: string | null
           opening_balance?: number
           pad_enabled?: boolean
+          superintendent_approval_ref?: string | null
           transit_number?: string | null
           updated_at?: string
           user_id?: string
@@ -5422,6 +5425,90 @@ export type Database = {
           source?: string | null
           trend_name?: string | null
           urgency_score?: number | null
+        }
+        Relationships: []
+      }
+      trust_reconciliation_signoffs: {
+        Row: {
+          attestation_type: string
+          content_sha256: string
+          estate_id: string
+          id: string
+          intent_statement: string
+          reconciliation_id: string | null
+          signed_at: string
+          signed_by: string
+          statement_date: string
+        }
+        Insert: {
+          attestation_type?: string
+          content_sha256: string
+          estate_id: string
+          id?: string
+          intent_statement: string
+          reconciliation_id?: string | null
+          signed_at?: string
+          signed_by?: string
+          statement_date: string
+        }
+        Update: {
+          attestation_type?: string
+          content_sha256?: string
+          estate_id?: string
+          id?: string
+          intent_statement?: string
+          reconciliation_id?: string | null
+          signed_at?: string
+          signed_by?: string
+          statement_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trust_reconciliation_signoffs_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trust_reconciliation_signoffs_reconciliation_id_fkey"
+            columns: ["reconciliation_id"]
+            isOneToOne: false
+            referencedRelation: "estate_reconciliations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trust_schedule3_consents: {
+        Row: {
+          consented_on: string
+          created_at: string
+          creditor_name: string
+          creditor_reference: string | null
+          document_id: string | null
+          id: string
+          recorded_by: string
+          revoked_on: string | null
+        }
+        Insert: {
+          consented_on: string
+          created_at?: string
+          creditor_name: string
+          creditor_reference?: string | null
+          document_id?: string | null
+          id?: string
+          recorded_by?: string
+          revoked_on?: string | null
+        }
+        Update: {
+          consented_on?: string
+          created_at?: string
+          creditor_name?: string
+          creditor_reference?: string | null
+          document_id?: string | null
+          id?: string
+          recorded_by?: string
+          revoked_on?: string | null
         }
         Relationships: []
       }
