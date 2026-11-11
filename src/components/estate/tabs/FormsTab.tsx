@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { jsPDF } from "jspdf";
+import { FormDetailsEditor, buildFormPdf, missingFields } from "@/components/estate/forms/FormDetails";
+import { useEstateRow } from "@/hooks/useEstateRecords";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,6 +13,7 @@ import {
   useAcknowledgeFlag,
   useEstateFiledDocuments,
   useEstateForms,
+  useFillFormData,
   useRecordOsbFiling,
   useRemindForForm,
   useSaveFormInstance,
@@ -62,24 +64,6 @@ const Group = ({ title, hint, children, empty }: { title: string; hint: string; 
   </section>
 );
 
-const previewPdf = (item: FormCatalogueItem) => {
-  const doc = new jsPDF();
-  const e = item.evaluation;
-  doc.setFontSize(16);
-  doc.text(`${item.number} — ${item.title}`, 14, 20);
-  doc.setFontSize(10);
-  const lines = [
-    `Version: ${e.version.label} (${e.version.reason})`,
-    e.period ? `Period: ${e.period}` : "",
-    `Status: ${e.status ?? "Not applicable"}`,
-    `Data sources: ${item.sources.join(", ")}`,
-    "",
-    "DRAFT PREVIEW — not an official OSB form rendering.",
-  ].filter((l, i, a) => l || a[i - 1]);
-  doc.text(lines, 14, 32);
-  window.open(doc.output("bloburl"), "_blank");
-};
-
 export const FormsTab = ({ estateId }: { estateId?: string }) => {
   const [activeNo, setActiveNo] = useState<string | null>(null);
   const [reason, setReason] = useState("");
@@ -91,6 +75,9 @@ export const FormsTab = ({ estateId }: { estateId?: string }) => {
   const recordFiling = useRecordOsbFiling(estateId);
   const [osbRef, setOsbRef] = useState("");
   const [osbDate, setOsbDate] = useState("");
+  const { data: estate } = useEstateRow(estateId);
+  const fill = useFillFormData(estateId);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const active = items.find((i) => i.number === activeNo) ?? null;
 
   const groups = useMemo(() => {
@@ -111,7 +98,7 @@ export const FormsTab = ({ estateId }: { estateId?: string }) => {
     else if (a === "Record OSB filing") setActiveNo(item.number);
     else if (a === "Sign") {
       const refusal = signRefusal(item.evaluation);
-      if (refusal) setActiveNo(item.number);
+      if (refusal || missingFields(item.number, estate as Record<string, any> | null).length) setActiveNo(item.number);
       else save.mutate({ item, values: { ...formToValues(item), signingDate: new Date().toISOString().slice(0, 10) }, generate: true, file: true });
     } else if (a === "Remind") remind.mutate(item);
     else setActiveNo(item.number);
@@ -158,8 +145,8 @@ export const FormsTab = ({ estateId }: { estateId?: string }) => {
         </Collapsible>
       </div>
 
-      <Sheet open={Boolean(active)} onOpenChange={(o) => { if (!o) { setActiveNo(null); setReason(""); } }}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
+      <Sheet open={Boolean(active)} onOpenChange={(o) => { if (!o) { setActiveNo(null); setReason(""); setPdfUrl(null); } }}>
+        <SheetContent className="w-full overflow-y-auto sm:max-w-3xl">
           {active && (() => {
             const e = active.evaluation;
             const refusal = signRefusal(e);
@@ -170,6 +157,17 @@ export const FormsTab = ({ estateId }: { estateId?: string }) => {
                   <SheetDescription>{e.period ? `Covers ${e.period}. ` : ""}{e.status ?? "Not applicable"}</SheetDescription>
                 </SheetHeader>
                 <div className="mt-4 space-y-5 text-sm">
+                  <FormDetailsEditor item={active} estate={estate as Record<string, any> | null} saving={fill.isPending} onSave={(patch) => fill.mutate({ patch, formNumber: active.number }, { onSuccess: () => setPdfUrl(null) })} />
+                  <section className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="font-semibold">PDF preview</h4>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => setPdfUrl(buildFormPdf(active, estate as Record<string, any> | null))}>{pdfUrl ? "Refresh preview" : "Show preview"}</Button>
+                        {pdfUrl && <Button variant="ghost" size="sm" onClick={() => window.open(pdfUrl, "_blank")}>Open in new tab</Button>}
+                      </div>
+                    </div>
+                    {pdfUrl ? <iframe title={`${active.number} preview`} src={pdfUrl} className="h-[520px] w-full rounded-md border" /> : <p className="text-xs text-muted-foreground">Shows the form filled with this estate's details. Missing values appear in red.</p>}
+                  </section>
                   <section>
                     <h4 className="font-semibold">Form version</h4>
                     <p>{e.version.label}</p>
@@ -233,13 +231,12 @@ export const FormsTab = ({ estateId }: { estateId?: string }) => {
                     </section>
                   )}
                   <div className="flex flex-wrap gap-2 border-t pt-4">
-                    <Button variant="outline" size="sm" onClick={() => previewPdf(active)}>Preview PDF</Button>
                     {e.action !== "Record OSB filing" && e.bucket !== "filed" && e.bucket !== "na" && (
                       <Button
                         size="sm"
-                        disabled={save.isPending}
+                        disabled={save.isPending || missingFields(active.number, estate as Record<string, any> | null).length > 0}
                         onClick={() => {
-                          if (refusal) return;
+                          if (refusal || missingFields(active.number, estate as Record<string, any> | null).length) return;
                           save.mutate({ item: active, values: { ...formToValues(active), signingDate: new Date().toISOString().slice(0, 10) }, generate: true, file: true });
                         }}
                       >
@@ -248,6 +245,7 @@ export const FormsTab = ({ estateId }: { estateId?: string }) => {
                     )}
                   </div>
                   {refusal && e.status !== "Signed" && e.bucket !== "filed" && e.bucket !== "na" && <p className="text-xs text-destructive">{refusal}</p>}
+                  {missingFields(active.number, estate as Record<string, any> | null).length > 0 && e.bucket !== "filed" && <p className="text-xs text-destructive">Fill in the missing form details above before signing.</p>}
                   <p className="text-xs text-muted-foreground">Signing saves the signed copy to Documents. Submission to the OSB happens outside SecureFiles for now; record its acknowledgement here.</p>
                 </div>
               </>

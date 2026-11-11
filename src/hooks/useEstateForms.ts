@@ -303,3 +303,26 @@ export const useRecordOsbFiling = (estateId?: string) => {
     onError: (e: Error) => toast({ title: "Could not record filing", description: e.message, variant: "destructive" }),
   });
 };
+
+/** Saves values the trustee typed to fill a form's missing estate data; audit-logged. */
+export const useFillFormData = (estateId?: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ patch, formNumber }: { patch: Record<string, string | null>; formNumber: string }) => {
+      if (!estateId) throw new Error("No estate selected.");
+      const clean = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined));
+      if (!Object.keys(clean).length) throw new Error("Nothing to save.");
+      const { data: before } = await db.from("estates").select("*").eq("id", estateId).maybeSingle();
+      const { data, error } = await db.from("estates").update(clean).eq("id", estateId).select().single();
+      if (error) throw error;
+      await logEstateEvent({ estateId, eventType: "form.data_filled", before, after: { form: formNumber, ...clean } });
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["estate-row", estateId] });
+      qc.invalidateQueries({ queryKey: ["estate-rows"] });
+      toast({ title: "Form details saved", description: "Saved to the estate record and the audit trail." });
+    },
+    onError: (e: Error) => toast({ title: "Could not save details", description: e.message, variant: "destructive" }),
+  });
+};
