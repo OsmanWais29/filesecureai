@@ -167,6 +167,17 @@ export const usePostReceipt = (estateId?: string) => {
       if (Math.abs(total - allocated) > 0.005 && !hasSuspense) {
         throw new Error("Allocations must reconcile, or route the remainder to suspense.");
       }
+      // Build balanced ledger lines before saving anything, rounded to cents so the
+      // database's exact-balance check never rejects floating-point drift.
+      const cents = (n: number) => Math.round(n * 100) / 100;
+      const totalC = cents(total);
+      const creditLines = input.allocations
+        .filter((a) => a.amount > 0)
+        .map((a) => ({ account: a.account, debit: 0, credit: cents(a.amount) }));
+      const remainder = cents(totalC - creditLines.reduce((s, l) => s + l.credit, 0));
+      if (remainder > 0) creditLines.push({ account: "Suspense / Unallocated", debit: 0, credit: remainder });
+      if (remainder < 0) throw new Error("Allocations exceed the receipt amount.");
+      const ledgerLines = [{ account: "10000 · Trust Bank", debit: totalC, credit: 0 }, ...creditLines];
 
       const { data: receipt, error } = await db
         .from("estate_receipts")
@@ -210,12 +221,9 @@ export const usePostReceipt = (estateId?: string) => {
         memo: `Receipt ${receipt.receipt_number ?? receipt.id.slice(0, 8)}`,
         source_type: "receipt",
         source_id: receipt.id,
-        lines: [
-          { account: "10000 · Trust Bank", debit: total, credit: 0 },
-          ...input.allocations.map((a) => ({ account: a.account, debit: 0, credit: a.amount })),
-        ],
-        total_debit: total,
-        total_credit: allocated,
+        lines: ledgerLines,
+        total_debit: totalC,
+        total_credit: totalC,
       });
 
       if (ledgerError) throw new Error(`Receipt recorded but ledger posting failed: ${ledgerError.message}. Do not repost; review the receipt.`);
@@ -242,7 +250,7 @@ export const useSaveDisbursement = (estateId?: string) => {
     mutationFn: async (values: RecordValues) => {
       if (!estateId) throw new Error("No estate selected.");
       const user = await requireUser();
-      const amount = num(values.amount);
+      const amount = Math.round(num(values.amount) * 100) / 100;
       if (amount <= 0) throw new Error("A disbursement must have a positive amount.");
       const { data, error } = await db
         .from("estate_disbursements")
