@@ -130,7 +130,7 @@ export const timeline: TimelineEvent[] = [
   { id: "t2", label: "Application Signed", date: "May 10", state: "done", source: "Application package", enteredBy: "SAFA extraction", confirmedBy: "Nancy McJones" },
   { id: "t3", label: "Insolvency Date", date: "May 12", state: "done", source: "Form 1 · Page 2", enteredBy: "SAFA extraction", confirmedBy: "Nancy McJones", dependencies: ["First counselling", "Deemed approval", "Form 65 schedule", "Discharge review"] },
   { id: "t4", label: "Filing Completed", date: "May 12", state: "done", source: "OSB filing receipt", enteredBy: "System", confirmedBy: "Jane Doe" },
-  { id: "t5", label: "Creditor Notices Sent", date: "May 14", state: "done", source: "Form 67 batch", enteredBy: "System" },
+  { id: "t5", label: "Creditor Notices Sent", date: "May 14", state: "done", source: "Form 68 batch", enteredBy: "System" },
   { id: "t6", label: "Claims Period", date: "Current", state: "current", source: "Rule Engine", dependencies: ["Claims review", "Voting"] },
   { id: "t7", label: "First Counselling", date: "Aug 21", state: "pending", source: "Rule Engine · derived from insolvency date" },
   { id: "t8", label: "Review", date: "Jan 12", state: "pending", source: "Rule Engine" },
@@ -281,7 +281,7 @@ export const incomePeriods = [
 
 export const communications = [
   { id: "m1", date: "Aug 12", channel: "Email", subject: "Form 31 acknowledged", party: "CRA", address: "collections@cra-arc.gc.ca" },
-  { id: "m2", date: "Jul 28", channel: "Letter", subject: "Form 67 notice to creditors", party: "All creditors", address: "Address snapshot at send time" },
+  { id: "m2", date: "Jul 28", channel: "Letter", subject: "Form 68 notice to creditors", party: "All creditors", address: "Address snapshot at send time" },
   { id: "m3", date: "Jul 14", channel: "Call", subject: "Missing July paystubs", party: "John Smith", address: "613-555-0134" },
 ];
 
@@ -311,7 +311,7 @@ export const safaMessages: Record<string, string> = {
   documents: "The uploaded Form 31 appears to belong to CRA and matches creditor account 348920.",
   forms: "Form 65 for July is missing and blocks the statutory income review.",
   income: "July income statement has not been received; surplus income cannot be recalculated.",
-  communications: "Form 67 notices used the CRA address on file at the time of sending; that snapshot is preserved.",
+  communications: "Form 68 notices used the CRA address on file at the time of sending; that snapshot is preserved.",
   compliance: "Two warnings and one failed rule are open. Discharge review is the only blocker for closing.",
   activity: "All estate changes are hash-chained; the last SAFA action was a claim extraction on Aug 12.",
 };

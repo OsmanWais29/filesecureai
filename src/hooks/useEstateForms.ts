@@ -13,6 +13,7 @@ import {
   FlagAck,
   FormDef,
   FormEvaluation,
+  adminType as toAdminType,
   estateKind,
   evaluateForm,
   signRefusal,
@@ -51,6 +52,8 @@ export interface FormCatalogueItem extends FormCatalogueEntry {
 const readAcks = (v: unknown): FlagAck[] =>
   Array.isArray(v) ? (v.filter((x) => x && typeof x === "object" && "flag" in x) as FlagAck[]) : [];
 
+const LEGACY_NUMBERS: Record<string, string[]> = { "Form 21": ["Form 1"], "Form 68": ["Form 67"], "Form 79": ["Form 66"] };
+
 const FILING_DATE_TYPES = ["Insolvency Date", "Date Assignment Filed", "Date Proposal Filed", "Filing Date"];
 
 export const useFormInstances = (estateId?: string) =>
@@ -81,6 +84,10 @@ export const useEstateForms = (estateId?: string) => {
     rules.filter((r) => r.state !== "pass").forEach((r) => (failing[r.id] = r.rule));
     const filingRow = dates.find((d) => d.date_value && FILING_DATE_TYPES.includes(d.date_type));
     const filingDate: string | null = row?.insolvency_date ?? filingRow?.date_value ?? null;
+    // Appointment-based deadlines use only a recorded appointment date; never the filing date.
+    const apptRow = dates.find((d) => d.date_value && /appoint/i.test(d.date_type));
+    const appointmentDate: string | null = row?.appointment_date ?? apptRow?.date_value ?? null;
+    const admin = toAdminType(row?.administration_type);
     const unverifiedSources: DataSource[] = dates.some(
       (d) => d.date_value && /extract|ai|bank/i.test(d.source_type ?? "") && !(d as any).confirmed_by,
     )
@@ -89,13 +96,16 @@ export const useEstateForms = (estateId?: string) => {
     const kind = estateKind(row?.estate_type);
     const today = new Date();
     return FORM_DEFS.map((def) => {
-      const instance = instances.find((i) => i.form_number === def.number);
+      // Records saved under the earlier, incorrect numbers stay attached without rewriting stored data.
+      const legacy = LEGACY_NUMBERS[def.number] ?? [];
+      const instance = instances.find((i) => i.form_number === def.number) ?? instances.find((i) => legacy.includes(i.form_number));
       const acks = readAcks(instance?.validation_messages);
       const ev = (instance?.parameters as any)?.osb_evidence;
       const osbEvidence = ev?.reference ? { reference: String(ev.reference), received_at: String(ev.received_at ?? "") } : null;
-      const evaluation = evaluateForm({ def, kind, filingDate, failing, unverifiedSources, instance, acks, today, osbEvidence });
+      const evaluation = evaluateForm({ def, kind, filingDate, appointmentDate, adminType: admin, failing, unverifiedSources, instance, acks, today, osbEvidence });
       return {
         ...def,
+        title: evaluation.title,
         instance,
         acks,
         evaluation,

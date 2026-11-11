@@ -10,7 +10,7 @@ describe("formEngine", () => {
     expect(formVersion("2024-09-16").label).toBe("Current version");
   });
   it("reports missing filing date instead of guessing a version", () => {
-    const e = evaluateForm({ ...base, def: def("Form 66"), filingDate: null });
+    const e = evaluateForm({ ...base, def: def("Form 79"), filingDate: null });
     expect(e.status).toBe("Missing data");
     expect(e.detail).toBe("Missing: filing date");
   });
@@ -25,27 +25,41 @@ describe("formEngine", () => {
     expect(e.action).toBe("Remind");
     expect(e.period).toBe("October 2026");
   });
-  it("Form 67 deadline is 5 days after filing", () => {
-    expect(evaluateForm({ ...base, def: def("Form 67") }).deadline).toBe("2024-10-06");
+  it("Form 68 deadline is 5 days after the recorded trustee appointment, not the filing date", () => {
+    expect(evaluateForm({ ...base, def: def("Form 68"), appointmentDate: "2024-10-03" }).deadline).toBe("2024-10-08");
+  });
+  it("Form 68 flags a missing appointment date instead of assuming the filing date", () => {
+    const e = evaluateForm({ ...base, def: def("Form 68"), appointmentDate: null });
+    expect(e.deadline).toBeNull();
+    expect(e.status).toBe("Missing data");
+    expect(e.detail).toMatch(/trustee appointment date/);
+  });
+  it("uses the pre-2024 Form 79 title for estates filed before Sept 16, 2024", () => {
+    expect(evaluateForm({ ...base, def: def("Form 79"), filingDate: "2024-01-10" }).title).toBe("Statement of Affairs (Non-Business Bankruptcy/Proposal)");
+  });
+  it("picks Form 13 for summary administration and rules out Form 12", () => {
+    expect(evaluateForm({ ...base, def: def("Form 12"), adminType: "summary" }).bucket).toBe("na");
+    expect(evaluateForm({ ...base, def: def("Form 13"), adminType: "summary" }).bucket).toBe("due");
+    expect(evaluateForm({ ...base, def: def("Form 13"), adminType: null }).detail).toMatch(/administration type/);
   });
   it("refuses sign and file until unverified data is acknowledged", () => {
-    const flagged = evaluateForm({ ...base, def: def("Form 78"), unverifiedSources: ["Ledger"], instance: { generated_at: "x", filed_at: null, signing_date: null } });
+    const flagged = evaluateForm({ ...base, def: def("Form 14"), unverifiedSources: ["Ledger"], kind: "consumer_proposal" as const, instance: { generated_at: "x", filed_at: null, signing_date: null } });
     expect(flagged.status).toBe("Flagged");
     expect(signRefusal(flagged)).toMatch(/acknowledge 1 flag/);
-    const ackd = evaluateForm({ ...base, def: def("Form 78"), unverifiedSources: ["Ledger"], acks: [{ flag: "unverified:Ledger", reason: "Checked statement", by: "u", at: "t" }], instance: { generated_at: "x", filed_at: null, signing_date: null } });
+    const ackd = evaluateForm({ ...base, def: def("Form 14"), unverifiedSources: ["Ledger"], kind: "consumer_proposal" as const, acks: [{ flag: "unverified:Ledger", reason: "Checked statement", by: "u", at: "t" }], instance: { generated_at: "x", filed_at: null, signing_date: null } });
     expect(ackd.action).toBe("Sign");
     expect(signRefusal(ackd)).toBeNull();
   });
   it("consumer proposal report is due 10 days after filing (BIA s.66.14)", () => {
-    const e = evaluateForm({ ...base, kind: "consumer_proposal", def: def("s.66.14 report") });
+    const e = evaluateForm({ ...base, kind: "consumer_proposal", def: def("Form 48") });
     expect(e.deadline).toBe("2024-10-11");
   });
   it("a signed form is never Filed without OSB evidence", () => {
     const inst = { generated_at: "x", filed_at: "2026-11-01", signing_date: "2026-11-01" };
-    const noEvidence = evaluateForm({ ...base, def: def("Form 66"), instance: inst });
+    const noEvidence = evaluateForm({ ...base, def: def("Form 79"), instance: inst });
     expect(noEvidence.status).toBe("Signed");
     expect(noEvidence.action).toBe("Record OSB filing");
-    const withEvidence = evaluateForm({ ...base, def: def("Form 66"), instance: inst, osbEvidence: { reference: "OSB-123", received_at: "2026-11-02" } });
+    const withEvidence = evaluateForm({ ...base, def: def("Form 79"), instance: inst, osbEvidence: { reference: "OSB-123", received_at: "2026-11-02" } });
     expect(withEvidence.status).toBe("Filed");
   });
   it("maps estate types", () => {
