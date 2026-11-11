@@ -3847,6 +3847,86 @@ export type Database = {
           },
         ]
       }
+      estate_trust_settings: {
+        Row: {
+          account_holder: string | null
+          account_type: string
+          approved_fee_amount: number | null
+          created_at: string
+          estate_id: string
+          fee_basis: string | null
+          levy_basis: number | null
+          pooled_coverage_confirmed_by: string | null
+          pooled_coverage_confirmed_on: string | null
+          proposal_approved: boolean | null
+          proposal_filed: boolean | null
+          schedule_amount: number | null
+          schedule_first_due: string | null
+          schedule_frequency: string | null
+          schedule_last_due: string | null
+          second_approval_limit: number | null
+          superintendent_approval_date: string | null
+          superintendent_approval_ref: string | null
+          tariff_base: number | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          account_holder?: string | null
+          account_type?: string
+          approved_fee_amount?: number | null
+          created_at?: string
+          estate_id: string
+          fee_basis?: string | null
+          levy_basis?: number | null
+          pooled_coverage_confirmed_by?: string | null
+          pooled_coverage_confirmed_on?: string | null
+          proposal_approved?: boolean | null
+          proposal_filed?: boolean | null
+          schedule_amount?: number | null
+          schedule_first_due?: string | null
+          schedule_frequency?: string | null
+          schedule_last_due?: string | null
+          second_approval_limit?: number | null
+          superintendent_approval_date?: string | null
+          superintendent_approval_ref?: string | null
+          tariff_base?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          account_holder?: string | null
+          account_type?: string
+          approved_fee_amount?: number | null
+          created_at?: string
+          estate_id?: string
+          fee_basis?: string | null
+          levy_basis?: number | null
+          pooled_coverage_confirmed_by?: string | null
+          pooled_coverage_confirmed_on?: string | null
+          proposal_approved?: boolean | null
+          proposal_filed?: boolean | null
+          schedule_amount?: number | null
+          schedule_first_due?: string | null
+          schedule_frequency?: string | null
+          schedule_last_due?: string | null
+          second_approval_limit?: number | null
+          superintendent_approval_date?: string | null
+          superintendent_approval_ref?: string | null
+          tariff_base?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_trust_settings_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: true
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       estates: {
         Row: {
           address: string | null
