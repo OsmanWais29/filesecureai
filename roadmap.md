@@ -12,3 +12,14 @@ Statement CSV import and reviewed matching; atomic posting; authenticated paymen
 - [x] Add levy, tariff, administrative-disbursement, proposal-schedule and historical negative-balance checks with missing-evidence abstention.
 - [ ] Enable live tariff/levy/schedule assessments — blocked by verified realization deductions, fee authority, levy-bearing payment basis and bank-to-schedule links.
 - [x] Gate evidence-backed SRD export and identify unavailable bank-feed / pooled-account evidence.
+
+## Estate to discharge (plan of Nov 11, 2026)
+- [x] Trust settings trustees enter and save (account type, Superintendent approval, fees, levy, proposal schedule, optional firm approval limit); checks use them.
+- [x] $5,000 two-person limit checked: not in Directive 5R8; now an optional firm setting.
+- [x] Creditor import ranks claims under BIA s.136 from the stated claim type, not the name.
+- [x] Creditor Audit tab reads the estate's real history.
+- [ ] Inverite bank feed and Finix PAD — waiting on API keys and webhook secrets.
+- [ ] Filing Centre XML download — waiting on OSB XSD schema files.
+- [ ] Creditor notices as real records and documents.
+- [ ] Meetings of creditors, dividends/unclaimed dividends, discharge and closing workflow.
+- [ ] Corporate Form 21, debtor-owed documents tracking, retention period, trustee/office filters.

@@ -35,6 +35,7 @@ import { toast } from "sonner";
 import { TrustRiskFlags } from "@/components/creditor/trust/TrustRiskFlags";
 import { TrustBalanceChip } from "@/components/creditor/trust/TrustBalanceChip";
 import { useEstateTrustLedger } from "@/hooks/useEstateTrustLedger";
+import { useEstateEvents } from "@/hooks/useEstateRecords";
 import { computeBalances, lastReconciliation, distributionBlockers } from "@/lib/trust/trustLedger";
 import { useCreditors, useCreditorStats, useCreateCreditor, useCreateClaim, CreditorWithClaim } from "@/hooks/useCreditors";
 import { useDistributions, useCreateDistribution, useUpdateDistribution } from "@/hooks/useDistributions";
@@ -56,12 +57,6 @@ const defaultStats: CreditorStats = {
   late_filings: 0,
 };
 
-// Mock audit events (would come from a hook in production)
-const mockAuditEvents = [
-  { id: 'a1', estate_id: 'e1', user_id: 'u1', actor: 'user' as const, action_type: 'create_claim', payload_hash: 'abc123def456', description: 'Created claim for TD Bank', created_at: '2024-01-20T10:00:00' },
-  { id: 'a2', estate_id: 'e1', user_id: 'u1', actor: 'system' as const, action_type: 'validate_claim', payload_hash: 'def456ghi789', previous_event_id: 'a1', description: 'AI validation completed for TD Bank claim', created_at: '2024-01-20T10:01:00' },
-  { id: 'a3', estate_id: 'e1', user_id: 'u1', actor: 'user' as const, action_type: 'approve_claim', payload_hash: 'ghi789jkl012', previous_event_id: 'a2', description: 'Claim approved for TD Bank', created_at: '2024-01-20T10:05:00' },
-];
 
 type ViewMode = 'list' | 'profile' | 'claim-form';
 
@@ -161,6 +156,8 @@ export default function CreditorManagementPage() {
   };
 
   const { ledger: trustLedger } = useEstateTrustLedger(currentEstateId);
+  const estateEvents = useEstateEvents(currentEstateId);
+  const auditEvents = (estateEvents.data ?? []).map((e: any) => ({ id: e.id, estate_id: e.estate_id, user_id: e.user_id, actor: (e.actor_type === 'system' ? 'system' : 'user') as 'user' | 'system', action_type: String(e.event_type).replace(/^estate\./, '').replace(/\./g, '_'), payload_hash: (e.evidence as any)?.hash ?? '—', description: e.reason || String(e.event_type).replace(/^estate\./, '').replace(/[._]/g, ' '), created_at: e.created_at }));
   const trustBalances = computeBalances(trustLedger);
   const trustLastRecon = lastReconciliation(trustLedger);
   const admittedClaims = creditors.filter(c => c.claim?.status === 'admitted').length;
@@ -551,7 +548,7 @@ export default function CreditorManagementPage() {
           <div className="p-6">
             <AuditTab
               estateId={currentEstateId || ''}
-              events={mockAuditEvents}
+              events={auditEvents}
               onExportAuditLog={() => toast.info('Exporting audit log')}
             />
           </div>

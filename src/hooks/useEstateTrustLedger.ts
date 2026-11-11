@@ -5,6 +5,8 @@ import { useReconciliations } from "./useEstateSchedules";
 import { ledgerFromPostings } from "@/lib/trust/persistedLedger";
 import { computeBalances, reconcile, accountingChecks, type TrustLedger, type ReceiptSource, type DisbursementKind } from "@/lib/trust/trustLedger";
 import { useEstateRow } from "./useEstateRecords";
+import { useEstateTrustSettings } from "./useEstateTrustSettings";
+import { scheduleDueToDate } from "@/lib/trust/trustLedger";
 
 export interface BankEvidenceRow {
   id: string;
@@ -25,6 +27,8 @@ export function useEstateTrustLedger(estateId?: string) {
   const payments = useDisbursements(estateId);
   const reconciliations = useReconciliations(estateId);
   const estate = useEstateRow(estateId);
+  const settingsQ = useEstateTrustSettings(estateId);
+  const settings = settingsQ.data ?? null;
   const matches = useQuery({
     queryKey: ["estate_statement_lines", estateId], enabled: Boolean(estateId),
     queryFn: async () => {
@@ -33,12 +37,12 @@ export function useEstateTrustLedger(estateId?: string) {
       return (data ?? []) as BankEvidenceRow[];
     },
   });
-  const queries = [accounts, entries, receipts, payments, reconciliations, matches, estate];
+  const queries = [accounts, entries, receipts, payments, reconciliations, matches, estate, settingsQ];
   const isLoading = Boolean(estateId) && queries.some(q => q.isLoading);
   const error = queries.find(q => q.error)?.error;
   const ledger: TrustLedger = ledgerFromPostings(entries.data ?? []);
   const account = accounts.data?.find(a => a.is_default && !a.closed_date) ?? accounts.data?.find(a => !a.closed_date);
-  if (account) ledger.account = { bank: account.institution ?? "Bank not recorded", last4: (account.account_number ?? "").slice(-4), holder: "Account holder not yet recorded", designation: "estate_specific", dualSignatureThreshold: null, openedOn: account.opened_date ?? "" };
+  if (account) ledger.account = { bank: account.institution ?? "Bank not recorded", last4: (account.account_number ?? "").slice(-4), holder: settings?.account_holder || "Account holder not yet recorded", designation: settings && settings.account_type !== "individual_estate" ? "pooled" : "estate_specific", dualSignatureThreshold: settings?.second_approval_limit ?? null, openedOn: account.opened_date ?? "" };
   ledger.receipts = ledger.receipts.map(r => {
     const source = receipts.data?.find(s => s.id === r.sourceRef);
     const allocations = source?.estate_receipt_allocations ?? [];
@@ -56,15 +60,19 @@ export function useEstateTrustLedger(estateId?: string) {
     const adjusted = reconcile(balance, Number(r.closing_statement_balance), Number(r.deposits_in_transit), Number(r.outstanding_withdrawals));
     return { id: r.id, statementDate: r.statement_end ?? "", statementBalance: Number(r.closing_statement_balance), reconciledOn: r.approval_date ?? "", reconciledBy: r.reviewer ?? "Not reviewed", ledgerBalanceAtDate: balance, ...adjusted, notes: r.status, bankEvidenceVerified: false };
   });
-  const checks = accountingChecks(ledger, { proceeding: String(estate.data?.proceeding_type ?? ""), administration: String(estate.data?.administration_type ?? ""), classificationComplete: ledger.receipts.every(r => r.source !== "other") && ledger.disbursements.every(d => d.kind !== "other"), bankFeedVerified: false, pooledCoverageVerified: false, today: new Date().toISOString().slice(0, 10) });
+  const today = new Date().toISOString().slice(0, 10);
+  const num = (k: string, v: number | null | undefined) => (v == null ? {} : { [k]: Number(v) });
+  const scheduleDue = scheduleDueToDate({ amount: settings?.schedule_amount != null ? Number(settings.schedule_amount) : null, frequency: settings?.schedule_frequency, firstDue: settings?.schedule_first_due, lastDue: settings?.schedule_last_due }, today);
+  const checks = accountingChecks(ledger, { proceeding: String(estate.data?.proceeding_type ?? ""), administration: String(estate.data?.administration_type ?? ""), classificationComplete: ledger.receipts.every(r => r.source !== "other") && ledger.disbursements.every(d => d.kind !== "other"), bankFeedVerified: false, pooledCoverageVerified: Boolean(settings && (settings.account_type === "individual_estate" || (settings.pooled_coverage_confirmed_by && settings.pooled_coverage_confirmed_on))), today, ...num("tariffBase", settings?.tariff_base), ...num("levyBasis", settings?.levy_basis), ...(settings?.proposal_filed != null ? { proposalFiled: settings.proposal_filed } : {}), ...(settings?.proposal_approved != null ? { proposalApproved: settings.proposal_approved } : {}), ...(settings?.fee_basis && settings.fee_basis !== "tariff" ? num("approvedFeeAmount", settings.approved_fee_amount) : {}), ...(scheduleDue !== undefined ? { scheduleDue, scheduleMatchedReceipts: ledger.receipts.filter(r => r.clearedOnStatement && (r.source === "pad_payment" || r.source === "surplus_income")).reduce((a, r) => a + r.amount, 0) } : {}) });
   ledger.assessmentBlockers = [
     ...(!estateId ? ["Select an estate."] : []),
     ...(isLoading ? ["Trust records are loading."] : []),
     ...(error ? ["Trust records could not be loaded."] : []),
     ...(!account ? ["No estate trust account is linked."] : []),
+    ...(!settings ? ["Trust settings (account type, fees, levy, schedule) have not been entered."] : []),
     "Distribution reserves and claim holdbacks have not been verified.",
     ...(!reconciliations.data?.some(r => r.status === "Approved" && r.statement_end) ? ["No reviewed reconciliation is on file."] : []),
     ...checks.filter(c => c.status !== "met").map(c => `${c.title}: ${c.detail}`),
   ];
-  return { ledger, balances: computeBalances(ledger), checks, bankLines: matches.data ?? [], reconciliationRecords: reconciliations.data ?? [], isLoading, error };
+  return { settings, ledger, balances: computeBalances(ledger), checks, bankLines: matches.data ?? [], reconciliationRecords: reconciliations.data ?? [], isLoading, error };
 }

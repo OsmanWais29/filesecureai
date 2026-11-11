@@ -283,6 +283,8 @@ export interface AccountingContext {
   levyBasis?: number;
   scheduleDue?: number;
   scheduleMatchedReceipts?: number;
+  /** Fee approved by court or inspectors for ordinary administrations. */
+  approvedFeeAmount?: number;
   classificationComplete: boolean;
   bankFeedVerified: boolean;
   pooledCoverageVerified: boolean;
@@ -309,7 +311,8 @@ export function accountingChecks(l: TrustLedger, c: AccountingContext): Accounti
   const cap = summary ? 100 : proposal ? 0 : null;
   add("admin-cap", "Administrative disbursement allowance", cap === null || !c.classificationComplete ? "blocked" : admin > cap ? "breach" : "met", cap === null ? "Rule 128 summary / Rule 129 consumer proposal scope does not apply; review ordinary-administration authority." : `${fmt(admin)} recorded / ${fmt(cap)} allowance. Counselling, filing, registrar fees and applicable taxes are separate permitted categories.`, summary ? "Rule 128(2)(e)" : "Rule 129(1)", rules + (summary ? "section-128.html" : "section-129.html"));
   const fees = sum(l.disbursements.filter(d => d.kind === "trustee_fee").map(d => d.amount));
-  const tariff = summary && c.tariffBase !== undefined ? summaryTrusteeTariff(c.tariffBase) : proposal && c.proposalFiled !== undefined && c.proposalApproved !== undefined && c.levyBasis !== undefined ? consumerProposalTariff(c.levyBasis, c.proposalFiled, c.proposalApproved) : null;
+  const ordinaryFee = !summary && !proposal && c.approvedFeeAmount !== undefined ? c.approvedFeeAmount : undefined;
+  const tariff = ordinaryFee !== undefined ? ordinaryFee : summary && c.tariffBase !== undefined ? summaryTrusteeTariff(c.tariffBase) : proposal && c.proposalFiled !== undefined && c.proposalApproved !== undefined && c.levyBasis !== undefined ? consumerProposalTariff(c.levyBasis, c.proposalFiled, c.proposalApproved) : null;
   add("tariff", "Trustee / administrator fees against tariff", tariff === null || !c.classificationComplete ? "blocked" : fees > tariff ? "breach" : "met", tariff === null ? "Verified realization deductions or filing/approval milestones and distributed payments are missing; ordinary estates require approved fee authority." : `${fmt(fees)} recorded / ${fmt(tariff)} tariff ceiling (before separate taxes and permitted expenses). Advance timing requires separate review.`, summary ? "Rule 128" : "Rule 129", rules + (summary ? "section-128.html" : "section-129.html"));
   const levy = sum(l.disbursements.filter(d => d.kind === "superintendent_levy").map(d => d.amount));
   const expectedLevy = c.levyBasis === undefined ? null : superintendentLevy(c.levyBasis, summary ? "summary" : c.proceeding?.includes("Proposal") ? "proposal" : "ordinary");
@@ -377,4 +380,18 @@ export function osbViewFlags(i: { balance: number; status: "active" | "closed"; 
   if (i.status === "active" && Math.abs(i.balance) < 0.01 && i.srdCount === 0) out.push({ code: "no_balance_no_srd", title: "Active estate with no balance and no SRD" });
   if (i.bankBalance != null && i.reconciledBalance != null && Math.abs(i.bankBalance - i.reconciledBalance) >= 0.01) out.push({ code: "bank_mismatch", title: "Bank balance does not match reconciled balance" });
   return out;
+}
+
+/** Total due under a proposal schedule up to `today` (inclusive). Returns undefined when the schedule is incomplete. */
+export function scheduleDueToDate(s: { amount?: number | null; frequency?: "weekly" | "biweekly" | "monthly" | null; firstDue?: string | null; lastDue?: string | null }, today: string): number | undefined {
+  if (!s.amount || !s.frequency || !s.firstDue) return undefined;
+  const end = s.lastDue && s.lastDue < today ? s.lastDue : today;
+  if (end < s.firstDue) return 0;
+  let n = 0;
+  const d = new Date(s.firstDue + "T00:00:00Z");
+  while (d.toISOString().slice(0, 10) <= end && n < 1000) {
+    n++;
+    if (s.frequency === "monthly") d.setUTCMonth(d.getUTCMonth() + 1); else d.setUTCDate(d.getUTCDate() + (s.frequency === "weekly" ? 7 : 14));
+  }
+  return round(n * s.amount);
 }

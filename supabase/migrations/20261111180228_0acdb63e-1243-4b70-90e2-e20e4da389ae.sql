@@ -1,0 +1,1 @@
+REVOKE ALL ON public.estate_trust_settings FROM anon;

@@ -1,3 +1,4 @@
+import { rankClaim, natureFromImportType } from '@/lib/creditors/s136';
 import { 
   ArrowRight, 
   Check, 
@@ -251,16 +252,16 @@ function classifyCreditor(data: Record<string, string>): AICreditorClassificatio
     suggestedType: isGovernment ? 'government' : 
       name.includes('bank') || name.includes('td') || name.includes('rbc') ? 'financial_institution' : 
       'other',
-    suggestedPriority: type.includes('secured') ? 'secured' : 
-      isGovernment ? 'preferred' : 'unsecured',
+    // BIA s.136: ranked only from the stated claim type; a creditor's name never decides priority.
+    suggestedPriority: (() => { const r = rankClaim(natureFromImportType(type)).rank; return r === 'needs_review' ? 'review' : r; })(),
     claimNature: isCRA ? 'tax' : 'general',
     isGovernment,
     governmentType: isCRA ? 'cra' : undefined,
     deemedTrustRisk: isCRA,
     confidence: 0.85,
     reasoning: isGovernment 
-      ? 'Government creditor detected - potential statutory priority applies'
-      : 'Standard commercial creditor',
+      ? 'Government creditor: Crown claims rank unsecured (BIA s.86) unless secured or a deemed trust. Review the proof of claim.'
+      : rankClaim(natureFromImportType(type)).reason,
   };
 }
 
