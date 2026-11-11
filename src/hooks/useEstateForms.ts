@@ -313,8 +313,9 @@ export const useFillFormData = (estateId?: string) => {
       const clean = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined));
       if (!Object.keys(clean).length) throw new Error("Nothing to save.");
       const { data: before } = await db.from("estates").select("*").eq("id", estateId).maybeSingle();
-      const { data, error } = await db.from("estates").update(clean).eq("id", estateId).select().single();
+      const { data, error } = await db.from("estates").update(clean).eq("id", estateId).select().maybeSingle();
       if (error) throw error;
+      if (!data) throw new Error("You don't have permission to edit this estate, so nothing was saved.");
       await logEstateEvent({ estateId, eventType: "form.data_filled", before, after: { form: formNumber, ...clean } });
       return data;
     },
