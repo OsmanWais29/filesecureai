@@ -11,7 +11,7 @@ export type FormStatus =
   | "Flagged"
   | "Signed"
   | "Filed";
-export type FormAction = "Generate" | "Remind" | "Resolve" | "Sign and file" | null;
+export type FormAction = "Generate" | "Remind" | "Resolve" | "Sign" | "Record OSB filing" | null;
 export type DataSource = "Estate record" | "Ledger" | "Debtor portal" | "Creditor register" | "Estate dates";
 
 export interface FormDef {
@@ -30,9 +30,10 @@ export interface FormDef {
 export const VERSION_CUTOVER = "2024-09-16";
 
 export const FORM_DEFS: FormDef[] = [
-  { number: "Form 1", title: "Assignment for the General Benefit of Creditors", appliesTo: ["bankruptcy"], requires: ["identity"], deadline: { days: 0, label: "Filed with the assignment", citation: "BIA s.49" }, sources: ["Estate record"] },
-  { number: "Form 47", title: "Consumer Proposal", appliesTo: ["consumer_proposal"], requires: ["identity", "dates"], deadline: { days: 0, label: "Filed with the proposal", citation: "BIA s.66.13" }, sources: ["Estate record", "Estate dates"] },
-  { number: "Form 67", title: "Notice to Creditors", appliesTo: ["bankruptcy"], requires: ["creditors"], deadline: { days: 5, label: "Within 5 days of bankruptcy", citation: "BIA s.102(1)" }, sources: ["Estate record", "Creditor register"] },
+  { number: "Form 1", title: "Assignment for the General Benefit of Creditors", appliesTo: ["bankruptcy"], requires: ["identity"], deadline: { days: 0, label: "Accompanies the assignment when filed", citation: "BIA s.49(1)–(2)" }, sources: ["Estate record"] },
+  { number: "Form 47", title: "Consumer Proposal", appliesTo: ["consumer_proposal"], requires: ["identity", "dates"], sources: ["Estate record", "Estate dates"] },
+  { number: "s.66.14 report", title: "Administrator's report and creditor package (proposal, statement of affairs, report, proof of claim form)", appliesTo: ["consumer_proposal"], requires: ["identity", "creditors"], deadline: { days: 10, label: "Within 10 days after filing the consumer proposal", citation: "BIA s.66.14" }, sources: ["Estate record", "Creditor register"] },
+  { number: "Form 67", title: "Notice to Creditors", appliesTo: ["bankruptcy"], requires: ["creditors"], deadline: { days: 5, label: "Within 5 days after the trustee’s appointment (notice of bankruptcy and first meeting)", citation: "BIA s.102(1)" }, sources: ["Estate record", "Creditor register"] },
   { number: "Form 66", title: "Statement of Affairs", appliesTo: ["bankruptcy", "consumer_proposal"], requires: ["identity", "assets", "creditors"], sources: ["Estate record", "Creditor register"] },
   { number: "Form 31", title: "Proof of Claim", appliesTo: ["bankruptcy", "consumer_proposal"], requires: ["creditors"], waitsOn: "creditor", sources: ["Creditor register"] },
   { number: "Form 65", title: "Monthly Income and Expense Statement", appliesTo: ["bankruptcy"], requires: ["income"], monthly: true, waitsOn: "debtor", sources: ["Debtor portal"] },
@@ -81,6 +82,8 @@ export interface FormInput {
   /** Sources holding AI-extracted / bank-fed values not yet confirmed. */
   unverifiedSources: DataSource[];
   instance?: { generated_at: string | null; filed_at: string | null; signing_date: string | null };
+  /** Evidence that the OSB (or recipient) received the filing. Required for "Filed". */
+  osbEvidence?: { reference: string; received_at: string } | null;
   acks: FlagAck[];
   today: Date;
 }
@@ -114,8 +117,19 @@ export const evaluateForm = (i: FormInput): FormEvaluation => {
     const only = i.def.appliesTo.map((k) => KIND_LABEL[k]).join(" and ");
     return { ...base, bucket: "na", detail: "", action: null, naReason: `${i.def.number} applies to ${only} only.` };
   }
-  if (i.instance?.filed_at) {
-    return { ...base, bucket: "filed", status: "Filed", detail: "OSB response not connected", action: null };
+  if (i.instance?.filed_at && i.osbEvidence?.reference) {
+    return { ...base, bucket: "filed", status: "Filed", detail: `OSB evidence: ${i.osbEvidence.reference} (${i.osbEvidence.received_at})`, action: null };
+  }
+  if (i.instance?.signing_date || i.instance?.filed_at) {
+    return {
+      ...base,
+      bucket: "due",
+      status: "Signed",
+      detail: i.instance?.filed_at
+        ? "Marked filed without OSB evidence — record the acknowledgement to confirm filing"
+        : "Signed internally — not filed until OSB evidence is recorded",
+      action: "Record OSB filing",
+    };
   }
 
   const blockers = i.def.requires.filter((id) => i.failing[id]).map((id) => i.failing[id]);
@@ -134,14 +148,14 @@ export const evaluateForm = (i: FormInput): FormEvaluation => {
   }
   if (openFlags.length) return { ...ev, bucket: "due", status: "Flagged", detail: openFlags[0].message, action: "Resolve" };
   if (i.instance?.generated_at) {
-    return { ...ev, bucket: "due", status: i.instance.signing_date ? "Signed" : "Ready", detail: "Generated — ready to sign and file", action: "Sign and file" };
+    return { ...ev, bucket: "due", status: "Ready", detail: "Generated — ready for trustee signature", action: "Sign" };
   }
   return { ...ev, bucket: "due", status: "Ready", detail: "All data present", action: "Generate" };
 };
 
-/** Why Sign and file must refuse, or null when it may proceed. */
+/** Why Sign must refuse, or null when it may proceed. */
 export const signRefusal = (e: FormEvaluation): string | null => {
-  if (e.bucket === "na" || e.bucket === "filed") return "This form is not open for filing.";
+  if (e.bucket === "na" || e.bucket === "filed" || e.status === "Signed") return "This form is not open for signing.";
   if (e.blockers.length || !e.version.known) return `Cannot file yet: ${e.detail}.`;
   if (e.openFlags.length) return `Fix or acknowledge ${e.openFlags.length} flag(s) with a written reason before filing.`;
   return null;

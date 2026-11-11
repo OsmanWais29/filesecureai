@@ -91,7 +91,9 @@ export const useEstateForms = (estateId?: string) => {
     return FORM_DEFS.map((def) => {
       const instance = instances.find((i) => i.form_number === def.number);
       const acks = readAcks(instance?.validation_messages);
-      const evaluation = evaluateForm({ def, kind, filingDate, failing, unverifiedSources, instance, acks, today });
+      const ev = (instance?.parameters as any)?.osb_evidence;
+      const osbEvidence = ev?.reference ? { reference: String(ev.reference), received_at: String(ev.received_at ?? "") } : null;
+      const evaluation = evaluateForm({ def, kind, filingDate, failing, unverifiedSources, instance, acks, today, osbEvidence });
       return {
         ...def,
         instance,
@@ -146,9 +148,10 @@ export const useSaveFormInstance = (estateId?: string) => {
         parameters: values as Record<string, unknown>,
         signing_date: values.signingDate ? String(values.signingDate) : null,
         validation_state: item.blockers.length ? "blocked" : "passed",
-        status: file ? "filed" : generate ? "generated" : "draft",
+        status: file ? "signed" : generate ? "generated" : "draft",
         generated_at: generate || file ? (item.instance?.generated_at ?? now) : item.instance?.generated_at ?? null,
-        filed_at: file ? now : item.instance?.filed_at ?? null,
+        // Signing is internal preparation; filed_at is only set when OSB evidence is recorded.
+        filed_at: item.instance?.filed_at ?? null,
       };
       const query = item.instance
         ? db.from("estate_form_instances").update(row).eq("id", item.instance.id)
@@ -167,21 +170,21 @@ export const useSaveFormInstance = (estateId?: string) => {
             user_id: auth.user.id,
             metadata: {
               estate_id: estateId,
-              role: "filed",
+              role: "signed",
               form_number: item.number,
               form_instance_id: data.id,
               version: item.evaluation.version.label,
-              osb_status: "not_connected",
+              osb_status: "not_submitted",
             },
           })
           .select("id")
           .single();
-        if (docError) throw new Error(`Form filed but saving the copy to Documents failed: ${docError.message}`);
+        if (docError) throw new Error(`Form signed but saving the copy to Documents failed: ${docError.message}`);
         await db.from("estate_form_instances").update({ document_id: doc.id }).eq("id", data.id);
       }
       await logEstateEvent({
         estateId,
-        eventType: `estate.form.${file ? "filed" : generate ? "generated" : "saved"}`,
+        eventType: `estate.form.${file ? "signed" : generate ? "generated" : "saved"}`,
         after: { form: item.number, status: row.status },
       });
       return data as FormInstanceRow;
@@ -191,7 +194,7 @@ export const useSaveFormInstance = (estateId?: string) => {
       qc.invalidateQueries({ queryKey: ["estate-events", estateId] });
       qc.invalidateQueries({ queryKey: ["estate-filed-documents", estateId] });
       toast({
-        title: vars.file ? "Form filed" : vars.generate ? "Form generated" : "Parameters saved",
+        title: vars.file ? "Form signed — record OSB evidence to mark it filed" : vars.generate ? "Form generated" : "Parameters saved",
       });
     },
     onError: (e: Error) =>
@@ -259,3 +262,34 @@ export const useEstateFiledDocuments = (estateId?: string) =>
       return (data ?? []) as FiledDocumentRow[];
     },
   });
+
+/** Confirms filing only with evidence the OSB received it (acknowledgement / reference number). */
+export const useRecordOsbFiling = (estateId?: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ item, reference, receivedAt }: { item: FormCatalogueItem; reference: string; receivedAt: string }) => {
+      if (!estateId || !item.instance) throw new Error("Sign the form before recording its filing.");
+      if (!item.instance.signing_date) throw new Error("The form must be signed first.");
+      if (reference.trim().length < 3) throw new Error("Enter the OSB acknowledgement or reference number.");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(receivedAt)) throw new Error("Enter the date the OSB acknowledged receipt.");
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth.user) throw new Error("You must be signed in to work on estates.");
+      const osb_evidence = { reference: reference.trim(), received_at: receivedAt, recorded_by: auth.user.id, recorded_at: new Date().toISOString() };
+      const { error } = await db
+        .from("estate_form_instances")
+        .update({ status: "filed", filed_at: new Date(`${receivedAt}T12:00:00Z`).toISOString(), parameters: { ...(item.instance.parameters ?? {}), osb_evidence } })
+        .eq("id", item.instance.id);
+      if (error) throw error;
+      if (item.instance.document_id) {
+        await db.from("documents").update({ metadata: { estate_id: estateId, role: "filed", form_number: item.number, form_instance_id: item.instance.id, version: item.evaluation.version.label, osb_status: "acknowledged", osb_reference: osb_evidence.reference } }).eq("id", item.instance.document_id);
+      }
+      await logEstateEvent({ estateId, eventType: "estate.form.filed", after: { form: item.number, ...osb_evidence } });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["estate_form_instances", estateId] });
+      qc.invalidateQueries({ queryKey: ["estate-filed-documents", estateId] });
+      toast({ title: "Filing confirmed", description: "OSB evidence saved to the audit trail." });
+    },
+    onError: (e: Error) => toast({ title: "Could not record filing", description: e.message, variant: "destructive" }),
+  });
+};

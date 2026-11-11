@@ -33,8 +33,20 @@ describe("formEngine", () => {
     expect(flagged.status).toBe("Flagged");
     expect(signRefusal(flagged)).toMatch(/acknowledge 1 flag/);
     const ackd = evaluateForm({ ...base, def: def("Form 78"), unverifiedSources: ["Ledger"], acks: [{ flag: "unverified:Ledger", reason: "Checked statement", by: "u", at: "t" }], instance: { generated_at: "x", filed_at: null, signing_date: null } });
-    expect(ackd.action).toBe("Sign and file");
+    expect(ackd.action).toBe("Sign");
     expect(signRefusal(ackd)).toBeNull();
+  });
+  it("consumer proposal report is due 10 days after filing (BIA s.66.14)", () => {
+    const e = evaluateForm({ ...base, kind: "consumer_proposal", def: def("s.66.14 report") });
+    expect(e.deadline).toBe("2024-10-11");
+  });
+  it("a signed form is never Filed without OSB evidence", () => {
+    const inst = { generated_at: "x", filed_at: "2026-11-01", signing_date: "2026-11-01" };
+    const noEvidence = evaluateForm({ ...base, def: def("Form 66"), instance: inst });
+    expect(noEvidence.status).toBe("Signed");
+    expect(noEvidence.action).toBe("Record OSB filing");
+    const withEvidence = evaluateForm({ ...base, def: def("Form 66"), instance: inst, osbEvidence: { reference: "OSB-123", received_at: "2026-11-02" } });
+    expect(withEvidence.status).toBe("Filed");
   });
   it("maps estate types", () => {
     expect(estateKind("consumer_proposal")).toBe("consumer_proposal");

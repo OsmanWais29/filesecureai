@@ -12,6 +12,7 @@ import {
   useAcknowledgeFlag,
   useEstateFiledDocuments,
   useEstateForms,
+  useRecordOsbFiling,
   useRemindForForm,
   useSaveFormInstance,
 } from "@/hooks/useEstateForms";
@@ -43,7 +44,7 @@ const FormRow = ({ item, onOpen, onAction, busy }: { item: FormCatalogueItem; on
       </button>
       {e.status && <Badge variant={pillVariant(e.status)}>{e.status}</Badge>}
       {e.action && (
-        <Button size="sm" variant={e.action === "Sign and file" ? "default" : "outline"} onClick={onAction} disabled={busy}>
+        <Button size="sm" variant={e.action === "Sign" || e.action === "Record OSB filing" ? "default" : "outline"} onClick={onAction} disabled={busy}>
           {e.action}
         </Button>
       )}
@@ -87,6 +88,9 @@ export const FormsTab = ({ estateId }: { estateId?: string }) => {
   const save = useSaveFormInstance(estateId);
   const ack = useAcknowledgeFlag(estateId);
   const remind = useRemindForForm(estateId);
+  const recordFiling = useRecordOsbFiling(estateId);
+  const [osbRef, setOsbRef] = useState("");
+  const [osbDate, setOsbDate] = useState("");
   const active = items.find((i) => i.number === activeNo) ?? null;
 
   const groups = useMemo(() => {
@@ -104,7 +108,8 @@ export const FormsTab = ({ estateId }: { estateId?: string }) => {
   const runAction = (item: FormCatalogueItem) => {
     const a = item.evaluation.action;
     if (a === "Generate") save.mutate({ item, values: formToValues(item), generate: true });
-    else if (a === "Sign and file") {
+    else if (a === "Record OSB filing") setActiveNo(item.number);
+    else if (a === "Sign") {
       const refusal = signRefusal(item.evaluation);
       if (refusal) setActiveNo(item.number);
       else save.mutate({ item, values: { ...formToValues(item), signingDate: new Date().toISOString().slice(0, 10) }, generate: true, file: true });
@@ -118,7 +123,7 @@ export const FormsTab = ({ estateId }: { estateId?: string }) => {
   const docFor = (i: FormCatalogueItem) => filedDocs.find((d) => d.id === i.instance?.document_id);
 
   return (
-    <Register title="Forms" description="Grouped by what needs doing. Versions, status and the next step are worked out from the estate record — you review and sign.">
+    <Register title="Forms" description="Grouped by what needs doing. Deadlines cite the BIA. A form only counts as filed once OSB evidence is recorded.">
       {isLoading && <p className="text-sm text-muted-foreground">Loading forms…</p>}
       <div className="space-y-6">
         <Group title="Due now" hint="Needed at this stage, nearest deadline first." empty={!groups.due.length}>
@@ -127,13 +132,13 @@ export const FormsTab = ({ estateId }: { estateId?: string }) => {
         <Group title="Waiting on others" hint="Held up by the debtor or by creditors." empty={!groups.waiting.length}>
           <div className="space-y-2">{groups.waiting.map(row)}</div>
         </Group>
-        <Group title="Filed" hint="Newest first. OSB responses appear here once filing is connected." empty={!groups.filed.length}>
+        <Group title="Filed" hint="Only forms with recorded OSB evidence. Signed forms stay in Due now until then." empty={!groups.filed.length}>
           <div className="space-y-2">
             {groups.filed.map((i) => (
               <div key={i.number} className="space-y-1">
                 {row(i)}
                 <p className="pl-3 text-xs text-muted-foreground">
-                  Filed {i.instance?.filed_at?.slice(0, 10)} · {docFor(i) ? `Saved to Documents as "${docFor(i)!.title}"` : "Copy not linked"}
+                  OSB acknowledged {i.instance?.filed_at?.slice(0, 10)} · {docFor(i) ? `Saved to Documents as "${docFor(i)!.title}"` : "Copy not linked"}
                 </p>
               </div>
             ))}
@@ -210,15 +215,26 @@ export const FormsTab = ({ estateId }: { estateId?: string }) => {
                     {!e.blockers.length && !e.flags.length && e.version.known && <p className="text-muted-foreground">No flags.</p>}
                     <p className="text-xs text-muted-foreground">OSB XML format check: Not available yet.</p>
                   </section>
+                  {e.status === "Signed" && (
+                    <section className="space-y-2 rounded-md border p-3">
+                      <h4 className="font-semibold">Record OSB filing</h4>
+                      <p className="text-xs text-muted-foreground">Signed internally. It is not shown as filed until you enter the OSB acknowledgement (e.g. the e-filing reference) and the date received.</p>
+                      <input className="w-full rounded-md border bg-background px-2 py-1 text-sm" placeholder="OSB acknowledgement / reference number" value={osbRef} onChange={(ev) => setOsbRef(ev.target.value)} />
+                      <input type="date" className="w-full rounded-md border bg-background px-2 py-1 text-sm" value={osbDate} onChange={(ev) => setOsbDate(ev.target.value)} />
+                      <Button size="sm" disabled={recordFiling.isPending || osbRef.trim().length < 3 || !osbDate} onClick={() => recordFiling.mutate({ item: active, reference: osbRef, receivedAt: osbDate }, { onSuccess: () => { setOsbRef(""); setOsbDate(""); } })}>
+                        Confirm filed
+                      </Button>
+                    </section>
+                  )}
                   {e.bucket === "filed" && (
                     <section>
-                      <h4 className="font-semibold">OSB response</h4>
-                      <p className="text-muted-foreground">OSB response not connected.</p>
+                      <h4 className="font-semibold">OSB evidence</h4>
+                      <p>{e.detail}</p>
                     </section>
                   )}
                   <div className="flex flex-wrap gap-2 border-t pt-4">
                     <Button variant="outline" size="sm" onClick={() => previewPdf(active)}>Preview PDF</Button>
-                    {e.bucket !== "filed" && e.bucket !== "na" && (
+                    {e.action !== "Record OSB filing" && e.bucket !== "filed" && e.bucket !== "na" && (
                       <Button
                         size="sm"
                         disabled={save.isPending}
@@ -227,12 +243,12 @@ export const FormsTab = ({ estateId }: { estateId?: string }) => {
                           save.mutate({ item: active, values: { ...formToValues(active), signingDate: new Date().toISOString().slice(0, 10) }, generate: true, file: true });
                         }}
                       >
-                        Sign and file
+                        Sign
                       </Button>
                     )}
                   </div>
-                  {refusal && e.bucket !== "filed" && e.bucket !== "na" && <p className="text-xs text-destructive">{refusal}</p>}
-                  <p className="text-xs text-muted-foreground">Signing records the filing in SecureFiles and saves the copy to Documents. Sending to the OSB isn't connected yet.</p>
+                  {refusal && e.status !== "Signed" && e.bucket !== "filed" && e.bucket !== "na" && <p className="text-xs text-destructive">{refusal}</p>}
+                  <p className="text-xs text-muted-foreground">Signing saves the signed copy to Documents. Submission to the OSB happens outside SecureFiles for now; record its acknowledgement here.</p>
                 </div>
               </>
             );
