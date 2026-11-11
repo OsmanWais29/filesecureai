@@ -1,53 +1,45 @@
-# Trust Account: what is built and how it helps the trustee
+# Estate to discharge: missing pieces
 
-This is an explanation only. Approving it changes nothing in the app.
+## Findings
+- **$5,000 two-person approval:** not in Directive 5R8. The directive requires the licensed trustee to approve each payment batch, with no dollar limit. The $5,000 figure becomes an optional firm setting, off by default. Every payment run still needs the trustee's approval.
+- **OSB filing:** confirmed as an XML download from the Filing Centre. Nothing is sent to the OSB from the app.
 
-## Where it lives
-Each estate has its own **Trust Account** section in the estate menu, next to Financials. Creditor screens show the same balance and link back to it, so the money is entered only once, in the estate.
+## Phase 1: Trust account details trustees can enter and save
+A "Trust settings" panel in each estate's Trust Account, saved to the estate:
+- Account type (individual estate, consolidated summary, consolidated proposal), with the Superintendent's approval reference and date for consolidated accounts
+- Trustee fee basis (tariff or court-approved), fee rate, and the levy rate and base
+- Proposal payment schedule (amount, frequency, first and last date)
+- Optional firm second-approval limit
+Checks that now say "Not checked" start running once these are filled in. Every change goes into the audit trail.
 
-## The five pages
+## Phase 2: Bank feed and PAD (Inverite and Finix)
+- Inverite: connect the trust bank account and pull transactions as read-only bank evidence; the trustee matches them in Month-end.
+- Finix: collect PAD payments and record each settlement or return as a receipt.
+- **Needs from you:** Inverite and Finix API keys (sandbox first), plus webhook signing secrets.
 
-1. **Today**: a short list of things that need you now. It shows the balance, when the account was last reconciled, and any warnings, such as a missing reconciliation, a deposit not made on time, an outstanding levy, or a possible overdraft.
-2. **Ledger**: every receipt and disbursement, with a running balance. Receipts include PAD payments, surplus income, tax refunds and asset sales. Disbursements include levy, fees and dividends. Each line shows where it came from and whether a bank transaction backs it. You never type the balance. It is always calculated from the entries.
-3. **Payments**: preparing and approving money going out. A payment is blocked if it would take the estate below zero, go over the admin allowance (the $100 lump sum under Rule 128, or $0 for consumer proposals under Rule 129), or skip a required approval.
-4. **Month-end**: monthly reconciliation of the bank statement against the ledger. Deposits in transit and uncleared cheques are listed, and any difference is flagged. A countdown follows Directive 5R8: reconcile within 45 days, and notify the OSB if an error is still unresolved after 75 days.
-5. **Reports**: the Statement of Receipts and Disbursements (SRD), built from the ledger and never typed. It exports only once the checks pass. Draft exports carry a digital fingerprint (SHA-256) and are logged in the audit trail.
+## Phase 3: Filing Centre XML download
+- Make the XML download work for each form once the OSB schema file is loaded in the mapping studio.
+- **Needs from you:** the OSB XML schema files (XSD) for the forms you file.
 
-Entry tools (record a receipt, record a payment, set up the account, attach a bank statement) open in a side panel, so you never leave the page.
+## Phase 4: Creditors
+- Sort claims under BIA s.136 by claim type and security, not by creditor name.
+- Notices create real records and documents (filing acknowledgement, missing proof, meeting, disallowance, dividend).
+- The creditor Audit tab reads the real estate history.
 
-## Automatic checks
-- Superintendent's levy on dividends
-- Trustee fees against the tariff
-- Admin allowances under Rules 128 and 129
-- Proposal payments against the payment schedule
-- No estate ever going negative
-- Account type allowed for this kind of proceeding
-- Stale cheques (older than 6 months) and late deposits
+## Phase 5: Meetings, dividends, discharge and closing
+- Meeting of creditors: schedule, quorum, attendance, votes, inspectors, minutes.
+- Dividends: proposed from admitted claims and trust funds, approved by the trustee, then paid. Unclaimed dividends get tracked and sent to the Superintendent.
+- Discharge: track automatic discharge dates, creditor or OSB objections, hearings and outcome.
+- Closing: final statement of receipts and disbursements, taxation, and trustee discharge checklist.
 
-When information is missing, such as no bank feed, no tariff basis or no payment schedule, the check shows "Not checked" instead of guessing.
+## Phase 6: Corporate and firm controls
+- Corporate versions of Form 21.
+- Track documents still owed by the debtor, with reminders through the client portal.
+- Record-keeping period on closed files; trustee/office assignment filters.
 
-## Protections in the database
-- Every posted entry must balance.
-- An entry can only use bank accounts that belong to its estate.
-- Balances cannot go negative.
-- Posted entries cannot be edited. Mistakes are fixed with reversals, so there is a full trail.
+## Order
+Phases 1 and 4 to 6 can be built now. Phases 2 and 3 wait on the keys and schema files.
 
-## Distribution link
-The Distribution "Available" amount comes from the Trust Account. "Approve" is blocked when:
-- the payout is more than the balance,
-- no claims are admitted,
-- the account is not reconciled, or
-- reserves are missing.
-
-## Benefits for the trustee
-- One place to enter money, with no double entry between estate and creditor screens.
-- Balances and the SRD are right by construction, and the OSB can trace them to entries.
-- The deadlines in Directive 5R8 are tracked for you.
-- Mistakes are blocked before money moves, not found at audit time.
-- Month-end only asks you to deal with the differences, not to re-check every line.
-
-## Not yet in place
-- **Live bank feed:** not connected. Bank evidence is attached by hand for now.
-- **Pooled-account membership and tariff inputs:** not recorded yet, so the checks that need them show "Not checked".
-- **$5,000 dual-approval threshold:** a placeholder that hasn't been checked against the directive.
-- **Saving with a signed-in user:** recording an entry, reloading the estate and seeing the saved entry hasn't been tested yet.
+## Technical notes
+- New settings live in an estate-scoped trust settings table with staff-only access rules; checks in `trustLedger.ts` read them.
+- Inverite and Finix run in backend functions with keys stored as secrets; webhooks are signature-verified.
