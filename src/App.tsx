@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster"
 import { SessionProvider } from './contexts/SessionContext';
 import TaskManagementPage from './pages/TaskManagementPage';
@@ -17,7 +17,6 @@ import FilingCentrePage from './pages/filing/FilingCentrePage';
 import FilingDetailPage from './pages/filing/FilingDetailPage';
 import MappingStudioPage from './pages/filing/MappingStudioPage';
 import DocumentsPage from './pages/documents/DocumentsPage';
-import ConverterPage from './pages/ConverterPage';
 import SAFAPage from './pages/SAFA/SAFAPage';
 import IncomeExpensePage from './pages/income-expense/IncomeExpensePage';
 import AuditTrailPage from './pages/audit/AuditTrailPage';
@@ -86,7 +85,7 @@ function App() {
           <Route path="/trustee/income-expense" element={<AuthCheck><IncomeExpensePage /></AuthCheck>} />
           <Route path="/trustee/audit" element={<AuthCheck><AuditTrailPage /></AuthCheck>} />
           <Route path="/trustee/audit/production" element={<AuthCheck><ProductionAudit /></AuthCheck>} />
-          <Route path="/trustee/converter" element={<AuthCheck><ConverterPage /></AuthCheck>} />
+          <Route path="/trustee/converter" element={<Navigate to="/filing" replace />} />
           <Route path="/trustee/safa" element={<AuthCheck><SAFAPage /></AuthCheck>} />
           <Route path="/trustee/tasks" element={<AuthCheck><TaskManagementPage /></AuthCheck>} />
           <Route path="/trustee/workflows" element={<AuthCheck><WorkflowPage /></AuthCheck>} />
@@ -110,7 +109,7 @@ function App() {
           <Route path="/" element={<AuthCheck><HomePage /></AuthCheck>} />
           <Route path="/crm" element={<AuthCheck><CRMPage /></AuthCheck>} />
           <Route path="/documents" element={<AuthCheck><DocumentsPage /></AuthCheck>} />
-          <Route path="/converter" element={<AuthCheck><ConverterPage /></AuthCheck>} />
+          <Route path="/converter" element={<Navigate to="/filing" replace />} />
           <Route path="/income-expense" element={<AuthCheck><IncomeExpensePage /></AuthCheck>} />
           <Route path="/audit" element={<AuthCheck><AuditTrailPage /></AuthCheck>} />
           <Route path="/audit/production" element={<AuthCheck><ProductionAudit /></AuthCheck>} />

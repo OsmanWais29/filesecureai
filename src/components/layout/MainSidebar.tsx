@@ -16,7 +16,7 @@ import {
   Bell,
   DollarSign,
   Activity,
-  FileCode,
+
   User,
   MessageSquare,
   LifeBuoy,
@@ -48,7 +48,6 @@ export const MainSidebar = () => {
     ]},
     { label: "4. File with OSB", items: [
       { name: "Filing Centre", href: "/filing", icon: Send },
-      { name: "PDF to XML Converter", href: "/converter", icon: FileCode },
     ]},
     { label: "5. Oversight", items: [
       { name: "Audit Trail", href: "/audit", icon: Activity },
