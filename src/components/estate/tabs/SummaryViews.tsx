@@ -20,7 +20,9 @@ interface PageProps {
   description?: string;
 }
 
-export const FinancialsSummary = ({ estateId, title, description }: PageProps) => {
+export { FinancialsCockpit as FinancialsSummary } from "@/components/estate/tabs/FinancialsCockpit";
+
+export const LegacyFinancialsSummary = ({ estateId, title, description }: PageProps) => {
   const trust = useTrustPosition(estateId);
   const { data: assets = [] } = useEstateAssets(estateId);
   const { data: income = [] } = useEstateIncomePeriods(estateId);
