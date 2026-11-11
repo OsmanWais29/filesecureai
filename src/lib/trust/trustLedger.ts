@@ -395,3 +395,46 @@ export function scheduleDueToDate(s: { amount?: number | null; frequency?: "week
   }
   return round(n * s.amount);
 }
+
+// ---- Design refresh helpers (Today tiles, deposit split, month-end, audit package) ----
+
+/** Difference between a bank deposit and the instalments selected against it. Post only at 0. */
+export function depositSplit(deposit: number, lines: { selected: boolean; amount: number }[]) {
+  const selected = sum(lines.filter(l => l.selected).map(l => Number(l.amount) || 0));
+  const difference = round(deposit - selected);
+  const reasons: string[] = [];
+  if (!(deposit > 0)) reasons.push("Enter the deposit amount");
+  if (!lines.some(l => l.selected)) reasons.push("Select at least one estate");
+  if (difference !== 0) reasons.push(`Difference must be $0.00 (now ${fmt(difference)})`);
+  return { selected, difference, canPost: reasons.length === 0, reasons };
+}
+
+/** Three-way month-end proof: adjusted bank = book = sum of estates. */
+export function threeWay(i: { statementBalance: number | null; depositsInTransit: number; outstandingCheques: number; bookBalance: number | null; estateBalances: number | null }) {
+  const adjustedBank = i.statementBalance === null ? null : round(i.statementBalance + i.depositsInTransit - i.outstandingCheques);
+  const known = [adjustedBank, i.bookBalance, i.estateBalances].every(v => v !== null);
+  const difference = known ? round(Math.max(adjustedBank!, i.bookBalance!, i.estateBalances!) - Math.min(adjustedBank!, i.bookBalance!, i.estateBalances!)) : null;
+  return { adjustedBank, difference, state: !known ? "blocked_missing" as const : difference === 0 ? "ready" as const : "blocked_difference" as const };
+}
+
+export interface ReadinessItem { key: string; label: string; ok: boolean; fix?: string }
+/** Audit package readiness. Package is Draft while any item is open. */
+export function auditReadiness(l: TrustLedger, checks: AccountingCheck[], today: string): { items: ReadinessItem[]; draft: boolean; open: number } {
+  const last = lastReconciliation(l);
+  const recent = Boolean(last && last.reconciledBy && daysBetween(last.statementDate, today) <= RECON_MAX_AGE_DAYS);
+  const notChecked = checks.filter(c => c.status === "blocked").length;
+  const items: ReadinessItem[] = [
+    { key: "account", label: "Trust bank account recorded", ok: Boolean(l.account), fix: "accounts" },
+    { key: "recon", label: last ? `Reconciled through ${last.statementDate}` : "No month reconciled yet", ok: recent, fix: "monthend" },
+    { key: "matched", label: "Every entry matched to the bank", ok: runningTrustLedger(l).every(r => r.matched), fix: "ledger" },
+    { key: "srd", label: "SRD built from the ledger", ok: true },
+    { key: "checks", label: notChecked ? `${notChecked} rule${notChecked > 1 ? "s" : ""} Not checked` : "All rule checks ran", ok: notChecked === 0, fix: "checks" },
+  ];
+  const open = items.filter(i => !i.ok).length;
+  return { items, draft: open > 0, open };
+}
+
+/** Count of PAD receipts that were reversed (returned). */
+export function missedPayments(l: TrustLedger) {
+  return l.receipts.filter(r => r.source === "pad_payment" && r.reversedById).length;
+}

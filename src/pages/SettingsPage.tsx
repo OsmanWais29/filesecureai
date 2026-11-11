@@ -2,6 +2,7 @@
 import React from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { SettingsPanel } from '@/components/settings/SettingsPanel';
+import { FirmPaymentsSettings } from '@/components/settings/FirmPaymentsSettings';
 
 const SettingsPage = () => {
   return (
@@ -12,6 +13,7 @@ const SettingsPage = () => {
           <p className="text-gray-600 mt-1">Configure your application settings.</p>
         </div>
         <SettingsPanel />
+        <FirmPaymentsSettings />
       </div>
     </MainLayout>
   );
