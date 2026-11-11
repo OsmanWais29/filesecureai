@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { jsPDF } from "jspdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,39 +66,69 @@ export const FormDetailsEditor = ({ item, estate, saving, onSave }: { item: Form
   );
 };
 
-/** Draft PDF populated from the estate record. Not an official OSB rendering. */
-export const buildFormPdf = (item: FormCatalogueItem, estate?: Row | null): string => {
-  const doc = new jsPDF();
+const VERSIONED = new Set(["Form 31", "Form 65", "Form 79"]);
+const PRE2024_AVAILABLE = new Set(["Form 65", "Form 79"]);
+
+/** Which official OSB template file applies, chosen from the form version. */
+export const templateFor = (item: FormCatalogueItem): { url: string | null; note: string } => {
+  const n = item.number.replace("Form ", "");
+  const v = item.evaluation.version;
+  if (!VERSIONED.has(item.number)) return { url: `/osb-forms/form-${n}.pdf`, note: "Official OSB form (2009-amendment version)." };
+  if (!v.known) return { url: null, note: "Filing date missing, so SecureFiles can't tell which version of this form applies. Add the filing date above." };
+  if (v.label.startsWith("Pre-2024")) {
+    return PRE2024_AVAILABLE.has(item.number)
+      ? { url: `/osb-forms/form-${n}-pre2024.pdf`, note: "Official pre-2024 OSB version (estate filed before Sept 16, 2024)." }
+      : { url: null, note: "The OSB doesn't publish a downloadable pre-2024 version of this form, so no official template can be shown." };
+  }
+  return { url: `/osb-forms/form-${n}-2024.pdf`, note: "Official OSB version for estates filed on or after Sept 16, 2024." };
+};
+
+/** Official OSB template with a draft stamp on every page, plus a data sheet of estate values. */
+export const buildFormPdf = async (item: FormCatalogueItem, estate?: Row | null): Promise<string> => {
+  const { PDFDocument, StandardFonts, rgb, degrees } = await import("pdf-lib");
+  const tpl = templateFor(item);
+  if (!tpl.url) throw new Error(tpl.note);
+  const bytes = await (await fetch(tpl.url)).arrayBuffer();
+  const doc = await PDFDocument.load(bytes, { ignoreEncryption: true });
+  const font = await doc.embedFont(StandardFonts.HelveticaBold);
+  const plain = await doc.embedFont(StandardFonts.Helvetica);
+  const missing = missingFields(item.number, estate);
   const e = item.evaluation;
-  const w = doc.internal.pageSize.getWidth();
-  doc.setFontSize(9);
-  doc.text("Bankruptcy and Insolvency Act — Office of the Superintendent of Bankruptcy", 14, 12);
-  doc.setFontSize(15);
-  doc.text(`${item.number} — ${item.title}`, 14, 22, { maxWidth: w - 28 });
-  doc.setFontSize(9);
-  doc.text(`${e.version.label}${e.period ? ` · Period: ${e.period}` : ""} · Status: ${e.status ?? "Not applicable"}`, 14, 34);
-  let y = 44;
-  doc.setFontSize(10);
+  const incomplete = missing.length > 0 || e.blockers.length > 0 || e.openFlags.length > 0;
+  const signed = Boolean(item.instance?.signing_date);
+  const stamp = incomplete ? `INCOMPLETE DRAFT — ${missing.length + e.blockers.length + e.openFlags.length} item(s) outstanding` : signed ? "SIGNED COPY — NOT FILED UNTIL OSB ACKNOWLEDGES" : "DRAFT — NOT SIGNED";
+  const red = rgb(0.75, 0.1, 0.1);
+  for (const page of doc.getPages()) {
+    const { width, height } = page.getSize();
+    page.drawRectangle({ x: 0, y: height - 18, width, height: 18, color: incomplete ? red : rgb(0.3, 0.3, 0.3), opacity: 0.85 });
+    page.drawText(`SecureFiles · ${stamp}`, { x: 10, y: height - 13, size: 9, font, color: rgb(1, 1, 1) });
+    if (incomplete || !signed) {
+      page.drawText(incomplete ? "INCOMPLETE DRAFT" : "DRAFT", { x: width * 0.18, y: height * 0.3, size: incomplete ? 54 : 80, font, color: red, opacity: 0.15, rotate: degrees(45) });
+    }
+  }
+  const sheet = doc.insertPage(0);
+  const { width, height } = sheet.getSize();
+  let y = height - 50;
+  const line = (t: string, size = 10, f = plain, color = rgb(0, 0, 0)) => { sheet.drawText(t, { x: 40, y, size, font: f, color, maxWidth: width - 80 }); y -= size + 8; };
+  line(`${item.number} — ${item.title}`, 14, font);
+  line(`${e.version.label}. ${tpl.note}`, 9);
+  line(stamp, 11, font, incomplete ? red : rgb(0, 0, 0));
+  y -= 6;
+  line("Estate details to transcribe onto the official form:", 10, font);
   fieldsFor(item.number).forEach((f) => {
     const v = String(estate?.[f.key] ?? "").trim();
-    doc.setTextColor(90);
-    doc.text(f.label, 14, y);
-    doc.setTextColor(v ? 0 : 200, 0, 0);
-    doc.text(v || "[MISSING]", 80, y);
-    doc.setDrawColor(200);
-    doc.line(80, y + 1.5, w - 14, y + 1.5);
-    y += 9;
+    sheet.drawText(f.label, { x: 40, y, size: 10, font: plain, color: rgb(0.35, 0.35, 0.35) });
+    sheet.drawText(v || "MISSING", { x: 220, y, size: 10, font: v ? plain : font, color: v ? rgb(0, 0, 0) : red });
+    y -= 18;
   });
-  doc.setTextColor(0);
-  y += 4;
-  doc.text(`Data sources: ${item.sources.join(", ")}`, 14, y);
-  if (e.deadline) doc.text(`Due ${e.deadline} (${item.deadline?.citation ?? ""})`, 14, (y += 7));
-  y += 14;
-  doc.text("Signature of trustee / administrator", 14, y);
-  doc.line(80, y + 1.5, w - 14, y + 1.5);
-  doc.text(`Date: ${item.instance?.signing_date ?? "________________"}`, 14, (y += 10));
-  doc.setFontSize(8);
-  doc.setTextColor(150);
-  doc.text("DRAFT PREVIEW — layout is not the official OSB form. Values in red are missing.", 14, 285);
-  return doc.output("bloburl").toString();
+  if (e.blockers.length || e.openFlags.length) {
+    y -= 6;
+    line("Other outstanding checks:", 10, font);
+    [...e.blockers, ...e.openFlags.map((f) => f.message)].forEach((b) => line(`• ${b}`, 9));
+  }
+  y -= 6;
+  line("The pages that follow are the official OSB form, unchanged apart from the draft stamp.", 8);
+  line("The OSB publishes these forms as flat PDFs, so values are not typed into the boxes automatically.", 8);
+  const out = await doc.save();
+  return URL.createObjectURL(new Blob([out as BlobPart], { type: "application/pdf" }));
 };

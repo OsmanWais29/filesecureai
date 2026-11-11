@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { FormDetailsEditor, buildFormPdf, missingFields } from "@/components/estate/forms/FormDetails";
+import { FormDetailsEditor, buildFormPdf, missingFields, templateFor } from "@/components/estate/forms/FormDetails";
 import { useEstateRow } from "@/hooks/useEstateRecords";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ import {
 } from "@/hooks/useEstateForms";
 import { FormStatus, signRefusal, sortDue } from "@/lib/forms/formEngine";
 import { ChevronDown } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 const pillVariant = (s?: FormStatus): "default" | "secondary" | "destructive" | "outline" => {
   if (s === "Ready" || s === "Signed") return "default";
@@ -162,11 +163,11 @@ export const FormsTab = ({ estateId }: { estateId?: string }) => {
                     <div className="flex items-center justify-between gap-2">
                       <h4 className="font-semibold">PDF preview</h4>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => setPdfUrl(buildFormPdf(active, estate as Record<string, any> | null))}>{pdfUrl ? "Refresh preview" : "Show preview"}</Button>
+                        <Button variant="outline" size="sm" disabled={!templateFor(active).url} onClick={() => buildFormPdf(active, estate as Record<string, any> | null).then(setPdfUrl).catch((err) => toast({ title: "Preview unavailable", description: err.message, variant: "destructive" }))}>{pdfUrl ? "Refresh preview" : "Show preview"}</Button>
                         {pdfUrl && <Button variant="ghost" size="sm" onClick={() => window.open(pdfUrl, "_blank")}>Open in new tab</Button>}
                       </div>
                     </div>
-                    {pdfUrl ? <iframe title={`${active.number} preview`} src={pdfUrl} className="h-[520px] w-full rounded-md border" /> : <p className="text-xs text-muted-foreground">Shows the form filled with this estate's details. Missing values appear in red.</p>}
+                    {pdfUrl ? <iframe title={`${active.number} preview`} src={pdfUrl} className="h-[520px] w-full rounded-md border" /> : <p className="text-xs text-muted-foreground">{templateFor(active).note} {templateFor(active).url ? "Opens the official form with a draft stamp and a first page listing this estate's details; missing values show in red." : ""}</p>}
                   </section>
                   <section>
                     <h4 className="font-semibold">Form version</h4>
