@@ -18,6 +18,7 @@ import { useOsbFilings, useOsbSchemas, type OsbFiling } from "@/hooks/useOsbFili
 import { STATUS_LABEL, type FilingStatus } from "@/lib/filing/types";
 import { actionBucket, byRisk, isDueSoon, isOverdue } from "@/lib/filing/queue";
 import { cn } from "@/lib/utils";
+import { QuickRecordOsb } from "@/components/filing/QuickRecordOsb";
 
 export const statusVariant = (s: FilingStatus): "default" | "secondary" | "destructive" | "outline" =>
   s === "accepted" ? "default" : s === "rejected" ? "destructive" : s === "signed" || s === "checked" ? "secondary" : "outline";
@@ -42,7 +43,8 @@ const Row = ({ f, t }: { f: OsbFiling; t: string }) => {
         <p className={cn("mt-1 text-xs", issue || f.status === "rejected" ? "text-destructive" : "text-muted-foreground")}>{blocker}</p>
       </div>
       <Badge variant={statusVariant(f.status)}>{STATUS_LABEL[f.status]}</Badge>
-      <Button asChild size="sm" variant={actionBucket(f) === "sign" ? "default" : "outline"}><Link to={`/filing/${f.id}`}>{actionLabel(f)}</Link></Button>
+      {actionBucket(f) === "osb" ? <QuickRecordOsb filing={f} /> :
+        <Button asChild size="sm" variant={actionBucket(f) === "sign" ? "default" : "outline"}><Link to={`/filing/${f.id}`}>{actionLabel(f)}</Link></Button>}
     </div>
   );
 };
@@ -303,7 +305,7 @@ const FilingCentrePage = () => {
                   </ol>
                 </CardContent></Card>
               ) : open.length + plan.length === 0 ? (
-                <p className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">Everything due is filed or signed. Nothing outstanding across {scopedEstates.length} estates.</p>
+                <p className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">Everything due through {new Date(Date.UTC(+t.slice(0, 4), +t.slice(5, 7), 0)).toLocaleDateString("en-CA", { month: "short", day: "numeric", timeZone: "UTC" })} is filed or signed, across {scopedEstates.length} estates.</p>
               ) : (
                 <>
                   {open.slice().sort(byRisk(t)).map((f) => <Row key={f.id} f={f} t={t} />)}
