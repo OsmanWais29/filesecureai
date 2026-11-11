@@ -1,3 +1,4 @@
+import { FirmFinancials } from "./FirmFinancials";
 import React, { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -170,6 +171,7 @@ export const PostureAnalytics: React.FC = () => {
 
         {/* SECTION B */}
         <TabsContent value="firm" className="space-y-4">
+          <FirmFinancials />
           <Card>
             <CardHeader className="pb-3">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

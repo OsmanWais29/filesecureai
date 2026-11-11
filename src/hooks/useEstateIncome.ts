@@ -22,9 +22,11 @@ const int = (v: RecordValues[string]) => (v == null || v === "" ? null : Math.tr
  * thresholds by household size. Index 0 is unused.
  */
 const STANDARDS: Record<string, number[]> = {
-  "2024": [0, 2515, 3131, 3849, 4674, 5300, 5978, 6656],
-  "2025": [0, 2578, 3209, 3945, 4791, 5433, 6127, 6822],
-  "2026": [0, 2645, 3293, 4048, 4916, 5574, 6286, 6999],
+  // Verified Nov 2026 against Directive 11R2-2026 Appendix A (issued Mar 27, 2026)
+  // and the prior-year tables. Last entry is "7 or more persons".
+  "2024": [0, 2610, 3249, 3995, 4850, 5501, 6204, 6907],
+  "2025": [0, 2666, 3318, 4080, 4953, 5618, 6336, 7054],
+  "2026": [0, 2716, 3381, 4157, 5047, 5724, 6456, 7188],
 };
 
 export const REQUIRED_PERCENTAGE = 50;
@@ -32,11 +34,8 @@ export const REQUIRED_PERCENTAGE = 50;
 export const standardThreshold = (version: string | null | undefined, household: number) => {
   const table = STANDARDS[String(version ?? "2026")] ?? STANDARDS["2026"];
   const size = Math.max(1, Math.trunc(household || 1));
-  if (size < table.length) return table[size];
-  // Each additional member beyond the published table adds the last increment.
-  const last = table[table.length - 1];
-  const step = last - table[table.length - 2];
-  return last + step * (size - (table.length - 1));
+  // The OSB table's last row covers "7 or more persons" — no extrapolation.
+  return table[Math.min(size, table.length - 1)];
 };
 
 export interface SurplusResult {

@@ -13,6 +13,7 @@ import { useScheduleRows } from "@/hooks/useEstateSchedules";
 import { useTrustPosition } from "@/hooks/useEstateAccounting";
 import { useEstateCreditors } from "@/hooks/useEstateCreditors";
 import { useClientDocsToReview, useClientIncomeReports, useImportClientReport } from "@/hooks/useFinancialsWorkbench";
+import { ReadIncomeDocs } from "@/components/estate/tabs/ReadIncomeDocs";
 import { useCreateStaffRequest } from "@/data/clientPortal/staff";
 import { MONTHS, automationStats, estimatedPayout, incomeTrend, needsYou, paymentPerformance, type NeedItem } from "@/lib/financials/financialsEngine";
 
@@ -121,6 +122,7 @@ export const FinancialsCockpit = ({ estateId, title, description }: { estateId?:
                 <Button size="sm" variant="outline" onClick={() => go("documents", "all")}>Review</Button>
               </div>
             )}
+            <ReadIncomeDocs estateId={estateId} />
             {items.map((i) => (
               <div key={i.id} className="flex items-center justify-between gap-3 rounded-md border p-3">
                 <div className="flex items-start gap-3">
