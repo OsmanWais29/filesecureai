@@ -28,23 +28,38 @@ export const MainSidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
 
-  const navigationItems = [
-    { name: "Dashboard", href: "/", icon: Home },
-    { name: "Estates", href: "/estates", icon: Landmark },
-    { name: "Documents", href: "/documents", icon: FileText },
-    { name: "Creditors", href: "/creditors", icon: Landmark },
-    { name: "Filing Centre", href: "/filing", icon: Send },
-    { name: "PDF to XML Converter", href: "/converter", icon: FileCode },
-    { name: "SAFA", href: "/safa", icon: MessageSquare },
-    { name: "CRM", href: "/trustee/crm", icon: Users },
-    { name: "Smart Income Expense", href: "/income-expense", icon: DollarSign },
-    { name: "Audit Trail", href: "/audit", icon: Activity },
-    { name: "Analytics", href: "/analytics", icon: BarChart3 },
-    { name: "Notifications", href: "/notifications", icon: Bell },
-    { name: "Messages", href: "/messages", icon: MessageSquare },
-    { name: "Support", href: "/trustee/support", icon: LifeBuoy },
-    { name: "Settings", href: "/settings", icon: Settings },
-    { name: "Profile", href: "/profile", icon: User },
+  // Ordered by the client cycle: intake → administer → creditors & money → file → close & review.
+  const navigationGroups = [
+    { label: "Today", items: [
+      { name: "Dashboard", href: "/", icon: Home },
+      { name: "Notifications", href: "/notifications", icon: Bell },
+      { name: "Messages", href: "/messages", icon: MessageSquare },
+    ]},
+    { label: "1. Intake", items: [
+      { name: "Clients & Leads", href: "/trustee/crm", icon: Users },
+    ]},
+    { label: "2. Administer estate", items: [
+      { name: "Estates", href: "/estates", icon: Landmark },
+      { name: "Documents", href: "/documents", icon: FileText },
+      { name: "Income & Expense", href: "/income-expense", icon: DollarSign },
+    ]},
+    { label: "3. Creditors & payouts", items: [
+      { name: "Creditors", href: "/creditors", icon: Landmark },
+    ]},
+    { label: "4. File with OSB", items: [
+      { name: "Filing Centre", href: "/filing", icon: Send },
+      { name: "PDF to XML Converter", href: "/converter", icon: FileCode },
+    ]},
+    { label: "5. Oversight", items: [
+      { name: "Audit Trail", href: "/audit", icon: Activity },
+      { name: "Analytics", href: "/analytics", icon: BarChart3 },
+    ]},
+    { label: "Help & account", items: [
+      { name: "SAFA Assistant", href: "/safa", icon: MessageSquare },
+      { name: "Support", href: "/trustee/support", icon: LifeBuoy },
+      { name: "Settings", href: "/settings", icon: Settings },
+      { name: "Profile", href: "/profile", icon: User },
+    ]},
   ];
 
   const toggleSidebar = () => {
@@ -94,27 +109,39 @@ export const MainSidebar = () => {
 
         {/* Navigation */}
         <ScrollArea className="flex-1 py-4">
-          <nav className="space-y-1 px-3">
-            {navigationItems.map((item) => {
-              const isActive = location.pathname === item.href || 
-                             (item.href === "/" && location.pathname === "/");
-              return (
-                <Link key={item.name} to={item.href}>
-                  <Button
-                    variant={isActive ? "secondary" : "ghost"}
-                    className={cn(
-                      "w-full justify-start gap-3 h-10",
-                      collapsed && "justify-center px-2",
-                      isActive && "bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 border border-blue-200"
-                    )}
-                    title={collapsed ? item.name : undefined}
-                  >
-                    <item.icon className="h-4 w-4 flex-shrink-0" />
-                    {!collapsed && <span>{item.name}</span>}
-                  </Button>
-                </Link>
-              );
-            })}
+          <nav className="space-y-4 px-3">
+            {navigationGroups.map((group) => (
+              <div key={group.label} className="space-y-1">
+                {!collapsed ? (
+                  <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    {group.label}
+                  </p>
+                ) : (
+                  <div className="mx-2 border-t border-border" />
+                )}
+                {group.items.map((item) => {
+                  const isActive = item.href === "/"
+                    ? location.pathname === "/"
+                    : location.pathname === item.href || location.pathname.startsWith(item.href + "/");
+                  return (
+                    <Link key={item.href} to={item.href}>
+                      <Button
+                        variant={isActive ? "secondary" : "ghost"}
+                        className={cn(
+                          "w-full justify-start gap-3 h-9",
+                          collapsed && "justify-center px-2",
+                          isActive && "bg-primary/10 text-primary border border-primary/20"
+                        )}
+                        title={collapsed ? item.name : undefined}
+                      >
+                        <item.icon className="h-4 w-4 flex-shrink-0" />
+                        {!collapsed && <span>{item.name}</span>}
+                      </Button>
+                    </Link>
+                  );
+                })}
+              </div>
+            ))}
           </nav>
         </ScrollArea>
 
