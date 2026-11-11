@@ -41,7 +41,6 @@ import {
 } from "@/components/estate/tabs/SummaryViews";
 import {
   DocumentVersionsTab,
-  GeneratedDocumentsTab,
 } from "@/components/estate/tabs/GeneratedDocumentsTab";
 import { useEstate } from "@/data/estateStore";
 import { useEstateNavBadges } from "@/hooks/useEstateSignals";
@@ -55,7 +54,8 @@ const EstateWorkspacePage = () => {
   // Trust Account used to live under Financials; old links land on the new section.
   const legacyTrust = params.get("m") === "financials" && params.get("p") === "trust";
   const module = legacyTrust ? "trust" : params.get("m") ?? "overview";
-  const page = legacyTrust ? "today" : params.get("p") ?? getModule(module).pages[0].id;
+  const legacyGenerated = module === "documents" && params.get("p") === "generated";
+  const page = legacyTrust ? "today" : legacyGenerated ? "forms" : params.get("p") ?? getModule(module).pages[0].id;
   const [safaCollapsed, setSafaCollapsed] = useState(false);
   const badges = useEstateNavBadges(estateId);
   const [drilldown, setDrilldown] = useState<DrilldownScope | null>(null);
@@ -152,13 +152,11 @@ const EstateWorkspacePage = () => {
         return withHeading(<CreditorDividends estateId={estateId} />);
 
       case "documents:all":
-        return withHeading(<DocumentsTab />);
+        return withHeading(<DocumentsTab estateId={estateId} />);
       case "documents:required":
         return withHeading(<RequiredDocumentsRegister estateId={estateId} />);
       case "documents:forms":
         return withHeading(<FormsTab estateId={estateId} />);
-      case "documents:generated":
-        return <GeneratedDocumentsTab estateId={estateId} {...heading} />;
       case "documents:versions":
         return <DocumentVersionsTab {...heading} />;
 

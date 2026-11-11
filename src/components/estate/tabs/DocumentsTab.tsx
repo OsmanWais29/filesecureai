@@ -3,9 +3,37 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { documents } from "@/data/estateWorkspace";
+import { useEstateFiledDocuments } from "@/hooks/useEstateForms";
 
-export const DocumentsTab = () => (
+const ROLE_LABEL: Record<string, string> = { draft: "Draft", signed: "Signed", filed: "Filed", osb_response: "OSB response", received: "Received" };
+
+const EstateFilings = ({ estateId }: { estateId?: string }) => {
+  const { data = [], isLoading } = useEstateFiledDocuments(estateId);
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">This estate's saved documents</CardTitle>
+        <p className="text-xs text-muted-foreground">Filed forms are saved here automatically when you sign and file.</p>
+      </CardHeader>
+      <CardContent className="space-y-2 text-sm">
+        {isLoading && <p className="text-muted-foreground">Loading…</p>}
+        {!isLoading && data.length === 0 && <p className="text-muted-foreground">Nothing saved yet.</p>}
+        {data.map((d) => (
+          <div key={d.id} className="flex flex-wrap items-center gap-2 rounded-md border p-2">
+            <span className="font-medium">{d.title}</span>
+            <Badge variant="outline">{ROLE_LABEL[d.metadata?.role] ?? "Received"}</Badge>
+            {d.metadata?.version && <Badge variant="secondary">{d.metadata.version}</Badge>}
+            <span className="ml-auto text-xs text-muted-foreground">{d.created_at.slice(0, 10)}</span>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+};
+
+export const DocumentsTab = ({ estateId }: { estateId?: string }) => (
   <div className="space-y-4">
+    <EstateFilings estateId={estateId} />
     <div className="flex items-center justify-between">
       <p className="text-sm text-muted-foreground">
         Documents are the evidence behind estate values — each extraction links back to the field it supports.

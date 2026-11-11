@@ -6,26 +6,22 @@ import { toast } from "@/hooks/use-toast";
 import type { RecordValues } from "@/components/estate/forms/RecordForm";
 import { logEstateEvent } from "@/hooks/useEstateRecords";
 import { useEstateCompliance } from "@/hooks/useEstateCompliance";
+import { useEstateDates, useEstateRow } from "@/hooks/useEstateRecords";
+import {
+  DataSource,
+  FORM_DEFS,
+  FlagAck,
+  FormDef,
+  FormEvaluation,
+  estateKind,
+  evaluateForm,
+  signRefusal,
+} from "@/lib/forms/formEngine";
 
 const db = supabase as unknown as { from: (table: string) => any };
 
-export interface FormCatalogueEntry {
-  number: string;
-  title: string;
-  /** Compliance rule ids that must pass before the form can be generated. */
-  requires: string[];
-}
-
-export const FORM_CATALOGUE: FormCatalogueEntry[] = [
-  { number: "Form 1", title: "Assignment for the General Benefit of Creditors", requires: ["identity"] },
-  { number: "Form 31", title: "Proof of Claim", requires: ["creditors"] },
-  { number: "Form 47", title: "Consumer Proposal", requires: ["identity", "dates"] },
-  { number: "Form 65", title: "Monthly Income and Expense Statement", requires: ["income"] },
-  { number: "Form 66", title: "Statement of Affairs", requires: ["identity", "assets", "creditors"] },
-  { number: "Form 67", title: "Notice to Creditors", requires: ["creditors"] },
-  { number: "Form 78", title: "Statement of Receipts and Disbursements", requires: ["reconciliation"] },
-  { number: "Form 82", title: "Trustee's Report on Bankrupt's Application for Discharge", requires: ["counselling", "income"] },
-];
+export type FormCatalogueEntry = FormDef;
+export const FORM_CATALOGUE = FORM_DEFS;
 
 export interface FormInstanceRow {
   id: string;
@@ -38,6 +34,9 @@ export interface FormInstanceRow {
   signing_date: string | null;
   generated_at: string | null;
   filed_at: string | null;
+  document_id?: string | null;
+  validation_messages?: unknown;
+  created_at?: string;
 }
 
 export interface FormCatalogueItem extends FormCatalogueEntry {
@@ -45,7 +44,14 @@ export interface FormCatalogueItem extends FormCatalogueEntry {
   status: string;
   validation: "Passed" | "Blocked";
   blockers: string[];
+  evaluation: FormEvaluation;
+  acks: FlagAck[];
 }
+
+const readAcks = (v: unknown): FlagAck[] =>
+  Array.isArray(v) ? (v.filter((x) => x && typeof x === "object" && "flag" in x) as FlagAck[]) : [];
+
+const FILING_DATE_TYPES = ["Insolvency Date", "Date Assignment Filed", "Date Proposal Filed", "Filing Date"];
 
 export const useFormInstances = (estateId?: string) =>
   useQuery({
@@ -62,33 +68,41 @@ export const useFormInstances = (estateId?: string) =>
     },
   });
 
-/** Merges the static catalogue with persisted instances and live compliance gates. */
+/** Merges the catalogue with persisted instances, live compliance gates and the form engine. */
 export const useEstateForms = (estateId?: string) => {
   const { data: instances = [], isLoading } = useFormInstances(estateId);
   const { rules } = useEstateCompliance(estateId);
+  const { data: estate } = useEstateRow(estateId);
+  const { data: dates = [] } = useEstateDates(estateId);
 
   const items = useMemo<FormCatalogueItem[]>(() => {
-    const failing = new Set(rules.filter((r) => r.state !== "pass").map((r) => r.id));
-    return FORM_CATALOGUE.map((entry) => {
-      const instance = instances.find((i) => i.form_number === entry.number);
-      const blockers = entry.requires
-        .filter((id) => failing.has(id))
-        .map((id) => rules.find((r) => r.id === id)?.rule ?? id);
+    const row = estate as Record<string, any> | null | undefined;
+    const failing: Record<string, string> = {};
+    rules.filter((r) => r.state !== "pass").forEach((r) => (failing[r.id] = r.rule));
+    const filingRow = dates.find((d) => d.date_value && FILING_DATE_TYPES.includes(d.date_type));
+    const filingDate: string | null = row?.insolvency_date ?? filingRow?.date_value ?? null;
+    const unverifiedSources: DataSource[] = dates.some(
+      (d) => d.date_value && /extract|ai|bank/i.test(d.source_type ?? "") && !(d as any).confirmed_by,
+    )
+      ? ["Estate dates"]
+      : [];
+    const kind = estateKind(row?.estate_type);
+    const today = new Date();
+    return FORM_DEFS.map((def) => {
+      const instance = instances.find((i) => i.form_number === def.number);
+      const acks = readAcks(instance?.validation_messages);
+      const evaluation = evaluateForm({ def, kind, filingDate, failing, unverifiedSources, instance, acks, today });
       return {
-        ...entry,
+        ...def,
         instance,
-        status: instance?.filed_at
-          ? "Filed"
-          : instance?.generated_at
-            ? "Generated"
-            : instance
-              ? "Draft"
-              : "Not started",
-        validation: blockers.length ? "Blocked" : "Passed",
-        blockers,
+        acks,
+        evaluation,
+        status: evaluation.status ?? "Not applicable",
+        validation: evaluation.blockers.length ? "Blocked" : "Passed",
+        blockers: evaluation.blockers,
       };
     });
-  }, [instances, rules]);
+  }, [instances, rules, estate, dates]);
 
   return { items, isLoading };
 };
@@ -116,6 +130,10 @@ export const useSaveFormInstance = (estateId?: string) => {
       file?: boolean;
     }) => {
       if (!estateId) throw new Error("No estate selected.");
+      if (file) {
+        const refusal = signRefusal(item.evaluation);
+        if (refusal) throw new Error(refusal);
+      }
       if (generate && item.blockers.length) {
         throw new Error(`Blocked by: ${item.blockers.join(", ")}`);
       }
@@ -139,6 +157,28 @@ export const useSaveFormInstance = (estateId?: string) => {
             .insert({ ...row, estate_id: estateId, user_id: auth.user.id });
       const { data, error } = await query.select().single();
       if (error) throw error;
+      if (file && !item.instance?.document_id) {
+        // File the signed copy into the estate's Documents automatically.
+        const { data: doc, error: docError } = await db
+          .from("documents")
+          .insert({
+            title: `${item.number} — ${item.title}${item.evaluation.period ? ` (${item.evaluation.period})` : ""}`,
+            type: "estate_form",
+            user_id: auth.user.id,
+            metadata: {
+              estate_id: estateId,
+              role: "filed",
+              form_number: item.number,
+              form_instance_id: data.id,
+              version: item.evaluation.version.label,
+              osb_status: "not_connected",
+            },
+          })
+          .select("id")
+          .single();
+        if (docError) throw new Error(`Form filed but saving the copy to Documents failed: ${docError.message}`);
+        await db.from("estate_form_instances").update({ document_id: doc.id }).eq("id", data.id);
+      }
       await logEstateEvent({
         estateId,
         eventType: `estate.form.${file ? "filed" : generate ? "generated" : "saved"}`,
@@ -149,6 +189,7 @@ export const useSaveFormInstance = (estateId?: string) => {
     onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: ["estate_form_instances", estateId] });
       qc.invalidateQueries({ queryKey: ["estate-events", estateId] });
+      qc.invalidateQueries({ queryKey: ["estate-filed-documents", estateId] });
       toast({
         title: vars.file ? "Form filed" : vars.generate ? "Form generated" : "Parameters saved",
       });
@@ -157,3 +198,64 @@ export const useSaveFormInstance = (estateId?: string) => {
       toast({ title: "Form action failed", description: e.message, variant: "destructive" }),
   });
 };
+/** Acknowledge a flag with a written reason; stored on the form instance and audit-logged. */
+export const useAcknowledgeFlag = (estateId?: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ item, flag, reason }: { item: FormCatalogueItem; flag: string; reason: string }) => {
+      if (!estateId) throw new Error("No estate selected.");
+      if (reason.trim().length < 5) throw new Error("Write a reason of at least a few words.");
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth.user) throw new Error("You must be signed in to work on estates.");
+      const ack: FlagAck = { flag, reason: reason.trim(), by: auth.user.id, at: new Date().toISOString() };
+      const acks = [...item.acks, ack];
+      const { error } = item.instance
+        ? await db.from("estate_form_instances").update({ validation_messages: acks }).eq("id", item.instance.id)
+        : await db.from("estate_form_instances").insert({
+            estate_id: estateId,
+            user_id: auth.user.id,
+            form_number: item.number,
+            title: item.title,
+            status: "draft",
+            validation_state: "flagged",
+            parameters: {},
+            validation_messages: acks,
+          });
+      if (error) throw error;
+      await logEstateEvent({ estateId, eventType: "estate.form.flag_acknowledged", after: { form: item.number, ...ack } });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["estate_form_instances", estateId] });
+      toast({ title: "Flag acknowledged", description: "Your reason was saved to the audit trail." });
+    },
+    onError: (e: Error) => toast({ title: "Could not acknowledge", description: e.message, variant: "destructive" }),
+  });
+};
+
+/** Logs a reminder request; no outbound messaging is connected yet. */
+export const useRemindForForm = (estateId?: string) =>
+  useMutation({
+    mutationFn: async (item: FormCatalogueItem) => {
+      if (!estateId) throw new Error("No estate selected.");
+      await logEstateEvent({ estateId, eventType: "estate.form.reminder_requested", after: { form: item.number, waiting_on: item.waitsOn } });
+    },
+    onSuccess: () => toast({ title: "Reminder logged", description: "Automatic sending to the debtor or creditor isn't connected yet." }),
+    onError: (e: Error) => toast({ title: "Reminder failed", description: e.message, variant: "destructive" }),
+  });
+
+export interface FiledDocumentRow { id: string; title: string; created_at: string; metadata: Record<string, any> | null }
+
+export const useEstateFiledDocuments = (estateId?: string) =>
+  useQuery({
+    queryKey: ["estate-filed-documents", estateId],
+    enabled: Boolean(estateId),
+    queryFn: async (): Promise<FiledDocumentRow[]> => {
+      const { data, error } = await db
+        .from("documents")
+        .select("id,title,created_at,metadata")
+        .eq("metadata->>estate_id", estateId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as FiledDocumentRow[];
+    },
+  });

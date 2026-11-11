@@ -92,8 +92,7 @@ export const ESTATE_MODULES: EstateModule[] = [
     pages: [
       { id: "all", label: "All Documents", description: "Every document supporting estate values." },
       { id: "required", label: "Required", description: "Outstanding statutory document requirements." },
-      { id: "forms", label: "Forms", description: "Compliance-gated OSB form catalogue." },
-      { id: "generated", label: "Generated", description: "Forms generated or filed for this estate." },
+      { id: "forms", label: "Forms", description: "What to file next, what is waiting, and what has been filed." },
       { id: "versions", label: "Versions", description: "Version and extraction history per document." },
     ],
   },
