@@ -147,7 +147,7 @@ export const useEstateSignals = (estateId?: string) => {
               ? `Unreconciled difference ${money(Number(r.difference))}.`
               : "Reconciliation has not been completed.",
           source: "Rule engine · Directive 5R",
-          to: { module: "financials", page: "trust", focus: String(r.id) },
+          to: { module: "trust", page: "today", focus: String(r.id) },
         })
       );
 
@@ -160,7 +160,7 @@ export const useEstateSignals = (estateId?: string) => {
         title: `${undeposited} receipt(s) not deposited`,
         detail: "Undeposited trust receipts block the bank reconciliation.",
         source: "Rule engine · trust accounting",
-        to: { module: "financials", page: "trust" },
+        to: { module: "trust", page: "today" },
       });
     }
 
@@ -173,7 +173,7 @@ export const useEstateSignals = (estateId?: string) => {
         title: `${uncleared} disbursement(s) uncleared`,
         detail: "Outstanding payments must clear before the period reconciles.",
         source: "Rule engine · trust accounting",
-        to: { module: "financials", page: "trust" },
+        to: { module: "trust", page: "today" },
       });
     }
 

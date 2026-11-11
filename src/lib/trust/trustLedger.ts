@@ -329,3 +329,52 @@ export function srdEvidenceStatus(l: TrustLedger, checks: AccountingCheck[]) {
   if (!l.receipts.length && !l.disbursements.length) blockers.push("No posted transactions are available.");
   return { ready: blockers.length === 0, blockers, srd: buildSRD(l) };
 }
+
+// ------------------------------------------------ Trustee "Today" helpers (5R8)
+
+export type TrustAccountType = "consolidated_summary" | "consolidated_proposal" | "individual_estate" | "trust_transfer" | "pre_filing";
+
+/** 5R8: a consolidated account may only hold the administration type it was approved for. */
+export function accountTypeAllowed(type: TrustAccountType, proceeding: "summary" | "ordinary" | "proposal"): { ok: boolean; reason?: string } {
+  if (type === "trust_transfer") return { ok: false, reason: "A trust transfer account cannot hold estate balances; money must move on without delay." };
+  if (type === "pre_filing") return { ok: false, reason: "Pre-filing deposits are not estate funds until the proceeding is registered." };
+  if (type === "consolidated_summary" && proceeding !== "summary") return { ok: false, reason: "Only summary administrations may sit in the summary consolidated account." };
+  if (type === "consolidated_proposal" && proceeding !== "proposal") return { ok: false, reason: "Only consumer proposals may sit in the proposal consolidated account." };
+  return { ok: true };
+}
+
+/** Countdown for the month's reconciliation: 45 days to sign, 75 days before written OSB notice of errors. */
+export function reconciliationClock(statementDate: string, today: string, signed: boolean) {
+  const age = daysBetween(statementDate, today);
+  const daysLeft = RECON_MAX_AGE_DAYS - age;
+  const state: "signed" | "on_track" | "due_soon" | "overdue" | "notice_required" =
+    signed ? "signed" : age > RECON_ERROR_NOTICE_DAYS ? "notice_required" : age > RECON_MAX_AGE_DAYS ? "overdue" : daysLeft <= 10 ? "due_soon" : "on_track";
+  return { age, daysLeft, state };
+}
+
+/** 5R8 EFT: payment and remittance information must go out within 72 hours. */
+export function remittanceOverdue(paidAt: string, remittanceSentAt: string | null, now: string) {
+  const end = remittanceSentAt ? new Date(remittanceSentAt).getTime() : new Date(now).getTime();
+  return (end - new Date(paidAt).getTime()) / 3_600_000 > 72;
+}
+
+/** Payments are prevented, not flagged afterwards. Returns plain-language reasons. */
+export function paymentBlockers(balance: number, amount: number, opts: { adminSoFar?: number; adminCap?: number | null; isAdmin?: boolean; hasSchedule3?: boolean; electronic?: boolean } = {}): string[] {
+  const out: string[] = [];
+  if (amount <= 0) out.push("Enter an amount above $0.");
+  if (round(balance - amount) < 0) out.push(`This estate would go negative by ${fmt(round(amount - balance))} if this payment runs.`);
+  if (opts.isAdmin && opts.adminCap != null && round((opts.adminSoFar ?? 0) + amount) > opts.adminCap)
+    out.push(`Administrative disbursements would exceed the ${fmt(opts.adminCap)} allowance.`);
+  if (opts.electronic && opts.hasSchedule3 === false) out.push("Creditor has no Schedule 3 consent on file for electronic payment.");
+  return out;
+}
+
+/** What the OSB's banking-data analysis looks for. */
+export function osbViewFlags(i: { balance: number; status: "active" | "closed"; srdCount: number; bankBalance: number | null; reconciledBalance: number | null }) {
+  const out: { code: string; title: string }[] = [];
+  if (i.balance < 0) out.push({ code: "negative", title: "Negative balance in an open estate" });
+  if (i.status === "closed" && Math.abs(i.balance) >= 0.01) out.push({ code: "closed_with_funds", title: "Closed estate still holds money" });
+  if (i.status === "active" && Math.abs(i.balance) < 0.01 && i.srdCount === 0) out.push({ code: "no_balance_no_srd", title: "Active estate with no balance and no SRD" });
+  if (i.bankBalance != null && i.reconciledBalance != null && Math.abs(i.bankBalance - i.reconciledBalance) >= 0.01) out.push({ code: "bank_mismatch", title: "Bank balance does not match reconciled balance" });
+  return out;
+}

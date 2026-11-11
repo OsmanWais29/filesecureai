@@ -60,8 +60,18 @@ export const ESTATE_MODULES: EstateModule[] = [
       { id: "income", label: "Income & Surplus", description: "Income register, Form 65 periods and surplus calculation." },
       { id: "payments", label: "Payments", description: "Payment obligations, schedules and arrears." },
       { id: "assets", label: "Assets", description: "Realization values, costs and ranked security interests." },
-      { id: "trust", label: "Trust Account", description: "Banking, receipts, disbursements and reconciliation." },
       { id: "tax", label: "Tax", description: "Return tracking and refund administration." },
+    ],
+  },
+  {
+    id: "trust",
+    label: "Trust Account",
+    pages: [
+      { id: "today", label: "Today", description: "What needs your attention in this estate's trust money right now." },
+      { id: "ledger", label: "Ledger", description: "Every dollar in and out, with its bank reference. Read-only; corrections by reversal." },
+      { id: "payments", label: "Payments", description: "Levy, fees and dividends prepared for review and LIT approval." },
+      { id: "monthend", label: "Month-end", description: "Monthly bank reconciliation, sign-off and the 45/75-day clocks." },
+      { id: "reports", label: "Reports", description: "SRD and OSB banking reports built from the ledger." },
     ],
   },
   {

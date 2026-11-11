@@ -52,8 +52,10 @@ const EstateWorkspacePage = () => {
   const { estateId } = useParams();
   const { estate, row, isLoading } = useEstate(estateId);
   const [params, setParams] = useSearchParams();
-  const module = params.get("m") ?? "overview";
-  const page = params.get("p") ?? getModule(params.get("m") ?? "overview").pages[0].id;
+  // Trust Account used to live under Financials; old links land on the new section.
+  const legacyTrust = params.get("m") === "financials" && params.get("p") === "trust";
+  const module = legacyTrust ? "trust" : params.get("m") ?? "overview";
+  const page = legacyTrust ? "today" : params.get("p") ?? getModule(module).pages[0].id;
   const [safaCollapsed, setSafaCollapsed] = useState(false);
   const badges = useEstateNavBadges(estateId);
   const [drilldown, setDrilldown] = useState<DrilldownScope | null>(null);
@@ -128,8 +130,12 @@ const EstateWorkspacePage = () => {
         return withHeading(<FinancialsTab estateId={estateId} />);
       case "financials:assets":
         return withHeading(<AssetsTab estateId={estateId} />);
-      case "financials:trust":
-        return withHeading(<EstateTrustAccount estateId={estateId} />);
+      case "trust:today":
+      case "trust:ledger":
+      case "trust:payments":
+      case "trust:monthend":
+      case "trust:reports":
+        return withHeading(<EstateTrustAccount estateId={estateId} section={page as any} onNavigate={(p) => navigateTo("trust", p)} />);
       case "financials:tax":
         return withHeading(<TaxReturnsRegister estateId={estateId} />);
 

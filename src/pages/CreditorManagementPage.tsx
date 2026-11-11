@@ -74,7 +74,7 @@ export default function CreditorManagementPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const currentEstateId = searchParams.get("estate") ?? undefined;
   const { estate: selectedEstate } = useEstate(currentEstateId);
-  const openTrust = () => { if (currentEstateId) navigate(`/estates/${currentEstateId}?m=financials&p=trust`); };
+  const openTrust = () => { if (currentEstateId) navigate(`/estates/${currentEstateId}?m=trust&p=today`); };
   const [showAddCreditorWizard, setShowAddCreditorWizard] = useState(false);
   const [showImportCreditorWizard, setShowImportCreditorWizard] = useState(false);
 

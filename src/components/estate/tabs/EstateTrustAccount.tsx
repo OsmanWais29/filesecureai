@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowDownLeft, ArrowUpRight, ArrowRight, Download, FileText, Landmark, ListChecks, Plus, Search, Settings2, ShieldCheck, Unplug } from "lucide-react";
 import { useEstateTrustLedger } from "@/hooks/useEstateTrustLedger";
-import { buildSRD, fmt, lastReconciliation, runningTrustLedger, srdEvidenceStatus } from "@/lib/trust/trustLedger";
+import { buildSRD, fmt, lastReconciliation, paymentBlockers, reconciliationClock, runningTrustLedger, srdEvidenceStatus, trustRiskFlags, osbViewFlags } from "@/lib/trust/trustLedger";
+import { CheckCircle2, Clock, HelpCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -12,9 +13,15 @@ import { logEstateEvent } from "@/hooks/useEstateRecords";
 import { FinancialsTab, ReceiptForm } from "./FinancialsTab";
 import { TrustRiskFlags } from "@/components/creditor/trust/TrustRiskFlags";
 
-export function EstateTrustAccount({ estateId }: { estateId?: string }) {
+export type TrustSection = "today" | "ledger" | "payments" | "monthend" | "reports";
+const VIEW: Record<TrustSection, string> = { today: "today", ledger: "transactions", payments: "payments", monthend: "reconciliation", reports: "reports" };
+const SECTION: Record<string, TrustSection> = { transactions: "ledger", reconciliation: "monthend", reports: "reports", today: "today", payments: "payments" };
+
+export function EstateTrustAccount({ estateId, section = "today", onNavigate }: { estateId?: string; section?: TrustSection; onNavigate?: (p: TrustSection) => void }) {
   const { ledger, balances, checks, bankLines, reconciliationRecords, isLoading, error } = useEstateTrustLedger(estateId);
-  const [view, setView] = useState("transactions");
+  const view = VIEW[section];
+  const setView = (v: string) => onNavigate?.(SECTION[v] ?? "today");
+  const [payAmount, setPayAmount] = useState("");
   const [panel, setPanel] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
@@ -37,6 +44,21 @@ export function EstateTrustAccount({ estateId }: { estateId?: string }) {
     const url = URL.createObjectURL(new Blob([data.map(row => row.map(v => `"${v.replace(/"/g, '""')}"`).join(",")).join("\n")], { type: "text/csv" }));
     const a = document.createElement("a"); a.href = url; a.download = `estate-${estateId}-SRD-${verified ? "evidence-backed" : "draft"}.csv`; a.click(); URL.revokeObjectURL(url);
   };
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const payBlockers = paymentBlockers(balances.ledgerBalance, Number(payAmount) || 0);
+  const clock = last ? reconciliationClock(last.statementDate, todayIso, Boolean(last.reconciledBy)) : null;
+  const flags = unavailable ? [] : trustRiskFlags(ledger, todayIso);
+  const TodayList = () => {
+    const items: { key: string; title: string; detail: string; why?: string; tone: "bad" | "warn"; action?: () => void; label?: string }[] = [];
+    if (!ledger.account) items.push({ key: "acct", title: "Link the trust bank account", detail: "Record the bank, account type and last 4 digits so this estate is routed to the right account.", why: "Dir. 5R8 · BIA s.25", tone: "bad", action: () => setPanel("accounts"), label: "Set up account" });
+    if (unmatched) items.push({ key: "unmatched", title: `${unmatched} transaction${unmatched > 1 ? "s" : ""} not matched to the bank`, detail: "Confirm each against the bank statement line.", why: "Dir. 5R8", tone: "warn", action: () => { setView("transactions"); }, label: "Review" });
+    if (!last) items.push({ key: "recon", title: "No reconciliation on file", detail: "Prepare the first monthly reconciliation from the latest bank statement.", why: "Dir. 5R8 · 45 days from statement date", tone: "bad", action: () => setView("reconciliation"), label: "Start" });
+    else if (clock && clock.state !== "signed" && clock.state !== "on_track") items.push({ key: "clock", title: clock.state === "notice_required" ? "Written OSB notice required" : clock.state === "overdue" ? `Reconciliation ${-clock.daysLeft} days overdue` : `${last.statementDate} reconciliation: ${clock.daysLeft} of 45 days left`, detail: clock.state === "notice_required" ? "An error has been uncorrected for more than 75 days." : "Sign and date the reconciliation before the deadline.", why: "Dir. 5R8", tone: clock.state === "due_soon" ? "warn" : "bad", action: () => setView("reconciliation"), label: "Open month-end" });
+    for (const f of flags.filter(f => !["NO_ACCOUNT", "NEVER_RECONCILED", "RECON_STALE", "OSB_NOTICE_REQUIRED"].includes(f.code)).slice(0, 6)) items.push({ key: f.code, title: f.title, detail: f.detail, why: f.citation, tone: f.severity === "high" ? "bad" : "warn" });
+    if (unavailable) return <p className="text-sm text-muted-foreground">{isLoading ? "Loading trust records…" : "Trust records unavailable."}</p>;
+    if (!items.length) return <div className="flex items-center gap-2 border-y py-6 text-sm"><CheckCircle2 className="h-5 w-5 text-primary" /><span className="font-medium">All clear.</span><span className="text-muted-foreground">Nothing in this estate's trust account needs you today.</span></div>;
+    return <div><h3 className="mb-2 font-semibold">Needs your attention ({items.length})</h3><ul className="divide-y border-y">{items.map(it => <li key={it.key} className="flex flex-wrap items-start justify-between gap-3 py-3"><div className={`border-l-2 pl-3 ${it.tone === "bad" ? "border-destructive" : "border-warning"}`}><p className="flex items-center gap-1 text-sm font-medium">{it.tone === "warn" && <Clock className="h-3.5 w-3.5 text-warning" />}{it.title}</p><p className="text-sm text-muted-foreground">{it.detail}</p>{it.why && <details className="text-xs text-muted-foreground"><summary className="flex cursor-pointer items-center gap-1"><HelpCircle className="h-3 w-3" />Why?</summary>{it.why}</details>}</div>{it.action && <Button size="sm" variant="outline" onClick={it.action}>{it.label}</Button>}</li>)}</ul></div>;
+  };
   const panelTitle: Record<string, string> = { receipt: "Record receipt", disbursements: "Record payment", accounts: "Trust bank account", reconciliation: "Prepare reconciliation", schedules: "Payment schedules", gl: "Journal entries", checks: "Accounting checks", bank: "Bank transactions" };
   return <div className="min-w-0 space-y-5">
     <header className="flex flex-wrap items-start justify-between gap-4">
@@ -44,6 +66,7 @@ export function EstateTrustAccount({ estateId }: { estateId?: string }) {
       <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={unavailable} onClick={() => setPanel("disbursements")}><ArrowUpRight className="mr-2 h-4 w-4" />Record payment</Button><Button disabled={unavailable} onClick={() => setPanel("receipt")}><Plus className="mr-2 h-4 w-4" />Record receipt</Button></div>
     </header>
     {error && <p role="alert" className="border-l-2 border-destructive pl-3 text-sm text-destructive">Trust records could not be loaded. Figures and assessments are unavailable.</p>}
+    {section === "today" && <>
     <section className="grid grid-cols-2 gap-x-6 gap-y-5 border-y py-5 lg:grid-cols-4" aria-label="Trust account summary">
       <div><p className="text-xs text-muted-foreground">Balance in trust</p><p className="mt-2 font-mono text-2xl font-semibold">{unavailable ? isLoading ? "Loading…" : "Unavailable" : fmt(balances.ledgerBalance)}</p><p className="mt-1 text-xs text-muted-foreground">{last?.reconciledOn ? `Reviewed ${last.reconciledOn} · bank evidence unverified` : "Not reconciled"}</p></div>
       <div><p className="flex items-center gap-1 text-xs text-muted-foreground"><ArrowDownLeft className="h-3.5 w-3.5" />Total receipts</p><p className="mt-2 font-mono text-xl">{unavailable ? "—" : fmt(balances.totalReceipts)}</p><p className="mt-1 text-xs text-muted-foreground">{unavailable ? "—" : ledger.receipts.length} posted receipts</p></div>
@@ -55,8 +78,26 @@ export function EstateTrustAccount({ estateId }: { estateId?: string }) {
       <div className="flex items-start gap-2"><ListChecks className="mt-0.5 h-4 w-4 shrink-0 text-primary" /><div><p className="font-medium">Automatic accounting checks</p><Button variant="link" className="h-auto p-0 text-xs" onClick={() => setPanel("checks")}>{unavailable ? "Evidence unavailable" : `${pendingChecks.length} need evidence or correction`}</Button></div></div>
       <div className="flex items-start gap-2"><FileText className="mt-0.5 h-4 w-4 shrink-0 text-primary" /><div><p className="font-medium">SRD calculated from ledger</p><Button variant="link" className="h-auto p-0 text-xs" onClick={() => setView("reports")}>View draft &amp; verification status</Button></div></div>
     </div>
+    </>}
     <Tabs value={view} onValueChange={setView}>
-      <TabsList className="h-auto max-w-full flex-wrap"><TabsTrigger value="transactions">Transactions</TabsTrigger><TabsTrigger value="reconciliation">Reconciliation</TabsTrigger><TabsTrigger value="reports">Reports</TabsTrigger></TabsList>
+      <TabsContent value="today" className="space-y-5 pt-4">
+        <TodayList />
+        {!unavailable && (() => { const o = osbViewFlags({ balance: balances.ledgerBalance, status: "active", srdCount: 0, bankBalance: last?.adjustedBankBalance ?? null, reconciledBalance: last?.ledgerBalanceAtDate ?? null }); return <div className="border-y py-4"><h3 className="text-sm font-semibold">What the OSB would see</h3><p className="text-xs text-muted-foreground">The OSB analyses trustee banking data for these patterns.</p>{o.length ? <ul className="mt-2 space-y-1 text-sm text-warning">{o.map(f => <li key={f.code}>{f.title}</li>)}</ul> : <p className="mt-2 text-sm text-primary">Nothing the OSB's banking analysis would flag.</p>}</div>; })()}
+      </TabsContent>
+      <TabsContent value="payments" className="space-y-5 pt-4">
+        <div className="max-w-xl space-y-3">
+          <h3 className="font-semibold">Check a payment before it runs</h3>
+          <p className="text-sm text-muted-foreground">Levy, fees and dividends are proposed from the ledger. Anything that would overdraw the estate is stopped before it can be submitted.</p>
+          <div className="flex flex-wrap items-end gap-2"><div><label htmlFor="pay-amt" className="text-xs text-muted-foreground">Amount</label><Input id="pay-amt" inputMode="decimal" className="w-40" placeholder="0.00" value={payAmount} onChange={e => setPayAmount(e.target.value)} /></div><Button disabled={unavailable || payBlockers.length > 0} onClick={() => setPanel("disbursements")}>Prepare payment for LIT approval</Button></div>
+          {payAmount && (payBlockers.length ? <ul className="space-y-1 border-l-2 border-destructive pl-3 text-sm text-destructive">{payBlockers.map(b => <li key={b}>{b}</li>)}</ul> : <p className="flex items-center gap-1 text-sm text-primary"><CheckCircle2 className="h-4 w-4" />Funds available. The initiating LIT and trace number are recorded on approval.</p>)}
+        </div>
+        <div className="grid gap-3 border-y py-4 text-sm sm:grid-cols-3">
+          <div><p className="font-medium">Electronic payments</p><p className="text-muted-foreground">Creditors need a Schedule 3 consent; one consent covers every estate they're in.</p></div>
+          <div><p className="font-medium">Remittance within 72 hours</p><p className="text-muted-foreground">Payment and remittance details must go out within 72 hours of an EFT.</p></div>
+          <div><p className="font-medium">No office expenses</p><p className="text-muted-foreground">Withdrawals other than dividends and administration charges need inspector or court permission.</p></div>
+        </div>
+        <div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Payee</TableHead><TableHead>Reference</TableHead><TableHead className="text-right">Amount</TableHead><TableHead>Approved by</TableHead><TableHead>Bank</TableHead></TableRow></TableHeader><TableBody>{!unavailable && ledger.disbursements.map(d => <TableRow key={d.id}><TableCell>{d.date}</TableCell><TableCell>{d.payee}</TableCell><TableCell className="font-mono text-xs">{d.reference || "—"}</TableCell><TableCell className="text-right font-mono">{fmt(d.amount)}</TableCell><TableCell>{d.approvals.join(", ") || "Not recorded"}</TableCell><TableCell>{d.cleared ? "Cleared" : "Outstanding"}</TableCell></TableRow>)}{(unavailable || !ledger.disbursements.length) && <TableRow><TableCell colSpan={6} className="py-8 text-center text-muted-foreground">No payments yet</TableCell></TableRow>}</TableBody></Table></div>
+      </TabsContent>
       <TabsContent value="transactions" className="space-y-4 pt-4">
         <div className="flex flex-wrap items-center justify-between gap-3"><div className="relative w-full sm:w-64"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input aria-label="Search trust transactions" placeholder="Search transactions" value={query} onChange={e => setQuery(e.target.value)} className="pl-9" /></div><Button variant="ghost" size="sm" onClick={() => setPanel("schedules")}>Payment schedules<ArrowRight className="ml-2 h-4 w-4" /></Button></div>
         <div className="flex flex-wrap gap-1" role="group" aria-label="Filter transactions">{[["all", "All"], ["receipts", "Receipts"], ["payments", "Payments"], ["unmatched", `Unmatched${unavailable ? "" : ` (${unmatched})`}`]].map(([id, label]) => <Button key={id} size="sm" variant={filter === id ? "secondary" : "ghost"} aria-pressed={filter === id} onClick={() => setFilter(id)}>{label}</Button>)}</div>
@@ -72,6 +113,11 @@ export function EstateTrustAccount({ estateId }: { estateId?: string }) {
       <TabsContent value="reports" className="space-y-5 pt-4">
         <div className="flex flex-wrap items-start justify-between gap-4"><div><h3 className="flex items-center gap-2 font-semibold"><FileText className="h-4 w-4" />Statement of Receipts and Disbursements</h3><Badge variant="outline" className="mt-2 border-warning text-warning">{evidence.ready && !unavailable ? "Evidence checked" : "Unverified draft"}</Badge></div><div className="flex flex-wrap gap-2"><Button variant="outline" disabled={unavailable} onClick={() => exportSRD()}><Download className="mr-2 h-4 w-4" />Download draft CSV</Button><Button disabled={!evidence.ready || unavailable} onClick={() => exportSRD(true)}><ShieldCheck className="mr-2 h-4 w-4" />Verified export</Button></div></div>
         <div className="max-w-2xl divide-y border-y">{srd.receipts.map(r => <div key={r.key} className="flex justify-between gap-4 py-3 text-sm"><span>{r.label}</span><span className="font-mono">{unavailable ? "—" : fmt(r.amount)}</span></div>)}<div className="flex justify-between gap-4 py-3 font-medium"><span>Total receipts</span><span className="font-mono">{unavailable ? "—" : fmt(srd.totalReceipts)}</span></div>{srd.disbursements.map(d => <div key={d.key} className="flex justify-between gap-4 py-3 text-sm"><span>{d.label}</span><span className="font-mono">{unavailable ? "—" : fmt(d.amount)}</span></div>)}<div className="flex justify-between gap-4 py-3 font-medium"><span>Total disbursements</span><span className="font-mono">{unavailable ? "—" : fmt(srd.totalDisbursements)}</span></div><div className="flex justify-between gap-4 py-4 font-semibold"><span>Balance in trust</span><span className="font-mono">{unavailable ? "—" : fmt(srd.balance)}</span></div></div>
+        <div className="grid gap-3 text-sm sm:grid-cols-3">
+          <div className="border-l-2 pl-3"><p className="font-medium">Annual Banking Report</p><p className="text-muted-foreground">Due May 31. Master list of trust accounts and balances at April 30, plus bank confirmation.</p><p className="mt-1 text-xs text-warning">Needs every firm trust account recorded</p></div>
+          <div className="border-l-2 pl-3"><p className="font-medium">Change of bank notice</p><p className="text-muted-foreground">Due within five business days of changing banks.</p></div>
+          <div className="border-l-2 pl-3"><p className="font-medium">Change of software notice</p><p className="text-muted-foreground">Tell the OSB promptly when trust funds move to new software, such as SecureFiles.</p></div>
+        </div>
         <details className="border-b pb-4"><summary className="cursor-pointer text-sm font-medium">Verification requirements ({evidence.blockers.length})</summary><ul className="mt-3 space-y-2 pl-4 text-sm text-muted-foreground">{evidence.blockers.map(reason => <li key={reason}>{reason}</li>)}</ul></details>
       </TabsContent>
     </Tabs>
