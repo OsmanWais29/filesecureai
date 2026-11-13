@@ -8,10 +8,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
+import { usePostDeposit, usePostImport, usePostReversal, useSavePadAgreement } from "@/hooks/useTrustManualPosting";
 import { auditReadiness, depositSplit, fmt, threeWay, type AccountingCheck, type Reconciliation, type TrustLedger } from "@/lib/trust/trustLedger";
 
 const db = supabase as any;
-const NOT_CONNECTED = "Posting from this panel turns on once the bank feed and PAD connection are set up.";
+function Approve({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  return <label className="flex items-start gap-2 rounded-md border p-3 text-sm"><Checkbox checked={checked} onCheckedChange={v => onChange(Boolean(v))} className="mt-0.5" /><span>I approve this posting as trustee. It is recorded under my name and cannot be edited afterwards.</span></label>;
+}
+function PostButton({ label, reasons, busy, onClick }: { label: string; reasons: string[]; busy?: boolean; onClick: () => void }) {
+  if (reasons.length) return <DisabledPost label={label} reasons={reasons} />;
+  return <Button disabled={busy} onClick={onClick}>{busy ? "Posting…" : label}</Button>;
+}
 
 function DisabledPost({ reasons, label }: { reasons: string[]; label: string }) {
   return <TooltipProvider><Tooltip><TooltipTrigger asChild><span tabIndex={0}><Button disabled>{label}</Button></span></TooltipTrigger><TooltipContent className="max-w-xs"><ul className="space-y-1 text-xs">{reasons.map(r => <li key={r}>{r}</li>)}</ul></TooltipContent></Tooltip></TooltipProvider>;
@@ -42,6 +49,9 @@ export function RecordDepositPanel({ estate, account, onDone }: { estate: { id?:
   const [lines, setLines] = useState<Line[]>([{ id: estate.id ?? "this", name: estate.name, number: estate.number, due: "—", amount: "", selected: true }]);
   const [search, setSearch] = useState("");
   const [preview, setPreview] = useState(false);
+  const [ok, setOk] = useState(false);
+  const [reference, setReference] = useState("");
+  const post = usePostDeposit();
   const found = useQuery({ queryKey: ["deposit-estate-search", search], enabled: search.length > 1, queryFn: async () => (await db.from("estates").select("id, debtor_name, file_number").ilike("debtor_name", `%${search}%`).limit(5)).data ?? [] });
   const split = depositSplit(Number(amount) || 0, lines.map(l => ({ selected: l.selected, amount: Number(l.amount) || 0 })));
   const set = (id: string, patch: Partial<Line>) => setLines(ls => ls.map(l => l.id === id ? { ...l, ...patch } : l));
@@ -67,13 +77,14 @@ export function RecordDepositPanel({ estate, account, onDone }: { estate: { id?:
       <div><p className="text-xs text-muted-foreground">Selected</p><p className="font-mono">{fmt(split.selected)}</p></div>
       <div><p className="text-xs text-muted-foreground">Difference</p><p className={`font-mono ${split.difference !== 0 ? "text-destructive" : ""}`}>{fmt(split.difference)}</p></div>
     </div>
-    <label className="block text-xs text-muted-foreground">Evidence<Input type="file" className="mt-1" accept=".pdf,.csv,image/*" /></label>
+    <label className="block text-xs text-muted-foreground">Deposit slip / reference<Input className="mt-1" value={reference} onChange={e => setReference(e.target.value)} placeholder="e.g. slip number" /></label>
     <details open={preview} onToggle={e => setPreview((e.target as HTMLDetailsElement).open)}><summary className="cursor-pointer text-sm font-medium">Preview the ledger entry ({lines.filter(l => l.selected).length + 1} lines)</summary>
       <table className="mt-2 w-full text-sm"><thead className="text-xs text-muted-foreground"><tr><th className="text-left">Account</th><th className="text-right">Debit</th><th className="text-right">Credit</th></tr></thead><tbody>
         <tr><td>Trust bank</td><td className="text-right font-mono">{fmt(Number(amount) || 0)}</td><td /></tr>
         {lines.filter(l => l.selected).map(l => <tr key={l.id}><td>{l.name}: estate funds</td><td /><td className="text-right font-mono">{fmt(Number(l.amount) || 0)}</td></tr>)}
       </tbody></table></details>
-    <div className="flex justify-end gap-2"><Button variant="outline" onClick={onDone}>Cancel</Button><DisabledPost label="Post" reasons={[...split.reasons, NOT_CONNECTED]} /></div>
+    <Approve checked={ok} onChange={setOk} />
+    <div className="flex justify-end gap-2"><Button variant="outline" onClick={onDone}>Cancel</Button><PostButton label="Post" busy={post.isPending} reasons={[...split.reasons, ...(lines.some(l => l.selected && l.id === "this") ? ["Estate not identified"] : []), ...(ok ? [] : ["Tick the trustee approval"])]} onClick={() => post.mutate({ date, deposit: Number(amount), reference, lines: lines.filter(l => l.selected).map(l => ({ estateId: l.id, name: l.name, amount: Number(l.amount) || 0 })) }, { onSuccess: onDone })} /></div>
   </div>;
 }
 
@@ -85,6 +96,9 @@ export function ImportFilePanel({ account, onDone }: { account: string; onDone: 
   const [headers, setHeaders] = useState<string[]>([]);
   const [rows, setRows] = useState<string[][]>([]);
   const [map, setMap] = useState<Record<number, string>>({});
+  const [ok, setOk] = useState(false);
+  const post = usePostImport();
+  const col = (k: string) => { const e = Object.entries(map).find(([, v]) => v === k); return e ? Number(e[0]) : -1; };
   const read = async (f: File) => { setFile(f); if (!f.name.toLowerCase().endsWith(".csv")) { setHeaders([]); setRows([]); return; } const lines = (await f.text()).split(/\r?\n/).filter(Boolean).map(l => l.split(",").map(c => c.replace(/^"|"$/g, "").trim())); setHeaders(lines[0] ?? []); setRows(lines.slice(1)); };
   const steps = ["Upload", "Map columns", "Review"];
   return <div className="space-y-5">
@@ -99,24 +113,29 @@ export function ImportFilePanel({ account, onDone }: { account: string; onDone: 
     {step === 3 && (() => { const estIdx = Object.entries(map).find(([, v]) => v === "estate")?.[0]; const matched = estIdx ? rows.filter(r => r[Number(estIdx)]).length : 0; return <div className="space-y-3">
       <div className="grid grid-cols-3 gap-3 text-sm"><div className="rounded-md border p-3"><p className="text-xs text-muted-foreground">Matched</p><p className="font-mono text-lg">{matched}</p></div><div className="rounded-md border border-warning/60 p-3"><p className="text-xs text-muted-foreground">Needs a decision</p><p className="font-mono text-lg">{rows.length - matched}</p></div><div className="rounded-md border p-3"><p className="text-xs text-muted-foreground">Already imported</p><p className="font-mono text-lg">0</p></div></div>
       {rows.length - matched > 0 && <p className="text-sm text-muted-foreground">Unmatched rows will wait on Today until each is matched. Nothing posts until then.</p>}
-      <div className="flex justify-between"><Button variant="outline" onClick={() => setStep(2)}>Back</Button><div className="flex gap-2"><Button variant="outline" onClick={onDone}>Close</Button><DisabledPost label="Post matched" reasons={[NOT_CONNECTED]} /></div></div>
+      <p className="text-xs text-muted-foreground">Only positive amounts with an estate number post. Rows already imported are skipped.</p>
+      <Approve checked={ok} onChange={setOk} />
+      <div className="flex justify-between"><Button variant="outline" onClick={() => setStep(2)}>Back</Button><div className="flex gap-2"><Button variant="outline" onClick={onDone}>Close</Button><PostButton label="Post matched" busy={post.isPending} reasons={[...(matched ? [] : ["No rows matched to an estate number"]), ...(ok ? [] : ["Tick the trustee approval"])]} onClick={() => { const [d, a, p, e, rf] = ["date", "amount", "payer", "estate", "reference"].map(col); post.mutate({ fileType: type, rows: rows.filter(r => r[e] && Number(r[a]) > 0).map(r => ({ date: r[d], amount: Number(r[a]), payer: p >= 0 ? r[p] : "", estateNumber: r[e], reference: `import:${file?.name}:${rf >= 0 ? r[rf] : ""}:${r[d]}:${r[a]}` })) }, { onSuccess: onDone }); }} /></div></div>
     </div>; })()}
   </div>;
 }
 
 /* ---------- Record return ---------- */
-export function RecordReturnPanel({ ledger, missed, onDone }: { ledger: TrustLedger; missed: number; onDone: () => void }) {
+export function RecordReturnPanel({ estateId, ledger, missed, onDone }: { estateId?: string; ledger: TrustLedger; missed: number; onDone: () => void }) {
   const candidates = ledger.receipts.filter(r => !r.reversedById && !r.reversalOf);
   const [id, setId] = useState(candidates[0]?.id ?? "");
   const [reason, setReason] = useState("nsf");
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [ok, setOk] = useState(false);
+  const post = usePostReversal(estateId);
   const r = candidates.find(c => c.id === id);
   return <div className="space-y-4">
     <div><p className="mb-1 text-xs text-muted-foreground">Receipt</p>{candidates.length ? <Select value={id} onValueChange={setId}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{candidates.map(c => <SelectItem key={c.id} value={c.id}>{c.date} · {c.payer} · {fmt(c.amount)}</SelectItem>)}</SelectContent></Select> : <p className="text-sm text-muted-foreground">No receipts to reverse.</p>}</div>
-    <div className="grid gap-3 sm:grid-cols-2"><div><p className="mb-1 text-xs text-muted-foreground">Reason</p><Select value={reason} onValueChange={setReason}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{[["nsf", "NSF"], ["closed", "Account closed"], ["stopped", "Payment stopped"], ["nodebit", "No debit allowed"], ["unauth", "Not authorized"], ["other", "Other"]].map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}</SelectContent></Select></div><label className="text-xs text-muted-foreground">Return date<Input type="date" className="mt-1" defaultValue={new Date().toISOString().slice(0, 10)} /></label></div>
-    <label className="block text-xs text-muted-foreground">Evidence<Input type="file" className="mt-1" /></label>
+    <div className="grid gap-3 sm:grid-cols-2"><div><p className="mb-1 text-xs text-muted-foreground">Reason</p><Select value={reason} onValueChange={setReason}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{[["nsf", "NSF"], ["closed", "Account closed"], ["stopped", "Payment stopped"], ["nodebit", "No debit allowed"], ["unauth", "Not authorized"], ["other", "Other"]].map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}</SelectContent></Select></div><label className="text-xs text-muted-foreground">Return date<Input type="date" className="mt-1" value={date} onChange={e => setDate(e.target.value)} /></label></div>
     {r && <p className="rounded-md border p-3 text-sm">Reverses <span className="font-mono">{fmt(r.amount)}</span> from {r.payer}. Missed payments on this estate: {missed + 1}.</p>}
     <p className="text-xs text-muted-foreground">Posted entries are never deleted. A reversal is a new line linked to the original.</p>
-    <div className="flex justify-end gap-2"><Button variant="outline" onClick={onDone}>Cancel</Button><DisabledPost label="Post reversal" reasons={[r ? NOT_CONNECTED : "Choose a receipt"]} /></div>
+    <Approve checked={ok} onChange={setOk} />
+    <div className="flex justify-end gap-2"><Button variant="outline" onClick={onDone}>Cancel</Button><PostButton label="Post reversal" busy={post.isPending} reasons={[...(r ? [] : ["Choose a receipt"]), ...(ok ? [] : ["Tick the trustee approval"])]} onClick={() => r && post.mutate({ entryId: r.id.split(":")[0], amount: r.amount, payer: r.payer, reason, date }, { onSuccess: onDone })} /></div>
   </div>;
 }
 
@@ -158,16 +177,22 @@ export function AuditPackageCard({ ledger, checks, onFix, onDownload, lastExport
 }
 
 /* ---------- PAD side panel ---------- */
-export function PadPanel({ missed, onDone }: { missed: number; onDone: () => void }) {
+export function PadPanel({ estateId, missed, onDone }: { estateId?: string; missed: number; onDone: () => void }) {
   const [mode, setMode] = useState<"view" | "record">("view");
   const [ticks, setTicks] = useState<Record<string, boolean>>({});
+  const [fileName, setFileName] = useState("");
+  const [amt, setAmt] = useState("");
+  const [first, setFirst] = useState("");
+  const [ref, setRef] = useState("");
+  const save = useSavePadAgreement(estateId);
   const items = ["Recourse statement", "Cancellation terms", "Pre-notification", "Processor named"];
   if (mode === "record") return <div className="space-y-4">
     <p className="text-sm text-muted-foreground">For firms not collecting through Finix: record the signed agreement.</p>
-    <label className="block text-xs text-muted-foreground">Signed agreement<Input type="file" accept=".pdf" className="mt-1" /></label>
-    <div className="grid gap-3 sm:grid-cols-2"><label className="text-xs text-muted-foreground">Amount<Input inputMode="decimal" className="mt-1 font-mono" /></label><label className="text-xs text-muted-foreground">First debit<Input type="date" className="mt-1" /></label></div>
+    <label className="block text-xs text-muted-foreground">Signed agreement<Input type="file" accept=".pdf" className="mt-1" onChange={e => setFileName(e.target.files?.[0]?.name ?? "")} /></label>
+    <div className="grid gap-3 sm:grid-cols-2"><label className="text-xs text-muted-foreground">Amount<Input inputMode="decimal" className="mt-1 font-mono" value={amt} onChange={e => setAmt(e.target.value)} /></label><label className="text-xs text-muted-foreground">First debit<Input type="date" className="mt-1" value={first} onChange={e => setFirst(e.target.value)} /></label></div>
+    <label className="block text-xs text-muted-foreground">Mandate reference (optional)<Input className="mt-1" value={ref} onChange={e => setRef(e.target.value)} /></label>
     <div className="space-y-2">{items.map(i => <label key={i} className="flex items-center gap-2 text-sm"><Checkbox checked={!!ticks[i]} onCheckedChange={v => setTicks(t => ({ ...t, [i]: Boolean(v) }))} />{i}</label>)}</div>
-    <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setMode("view")}>Back</Button><DisabledPost label="Save agreement" reasons={[...items.filter(i => !ticks[i]).map(i => `Confirm: ${i}`), NOT_CONNECTED]} /></div>
+    <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setMode("view")}>Back</Button><PostButton label="Save agreement" busy={save.isPending} reasons={[...(fileName ? [] : ["Attach the signed agreement"]), ...(Number(amt) > 0 ? [] : ["Enter the amount"]), ...(first ? [] : ["Enter the first debit date"]), ...items.filter(i => !ticks[i]).map(i => `Confirm: ${i}`)]} onClick={() => save.mutate({ amount: Number(amt), firstDebit: first, fileName, reference: ref, confirmed: items }, { onSuccess: onDone })} /></div>
   </div>;
   return <div className="space-y-4 text-sm">
     <div className="flex items-center gap-2"><Badge variant="outline">No PAD agreement</Badge>{missed > 0 && <Badge variant="outline" className="border-warning text-warning"><AlertTriangle className="mr-1 h-3 w-3" />{missed} missed</Badge>}</div>
