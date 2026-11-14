@@ -1955,6 +1955,68 @@ export type Database = {
         }
         Relationships: []
       }
+      estate_assessments: {
+        Row: {
+          assessed_on: string
+          assessor: string
+          created_at: string
+          debtor_acknowledged: boolean
+          estate_id: string
+          evidence_reference: string
+          id: string
+          id_verified: boolean
+          options_explained: string
+          prior_insolvency_checked: boolean
+          recommendation: string
+          signed_off: boolean
+          supervising_lit: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assessed_on: string
+          assessor: string
+          created_at?: string
+          debtor_acknowledged: boolean
+          estate_id: string
+          evidence_reference: string
+          id?: string
+          id_verified: boolean
+          options_explained: string
+          prior_insolvency_checked: boolean
+          recommendation: string
+          signed_off?: boolean
+          supervising_lit: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          assessed_on?: string
+          assessor?: string
+          created_at?: string
+          debtor_acknowledged?: boolean
+          estate_id?: string
+          evidence_reference?: string
+          id?: string
+          id_verified?: boolean
+          options_explained?: string
+          prior_insolvency_checked?: boolean
+          recommendation?: string
+          signed_off?: boolean
+          supervising_lit?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_assessments_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       estate_asset_securities: {
         Row: {
           amount: number
