@@ -23,3 +23,11 @@ Statement CSV import and reviewed matching; atomic posting; authenticated paymen
 - [ ] Creditor notices as real records and documents.
 - [ ] Meetings of creditors, dividends/unclaimed dividends, discharge and closing workflow.
 - [ ] Corporate Form 21, debtor-owed documents tracking, retention period, trustee/office filters.
+
+## Client-journey audit build order (Nov 14, 2026)
+- [x] Step 1: Claims register (admit / partly disallow / disallow, s.135 notice with proof) and day-one notices (s.102 5-day, s.66.14 10-day)
+- [ ] Step 2: Assessment record + counselling upgrade
+- [ ] Step 3: Meetings, proposal default/annulment, dividends
+- [ ] Step 4: Discharge and closing workflows, retention
+- [ ] Step 5: Role enforcement, examiner login, audit pack, self-audit
+- [ ] Step 6: Firm compliance and rule registry

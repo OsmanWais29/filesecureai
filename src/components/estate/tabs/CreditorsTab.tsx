@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { RecordDrawer, Register } from "@/components/estate/forms/RecordForm";
 import { SubTabs } from "@/components/estate/forms/SubTabs";
+import { ClaimsRegister, DayOneNotices } from "@/components/estate/creditors/ClaimsAndNotices";
 import { creditorSections, meetingSections } from "@/data/estateFormSpecs";
 import {
   creditorToValues,
@@ -19,7 +20,8 @@ const money = (n: number) => `$${Number(n || 0).toLocaleString()}`;
 
 const TABS = [
   { id: "creditors", label: "Creditors" },
-  { id: "poc", label: "Proofs of Claim" },
+  { id: "notices", label: "Notices" },
+  { id: "poc", label: "Claims register" },
   { id: "meetings", label: "Meetings" },
   { id: "dividends", label: "Dividends" },
 ] as const;
@@ -254,7 +256,8 @@ export const CreditorsTab = ({ estateId }: { estateId?: string }) => {
     <div className="space-y-4">
       <SubTabs tabs={TABS} active={tab} onChange={setTab} />
       {tab === "creditors" && <CreditorList estateId={estateId} />}
-      {tab === "poc" && <ProofsOfClaim estateId={estateId} />}
+      {tab === "notices" && <DayOneNotices estateId={estateId} />}
+      {tab === "poc" && <ClaimsRegister estateId={estateId} />}
       {tab === "meetings" && <CreditorMeetings estateId={estateId} />}
       {tab === "dividends" && <CreditorDividends estateId={estateId} />}
     </div>

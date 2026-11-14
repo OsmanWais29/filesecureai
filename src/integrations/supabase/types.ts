@@ -2241,6 +2241,66 @@ export type Database = {
           },
         ]
       }
+      estate_claim_decisions: {
+        Row: {
+          admitted_amount: number
+          created_at: string
+          creditor_id: string
+          decided_at: string
+          decided_by: string
+          decision: string
+          disallowed_amount: number
+          estate_id: string
+          id: string
+          notice_method: string | null
+          notice_sent_date: string | null
+          reason: string | null
+        }
+        Insert: {
+          admitted_amount?: number
+          created_at?: string
+          creditor_id: string
+          decided_at?: string
+          decided_by?: string
+          decision: string
+          disallowed_amount?: number
+          estate_id: string
+          id?: string
+          notice_method?: string | null
+          notice_sent_date?: string | null
+          reason?: string | null
+        }
+        Update: {
+          admitted_amount?: number
+          created_at?: string
+          creditor_id?: string
+          decided_at?: string
+          decided_by?: string
+          decision?: string
+          disallowed_amount?: number
+          estate_id?: string
+          id?: string
+          notice_method?: string | null
+          notice_sent_date?: string | null
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_claim_decisions_creditor_id_fkey"
+            columns: ["creditor_id"]
+            isOneToOne: false
+            referencedRelation: "estate_creditors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estate_claim_decisions_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       estate_closings: {
         Row: {
           checklist: Json
@@ -3695,6 +3755,66 @@ export type Database = {
             columns: ["reconciliation_id"]
             isOneToOne: false
             referencedRelation: "estate_reconciliations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estate_statutory_notices: {
+        Row: {
+          created_at: string
+          creditor_id: string | null
+          due_date: string | null
+          estate_id: string
+          id: string
+          late_reason: string | null
+          method: string
+          notice_kind: string
+          proof_reference: string
+          recipients_count: number
+          recorded_by: string
+          sent_date: string
+        }
+        Insert: {
+          created_at?: string
+          creditor_id?: string | null
+          due_date?: string | null
+          estate_id: string
+          id?: string
+          late_reason?: string | null
+          method: string
+          notice_kind: string
+          proof_reference: string
+          recipients_count?: number
+          recorded_by?: string
+          sent_date: string
+        }
+        Update: {
+          created_at?: string
+          creditor_id?: string | null
+          due_date?: string | null
+          estate_id?: string
+          id?: string
+          late_reason?: string | null
+          method?: string
+          notice_kind?: string
+          proof_reference?: string
+          recipients_count?: number
+          recorded_by?: string
+          sent_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_statutory_notices_creditor_id_fkey"
+            columns: ["creditor_id"]
+            isOneToOne: false
+            referencedRelation: "estate_creditors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estate_statutory_notices_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
             referencedColumns: ["id"]
           },
         ]
