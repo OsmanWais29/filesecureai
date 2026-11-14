@@ -25,6 +25,7 @@ export const ESTATE_MODULES: EstateModule[] = [
     pages: [
       { id: "details", label: "Details", description: "Classification and the anchor dates the rules engine depends on." },
       { id: "client", label: "Client / Debtor", description: "Debtor identity, contact details and statutory information." },
+      { id: "assessment", label: "Assessment", description: "Recorded options, recommendation and trustee approval." },
       { id: "history", label: "Insolvency History", description: "Prior proceedings recorded as structured records." },
       { id: "conduct", label: "Conduct", description: "Cause of insolvency and conduct matters for trustee review." },
       { id: "communications", label: "Communications", description: "Structured contact log with follow-ups." },
@@ -82,6 +83,7 @@ export const ESTATE_MODULES: EstateModule[] = [
       { id: "register", label: "Register", description: "Master creditor identities and estate claim data." },
       { id: "claims", label: "Claims", description: "Disclosed versus filed amounts and admission decisions." },
       { id: "proofs", label: "Proofs", description: "Proof of claim receipt, evidence and validation state." },
+      { id: "notices", label: "Notices", description: "Statutory notices, sent dates and proof of mailing." },
       { id: "meetings", label: "Meetings & Voting", description: "Meeting records and voting thresholds." },
       { id: "distributions", label: "Distributions", description: "Dividends payable to admitted creditors." },
     ],

@@ -40,6 +40,7 @@ import { computeBalances, lastReconciliation, distributionBlockers } from "@/lib
 import { useCreditors, useCreditorStats, useCreateCreditor, useCreateClaim, CreditorWithClaim } from "@/hooks/useCreditors";
 import { useDistributions, useCreateDistribution, useUpdateDistribution } from "@/hooks/useDistributions";
 import { useCreditorMeetings, useCreateCreditorMeeting, useUpdateCreditorMeeting } from "@/hooks/useCreditorMeetings";
+import { DayOneNotices } from "@/components/estate/creditors/ClaimsAndNotices";
 
 // Default stats when no data
 const defaultStats: CreditorStats = {
@@ -404,7 +405,7 @@ export default function CreditorManagementPage() {
                     <CreditorTable
                       creditors={creditors}
                       onViewCreditor={handleViewCreditor}
-                      onSendNotice={(c) => toast.info(`Sending notice to ${c.name}`)}
+                      onSendNotice={() => setActiveTab('notices')}
                       onViewDocuments={(c) => toast.info(`Viewing docs for ${c.name}`)}
                       onImportCreditors={() => setShowImportCreditorWizard(true)}
                       onAddCreditor={() => setShowAddCreditorWizard(true)}
@@ -417,7 +418,7 @@ export default function CreditorManagementPage() {
                       creditor={selectedCreditor}
                       onClose={() => setShowContextPanel(false)}
                       onViewProfile={handleViewProfile}
-                      onSendNotice={() => toast.info('Sending notice')}
+                      onSendNotice={() => setActiveTab('notices')}
                       onAddClaim={() => setViewMode('claim-form')}
                       onRequestDocs={() => toast.info('Requesting docs')}
                     />
@@ -431,7 +432,7 @@ export default function CreditorManagementPage() {
                 claim={selectedCreditor.claim}
                 notices={[]}
                 onBack={handleBackToList}
-                onSendNotice={() => toast.info('Sending notice')}
+                onSendNotice={() => setActiveTab('notices')}
                 onEditCreditor={() => toast.info('Edit creditor')}
               />
             )}
@@ -457,6 +458,8 @@ export default function CreditorManagementPage() {
             />
           </div>
         );
+      case 'notices':
+        return <div className="p-6">{currentEstateId ? <DayOneNotices estateId={currentEstateId} /> : <p className="text-muted-foreground">Select an estate to view its statutory notices.</p>}</div>;
       case 'meetings':
         return (
           <div className="p-6">

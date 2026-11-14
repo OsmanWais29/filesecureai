@@ -46,6 +46,7 @@ import { useEstate } from "@/data/estateStore";
 import { useEstateNavBadges } from "@/hooks/useEstateSignals";
 import { ChevronRight } from "lucide-react";
 import { SignalDrilldown, DrilldownScope } from "@/components/estate/SignalDrilldown";
+import { ClaimsRegister, DayOneNotices } from "@/components/estate/creditors/ClaimsAndNotices";
 
 const EstateWorkspacePage = () => {
   const { estateId } = useParams();
@@ -144,8 +145,11 @@ const EstateWorkspacePage = () => {
       case "creditors:register":
         return withHeading(<CreditorList estateId={estateId} />);
       case "creditors:claims":
+        return withHeading(<ClaimsRegister estateId={estateId} />);
       case "creditors:proofs":
         return withHeading(<ProofsOfClaim estateId={estateId} />);
+      case "creditors:notices":
+        return withHeading(<DayOneNotices estateId={estateId} />);
       case "creditors:meetings":
         return withHeading(<CreditorMeetings estateId={estateId} />);
       case "creditors:distributions":

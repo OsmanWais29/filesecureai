@@ -1,5 +1,6 @@
 import React from "react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
   Users,
@@ -19,6 +20,7 @@ export type ModuleTab =
   | "trust-account"
   | "distribution"
   | "risk-flags"
+  | "notices"
   | "osb-forms" 
   | "safa" 
   | "audit";
@@ -36,6 +38,7 @@ const tabs: { id: ModuleTab; label: string; icon: React.ComponentType<{ classNam
   { id: "trust-account", label: "Trust Account", icon: Landmark },
   { id: "distribution", label: "Distribution", icon: Wallet },
   { id: "risk-flags", label: "Risk Flags", icon: AlertTriangle },
+  { id: "notices", label: "Notices", icon: FileText },
   { id: "osb-forms", label: "OSB Forms", icon: FileText },
 ];
 
@@ -47,7 +50,9 @@ export const ModuleTabs = ({ activeTab, onTabChange }: ModuleTabsProps) => {
         const isActive = activeTab === tab.id;
         
         return (
-          <button
+          <Button
+            variant="ghost"
+            aria-pressed={isActive}
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
             className={cn(
@@ -59,7 +64,7 @@ export const ModuleTabs = ({ activeTab, onTabChange }: ModuleTabsProps) => {
           >
             <Icon className="h-4 w-4" />
             {tab.label}
-          </button>
+          </Button>
         );
       })}
     </div>

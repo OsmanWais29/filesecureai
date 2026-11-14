@@ -25,6 +25,7 @@ Statement CSV import and reviewed matching; atomic posting; authenticated paymen
 - [ ] Corporate Form 21, debtor-owed documents tracking, retention period, trustee/office filters.
 
 ## Client-journey audit build order (Nov 14, 2026)
+- [x] Expose Notices in both the main creditor page and estate Creditors navigation; wire estate Claims to the claims register.
 - [x] Step 1: Claims register (admit / partly disallow / disallow, s.135 notice with proof) and day-one notices (s.102 5-day, s.66.14 10-day)
 - [ ] Step 2: Assessment record + counselling upgrade
 - [ ] Step 3: Meetings, proposal default/annulment, dividends
