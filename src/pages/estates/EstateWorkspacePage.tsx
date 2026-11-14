@@ -47,6 +47,7 @@ import { useEstateNavBadges } from "@/hooks/useEstateSignals";
 import { ChevronRight } from "lucide-react";
 import { SignalDrilldown, DrilldownScope } from "@/components/estate/SignalDrilldown";
 import { ClaimsRegister, DayOneNotices } from "@/components/estate/creditors/ClaimsAndNotices";
+import { AssessmentTab } from "@/components/estate/tabs/AssessmentTab";
 
 const EstateWorkspacePage = () => {
   const { estateId } = useParams();
@@ -92,6 +93,8 @@ const EstateWorkspacePage = () => {
         return withHeading(<EstateRecordTab estateId={estateId} sub={page as any} />);
       case "record:history":
         return withHeading(<AdditionalInfoTab />);
+      case "record:assessment":
+        return withHeading(<AssessmentTab estateId={estateId} />);
       case "record:communications":
         return withHeading(<NotesTab estateId={estateId} />);
 

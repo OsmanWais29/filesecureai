@@ -786,8 +786,8 @@ export const counsellingSections: SectionSpec[] = [
       { key: "neglected", label: "Bankrupt neglected counselling", type: "checkbox" },
       { key: "details", label: "Details", type: "textarea", span: 3 },
       { key: "comments", label: "Comments", type: "textarea", span: 3 },
-      sel("sourceDocument", "Source Documentation", ["Counselling certificate.pdf", "Session notes.pdf", "None"]),
-      { key: "generateCertificate", label: "Generate certificate on save", type: "checkbox" },
+      { key: "sourceDocument", label: "Signed session report / certificate reference", span: 3 },
+      { key: "generateCertificate", label: "Signed certificate / report is recorded", type: "checkbox" },
     ],
   },
 ];

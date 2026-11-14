@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import type { RecordValues } from "@/components/estate/forms/RecordForm";
 import { logEstateEvent } from "@/hooks/useEstateRecords";
+import { sessionHasEvidence } from "@/lib/estateJourney";
 
 const db = supabase as unknown as { from: (table: string) => any };
 
@@ -39,6 +40,7 @@ const useSaveRow = <T,>(table: string, estateId?: string, toRow?: (v: RecordValu
       if (!estateId) throw new Error("No estate selected.");
       const user = await requireUser();
       const row = toRow ? toRow(values) : {};
+      if (table === "estate_counselling_sessions" && row.completed && (!values.sessionNumber || !sessionHasEvidence({ appointment_date: str(values.appointmentDate), counsellor: str(values.counsellor), source_document: str(values.sourceDocument), refused: !!values.refused, neglected: !!values.neglected }))) throw new Error("Completed counselling requires a stage, date, counsellor and signed report reference, and cannot be refused or neglected.");
       const query = id
         ? db.from(table).update(row).eq("id", id)
         : db.from(table).insert({ ...row, estate_id: estateId, user_id: user.id });

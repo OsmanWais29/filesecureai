@@ -5,6 +5,7 @@ import { form82Sections } from "@/data/estateFormSpecs";
 import { useDischargeReport, useSaveDischargeReport } from "@/hooks/useEstateDischarge";
 import { useEstateIncomePeriods } from "@/hooks/useEstateIncome";
 import { useCounsellingSessions } from "@/hooks/useEstateStatutory";
+import { counsellingEvidence } from "@/lib/estateJourney";
 
 export const DischargeTab = ({ estateId }: { estateId?: string }) => {
   const { data: report, isLoading } = useDischargeReport(estateId);
@@ -23,7 +24,7 @@ export const DischargeTab = ({ estateId }: { estateId?: string }) => {
       (periods[periods.length - 1]?.other_family_income ?? 0),
     surplusRequired: periods.reduce((s, p) => s + Number(p.amount_required || 0), 0),
     amountAgreed: periods.reduce((s, p) => s + Number(p.amount_agreed || 0), 0),
-    counsellingCompleted: sessions.filter((s) => s.completed).length >= 2,
+    counsellingCompleted: counsellingEvidence(sessions),
   };
 
   useEffect(() => {

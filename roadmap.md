@@ -27,7 +27,9 @@ Statement CSV import and reviewed matching; atomic posting; authenticated paymen
 ## Client-journey audit build order (Nov 14, 2026)
 - [x] Expose Notices in both the main creditor page and estate Creditors navigation; wire estate Claims to the claims register.
 - [x] Step 1: Claims register (admit / partly disallow / disallow, s.135 notice with proof) and day-one notices (s.102 5-day, s.66.14 10-day)
-- [ ] Step 2: Assessment record + counselling upgrade
+- [x] Step 2a: Permanent assessment register with options, evidence, debtor acknowledgement and LIT sign-off; visible under Estate Record → Assessment.
+- [x] Step 2b: Directive 1R8 10–90-day / minimum 30-day counselling windows and distinct-stage evidence check.
+- [ ] Step 2c: Counsellor licence registration verification, signed report uploads, Division I refusal exception and database-enforced counselling timing — needs implementation.
 - [ ] Step 3: Meetings, proposal default/annulment, dividends
 - [ ] Step 4: Discharge and closing workflows, retention
 - [ ] Step 5: Role enforcement, examiner login, audit pack, self-audit
